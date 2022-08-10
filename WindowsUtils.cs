@@ -2,16 +2,39 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using System.Text;
+using Wrapper;
 
 namespace WindowsUtils
 {
+    public enum SessionState : uint
+    {
+        Active = 0,
+        Connected = 1,
+        ConnectQuery = 2,
+        Shadow = 3,
+        Disconnected = 4,
+        Idle = 5,
+        Listen = 6,
+        Reset = 7,
+        Down = 8,
+        Init = 9
+    }
+    public class ComputerSessionOutput
+    {
+        public string UserName { get; internal set; }
+        public string SessionName { get; internal set; }
+        public SessionState SessionState { get; internal set; }
+
+    }
     public class Utilities
     {
-        private class ComputerSessionOutput
+        [StructLayout(LayoutKind.Sequential)]
+        public struct ComputerSessionOutput
         {
-            public string UserName{ get; set; }
-            public string SessionName { get; set; }
-            public WtsSessionState SessionState { get; set; }
+            public string UserName;
+            public string SessionName;
+            public WtsSessionState SessionState;
         }
         [StructLayout(LayoutKind.Sequential)]
         internal struct WTS_SESSION_INFO
@@ -24,15 +47,7 @@ namespace WindowsUtils
             internal WTS_CONNECTSTATE_CLASS State;
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public struct SessionEnumOutput
-        {
-            string UserName;
-            string SessionName;
-            WtsSessionState SessionState;
-        }
-
-        private enum WtsSessionState : uint
+        public enum WtsSessionState : uint
         {
             Active = 0,
             Connected = 1,
@@ -67,6 +82,18 @@ namespace WindowsUtils
             WTSDown,
             WTSInit
         }
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern IntPtr GetModuleHandle(
+            string lpModuleName
+        );
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern IntPtr LoadLibrary(
+            string lpLibFileName
+        );
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern int FreeLibrary(
+            IntPtr hLibModule
+        );
         [DllImport("wtsapi32.dll", SetLastError = true)]
         private static extern int WTSEnumerateSessions (
             IntPtr hServer,
@@ -98,41 +125,41 @@ namespace WindowsUtils
             uint dwExtraInfo
         );
 
-        [DllImport("WinUtilsUnm.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall, SetLastError = true)]
-        private static extern IntPtr GetEnumeratedSession (
-            ref ulong rCount,
-            string computerName,
-            bool onlyActive = false,
-            bool excludeSystemSessions = false
-        );
-
-        public static List<SessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
+        public static List<ComputerSessionOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
         {
-            ulong rCount = 0;
-            int dataSize = Marshal.SizeOf(typeof(SessionEnumOutput));
-            IntPtr hResult = GetEnumeratedSession(ref rCount, computerName, onlyActive, excludeSystemSessions);
-            List<SessionEnumOutput> output = new List<SessionEnumOutput>();
+            List<ComputerSessionOutput> output = new List<ComputerSessionOutput>();
+            Managed unWrapper = new Managed();
+            List<Managed.wSessionEnumOutput> wout = unWrapper.GetEnumeratedSession(computerName, onlyActive, excludeSystemSessions);
 
-            for (int i = 0; i < ((int)rCount); i++)
+            foreach (var item in wout)
             {
-                object unSession = (Marshal.PtrToStructure(hResult + (dataSize * i), typeof(SessionEnumOutput)));
-                if (unSession != null) { output.Add((SessionEnumOutput)unSession); }
+                ComputerSessionOutput inner = new ComputerSessionOutput();
+                inner.UserName = item.UserName;
+                inner.SessionName = item.SessionName;
+                inner.SessionState = (WtsSessionState)item.SessionState;
+
+                output.Add(inner);
             }
+
             return output;
         }
 
-        public static List<SessionEnumOutput> GetComputerSession()
+        public static List<ComputerSessionOutput> GetComputerSession()
         {
-            ulong rCount = 0;
-            int dataSize = Marshal.SizeOf(typeof(SessionEnumOutput));
-            IntPtr hResult = GetEnumeratedSession(ref rCount, null, false, false);
-            List<SessionEnumOutput> output = new List<SessionEnumOutput>();
+            List<ComputerSessionOutput> output = new List<ComputerSessionOutput>();
+            Managed unWrapper = new Managed();
+            List<Managed.wSessionEnumOutput> wout = unWrapper.GetEnumeratedSession(null, false, false);
 
-            for (int i = 0; i < ((int)rCount); i++)
+            foreach (var item in wout)
             {
-                object unSession = (Marshal.PtrToStructure(hResult + (dataSize * i), typeof(SessionEnumOutput)));
-                if (unSession != null) { output.Add((SessionEnumOutput)unSession); }
+                ComputerSessionOutput inner = new ComputerSessionOutput();
+                inner.UserName = item.UserName;
+                inner.SessionName = item.SessionName;
+                inner.SessionState = (WtsSessionState)item.SessionState;
+
+                output.Add(inner);
             }
+
             return output;
         }
 
