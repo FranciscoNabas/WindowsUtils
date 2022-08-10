@@ -2,6 +2,8 @@
 
 #include "Unmanaged.h"
 #include <vcclr.h>
+#include <iostream>
+#include <vector>
 
 using namespace System;
 using namespace System::Collections::Generic;
@@ -15,33 +17,44 @@ namespace Wrapper {
 		Unmanaged* ptr;
 
 		int strucSize = sizeof(Unmanaged::SessionEnumOutput);
+		Type^ strucType = Unmanaged::SessionEnumOutput::typeid;
+
+		enum class wWtsSessionState
+		{
+			Active,
+			Connected,
+			ConnectQuery,
+			Shadow,
+			Disconnected,
+			Idle,
+			Listen,
+			Reset,
+			Down,
+			Init
+		};
 
 		ref class wSessionEnumOutput
 		{
 		public:
 			String^ UserName;
 			String^ SessionName;
-			UINT SessionState;
+			wWtsSessionState SessionState;
 		};
 
 		List<wSessionEnumOutput^>^ GetEnumeratedSession(String^ computerName, bool onlyActive, bool excludeSystemSessions)
 		{
-			DWORD rCount;
+			pin_ptr<const wchar_t> wName = PtrToStringChars(computerName);
 			List<wSessionEnumOutput^>^ output = gcnew List<wSessionEnumOutput^>();
-			Unmanaged::PSessionEnumOutput thisResult = ptr->GetEnumeratedSession(&rCount, (LPWSTR)&computerName, onlyActive, excludeSystemSessions);
-			Unmanaged::PSessionEnumOutput* ppResult = &thisResult;
-			for (DWORD i = 0; i < rCount; i++)
+			vector<Unmanaged::SessionEnumOutput> result = ptr->GetEnumeratedSession((LPWSTR)wName, onlyActive, excludeSystemSessions);
+			
+			for (size_t it = 0; it < result.size(); it++)
 			{
 				wSessionEnumOutput^ inner = gcnew wSessionEnumOutput();
-				inner->UserName = Marshal::PtrToStringUni((IntPtr)ppResult[i]->UserName);
-				inner->SessionName = Marshal::PtrToStringUni((IntPtr)ppResult[i]->SessionName);
-				
-				DWORD sState = (DWORD)ppResult[i]->SessionState;
-				inner->SessionState = (UINT)sState;
-
+				inner->UserName = Marshal::PtrToStringUni((IntPtr)result[it].UserName);
+				inner->SessionName = Marshal::PtrToStringUni((IntPtr)result[it].SessionName);
+				inner->SessionState = (wWtsSessionState)result[it].SessionState;
 				output->Add(inner);
 			}
-
 			
 			return output;
 		};

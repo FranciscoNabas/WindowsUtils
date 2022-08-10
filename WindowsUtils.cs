@@ -30,13 +30,6 @@ namespace WindowsUtils
     public class Utilities
     {
         [StructLayout(LayoutKind.Sequential)]
-        public struct ComputerSessionOutput
-        {
-            public string UserName;
-            public string SessionName;
-            public WtsSessionState SessionState;
-        }
-        [StructLayout(LayoutKind.Sequential)]
         internal struct WTS_SESSION_INFO
         {
             internal Int32 SessionID;
@@ -45,20 +38,6 @@ namespace WindowsUtils
             internal String pWinStationName;
 
             internal WTS_CONNECTSTATE_CLASS State;
-        }
-
-        public enum WtsSessionState : uint
-        {
-            Active = 0,
-            Connected = 1,
-            ConnectQuery = 2,
-            Shadow = 3,
-            Disconnected = 4,
-            Idle = 5,
-            Listen = 6,
-            Reset = 7,
-            Down = 8,
-            Init = 9,
         }
 
         private enum MouseEvent : uint
@@ -125,42 +104,28 @@ namespace WindowsUtils
             uint dwExtraInfo
         );
 
-        public static List<ComputerSessionOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
+        public static List<Managed.wSessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
         {
-            List<ComputerSessionOutput> output = new List<ComputerSessionOutput>();
             Managed unWrapper = new Managed();
-            List<Managed.wSessionEnumOutput> wout = unWrapper.GetEnumeratedSession(computerName, onlyActive, excludeSystemSessions);
-
-            foreach (var item in wout)
-            {
-                ComputerSessionOutput inner = new ComputerSessionOutput();
-                inner.UserName = item.UserName;
-                inner.SessionName = item.SessionName;
-                inner.SessionState = (WtsSessionState)item.SessionState;
-
-                output.Add(inner);
-            }
-
-            return output;
+            return unWrapper.GetEnumeratedSession(computerName, onlyActive, excludeSystemSessions);
         }
 
-        public static List<ComputerSessionOutput> GetComputerSession()
+        public static List<Managed.wSessionEnumOutput> GetComputerSession(string computerName)
         {
-            List<ComputerSessionOutput> output = new List<ComputerSessionOutput>();
             Managed unWrapper = new Managed();
-            List<Managed.wSessionEnumOutput> wout = unWrapper.GetEnumeratedSession(null, false, false);
+            return unWrapper.GetEnumeratedSession(computerName, false, false);
+        }
 
-            foreach (var item in wout)
-            {
-                ComputerSessionOutput inner = new ComputerSessionOutput();
-                inner.UserName = item.UserName;
-                inner.SessionName = item.SessionName;
-                inner.SessionState = (WtsSessionState)item.SessionState;
+        public static List<Managed.wSessionEnumOutput> GetComputerSession(bool onlyActive, bool excludeSystemSessions)
+        {
+            Managed unWrapper = new Managed();
+            return unWrapper.GetEnumeratedSession(null, onlyActive, excludeSystemSessions);
+        }
 
-                output.Add(inner);
-            }
-
-            return output;
+        public static List<Managed.wSessionEnumOutput> GetComputerSession()
+        {
+            Managed unWrapper = new Managed();
+            return unWrapper.GetEnumeratedSession(null, false, false);
         }
 
         public static void SendClick()

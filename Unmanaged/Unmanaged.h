@@ -2,6 +2,7 @@
 
 #include <WtsApi32.h>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -19,15 +20,14 @@ public:
 		Reset = WTSReset,
 		Down = WTSDown,
 		Init = WTSInit,
-		Null = NULL
 	};
 
 	typedef struct SessionEnumOutput {
 		SessionEnumOutput() {};
-		wchar_t			UserName;
-		wchar_t			SessionName;
-		WtsSessionState	SessionState = WtsSessionState::Null;
+		wchar_t			*UserName;
+		wchar_t			*SessionName;
+		WtsSessionState	SessionState;
 	}SessionEnumOutput, *PSessionEnumOutput;
 
-	PSessionEnumOutput GetEnumeratedSession(OUT DWORD* rCount, LPWSTR computerName, BOOL onlyActive, BOOL excludeSystemSessions);
+	vector<Unmanaged::SessionEnumOutput> GetEnumeratedSession(LPWSTR computerName, BOOL onlyActive, BOOL excludeSystemSessions);
 };

@@ -22,11 +22,26 @@ Class Wrapper.Managed: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
   Fields:
     Unmanaged* ptr : Public
     Int32 strucSize : Public
+    System.Type strucType : Public
   Methods:
     GetEnumeratedSession(String, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
+Struct Wrapper.Managed+wWtsSessionState: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
+    wWtsSessionState Active = 0 : Public, Static, Literal, HasDefault
+    wWtsSessionState Connected = 1 : Public, Static, Literal, HasDefault
+    wWtsSessionState ConnectQuery = 2 : Public, Static, Literal, HasDefault
+    wWtsSessionState Shadow = 3 : Public, Static, Literal, HasDefault
+    wWtsSessionState Disconnected = 4 : Public, Static, Literal, HasDefault
+    wWtsSessionState Idle = 5 : Public, Static, Literal, HasDefault
+    wWtsSessionState Listen = 6 : Public, Static, Literal, HasDefault
+    wWtsSessionState Reset = 7 : Public, Static, Literal, HasDefault
+    wWtsSessionState Down = 8 : Public, Static, Literal, HasDefault
+    wWtsSessionState Init = 9 : Public, Static, Literal, HasDefault
 Class Wrapper.Managed+wSessionEnumOutput: AutoLayout, AnsiClass, Class, NestedPublic, BeforeFieldInit
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Fields:
     System.String UserName : Public
     System.String SessionName : Public
-    UInt32 SessionState : Public
+    wWtsSessionState SessionState : Public
