@@ -34,5 +34,5 @@ public:
 		WtsSessionState	SessionState;
 	}SessionEnumOutput, *PSessionEnumOutput;
 
-	vector<Unmanaged::SessionEnumOutput> GetEnumeratedSession(LPWSTR computerName, BOOL onlyActive, BOOL excludeSystemSessions);
+	vector<Unmanaged::SessionEnumOutput> GetEnumeratedSession(HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
 };

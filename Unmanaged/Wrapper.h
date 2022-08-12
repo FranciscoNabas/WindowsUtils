@@ -46,12 +46,11 @@ namespace Wrapper {
 			wWtsSessionState SessionState;
 		};
 
-		List<wSessionEnumOutput^>^ GetEnumeratedSession(String^ computerName, bool onlyActive, bool excludeSystemSessions)
+		List<wSessionEnumOutput^>^ GetEnumeratedSession(IntPtr session, bool onlyActive, bool excludeSystemSessions)
 		{
-			pin_ptr<const wchar_t> wName = PtrToStringChars(computerName);
 			List<wSessionEnumOutput^>^ output = gcnew List<wSessionEnumOutput^>();
 			vector<Unmanaged::SessionEnumOutput> *result = new vector<Unmanaged::SessionEnumOutput>;
-			*result = ptr->GetEnumeratedSession((LPWSTR)wName, onlyActive, excludeSystemSessions);
+			*result = ptr->GetEnumeratedSession((HANDLE)session, onlyActive, excludeSystemSessions);
 			
 			for (size_t it = 0; it < result->size(); it++)
 			{

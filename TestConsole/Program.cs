@@ -9,7 +9,7 @@ namespace TestExec
     {
         static void Main(string[] args)
         {
-            List<Managed.wSessionEnumOutput> thing = Utilities.GetComputerSession(null, false, true);
+            List<Managed.wSessionEnumOutput> thing = Utilities.GetComputerSession("USFLORLCMCP01P");
             Console.WriteLine("###################################################");
             for (int i = 0; i < thing.Count; i++)
             {
@@ -19,7 +19,7 @@ namespace TestExec
                 Console.WriteLine("###################################################");
             }
             Console.WriteLine("\n");
-            thing = Utilities.GetComputerSession();
+            thing = Utilities.GetComputerSession("USFLORLCMCP01P");
             Console.WriteLine("###################################################");
             for (int i = 0; i < thing.Count; i++)
             {

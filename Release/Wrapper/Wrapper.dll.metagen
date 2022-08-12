@@ -24,7 +24,7 @@ Class Wrapper.Managed: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Int32 strucSize : Public
     System.Type strucType : Public
   Methods:
-    GetEnumeratedSession(String, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
+    GetEnumeratedSession(IntPtr, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
 Struct Wrapper.Managed+wWtsSessionState: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
   :System.Enum
   Fields:

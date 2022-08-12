@@ -3,21 +3,27 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
-using System.Security;
 using System.Runtime.ConstrainedExecution;
-using System.ComponentModel;
 using Wrapper;
 
 namespace WindowsUtils
 {
     internal class SystemSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        override public bool IsInvalid { get; }
         private SystemSafeHandle() : base(true) { }
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        override protected bool ReleaseHandle() { return Utilities.CloseHandle(handle); }
-    }
+        override protected bool ReleaseHandle() {
+            if (!IsInvalid)
+            {
+                return Utilities.CloseHandle(handle);
+            }
+            return true;
+        }
 
+        internal IntPtr ToIntPtr() { return handle; }
+    }
     public enum SessionState : uint
     {
         Active = 0,
@@ -31,7 +37,7 @@ namespace WindowsUtils
         Down = 8,
         Init = 9
     }
-    public class ComputerSessionOutput
+    internal class ComputerSessionOutput
     {
         public string UserName { get; internal set; }
         public string SessionName { get; internal set; }
@@ -122,28 +128,32 @@ namespace WindowsUtils
             uint dwExtraInfo
         );
 
+        private static SystemSafeHandle session;
+
         public static List<Managed.wSessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
         {
+            if (session == null) { session = WTSOpenServerW(computerName); }
             Managed unWrapper = new Managed();
-            return unWrapper.GetEnumeratedSession(computerName, onlyActive, excludeSystemSessions);
+            return unWrapper.GetEnumeratedSession(session.ToIntPtr(), onlyActive, excludeSystemSessions);
         }
 
         public static List<Managed.wSessionEnumOutput> GetComputerSession(string computerName)
         {
+            if (session == null) { session = WTSOpenServerW(computerName); }
             Managed unWrapper = new Managed();
-            return unWrapper.GetEnumeratedSession(computerName, false, false);
+            return unWrapper.GetEnumeratedSession(session.ToIntPtr(), false, false);
         }
 
         public static List<Managed.wSessionEnumOutput> GetComputerSession(bool onlyActive, bool excludeSystemSessions)
         {
             Managed unWrapper = new Managed();
-            return unWrapper.GetEnumeratedSession(null, onlyActive, excludeSystemSessions);
+            return unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, excludeSystemSessions);
         }
 
         public static List<Managed.wSessionEnumOutput> GetComputerSession()
         {
             Managed unWrapper = new Managed();
-            return unWrapper.GetEnumeratedSession(null, false, false);
+            return unWrapper.GetEnumeratedSession(IntPtr.Zero, false, false);
         }
 
         public static void SendClick()
