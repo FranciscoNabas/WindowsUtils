@@ -1,8 +1,13 @@
-#pragma once
+﻿#pragma once
 
 #include <WtsApi32.h>
 #include <string>
 #include <vector>
+
+#ifndef UNICODE
+#define UNICODE
+#define _UNICODE
+#endif // UNICODE
 
 using namespace std;
 
@@ -24,8 +29,8 @@ public:
 
 	typedef struct SessionEnumOutput {
 		SessionEnumOutput() {};
-		wchar_t			*UserName;
-		wchar_t			*SessionName;
+		wstring			UserName;
+		wstring			SessionName;
 		WtsSessionState	SessionState;
 	}SessionEnumOutput, *PSessionEnumOutput;
 

@@ -1,9 +1,14 @@
-#pragma once
+﻿#pragma once
 
 #include "Unmanaged.h"
 #include <vcclr.h>
 #include <iostream>
 #include <vector>
+
+#ifndef UNICODE
+#define UNICODE
+#define _UNICODE
+#endif // UNICODE
 
 using namespace System;
 using namespace System::Collections::Generic;
@@ -45,14 +50,16 @@ namespace Wrapper {
 		{
 			pin_ptr<const wchar_t> wName = PtrToStringChars(computerName);
 			List<wSessionEnumOutput^>^ output = gcnew List<wSessionEnumOutput^>();
-			vector<Unmanaged::SessionEnumOutput> result = ptr->GetEnumeratedSession((LPWSTR)wName, onlyActive, excludeSystemSessions);
+			vector<Unmanaged::SessionEnumOutput> *result = new vector<Unmanaged::SessionEnumOutput>;
+			*result = ptr->GetEnumeratedSession((LPWSTR)wName, onlyActive, excludeSystemSessions);
 			
-			for (size_t it = 0; it < result.size(); it++)
+			for (size_t it = 0; it < result->size(); it++)
 			{
+				Unmanaged::SessionEnumOutput single = result->at(it);
 				wSessionEnumOutput^ inner = gcnew wSessionEnumOutput();
-				inner->UserName = Marshal::PtrToStringUni((IntPtr)result[it].UserName);
-				inner->SessionName = Marshal::PtrToStringUni((IntPtr)result[it].SessionName);
-				inner->SessionState = (wWtsSessionState)result[it].SessionState;
+				inner->UserName = gcnew String(single.UserName.c_str());
+				inner->SessionName = gcnew String(single.SessionName.c_str());
+				inner->SessionState = (wWtsSessionState)single.SessionState;
 				output->Add(inner);
 			}
 			

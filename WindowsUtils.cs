@@ -2,11 +2,22 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
-using System.Text;
+using Microsoft.Win32.SafeHandles;
+using System.Security;
+using System.Runtime.ConstrainedExecution;
+using System.ComponentModel;
 using Wrapper;
 
 namespace WindowsUtils
 {
+    internal class SystemSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        private SystemSafeHandle() : base(true) { }
+
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        override protected bool ReleaseHandle() { return Utilities.CloseHandle(handle); }
+    }
+
     public enum SessionState : uint
     {
         Active = 0,
@@ -29,6 +40,13 @@ namespace WindowsUtils
     }
     public class Utilities
     {
+        [DllImport("kernel32", SetLastError = true)]
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        internal extern static bool CloseHandle(IntPtr handle);
+
+        [DllImport("Wtsapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal extern static SystemSafeHandle WTSOpenServerW(string pServerName);
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct WTS_SESSION_INFO
         {
