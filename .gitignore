@@ -18,3 +18,9 @@ obj
 obj/*
 bin
 bin/*
+
+# misc
+TestConsole/
+TestConsole/*
+Release/
+Release/*

@@ -6,142 +6,48 @@ using Microsoft.Win32.SafeHandles;
 using System.Runtime.ConstrainedExecution;
 using Wrapper;
 
+#nullable enable
 namespace WindowsUtils
 {
-    internal class SystemSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        override public bool IsInvalid { get; }
-        private SystemSafeHandle() : base(true) { }
-
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        override protected bool ReleaseHandle() {
-            if (!IsInvalid)
-            {
-                return Utilities.CloseHandle(handle);
-            }
-            return true;
-        }
-
-        internal IntPtr ToIntPtr() { return handle; }
-    }
-    public enum SessionState : uint
-    {
-        Active = 0,
-        Connected = 1,
-        ConnectQuery = 2,
-        Shadow = 3,
-        Disconnected = 4,
-        Idle = 5,
-        Listen = 6,
-        Reset = 7,
-        Down = 8,
-        Init = 9
-    }
-    internal class ComputerSessionOutput
-    {
-        public string UserName { get; internal set; }
-        public string SessionName { get; internal set; }
-        public SessionState SessionState { get; internal set; }
-
-    }
     public class Utilities
     {
-        [DllImport("kernel32", SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        internal extern static bool CloseHandle(IntPtr handle);
-
-        [DllImport("Wtsapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal extern static SystemSafeHandle WTSOpenServerW(string pServerName);
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct WTS_SESSION_INFO
-        {
-            internal Int32 SessionID;
-
-            [MarshalAs(UnmanagedType.LPStr)]
-            internal String pWinStationName;
-
-            internal WTS_CONNECTSTATE_CLASS State;
-        }
-
-        private enum MouseEvent : uint
-        {
-            MOUSEEVENTF_LEFTDOWN = 2,
-            MOUSEEVENTF_LEFTUP = 4,
-            MOUSEEVENTF_RIGHTDOWN = 8,
-            MOUSEEVENTF_RIGHTUP = 16
-        }
-
-        internal enum WTS_CONNECTSTATE_CLASS
-        {
-            WTSActive,
-            WTSConnected,
-            WTSConnectQuery,
-            WTSShadow,
-            WTSDisconnected,
-            WTSIdle,
-            WTSListen,
-            WTSReset,
-            WTSDown,
-            WTSInit
-        }
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern IntPtr GetModuleHandle(
-            string lpModuleName
-        );
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern IntPtr LoadLibrary(
-            string lpLibFileName
-        );
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern int FreeLibrary(
-            IntPtr hLibModule
-        );
-        [DllImport("wtsapi32.dll", SetLastError = true)]
-        private static extern int WTSEnumerateSessions (
-            IntPtr hServer,
-            int Reserved,
-            int Version,
-            ref IntPtr ppSessionInfo,
-            ref int pCount
-        );
-        [DllImport("wtsapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern bool WTSSendMessage (
-            IntPtr hServer,
-            [MarshalAs(UnmanagedType.I4)] int SessionId,
-            string pTitle,
-            [MarshalAs(UnmanagedType.U4)] int TitleLength,
-            string pMessage,
-            [MarshalAs(UnmanagedType.U4)] int MessageLength,
-            [MarshalAs(UnmanagedType.U4)] int Style,
-            [MarshalAs(UnmanagedType.U4)] int Timeout,
-            [MarshalAs(UnmanagedType.U4)] out int pResponse,
-            bool bWait
-        );
-
-        [DllImport("user32.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall, SetLastError = true)]
-        private static extern void mouse_event (
-            uint dwFlags,
-            uint dx,
-            uint dy,
-            uint cButtons,
-            uint dwExtraInfo
-        );
-
-        private static SystemSafeHandle session;
+        private static TerminalServices.Session sessionInfo = new TerminalServices.Session();
 
         public static List<Managed.wSessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
         {
-            if (session == null) { session = WTSOpenServerW(computerName); }
+            if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName)) {
+                sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                sessionInfo.ComputerName = computerName;
+            }
+            else
+            {
+                if (sessionInfo.ComputerName != computerName)
+                {
+                    sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                    sessionInfo.ComputerName = computerName;
+                }
+            }
             Managed unWrapper = new Managed();
-            return unWrapper.GetEnumeratedSession(session.ToIntPtr(), onlyActive, excludeSystemSessions);
+            return unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), onlyActive, excludeSystemSessions);
         }
 
         public static List<Managed.wSessionEnumOutput> GetComputerSession(string computerName)
         {
-            if (session == null) { session = WTSOpenServerW(computerName); }
+            if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
+            {
+                sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                sessionInfo.ComputerName = computerName;
+            }
+            else
+            {
+                if (sessionInfo.ComputerName != computerName)
+                {
+                    sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                    sessionInfo.ComputerName = computerName;
+                }
+            }
             Managed unWrapper = new Managed();
-            return unWrapper.GetEnumeratedSession(session.ToIntPtr(), false, false);
+            return unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), false, false);
         }
 
         public static List<Managed.wSessionEnumOutput> GetComputerSession(bool onlyActive, bool excludeSystemSessions)
@@ -161,8 +67,8 @@ namespace WindowsUtils
             //Call the imported function with the cursor's current position
             uint X = (uint)Cursor.Position.X;
             uint Y = (uint)Cursor.Position.Y;
-            mouse_event(
-                ((uint)MouseEvent.MOUSEEVENTF_LEFTDOWN) | ((uint)MouseEvent.MOUSEEVENTF_LEFTUP),
+            Interop.mouse_event(
+                ((uint)Interop.MouseEvent.MOUSEEVENTF_LEFTDOWN) | ((uint)Interop.MouseEvent.MOUSEEVENTF_LEFTUP),
                 X,
                 Y,
                 0,
@@ -170,31 +76,82 @@ namespace WindowsUtils
             );
         }
 
-        public static List<int> InvokeWarning(string message, string title, int style, int timeout, bool bWait)
+        public static List<int>? InvokeMessage(string? computerName, string title, string message)
         {
-            try
+            List<int> result = new List<int>();
+            if (computerName is null)
             {
-                IntPtr sessionInfo = new IntPtr();
-                int sessionCount = new int();
-                WTSEnumerateSessions(IntPtr.Zero, 0, 1, ref sessionInfo, ref sessionCount);
-                int dataSize = Marshal.SizeOf(typeof(WTS_SESSION_INFO));
-
-                List<int> allSResponse = new List<int>();
-                for (int i = 0; i < sessionCount; i++)
+                string input = InvokeConfirmationRequest("This will send the message to all sessions on this computer, including disconnected ones.");
+                if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase)) { return null; }
+                else
                 {
-                    int response;
-                    object alloc = (Marshal.PtrToStructure(sessionInfo + (dataSize * i), typeof(WTS_SESSION_INFO)));
-                    if (alloc != null)
-                    {
-                        WTS_SESSION_INFO unSessionInfo = ((WTS_SESSION_INFO)alloc);
-                        WTSSendMessage(IntPtr.Zero, unSessionInfo.SessionID, title, (title.Length * 2), message, (message.Length * 2), style, timeout, out response, bWait);
-                        allSResponse.Add(response);
-                    }
+                    Managed unWrapper = new Managed();
+                    result = unWrapper.InvokeMessage(IntPtr.Zero, null, title, message, TerminalServices.MessageBoxButton.MB_OK.Value, 0, false);
                 }
-
-                return allSResponse;
             }
-            catch (Exception ex) { throw ex; }
+            else
+            {
+                string input = InvokeConfirmationRequest("This will send the message to all sessions on the computer " + computerName + ".");
+                if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase)) { return null; }
+                else
+                {
+                    if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
+                    {
+                        sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                        sessionInfo.ComputerName = computerName;
+                    }
+                    else
+                    {
+                        if (sessionInfo.ComputerName != computerName)
+                        {
+                            sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                            sessionInfo.ComputerName = computerName;
+                        }
+                    }
+                    Managed unWrapper = new Managed();
+                    result = unWrapper.InvokeMessage(sessionInfo.SessionHandle.ToIntPtr(), null, title, message, TerminalServices.MessageBoxButton.MB_OK.Value, 0, false);
+                }
+            }
+            
+            return result;
+        }
+
+        public static void WriteWarning(string warning, bool newLine = true, bool prefix = true)
+        {
+            ConsoleColor currentCollor = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            
+            if (newLine)
+            {
+                if (prefix) { Console.WriteLine("WARNING: " + warning); }
+                else {  Console.WriteLine(warning); }
+            }
+            else
+            {
+                if (prefix) { Console.Write("WARNING: " + warning); }
+                else { Console.Write(warning); }
+            }
+            
+            Console.ForegroundColor = currentCollor;
+        }
+
+        public static string InvokeConfirmationRequest(string message)
+        {
+            Console.WriteLine(message + "\nDo you want to continue?");
+            WriteWarning("[Y] Yes ", false, false);
+            Console.Write("[N] No(default is \"Y\"): ");
+            string input = Console.ReadLine();
+            if (!string.IsNullOrEmpty(input) && !string.Equals(input, "Y", StringComparison.OrdinalIgnoreCase) && !string.Equals(input, "N", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Invalid option '" + input + "'.\n");
+                input = InvokeConfirmationRequest(message);
+            }
+            return input;
+        }
+
+        public static void Test()
+        {
+            InvokeConfirmationRequest("This will send the message to all sessions on this computer, including disconnected ones.");
         }
     }
 }

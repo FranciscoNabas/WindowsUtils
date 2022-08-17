@@ -12,6 +12,72 @@
 
 using namespace std;
 
+vector<DWORD> Unmanaged::InvokeMessage(
+	LPWSTR pTitle,
+	LPWSTR pMessage,
+	DWORD style,
+	DWORD timeout,
+	BOOL bWait,
+	vector<DWORD> sessionId,
+	HANDLE session = WTS_CURRENT_SERVER_HANDLE
+)
+{
+	vector<DWORD> output;
+	if (sessionId.empty())
+	{
+		DWORD pCount;
+		BOOL enumResult;
+		BOOL mesResult;
+		PWTS_SESSION_INFO sessionInfo = (PWTS_SESSION_INFO)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WTS_SESSION_INFO));
+		enumResult = WTSEnumerateSessions(session, 0, 1, &sessionInfo, &pCount);
+
+		for (DWORD i = 0; i < pCount; i++)
+		{
+			DWORD response;
+			mesResult = WTSSendMessageW(
+				session,
+				sessionInfo[i].SessionId,
+				pTitle,
+				(DWORD)wcslen(pTitle) * 2,
+				pMessage,
+				(DWORD)wcslen(pMessage) * 2,
+				style,
+				timeout,
+				&response,
+				bWait
+			);
+
+			output.push_back(response);
+		}
+		if (pCount > 0) { WTSFreeMemory(sessionInfo); }
+	}
+	else
+	{
+		BOOL mesResult;
+
+		for (size_t i = 0; i < sessionId.size(); i++)
+		{
+			DWORD response;
+			mesResult = WTSSendMessageW(
+				session,
+				sessionId.at(i),
+				pTitle,
+				(DWORD)wcslen(pTitle) * 2,
+				pMessage,
+				(DWORD)wcslen(pMessage) * 2,
+				style,
+				timeout,
+				&response,
+				bWait
+			);
+
+			output.push_back(response);
+		}
+	}
+
+	return output;
+}
+
 Unmanaged::SessionEnumOutput GetOutputObject(HANDLE session, WTS_SESSION_INFO innerSes)
 {
 	wstring sessionName;

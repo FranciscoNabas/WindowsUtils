@@ -3,13 +3,12 @@
 #include <WtsApi32.h>
 #include <string>
 #include <vector>
+#include <stdio.h>
 
 #ifndef UNICODE
 #define UNICODE
 #define _UNICODE
 #endif // UNICODE
-
-using namespace std;
 
 extern "C" public class __declspec(dllexport) Unmanaged
 {
@@ -29,10 +28,11 @@ public:
 
 	typedef struct SessionEnumOutput {
 		SessionEnumOutput() {};
-		wstring			UserName;
-		wstring			SessionName;
+		std::wstring			UserName;
+		std::wstring			SessionName;
 		WtsSessionState	SessionState;
 	}SessionEnumOutput, *PSessionEnumOutput;
 
-	vector<Unmanaged::SessionEnumOutput> GetEnumeratedSession(HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
+	std::vector<Unmanaged::SessionEnumOutput> GetEnumeratedSession(HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
+	std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
 };

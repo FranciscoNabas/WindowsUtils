@@ -1,9 +1,0 @@
-﻿  pch.cpp
-  AssemblyInfo.cpp
-  Unmanaged.cpp
-  Wrapper.cpp
-  Generating Code...
-  .NETFramework,Version=v4.7.2.AssemblyAttributes.cpp
-  AssemblyInfo.obj : MSIL module encountered; incremental linking is disabled for MSIL; performing full link
-     Creating library ..\Release\Wrapper\Wrapper.lib and object ..\Release\Wrapper\Wrapper.exp
-  Unmanaged.vcxproj -> C:\Repositories\WindowsUtils\Release\Wrapper\Wrapper.dll
