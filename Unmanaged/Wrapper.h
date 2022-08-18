@@ -41,6 +41,7 @@ namespace Wrapper {
 		ref class wSessionEnumOutput
 		{
 		public:
+			int SessionId;
 			String^ UserName;
 			String^ SessionName;
 			wWtsSessionState SessionState;
@@ -56,6 +57,7 @@ namespace Wrapper {
 			{
 				Unmanaged::SessionEnumOutput single = result->at(it);
 				wSessionEnumOutput^ inner = gcnew wSessionEnumOutput();
+				inner->SessionId = (int)single.SessionId;
 				inner->UserName = gcnew String(single.UserName.c_str());
 				inner->SessionName = gcnew String(single.SessionName.c_str());
 				inner->SessionState = (wWtsSessionState)single.SessionState;

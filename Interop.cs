@@ -17,7 +17,7 @@ namespace WindowsUtils
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         override protected bool ReleaseHandle()
         {
-            if (!IsInvalid)
+            if (!IsInvalid && !IsClosed)
             {
                 return Interop.CloseHandle(handle);
             }

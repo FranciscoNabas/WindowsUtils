@@ -92,6 +92,7 @@ Unmanaged::SessionEnumOutput GetOutputObject(HANDLE session, WTS_SESSION_INFO in
 	else { sessionName = innerSes.pWinStationName; }
 
 	Unmanaged::SessionEnumOutput inner;
+	inner.SessionId = innerSes.SessionId;
 	inner.UserName = ppBuffer;
 	inner.SessionName = sessionName;
 	inner.SessionState = (Unmanaged::WtsSessionState)innerSes.State;

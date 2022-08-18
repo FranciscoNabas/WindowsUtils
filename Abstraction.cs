@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using WindowsUtils.TerminalServices;
+using System.Management.Automation;
 
 #nullable enable
 namespace WindowsUtils.Abstraction
@@ -50,64 +49,69 @@ namespace WindowsUtils.Abstraction
             else { return Id.CompareTo(((Enumeration)other).Id); }
         }
     }
-    public abstract class MessageBoxOptions : Enumeration
+    public abstract class MessageBoxOption : Enumeration
     {
-        internal uint Value { get; set; }
-        internal MessageBoxOptions(uint value, string name)
+        public new string Name { get; set; }
+        public uint Value { get; set; }
+        public Type Type{ get; set; }
+        public MessageBoxOption(uint value, string name, Type type)
             : base(value, name)
         {
+            Name = name;
             Value = value;
+            Type = type;
         }
 
-        private static Dictionary<string, string> GetAllNames()
+        public static List<PSObject> GetAvailableOptions()
         {
-            Dictionary<string, string> allName = new Dictionary<string, string>();
-            GetAll<MessageBoxButton>().Select(x => x.Name).ToList().ForEach(s => allName.Add("MessageBoxButton", s));
-            GetAll<MessageBoxIcon>().Select(x => x.Name).ToList().ForEach(s => allName.Add("MessageBoxIcon", s));
-            GetAll<MessageBoxDefaultButton>().Select(x => x.Name).ToList().ForEach(s => allName.Add("MessageBoxDefaultButton", s));
-            GetAll<MessageBoxModal>().Select(x => x.Name).ToList().ForEach(s => allName.Add("MessageBoxModal", s));
-            GetAll<MessageBoxType>().Select(x => x.Name).ToList().ForEach(s => allName.Add("MessageBoxType", s));
-
-            return allName;
+            string[] defaultProp = { "Name", "Value" };
+            List<PSObject> output = new List<PSObject>();
+            foreach (MessageBoxOption item in InGetAvailableOptions())
+            {
+                PSObject inner = new PSObject(item);
+                List<PSMemberInfo> memberSet = new List<PSMemberInfo>();
+                memberSet.Add(new PSPropertySet("DefaultDisplayPropertySet", defaultProp));
+                inner.Members.Add(new PSMemberSet("PSStandardMembers", memberSet));
+                output.Add(inner);
+            }
+            return output;
         }
 
-        internal static List<MessageBoxOptions> MbOptionsResolver(string[] input)
+        private static List<MessageBoxOption> InGetAvailableOptions()
         {
-            List<MessageBoxOptions> output = new List<MessageBoxOptions>();
+            List<MessageBoxOption> output = new List<MessageBoxOption>();
+            
+            GetAll<MessageBoxButton>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
+            GetAll<MessageBoxDefaultButton>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
+            GetAll<MessageBoxIcon>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
+            GetAll<MessageBoxModal>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
+            GetAll<MessageBoxType>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
+
+            return output;
+        }
+
+        internal static uint MbOptionsResolver(string[] input)
+        {
             List<string> processed = new List<string>();
-            Dictionary<string, string> allName = GetAllNames();
+            List<MessageBoxOption> allNames = InGetAvailableOptions();
+            uint output = 0;
 
             foreach (string item in input)
             {
-                if (allName.Values.Contains(item))
+                MessageBoxOption current = allNames.Where(p => p.Name == item).FirstOrDefault();
+
+                if (current is not null)
                 {
                     if (processed.Contains(item)) { Utilities.WriteWarning("Duplicate item " + item + ". Ignoring."); }
                     else
                     {
-                        string current = allName.Where(s => s.Value == item).FirstOrDefault().Key;
-                        switch (current)
-                        {
-                            case "MessageBoxButton":
-                                output.Add(GetAll<MessageBoxButton>().Where(s => s.Name == item).FirstOrDefault());
-                                break;
-                            case "MessageBoxIcon":
-                                output.Add(GetAll<MessageBoxIcon>().Where(s => s.Name == item).FirstOrDefault());
-                                break;
-                            case "MessageBoxDefaultButton":
-                                output.Add(GetAll<MessageBoxDefaultButton>().Where(s => s.Name == item).FirstOrDefault());
-                                break;
-                            case "MessageBoxModal":
-                                output.Add(GetAll<MessageBoxModal>().Where(s => s.Name == item).FirstOrDefault());
-                                break;
-                            case "MessageBoxType":
-                                output.Add(GetAll<MessageBoxType>().Where(s => s.Name == item).FirstOrDefault());
-                                break;
-                        }
+                        output = output | current.Value;
                         processed.Add(item);
                     }
                 }
                 else { throw new ArgumentOutOfRangeException("invalid type '" + item + "'."); }
             }
+
             return output;
         }
     }

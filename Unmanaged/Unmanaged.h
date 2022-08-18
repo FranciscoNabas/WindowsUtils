@@ -28,6 +28,7 @@ public:
 
 	typedef struct SessionEnumOutput {
 		SessionEnumOutput() {};
+		int						SessionId;
 		std::wstring			UserName;
 		std::wstring			SessionName;
 		WtsSessionState	SessionState;
