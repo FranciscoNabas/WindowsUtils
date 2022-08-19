@@ -259,6 +259,13 @@ namespace WindowsUtils
             return output;
         }
 
+        public static List<Managed.wMessageDumpOutput> GetResourceMessageTable(string libPath)
+        {
+            Managed unWrapper = new Managed();
+            List<Managed.wMessageDumpOutput> output = unWrapper.GetResourceMessageTable(libPath);
+            return output;
+        }
+
         public static void WriteWarning(string warning, bool newLine = true, bool prefix = true)
         {
             ConsoleColor currentCollor = Console.ForegroundColor;

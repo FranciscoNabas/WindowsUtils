@@ -47,6 +47,13 @@ namespace Wrapper {
 			wWtsSessionState SessionState;
 		};
 
+		ref class wMessageDumpOutput
+		{
+		public:
+			Int64 Id;
+			String^ Message;
+		};
+
 		List<wSessionEnumOutput^>^ GetEnumeratedSession(IntPtr session, bool onlyActive, bool excludeSystemSessions)
 		{
 			List<wSessionEnumOutput^>^ output = gcnew List<wSessionEnumOutput^>();
@@ -90,6 +97,27 @@ namespace Wrapper {
 
 			delete result;
 			HeapFree(GetProcessHeap(), NULL, unSessionId);
+			return output;
+		}
+
+		List<wMessageDumpOutput^>^ GetResourceMessageTable(String^ libPath)
+		{
+			List<wMessageDumpOutput^>^ output = gcnew List<wMessageDumpOutput^>();
+			std::vector<Unmanaged::MessageDumpOutput>* result = new std::vector<Unmanaged::MessageDumpOutput>();
+			pin_ptr<const wchar_t> wLibPath = PtrToStringChars(libPath);
+
+			*result = ptr->GetResourceMessageTable((LPWSTR)wLibPath);
+			for (size_t i = 0; i < result->size(); i++)
+			{
+				Unmanaged::MessageDumpOutput single = result->at(i);
+				wMessageDumpOutput^ inner = gcnew wMessageDumpOutput();
+
+				inner->Id = std::stoll(single.Id, nullptr, 16);
+				inner->Message = gcnew String(single.Message.c_str());
+
+				output->Add(inner);
+			}
+			delete result;
 			return output;
 		}
 	};

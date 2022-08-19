@@ -34,6 +34,13 @@ public:
 		WtsSessionState	SessionState;
 	}SessionEnumOutput, *PSessionEnumOutput;
 
+	typedef struct MessageDumpOutput {
+		MessageDumpOutput() {};
+		std::wstring	Id;
+		std::wstring	Message;
+	}MessageDumpOutput, *PMessageDumpOutput;
+
+	std::vector<Unmanaged::MessageDumpOutput> GetResourceMessageTable(LPWSTR libName);
 	std::vector<Unmanaged::SessionEnumOutput> GetEnumeratedSession(HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
 	std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
 };

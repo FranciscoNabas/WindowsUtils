@@ -24,3 +24,6 @@ TestConsole/
 TestConsole/*
 Release/
 Release/*
+Debug/**
+*/x64/**
+x64/**
