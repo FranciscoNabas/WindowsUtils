@@ -1,6 +1,9 @@
 ﻿#pragma once
 
+#pragma unmanaged
 #include "Unmanaged.h"
+
+#pragma managed
 #include <vcclr.h>
 #include <iostream>
 #include <vector>
@@ -57,17 +60,16 @@ namespace Wrapper {
 		List<wSessionEnumOutput^>^ GetEnumeratedSession(IntPtr session, bool onlyActive, bool excludeSystemSessions)
 		{
 			List<wSessionEnumOutput^>^ output = gcnew List<wSessionEnumOutput^>();
-			std::vector<Unmanaged::SessionEnumOutput>* result = new std::vector<Unmanaged::SessionEnumOutput>;
-			*result = ptr->GetEnumeratedSession((HANDLE)session, onlyActive, excludeSystemSessions);
+			std::shared_ptr<std::vector<Unmanaged::SessionEnumOutput>> result = std::make_shared<std::vector<Unmanaged::SessionEnumOutput>>();
+			ptr->GetEnumeratedSession(*result, (HANDLE)session, onlyActive, excludeSystemSessions);
 
 			for (size_t it = 0; it < result->size(); it++)
 			{
-				Unmanaged::SessionEnumOutput single = result->at(it);
 				wSessionEnumOutput^ inner = gcnew wSessionEnumOutput();
-				inner->SessionId = (int)single.SessionId;
-				inner->UserName = gcnew String(single.UserName.c_str());
-				inner->SessionName = gcnew String(single.SessionName.c_str());
-				inner->SessionState = (wWtsSessionState)single.SessionState;
+				inner->SessionId = result->at(it).SessionId;
+				inner->UserName = gcnew String(result->at(it).UserName);
+				inner->SessionName = gcnew String(result->at(it).SessionName);
+				inner->SessionState = (wWtsSessionState)result->at(it).SessionState;
 				output->Add(inner);
 			}
 

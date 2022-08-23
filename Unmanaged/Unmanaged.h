@@ -1,9 +1,13 @@
 ﻿#pragma once
+#pragma unmanaged
 
 #include <WtsApi32.h>
 #include <string>
 #include <vector>
 #include <stdio.h>
+#include <Windows.h>
+#include <iostream>
+#include <memory>
 
 #ifndef UNICODE
 #define UNICODE
@@ -26,13 +30,26 @@ public:
 		Init = WTSInit,
 	};
 
-	typedef struct SessionEnumOutput {
-		SessionEnumOutput() {};
-		int						SessionId;
-		std::wstring			UserName;
-		std::wstring			SessionName;
+	class SessionEnumOutput
+	{
+	public:
+		int				SessionId;
+		LPWSTR			UserName;
+		LPWSTR			SessionName;
 		WtsSessionState	SessionState;
-	}SessionEnumOutput, *PSessionEnumOutput;
+	
+		SessionEnumOutput(LPWSTR usrName, LPWSTR sessName) {
+			size_t usrSz = wcslen(usrName) + 1;
+			size_t sesSz = wcslen(sessName) + 1;
+
+			UserName = new wchar_t[usrSz];
+			SessionName = new wchar_t[sesSz];
+
+			wcscpy_s(UserName, usrSz, usrName);
+			wcscpy_s(SessionName, sesSz, sessName);
+		};
+		~SessionEnumOutput() {};
+	}*PSessionEnumOutput;
 
 	typedef struct MessageDumpOutput {
 		MessageDumpOutput() {};
@@ -41,6 +58,6 @@ public:
 	}MessageDumpOutput, *PMessageDumpOutput;
 
 	std::vector<Unmanaged::MessageDumpOutput> GetResourceMessageTable(LPWSTR libName);
-	std::vector<Unmanaged::SessionEnumOutput> GetEnumeratedSession(HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
+	void GetEnumeratedSession(std::vector<Unmanaged::SessionEnumOutput> &ppOutVec, HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
 	std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
 };

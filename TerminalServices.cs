@@ -72,7 +72,8 @@ namespace WindowsUtils.TerminalServices
         No = 7,
         TryAgain = 10,
         Continue = 11,
-        TimeOut = 32000
+        TimeOut = 32000,
+        AsyncReturn = 32001
     }
     public enum SessionState : uint
     {

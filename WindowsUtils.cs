@@ -30,7 +30,6 @@ namespace WindowsUtils
             Managed unWrapper = new Managed();
             return unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), onlyActive, excludeSystemSessions);
         }
-
         public static List<Managed.wSessionEnumOutput> GetComputerSession(string computerName)
         {
             if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
@@ -49,31 +48,15 @@ namespace WindowsUtils
             Managed unWrapper = new Managed();
             return unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), false, false);
         }
-
         public static List<Managed.wSessionEnumOutput> GetComputerSession(bool onlyActive, bool excludeSystemSessions)
         {
             Managed unWrapper = new Managed();
             return unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, excludeSystemSessions);
         }
-
         public static List<Managed.wSessionEnumOutput> GetComputerSession()
         {
             Managed unWrapper = new Managed();
             return unWrapper.GetEnumeratedSession(IntPtr.Zero, false, false);
-        }
-
-        public static void SendClick()
-        {
-            //Call the imported function with the cursor's current position
-            uint X = (uint)Cursor.Position.X;
-            uint Y = (uint)Cursor.Position.Y;
-            Interop.mouse_event(
-                ((uint)Interop.MouseEvent.MOUSEEVENTF_LEFTDOWN) | ((uint)Interop.MouseEvent.MOUSEEVENTF_LEFTUP),
-                X,
-                Y,
-                0,
-                0
-            );
         }
 
         public static List<MessageBoxReturn>? InvokeMessage(string? computerName, string title, string message)
@@ -259,6 +242,19 @@ namespace WindowsUtils
             return output;
         }
 
+        public static void SendClick()
+        {
+            //Call the imported function with the cursor's current position
+            uint X = (uint)Cursor.Position.X;
+            uint Y = (uint)Cursor.Position.Y;
+            Interop.mouse_event(
+                ((uint)Interop.MouseEvent.MOUSEEVENTF_LEFTDOWN) | ((uint)Interop.MouseEvent.MOUSEEVENTF_LEFTUP),
+                X,
+                Y,
+                0,
+                0
+            );
+        }
         public static List<Managed.wMessageDumpOutput> GetResourceMessageTable(string libPath)
         {
             Managed unWrapper = new Managed();
@@ -266,7 +262,7 @@ namespace WindowsUtils
             return output;
         }
 
-        public static void WriteWarning(string warning, bool newLine = true, bool prefix = true)
+        internal static void WriteWarning(string warning, bool newLine = true, bool prefix = true)
         {
             ConsoleColor currentCollor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -284,8 +280,7 @@ namespace WindowsUtils
             
             Console.ForegroundColor = currentCollor;
         }
-
-        public static string InvokeConfirmationRequest(string message)
+        internal static string InvokeConfirmationRequest(string message)
         {
             Console.WriteLine(message + "\nDo you want to continue?");
             WriteWarning("[Y] Yes ", false, false);

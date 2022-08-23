@@ -1,10 +1,5 @@
 ﻿#include "pch.h"
 #include "Unmanaged.h"
-#include <format>
-#include <Windows.h>
-#include <string>
-#include <vector>
-#include <iostream>
 
 #ifndef UNICODE
 #define UNICODE
@@ -102,15 +97,15 @@ vector<DWORD> Unmanaged::InvokeMessage(
 		DWORD pCount;
 		BOOL enumResult;
 		BOOL mesResult;
-		PWTS_SESSION_INFO sessionInfo = (PWTS_SESSION_INFO)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WTS_SESSION_INFO));
-		enumResult = WTSEnumerateSessions(session, 0, 1, &sessionInfo, &pCount);
+		shared_ptr<PWTS_SESSION_INFO> sessInfo = make_shared<PWTS_SESSION_INFO>();
+		enumResult = WTSEnumerateSessions(session, 0, 1, &*sessInfo, &pCount);
 
 		for (DWORD i = 0; i < pCount; i++)
 		{
 			DWORD response;
 			mesResult = WTSSendMessageW(
 				session,
-				sessionInfo[i].SessionId,
+				(*sessInfo)[i].SessionId,
 				pTitle,
 				(DWORD)wcslen(pTitle) * 2,
 				pMessage,
@@ -123,7 +118,6 @@ vector<DWORD> Unmanaged::InvokeMessage(
 
 			output.push_back(response);
 		}
-		if (pCount > 0) { WTSFreeMemory(sessionInfo); }
 	}
 	else
 	{
@@ -152,39 +146,36 @@ vector<DWORD> Unmanaged::InvokeMessage(
 	return output;
 }
 
-Unmanaged::SessionEnumOutput GetOutputObject(HANDLE session, WTS_SESSION_INFO innerSes)
+Unmanaged::SessionEnumOutput GetSessionOutput(HANDLE session, WTS_SESSION_INFO info)
 {
-	wstring sessionName;
-	wstring sessUserName;
-	LPWSTR ppBuffer;
-	DWORD pBytesReturned;
-	BOOL thisResult;
-
-	thisResult = WTSQuerySessionInformation(session, innerSes.SessionId, WTSUserName, &ppBuffer, &pBytesReturned);
-
-	if (innerSes.pWinStationName == NULL) { sessionName = L""; }
-	else { sessionName = innerSes.pWinStationName; }
-
-	Unmanaged::SessionEnumOutput inner;
-	inner.SessionId = innerSes.SessionId;
-	inner.UserName = ppBuffer;
-	inner.SessionName = sessionName;
-	inner.SessionState = (Unmanaged::WtsSessionState)innerSes.State;
-
-	WTSFreeMemory(ppBuffer);
-	return inner;
+	DWORD pBytesReturned = 0;
+	LPWSTR ppBuffer = L"";
+	WTSQuerySessionInformation(session, info.SessionId, WTSUserName, &ppBuffer, &pBytesReturned);
+	
+	if (wcslen(ppBuffer) > 0) {
+		Unmanaged::SessionEnumOutput result = Unmanaged::SessionEnumOutput(ppBuffer, info.pWinStationName);
+		result.SessionId = info.SessionId;
+		result.SessionState = (Unmanaged::WtsSessionState)info.State;
+		return result;
+	}
+	else {
+		Unmanaged::SessionEnumOutput result = Unmanaged::SessionEnumOutput(L"System", info.pWinStationName);
+		result.SessionId = info.SessionId;
+		result.SessionState = (Unmanaged::WtsSessionState)info.State;
+		return result;
+	}
 }
 
- vector<Unmanaged::SessionEnumOutput> Unmanaged::GetEnumeratedSession(
+void Unmanaged::GetEnumeratedSession(
+	vector<Unmanaged::SessionEnumOutput> &ppOutVec,
 	HANDLE session = WTS_CURRENT_SERVER_HANDLE,
 	BOOL onlyActive = 0,
 	BOOL excludeSystemSessions = 0
 )
 {
-	BOOL enumResult;
+	BOOL enumResult = 0;
 	DWORD pCount = 0;
 	DWORD pLevel = 1;
-	vector<SessionEnumOutput> output;
 
 	PWTS_SESSION_INFO sessionInfo = (PWTS_SESSION_INFO)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WTS_SESSION_INFO));
 
@@ -199,9 +190,8 @@ Unmanaged::SessionEnumOutput GetOutputObject(HANDLE session, WTS_SESSION_INFO in
 			WTS_SESSION_INFO innerSes = sessionInfo[i];
 			if (innerSes.State == WTSActive)
 			{
-				Unmanaged::SessionEnumOutput inner = GetOutputObject(session, innerSes);
-				if (inner.UserName.empty()) { inner.UserName = L"System"; }
-				output.push_back(inner);
+				Unmanaged::SessionEnumOutput result = GetSessionOutput(session, innerSes);
+				ppOutVec.push_back(result);
 			}
 		}
 		break;
@@ -212,9 +202,8 @@ Unmanaged::SessionEnumOutput GetOutputObject(HANDLE session, WTS_SESSION_INFO in
 			for (DWORD i = 0; i < pCount; i++)
 			{
 				WTS_SESSION_INFO innerSes = sessionInfo[i];
-				Unmanaged::SessionEnumOutput inner = GetOutputObject(session, innerSes);
-				if (inner.UserName.empty()) { inner.UserName = L"System"; }
-				output.push_back(inner);
+				Unmanaged::SessionEnumOutput result = GetSessionOutput(session, innerSes);
+				ppOutVec.push_back(result);
 			}
 		}
 		else
@@ -222,8 +211,8 @@ Unmanaged::SessionEnumOutput GetOutputObject(HANDLE session, WTS_SESSION_INFO in
 			for (DWORD i = 0; i < pCount; i++)
 			{
 				WTS_SESSION_INFO innerSes = sessionInfo[i];
-				Unmanaged::SessionEnumOutput inner = GetOutputObject(session, innerSes);
-				if (!inner.UserName.empty()) { output.push_back(inner); }
+				Unmanaged::SessionEnumOutput result = GetSessionOutput(session, innerSes);
+				if (result.UserName != L"System") { ppOutVec.push_back(result); }
 			}
 		}
 		break;
@@ -233,5 +222,4 @@ Unmanaged::SessionEnumOutput GetOutputObject(HANDLE session, WTS_SESSION_INFO in
 
 END:
 	if (pCount > 0) { WTSFreeMemory(sessionInfo); }
-	return output;
 }
