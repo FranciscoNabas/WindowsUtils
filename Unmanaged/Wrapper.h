@@ -60,6 +60,16 @@ namespace Wrapper {
 			String^ Message;
 		};
 
+		ref class wRpcMapperOutput
+		{
+		public:
+			String^	BindingString;
+			String^ Annotation;
+
+			wRpcMapperOutput(String^ bs, String^ an) : BindingString(bs), Annotation(an) { }
+			~wRpcMapperOutput() { }
+		};
+
 		List<wSessionEnumOutput^>^ GetEnumeratedSession(IntPtr session, bool onlyActive, bool excludeSystemSessions)
 		{
 			List<wSessionEnumOutput^>^ output = gcnew List<wSessionEnumOutput^>();
@@ -123,6 +133,21 @@ namespace Wrapper {
 				output->Add(inner);
 			}
 			delete result;
+			return output;
+		}
+
+		List<wRpcMapperOutput^>^ MapRpcEndpoints()
+		{
+			List<wRpcMapperOutput^>^ output = gcnew List<wRpcMapperOutput^>();
+			std::shared_ptr<std::vector<Utilities::RpcMapperOutput>> result = std::make_shared<std::vector<Utilities::RpcMapperOutput>>();
+
+			utlPtr->MapRpcEndpoints(*result);
+
+			for (size_t i = 0; i < result->size(); i++)
+			{
+				output->Add(gcnew wRpcMapperOutput(gcnew String(result->at(i).BindingString), gcnew String(result->at(i).Annotation)));
+			}
+
 			return output;
 		}
 	};

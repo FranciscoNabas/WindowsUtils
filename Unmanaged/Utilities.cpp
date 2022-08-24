@@ -82,4 +82,37 @@ namespace Unmanaged
 
 		return output;
 	}
+
+	DWORD Utilities::MapRpcEndpoints(
+		vector<Utilities::RpcMapperOutput> &ppOutVec
+	)
+	{
+		RPC_EP_INQ_HANDLE inqContext;
+		RPC_STATUS result = 0;
+		RPC_BINDING_HANDLE bindingHandle;
+		RPC_WSTR annotation;
+		RPC_WSTR stringBinding;
+
+		result = RpcMgmtEpEltInqBegin(NULL, RPC_C_EP_ALL_ELTS, 0, 0, 0, &inqContext);
+		if (result != RPC_S_OK) { return result; }
+
+		do
+		{
+			result = RpcMgmtEpEltInqNextW(inqContext, NULL, &bindingHandle, NULL, &annotation);
+			if (result != 0 || result == RPC_X_NO_MORE_ENTRIES) { break; }
+
+			result = RpcBindingToStringBindingW(bindingHandle, &stringBinding);
+			if (result != 0) { break; }
+
+			ppOutVec.push_back(Utilities::RpcMapperOutput((LPWSTR)stringBinding, (LPWSTR)annotation));
+
+			RpcStringFree(&annotation);
+			RpcStringFree(&stringBinding);
+			RpcBindingFree(&bindingHandle);
+
+		} while (result != RPC_X_NO_MORE_ENTRIES);
+
+		result = RpcMgmtEpEltInqDone(&inqContext);
+		return result;
+	}
 }

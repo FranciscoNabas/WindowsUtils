@@ -242,6 +242,12 @@ namespace WindowsUtils
             return output;
         }
 
+        public static List<Managed.wRpcMapperOutput> MapRpcEndpoints()
+        {
+            Managed unWrapper = new Managed();
+            return unWrapper.MapRpcEndpoints();
+        }
+
         public static void SendClick()
         {
             //Call the imported function with the cursor's current position
