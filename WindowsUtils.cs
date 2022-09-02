@@ -13,7 +13,7 @@ namespace WindowsUtils
     {
         private static TerminalServices.Session sessionInfo = new TerminalServices.Session();
 
-        public static List<Managed.wSessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
+        public static List<Managed.SessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
         {
             if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName)) {
                 sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
@@ -30,7 +30,7 @@ namespace WindowsUtils
             Managed unWrapper = new Managed();
             return unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), onlyActive, excludeSystemSessions);
         }
-        public static List<Managed.wSessionEnumOutput> GetComputerSession(string computerName)
+        public static List<Managed.SessionEnumOutput> GetComputerSession(string computerName)
         {
             if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
             {
@@ -48,21 +48,21 @@ namespace WindowsUtils
             Managed unWrapper = new Managed();
             return unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), false, false);
         }
-        public static List<Managed.wSessionEnumOutput> GetComputerSession(bool onlyActive, bool excludeSystemSessions)
+        public static List<Managed.SessionEnumOutput> GetComputerSession(bool onlyActive, bool excludeSystemSessions)
         {
             Managed unWrapper = new Managed();
             return unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, excludeSystemSessions);
         }
-        public static List<Managed.wSessionEnumOutput> GetComputerSession()
+        public static List<Managed.SessionEnumOutput> GetComputerSession()
         {
             Managed unWrapper = new Managed();
             return unWrapper.GetEnumeratedSession(IntPtr.Zero, false, false);
         }
 
-        public static List<MessageBoxReturn>? InvokeMessage(string? computerName, string title, string message)
+        public static List<MessageBoxReturn>? InvokeMessage(string title, string message, bool confirm = true)
         {
-            List<MessageBoxReturn> output = new List<MessageBoxReturn>();
-            if (string.IsNullOrEmpty(computerName))
+            List<MessageBoxReturn> output = new();
+            if (confirm)
             {
                 string input = InvokeConfirmationRequest("This will send the message to all sessions on this computer, including disconnected ones.");
                 if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase)) { return null; }
@@ -75,8 +75,43 @@ namespace WindowsUtils
             }
             else
             {
+                Managed unWrapper = new Managed();
+                List<int> result = unWrapper.InvokeMessage(IntPtr.Zero, null, title, message, 0, 0, false);
+                result.ForEach(x => output.Add((MessageBoxReturn)x));
+            }
+            
+            return output;
+        }
+        public static List<MessageBoxReturn>? InvokeMessage(string? computerName, string title, string message, bool confirm = true)
+        {
+            List<MessageBoxReturn> output = new();
+            if (string.IsNullOrEmpty(computerName))
+            {
+                if (confirm)
+                {
+                    string input = InvokeConfirmationRequest("This will send the message to all sessions on this computer, including disconnected ones.");
+                    if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase))
+                        return null;
+                    else
+                    {
+                        Managed unWrapper = new Managed();
+                        List<int> result = unWrapper.InvokeMessage(IntPtr.Zero, null, title, message, 0, 0, false);
+                        result.ForEach(x => output.Add((MessageBoxReturn)x));
+                    }
+                }
+                else
+                {
+                    Managed unWrapper = new Managed();
+                    List<int> result = unWrapper.InvokeMessage(IntPtr.Zero, null, title, message, 0, 0, false);
+                    result.ForEach(x => output.Add((MessageBoxReturn)x));
+                }
+                
+            }
+            else
+            {
                 string input = InvokeConfirmationRequest("This will send the message to all sessions on the computer " + computerName + ".");
-                if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase)) { return null; }
+                if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase))
+                    return null;
                 else
                 {
                     if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
@@ -100,26 +135,60 @@ namespace WindowsUtils
             
             return output;
         }
-        public static List<MessageBoxReturn>? InvokeMessage(string? computerName, string title, string message, string[] style, int timeout, bool wait)
+        public static List<MessageBoxReturn>? InvokeMessage(string? computerName, string title, string message, string[] style, int timeout, bool wait, bool confirm = true)
         {
             List<MessageBoxReturn> output = new List<MessageBoxReturn>();
             uint unStyle = MessageBoxOption.MbOptionsResolver(style);
 
             if (string.IsNullOrEmpty(computerName))
             {
-                string input = InvokeConfirmationRequest("This will send the message to all sessions on this computer, including disconnected ones.");
-                if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase)) { return null; }
+                if (confirm)
+                {
+                    string input = InvokeConfirmationRequest("This will send the message to all sessions on this computer, including disconnected ones.");
+                    if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase))
+                        return null;
+                    else
+                    {
+                        Managed unWrapper = new Managed();
+                        List<int> result = unWrapper.InvokeMessage(IntPtr.Zero, null, title, message, unStyle, timeout, wait);
+                        result.ForEach(x => output.Add((MessageBoxReturn)x));
+                    }
+                }
                 else
                 {
                     Managed unWrapper = new Managed();
                     List<int> result = unWrapper.InvokeMessage(IntPtr.Zero, null, title, message, unStyle, timeout, wait);
                     result.ForEach(x => output.Add((MessageBoxReturn)x));
                 }
+                
             }
             else
             {
-                string input = InvokeConfirmationRequest("This will send the message to all sessions on the computer " + computerName + ".");
-                if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase)) { return null; }
+                if (confirm)
+                {
+                    string input = InvokeConfirmationRequest("This will send the message to all sessions on the computer " + computerName + ".");
+                    if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase))
+                        return null;
+                    else
+                    {
+                        if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
+                        {
+                            sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                            sessionInfo.ComputerName = computerName;
+                        }
+                        else
+                        {
+                            if (sessionInfo.ComputerName != computerName)
+                            {
+                                sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                                sessionInfo.ComputerName = computerName;
+                            }
+                        }
+                        Managed unWrapper = new Managed();
+                        List<int> result = unWrapper.InvokeMessage(sessionInfo.SessionHandle.ToIntPtr(), null, title, message, unStyle, timeout, wait);
+                        result.ForEach(x => output.Add((MessageBoxReturn)x));
+                    }
+                }
                 else
                 {
                     if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
@@ -242,7 +311,7 @@ namespace WindowsUtils
             return output;
         }
 
-        public static List<Managed.wRpcMapperOutput> MapRpcEndpoints()
+        public static List<Managed.RpcMapperOutput> MapRpcEndpoints()
         {
             Managed unWrapper = new Managed();
             return unWrapper.MapRpcEndpoints();
@@ -261,10 +330,33 @@ namespace WindowsUtils
                 0
             );
         }
-        public static List<Managed.wMessageDumpOutput> GetResourceMessageTable(string libPath)
+        public static List<Managed.MessageDumpOutput> GetResourceMessageTable(string libPath)
         {
             Managed unWrapper = new Managed();
-            List<Managed.wMessageDumpOutput> output = unWrapper.GetResourceMessageTable(libPath);
+            List<Managed.MessageDumpOutput> output = unWrapper.GetResourceMessageTable(libPath);
+            return output;
+        }
+
+        public static string GetFormatedError(int errorCode)
+        {
+            Managed unWrapper = new Managed();
+            return unWrapper.GetFormatedError(errorCode);
+        }
+        public static string GetFormatedWin32Error()
+        {
+            Managed unWrapper = new Managed();
+            return unWrapper.GetFormatedWin32Error();
+        }
+        public static string GetFormatedWSError()
+        {
+            Managed unWrapper = new Managed();
+            return unWrapper.GetFormatedWSError();
+        }
+
+        public static List<Managed.FileHandleOutput>? GetProcessFileHandle(string fileName)
+        {
+            Managed unWrapper = new Managed();
+            List<Managed.FileHandleOutput> output = unWrapper.GetProcessFileHandle(fileName);
             return output;
         }
 

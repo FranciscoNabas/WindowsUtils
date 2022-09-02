@@ -10,6 +10,8 @@
 #include <memory>
 #include <fwpmu.h>
 #include <Rpc.h>
+#include <WinSock2.h>
+#include <RestartManager.h>
 
 #ifndef UNICODE
 #define UNICODE
@@ -26,6 +28,26 @@ namespace Unmanaged
 			std::wstring	Id;
 			std::wstring	Message;
 		}MessageDumpOutput, * PMessageDumpOutput;
+
+		typedef struct FileHandleOutput {
+			RM_APP_TYPE	AppType;
+			DWORD		ProcessId;
+			LPWSTR		AppName;
+			LPWSTR		ImagePath;
+
+			FileHandleOutput() { };
+			FileHandleOutput(RM_APP_TYPE appType, DWORD procId, LPWSTR appName)
+				: AppType(appType), ProcessId(procId)
+			{
+				size_t nameSz = wcslen(appName) + 1;
+				
+				AppName = new wchar_t[nameSz];
+				wcscpy_s(AppName, nameSz, appName);
+				
+				ImagePath = new WCHAR[MAX_PATH];
+			}
+			~FileHandleOutput() { }
+		}FileHandleOutput, * PFileHandleOutput;
 
 		typedef struct RpcMapperOutput {
 			LPWSTR	BindingString;
@@ -46,6 +68,10 @@ namespace Unmanaged
 
 		std::vector<Utilities::MessageDumpOutput> Utilities::GetResourceMessageTable(LPTSTR libName);
 		DWORD MapRpcEndpoints(std::vector<Utilities::RpcMapperOutput>& ppOutVec);
+		LPWSTR GetFormatedWSError();
+		LPWSTR GetFormatedWin32Error();
+		LPWSTR GetFormatedError(DWORD errorCode);
+		DWORD GetProcessFileHandle(std::vector<FileHandleOutput>& ppvecfho, PCWSTR fileName);
 	};
 
 	namespace WindowsTerminalServices
