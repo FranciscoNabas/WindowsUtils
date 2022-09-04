@@ -4,6 +4,7 @@
 #include <WtsApi32.h>
 #include <string>
 #include <vector>
+#include <map>
 #include <stdio.h>
 #include <Windows.h>
 #include <iostream>
@@ -12,6 +13,7 @@
 #include <Rpc.h>
 #include <WinSock2.h>
 #include <RestartManager.h>
+#include <MsiQuery.h>
 
 #ifndef UNICODE
 #define UNICODE
@@ -53,6 +55,8 @@ namespace Unmanaged
 		LPWSTR GetFormatedWin32Error();
 		LPWSTR GetFormatedError(DWORD errorCode);
 		DWORD GetProcessFileHandle(std::vector<FileHandleOutput>& ppvecfho, PCWSTR fileName);
+		DWORD GetMsiProperties(std::map<LPWSTR, LPWSTR>& ppmapout, LPWSTR fileName);
+		DWORD GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage);
 	};
 
 	namespace WindowsTerminalServices

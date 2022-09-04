@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Linq;
+using System.Management.Automation;
 using WindowsUtils.Abstraction;
 using WindowsUtils.TerminalServices;
 using Wrapper;
@@ -358,6 +359,12 @@ namespace WindowsUtils
             Managed unWrapper = new Managed();
             List<Managed.FileHandleOutput> output = unWrapper.GetProcessFileHandle(fileName);
             return output;
+        }
+
+        public static PSObject GetMsiProperties(string fileName)
+        {
+            Managed unWrapper = new Managed();
+            return unWrapper.GetMsiProperties(fileName);
         }
 
         internal static void WriteWarning(string warning, bool newLine = true, bool prefix = true)

@@ -8,6 +8,7 @@
 #endif // UNICODE
 
 #define CHECKDWRESULT(result, err) if (result != ERROR_SUCCESS) { err = GetLastError(); goto CLEANUP; }
+#define IFFAILRETURNDW(result) if (ERROR_SUCCESS != result) { return result; }
 
 using namespace std;
 
@@ -24,6 +25,86 @@ namespace Unmanaged
 		vswprintf_s(pwref, len, format, args);
 		
 		va_end(args);
+	}
+
+	DWORD Utilities::GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage)
+	{
+		UINT uiStatus = 0;
+		DWORD extErrBuffSize = 0;
+
+		// The MSI engine disposes PMSIHANDLE objects as they go out of scope.
+		// With MSIHANDLE, you have to call MsiCloseHandle.
+		PMSIHANDLE hLastErr = MsiGetLastErrorRecord();
+		
+		if (hLastErr)
+		{
+			uiStatus = MsiFormatRecord(NULL, hLastErr, L"", &extErrBuffSize);
+			IFFAILRETURNDW(uiStatus);
+
+			extErrBuffSize++;
+			pErrorMessage = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * extErrBuffSize));
+			if (nullptr == pErrorMessage)
+				return ERROR_NOT_ENOUGH_MEMORY;
+
+			uiStatus = MsiFormatRecord(NULL, hLastErr, pErrorMessage, &extErrBuffSize);
+
+			return uiStatus;
+		}
+	}
+
+	DWORD Utilities::GetMsiProperties(map<LPWSTR, LPWSTR>& ppmapout, LPWSTR fileName)
+	{
+		MSIHANDLE pDatabase;
+		MSIHANDLE pView;
+		MSIHANDLE pRecord;
+		UINT uiReturn = 0;
+		DWORD dwRecValBuffer = 0;
+		LPWSTR pRecProperty;
+		LPWSTR pRecValue;
+		
+		uiReturn = MsiOpenDatabase(fileName, L"MSIDBOPEN_READONLY", &pDatabase);
+		if (ERROR_SUCCESS == uiReturn)
+		{
+			uiReturn = MsiDatabaseOpenView(pDatabase, L"Select Property, Value From Property", &pView);
+			if (ERROR_SUCCESS == uiReturn)
+			{
+				uiReturn = MsiViewExecute(pView, NULL);
+				if (ERROR_SUCCESS == uiReturn)
+				{
+					do
+					{
+						uiReturn = MsiViewFetch(pView, &pRecord);
+						IFFAILRETURNDW(uiReturn);
+
+						// First 'column'. Property name.
+						//Calculating buffer size.
+						uiReturn = MsiRecordGetString(pRecord, 1, 0, &dwRecValBuffer);
+						IFFAILRETURNDW(uiReturn);
+
+						// Getting property name.
+						dwRecValBuffer++;
+						pRecProperty = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * dwRecValBuffer));
+						uiReturn = MsiRecordGetString(pRecord, 1, pRecProperty, &dwRecValBuffer);
+						IFFAILRETURNDW(uiReturn);
+
+						// Second 'column'. Value.
+						dwRecValBuffer = 0;
+						uiReturn = MsiRecordGetString(pRecord, 2, 0, &dwRecValBuffer);
+						IFFAILRETURNDW(uiReturn);
+
+						dwRecValBuffer++;
+						pRecValue = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * dwRecValBuffer));
+						uiReturn = MsiRecordGetString(pRecord, 2, pRecValue, &dwRecValBuffer);
+						IFFAILRETURNDW(uiReturn);
+
+						ppmapout.emplace(pRecProperty, pRecValue);
+
+					} while (pRecord != 0);
+				}
+			}
+		}
+
+		return uiReturn;
 	}
 
 	DWORD Utilities::GetProcessFileHandle(vector<Utilities::FileHandleOutput>& ppvecfho, PCWSTR fileName)

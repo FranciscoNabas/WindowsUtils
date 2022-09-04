@@ -19,6 +19,7 @@
 using namespace System;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
+using namespace System::Management::Automation;
 using namespace Unmanaged;
 using namespace Unmanaged::WindowsTerminalServices;
 
@@ -235,6 +236,33 @@ namespace Wrapper {
 			}
 
 			wFileName = nullptr;
+			return output;
+		}
+	
+		PSObject^ GetMsiProperties(String^ fileName)
+		{
+			PSObject^ output = gcnew PSObject();
+			std::shared_ptr<std::map<LPWSTR, LPWSTR>> ppresult = std::make_shared<std::map<LPWSTR, LPWSTR>>();
+			pin_ptr<const wchar_t> wfilename = PtrToStringChars(fileName);
+
+			DWORD result = utlPtr->GetMsiProperties(*ppresult, (LPWSTR)wfilename);
+			if (ERROR_SUCCESS != result && ERROR_NO_MORE_ITEMS != result)
+			{
+				wfilename = nullptr;
+				LPWSTR pextmsierr;
+				DWORD inResu = utlPtr->GetMsiExtendedErrorMessage(pextmsierr);
+				if (ERROR_SUCCESS == inResu)
+					throw gcnew SystemException(gcnew String(pextmsierr));
+				else
+					throw gcnew SystemException(GetFormatedError(result));
+			}
+
+			std::map<LPWSTR, LPWSTR>::iterator itr;
+			for (itr = ppresult->begin(); itr != ppresult->end(); itr++)
+			{
+				output->Members->Add(gcnew PSNoteProperty(gcnew String(itr->first), gcnew String(itr->second)));
+			}
+
 			return output;
 		}
 	};
