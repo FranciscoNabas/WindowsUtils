@@ -140,22 +140,30 @@ namespace Wrapper {
 
 		List<MessageDumpOutput^>^ GetResourceMessageTable(String^ libPath)
 		{
+			SharedVecPtr(Utilities::MessageDumpOutput) ppResult = MakeVecPtr(Utilities::MessageDumpOutput);
 			List<MessageDumpOutput^>^ output = gcnew List<MessageDumpOutput^>();
-			std::vector<Utilities::MessageDumpOutput>* result = new std::vector<Utilities::MessageDumpOutput>();
 			pin_ptr<const wchar_t> wLibPath = PtrToStringChars(libPath);
 
-			*result = utlPtr->GetResourceMessageTable((LPWSTR)wLibPath);
-			for (size_t i = 0; i < result->size(); i++)
+			DWORD result = utlPtr->GetResourceMessageTable(*ppResult, (LPWSTR)wLibPath);
+
+			if (result != ERROR_SUCCESS)
 			{
-				Utilities::MessageDumpOutput single = result->at(i);
+				wLibPath = nullptr;
+				throw gcnew SystemException(GetFormatedError(result));
+			}
+
+			for (size_t i = 0; i < ppResult->size(); i++)
+			{
+				Utilities::MessageDumpOutput single = ppResult->at(i);
 				MessageDumpOutput^ inner = gcnew MessageDumpOutput();
 
-				inner->Id = std::stoll(single.Id, nullptr, 16);
-				inner->Message = gcnew String(single.Message.c_str());
+				inner->Id = single.Id;
+				inner->Message = gcnew String(single.Message);
 
 				output->Add(inner);
 			}
-			delete result;
+
+			wLibPath = nullptr;
 			return output;
 		}
 
@@ -226,6 +234,7 @@ namespace Wrapper {
 				output->Add(single);
 			}
 
+			wFileName = nullptr;
 			return output;
 		}
 	};

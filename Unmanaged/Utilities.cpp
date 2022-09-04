@@ -13,21 +13,17 @@ using namespace std;
 
 namespace Unmanaged
 {
-	wchar_t* PrintBuffer(wchar_t const* const format, ...)
+	void PrintBuffer(LPWSTR& pwref, wchar_t const* const format, ...)
 	{
 		va_list args;
 		int len;
-		wchar_t* _buff;
-
 		va_start(args, format);
+		
 		len = _vscwprintf(format, args) + 1;
-		_buff = (wchar_t*)malloc(len * sizeof(wchar_t));
-		if (NULL != _buff)
-		{
-			vswprintf_s(_buff, len, format, args);
-		}
+		pwref = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * len));
+		vswprintf_s(pwref, len, format, args);
+		
 		va_end(args);
-		return _buff;
 	}
 
 	DWORD Utilities::GetProcessFileHandle(vector<Utilities::FileHandleOutput>& ppvecfho, PCWSTR fileName)
@@ -39,7 +35,8 @@ namespace Unmanaged
 		DWORD rebReason;
 		DWORD err = 0;
 		DWORD res = 0;
-		
+		size_t appNameSize;
+		Utilities::FileHandleOutput single;
 		
 		if (!SUCCEEDED(RmStartSession(&session, 0, szSessionKey)))
 		{
@@ -64,7 +61,7 @@ namespace Unmanaged
 			return err;
 		}
 
-		RM_PROCESS_INFO* pprocInfo = new RM_PROCESS_INFO[nProcInfoNeeded];
+		RM_PROCESS_INFO* pprocInfo = (RM_PROCESS_INFO*)LocalAlloc(LPTR, (sizeof(RM_PROCESS_INFO) * nProcInfoNeeded));
 		nProcInfo = nProcInfoNeeded;
 
 		// Call to get the RM_PROCESS_INFO objects
@@ -74,11 +71,17 @@ namespace Unmanaged
 			err = GetLastError();
 			return err;
 		}
-		SIZE_T ppInfoSize = sizeof(*pprocInfo) / sizeof(RM_PROCESS_INFO);
-
-		for (SIZE_T i = 0; i < ppInfoSize; i++)
+		
+		for (UINT i = 0; i < nProcInfo; i++)
 		{
-			Utilities::PFileHandleOutput pSingle = new Utilities::FileHandleOutput(pprocInfo[i].ApplicationType, pprocInfo[i].Process.dwProcessId, pprocInfo[i].strAppName);
+			appNameSize = wcslen(pprocInfo[i].strAppName) + 1;
+			
+			single.AppType = pprocInfo[i].ApplicationType;
+			single.ProcessId = pprocInfo[i].Process.dwProcessId;
+			single.AppName = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * appNameSize));
+			single.ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
+
+			wcscpy_s(single.AppName, appNameSize, pprocInfo[i].strAppName);
 
 			HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pprocInfo[i].Process.dwProcessId);
 			if (INVALID_HANDLE_VALUE != hProcess)
@@ -87,18 +90,16 @@ namespace Unmanaged
 				if (GetProcessTimes(hProcess, &ftCreate, &ftExit, &ftKernel, &ftUser) && CompareFileTime(&pprocInfo[i].Process.ProcessStartTime, &ftCreate) == 0)
 				{
 					DWORD cch = MAX_PATH;
-					if (!QueryFullProcessImageNameW(hProcess, 0, pSingle->ImagePath, &cch))
-						pSingle->ImagePath = L"";
+					if (!QueryFullProcessImageNameW(hProcess, 0, single.ImagePath, &cch))
+						single.ImagePath = L"";
 				}
 				CloseHandle(hProcess);
 			}
 
-			ppvecfho.push_back(*pSingle);
-
-			delete pSingle;
+			ppvecfho.push_back(single);
 		}
 		
-		if (nullptr != pprocInfo) { delete[] pprocInfo; }
+		if (nullptr != pprocInfo) { LocalFree(pprocInfo); }
 	
 		return err;
 	}
@@ -146,10 +147,11 @@ namespace Unmanaged
 		return inter;
 	}
 
-	vector<Utilities::MessageDumpOutput> Utilities::GetResourceMessageTable(LPTSTR libName)
+	DWORD Utilities::GetResourceMessageTable(vector<Utilities::MessageDumpOutput>& ppvecmdo, LPTSTR libName)
 	{
-		DWORD err;
-		vector<Utilities::MessageDumpOutput> output;
+		DWORD err = 0;
+		Utilities::MessageDumpOutput inner;
+
 		HMODULE hDll = LoadLibraryEx(libName, NULL, LOAD_LIBRARY_AS_DATAFILE);
 		if (hDll != NULL)
 		{
@@ -171,26 +173,15 @@ namespace Unmanaged
 
 						for (DWORD id = lowId; id <= highId; id++)
 						{
-							Utilities::PMessageDumpOutput inner;
-							inner = (Utilities::PMessageDumpOutput)LocalAlloc(LMEM_ZEROINIT, sizeof(Utilities::MessageDumpOutput));
 							PMESSAGE_RESOURCE_ENTRY messageEntry =
 								(PMESSAGE_RESOURCE_ENTRY)((PBYTE)messageTable +
 									(DWORD)messageBlock[block].OffsetToEntries + offset);
 
-							if (inner)
-							{
-								wchar_t* buffer = PrintBuffer(L"%08X", id);
-								inner->Id = wstring(buffer);
-								free(buffer);
+							inner.Id = id;
+							PrintBuffer(inner.Message, L"%s", messageEntry->Text);
 
-								buffer = PrintBuffer(L"%s", messageEntry->Text);
-								inner->Message = wstring(buffer);
-								free(buffer);
-
-								output.push_back(*inner);
-								LocalFree(inner);
-								offset += messageEntry->Length;
-							}
+							ppvecmdo.push_back(inner);
+							offset += messageEntry->Length;
 						}
 					}
 				}
@@ -199,31 +190,43 @@ namespace Unmanaged
 		}
 		else { err = GetLastError(); }
 
-		return output;
+		return err;
 	}
 
-	DWORD Utilities::MapRpcEndpoints(
-		vector<Utilities::RpcMapperOutput> &ppOutVec
-	)
+	DWORD Utilities::MapRpcEndpoints(vector<Utilities::RpcMapperOutput> &ppOutVec)
 	{
 		RPC_EP_INQ_HANDLE inqContext;
 		RPC_STATUS result = 0;
 		RPC_BINDING_HANDLE bindingHandle;
 		RPC_WSTR annotation;
 		RPC_WSTR stringBinding;
+		size_t sbLen;
+		size_t annLen;
 
 		result = RpcMgmtEpEltInqBegin(NULL, RPC_C_EP_ALL_ELTS, 0, 0, 0, &inqContext);
 		if (result != RPC_S_OK) { return result; }
 
 		do
 		{
+			Utilities::RpcMapperOutput inner;
 			result = RpcMgmtEpEltInqNextW(inqContext, NULL, &bindingHandle, NULL, &annotation);
-			if (result != 0 || result == RPC_X_NO_MORE_ENTRIES) { break; }
+			if (result != 0 || result == RPC_X_NO_MORE_ENTRIES)
+				break;
 
 			result = RpcBindingToStringBindingW(bindingHandle, &stringBinding);
-			if (result != 0) { break; }
+			if (result != 0)
+				break;
 
-			ppOutVec.push_back(Utilities::RpcMapperOutput((LPWSTR)stringBinding, (LPWSTR)annotation));
+			sbLen = wcslen((const wchar_t*)stringBinding) + 1;
+			annLen = wcslen((const wchar_t*)annotation) + 1;
+
+			inner.BindingString = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * sbLen));
+			inner.Annotation = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * annLen));
+
+			wcscpy_s(inner.BindingString, sbLen, (const wchar_t*)stringBinding);
+			wcscpy_s(inner.Annotation, annLen, (const wchar_t*)annotation);
+
+			ppOutVec.push_back(inner);
 
 			RpcStringFree(&annotation);
 			RpcStringFree(&stringBinding);

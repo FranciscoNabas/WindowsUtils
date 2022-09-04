@@ -25,8 +25,8 @@ namespace Unmanaged
 	public:
 		typedef struct MessageDumpOutput {
 			MessageDumpOutput() {};
-			std::wstring	Id;
-			std::wstring	Message;
+			DWORD	Id;
+			LPWSTR	Message;
 		}MessageDumpOutput, * PMessageDumpOutput;
 
 		typedef struct FileHandleOutput {
@@ -36,16 +36,6 @@ namespace Unmanaged
 			LPWSTR		ImagePath;
 
 			FileHandleOutput() { };
-			FileHandleOutput(RM_APP_TYPE appType, DWORD procId, LPWSTR appName)
-				: AppType(appType), ProcessId(procId)
-			{
-				size_t nameSz = wcslen(appName) + 1;
-				
-				AppName = new wchar_t[nameSz];
-				wcscpy_s(AppName, nameSz, appName);
-				
-				ImagePath = new WCHAR[MAX_PATH];
-			}
 			~FileHandleOutput() { }
 		}FileHandleOutput, * PFileHandleOutput;
 
@@ -53,20 +43,11 @@ namespace Unmanaged
 			LPWSTR	BindingString;
 			LPWSTR	Annotation;
 
-			RpcMapperOutput(LPWSTR binStr, LPWSTR ann) {
-				size_t binSz = wcslen(binStr) + 1;
-				size_t annSz = wcslen(ann) + 1;
-
-				BindingString = new wchar_t[binSz];
-				Annotation = new wchar_t[annSz];
-
-				wcscpy_s(BindingString, binSz, binStr);
-				wcscpy_s(Annotation, annSz, ann);
-			}
+			RpcMapperOutput() { }
 			~RpcMapperOutput() { }
 		}RpcMapperOutput, *PRpcMapperOutput;
 
-		std::vector<Utilities::MessageDumpOutput> Utilities::GetResourceMessageTable(LPTSTR libName);
+		DWORD Utilities::GetResourceMessageTable(std::vector<Utilities::MessageDumpOutput>& ppvecmdo, LPTSTR libName);
 		DWORD MapRpcEndpoints(std::vector<Utilities::RpcMapperOutput>& ppOutVec);
 		LPWSTR GetFormatedWSError();
 		LPWSTR GetFormatedWin32Error();
