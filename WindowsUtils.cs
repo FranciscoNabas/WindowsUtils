@@ -12,7 +12,7 @@ namespace WindowsUtils
 {
     public class Utilities
     {
-        private static TerminalServices.Session sessionInfo = new TerminalServices.Session();
+        private static Session sessionInfo = new();
 
         public static List<Managed.SessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
         {
