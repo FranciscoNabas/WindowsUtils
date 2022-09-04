@@ -60,7 +60,7 @@ namespace WindowsUtils
             return unWrapper.GetEnumeratedSession(IntPtr.Zero, false, false);
         }
 
-        public static List<MessageBoxReturn>? InvokeMessage(string title, string message, bool confirm = true)
+        public static List<MessageBoxReturn>? InvokeRemoteMessage(string title, string message, bool confirm = true)
         {
             List<MessageBoxReturn> output = new();
             if (confirm)
@@ -83,7 +83,7 @@ namespace WindowsUtils
             
             return output;
         }
-        public static List<MessageBoxReturn>? InvokeMessage(string? computerName, string title, string message, bool confirm = true)
+        public static List<MessageBoxReturn>? InvokeRemoteMessage(string? computerName, string title, string message, bool confirm = true)
         {
             List<MessageBoxReturn> output = new();
             if (string.IsNullOrEmpty(computerName))
@@ -136,7 +136,7 @@ namespace WindowsUtils
             
             return output;
         }
-        public static List<MessageBoxReturn>? InvokeMessage(string? computerName, string title, string message, string[] style, int timeout, bool wait, bool confirm = true)
+        public static List<MessageBoxReturn>? InvokeRemoteMessage(string? computerName, string title, string message, string[] style, int timeout, bool wait, bool confirm = true)
         {
             List<MessageBoxReturn> output = new List<MessageBoxReturn>();
             uint unStyle = MessageBoxOption.MbOptionsResolver(style);
@@ -213,7 +213,7 @@ namespace WindowsUtils
 
             return output;
         }
-        public static List<MessageBoxReturn>? InvokeMessage(string? computerName, int[] sessionId, string title, string message)
+        public static List<MessageBoxReturn>? InvokeRemoteMessage(string? computerName, int[] sessionId, string title, string message)
         {
             List<MessageBoxReturn> output = new List<MessageBoxReturn>();
             if (string.IsNullOrEmpty(computerName))
@@ -244,7 +244,7 @@ namespace WindowsUtils
 
             return output;
         }
-        public static List<MessageBoxReturn>? InvokeMessage(string? computerName, int[] sessionId, string title, string message, MessageBoxOption[] style, int timeout, bool wait)
+        public static List<MessageBoxReturn>? InvokeRemoteMessage(string? computerName, int[] sessionId, string title, string message, MessageBoxOption[] style, int timeout, bool wait)
         {
             List<MessageBoxReturn> output = new List<MessageBoxReturn>();
             uint unStyle = 0;
@@ -278,7 +278,7 @@ namespace WindowsUtils
 
             return output;
         }
-        public static List<MessageBoxReturn>? InvokeMessage(string? computerName, int[] sessionId, string title, string message, string[] style, int timeout, bool wait)
+        public static List<MessageBoxReturn>? InvokeRemoteMessage(string? computerName, int[] sessionId, string title, string message, string[] style, int timeout, bool wait)
         {
             List<MessageBoxReturn> output = new List<MessageBoxReturn>();
             uint unStyle = MessageBoxOption.MbOptionsResolver(style);
