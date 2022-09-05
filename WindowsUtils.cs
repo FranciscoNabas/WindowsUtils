@@ -338,17 +338,17 @@ namespace WindowsUtils
             return output;
         }
 
-        public static string GetFormatedError(int errorCode)
+        public static string GetFormattedError(int errorCode)
         {
             Managed unWrapper = new Managed();
             return unWrapper.GetFormatedError(errorCode);
         }
-        public static string GetFormatedWin32Error()
+        public static string GetFormattedWin32Error()
         {
             Managed unWrapper = new Managed();
             return unWrapper.GetFormatedWin32Error();
         }
-        public static string GetFormatedWSError()
+        public static string GetFormattedWSError()
         {
             Managed unWrapper = new Managed();
             return unWrapper.GetFormatedWSError();
