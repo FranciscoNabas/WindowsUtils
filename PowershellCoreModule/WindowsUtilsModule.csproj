@@ -16,4 +16,13 @@
     <ProjectReference Include="..\WindowsUtils.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="WindowsUtils.dll-Help.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="WindowsUtilsModule.psd1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
