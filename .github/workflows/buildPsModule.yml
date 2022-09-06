@@ -19,7 +19,7 @@ jobs:
         dotnet-version: 6.0.x
     - name: Restore dependencies
       working-directory: .\Module\src
-      run: dotnet restore
+      run: dotnet restore WindowsUtilsModule.csproj
     - name: Build
       working-directory: .\Module\src
-      run: dotnet build --no-restore
+      run: dotnet build WindowsUtilsModule.csproj --no-restore
