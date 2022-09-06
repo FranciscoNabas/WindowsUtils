@@ -17,9 +17,12 @@ jobs:
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.x
-    - name: Restore dependencies
-      working-directory: .\Module\src
-      run: dotnet restore WindowsUtilsModule.csproj
-    - name: Build
-      working-directory: .\Module\src
-      run: dotnet build WindowsUtilsModule.csproj --no-restore
+    - name: Build and Compress
+      run: .\Module\src\Build.ps1
+    - name: Automatic Releases
+      uses: marvinpinto/action-automatic-releases@v1.2.1
+      with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          title: "WindowsUtils PowerShell Module"
+          files: WindowsUtilsModule.zip
