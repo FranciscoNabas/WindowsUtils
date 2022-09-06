@@ -7,20 +7,27 @@
     <Version>1.1.0</Version>
     <Authors>UncleCisco</Authors>
     <Platforms>AnyCPU;x64</Platforms>
+    <AssemblyName>WindowsUtilsPowerShell</AssemblyName>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <BaseIntermediateOutputPath />
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="WindowsUtilsPowerShell.dll-Help.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WindowsUtilsPowerShell.psd1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Management.Automation" Version="7.2.6" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="WindowsUtils">
-      <HintPath>..\..\bin\Release\WindowsUtils.dll</HintPath>
-    </Reference>
-    <Reference Include="Wrapper">
-      <HintPath>..\..\bin\Release\Wrapper.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\..\Unmanaged\Unmanaged.vcxproj" />
+    <ProjectReference Include="..\..\WindowsUtils.csproj" />
   </ItemGroup>
-
 
 </Project>
