@@ -22,4 +22,18 @@ jobs:
       run: dotnet restore WindowsUtilsModule.csproj
     - name: Build
       working-directory: .\Module\src
-      run: dotnet build WindowsUtilsModule.csproj --no-restore
+      run: dotnet build WindowsUtilsModule.csproj --arch x64 --configuration Release --no-restore
+    - name: Automatic Releases
+      uses: marvinpinto/action-automatic-releases@v1.2.1
+      with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          title: "PowerShell Module"
+          files: |
+            LICENSE
+            Module\src\bin\Release\net6.0\win-x64\WindowsUtils.dll
+            Module\src\bin\Release\net6.0\win-x64\WindowsUtilsPowerShell.dll
+            Module\src\bin\Release\net6.0\win-x64\WindowsUtilsPowerShell.dll-Help.xml
+            Module\src\bin\Release\net6.0\win-x64\WindowsUtilsPowerShell.psd1
+            Module\src\bin\Release\net6.0\win-x64\Wrapper.dll
+            
