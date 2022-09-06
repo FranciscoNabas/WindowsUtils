@@ -13,9 +13,7 @@
 # Built Visual Studio Code Extensions
 *.vsix
 
-# obj and bin
-obj
-obj/*
+# bin
 bin
 bin/*
 

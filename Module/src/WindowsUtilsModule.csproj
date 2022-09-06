@@ -7,16 +7,16 @@
     <Version>1.1.0</Version>
     <Authors>UncleCisco</Authors>
     <Platforms>x64</Platforms>
-    <AssemblyName>WindowsUtilsPowerShell</AssemblyName>
+    <AssemblyName></AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <BaseIntermediateOutputPath />
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="WindowsUtilsPowerShell.dll-Help.xml">
+    <Content Include="WindowsUtilsModule.dll-Help.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="WindowsUtilsPowerShell.psd1">
+    <Content Include="WindowsUtilsModule.psd1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
