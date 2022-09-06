@@ -24,5 +24,6 @@ jobs:
       with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "PS Module - Latest"
+          prerelease: false
           title: "WindowsUtils PowerShell Module"
           files: WindowsUtilsModule.zip
