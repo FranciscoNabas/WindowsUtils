@@ -26,8 +26,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Unmanaged\Unmanaged.vcxproj" />
     <ProjectReference Include="..\..\WindowsUtils.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Wrapper">
+      <HintPath>..\..\Release\Wrapper\Wrapper.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
