@@ -1,7 +1,8 @@
 ﻿using System.Management.Automation;
-using Wrapper;
+using WindowsUtils;
+using WindowsUtils.Abstraction;
 
-namespace WindowsUtils.PowershellCoreModule
+namespace WindowsUtilsPowerShell
 {
     [Cmdlet(VerbsLifecycle.Invoke, "RemoteMessage")]
     public class InvokeRemoteMessageCmdlet : PSCmdlet
@@ -52,7 +53,7 @@ namespace WindowsUtils.PowershellCoreModule
     {
         protected override void ProcessRecord()
         {
-            WriteObject(Abstraction.MessageBoxOption.GetAvailableOptions());
+            WriteObject(MessageBoxOption.GetAvailableOptions());
         }
     }
     
@@ -96,7 +97,7 @@ namespace WindowsUtils.PowershellCoreModule
 
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new();
+            Wrapper.Managed unWrapper = new();
             WriteObject(unWrapper.GetResourceMessageTable(Path));
         }
     }
@@ -109,7 +110,7 @@ namespace WindowsUtils.PowershellCoreModule
 
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new();
+            Wrapper.Managed unWrapper = new();
             WriteObject(unWrapper.GetFormatedError(ErrorCode));
         }
     }
@@ -119,7 +120,7 @@ namespace WindowsUtils.PowershellCoreModule
     {
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new();
+            Wrapper.Managed unWrapper = new();
             WriteObject(unWrapper.GetFormatedWin32Error());
         }
     }
@@ -129,7 +130,7 @@ namespace WindowsUtils.PowershellCoreModule
     {
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new();
+            Wrapper.Managed unWrapper = new();
             WriteObject(unWrapper.GetFormatedWSError());
         }
     }
@@ -143,7 +144,7 @@ namespace WindowsUtils.PowershellCoreModule
 
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new();
+            Wrapper.Managed unWrapper = new();
             WriteObject(unWrapper.GetProcessFileHandle(Path));
         }
     }
@@ -157,7 +158,7 @@ namespace WindowsUtils.PowershellCoreModule
 
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new();
+            Wrapper.Managed unWrapper = new();
             WriteObject(unWrapper.GetMsiProperties(Path));
         }
     }
