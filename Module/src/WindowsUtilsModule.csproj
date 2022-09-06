@@ -26,12 +26,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\WindowsUtils.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <Reference Include="WindowsUtils">
+      <HintPath>..\..\Release\WindowsUtils\WindowsUtils.dll</HintPath>
+    </Reference>
     <Reference Include="Wrapper">
-      <HintPath>..\..\Release\Wrapper\Wrapper.dll</HintPath>
+      <HintPath>..\..\Release\WindowsUtils\Wrapper.dll</HintPath>
     </Reference>
   </ItemGroup>
 
