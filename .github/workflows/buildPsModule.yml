@@ -16,12 +16,12 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Build and Compress
-      run: .\Module\src\Build.ps1
+      run: ".\Module\src\Build.ps1 -PgsSec ${{ secrets.PSGAL_APIKEY }}"
     - name: Automatic Releases
       uses: marvinpinto/action-automatic-releases@v1.2.1
       with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "PS Module - Latest"
+          automatic_release_tag: "PSModule_Latest"
           prerelease: false
           title: "WindowsUtils PowerShell Module"
           files: WindowsUtilsModule.zip
