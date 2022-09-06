@@ -18,8 +18,8 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Restore dependencies
-      working-directory: /Module/src
+      working-directory: .\Module\src
       run: dotnet restore
     - name: Build
-      working-directory: /Module/src
+      working-directory: .\Module\src
       run: dotnet build --no-restore
