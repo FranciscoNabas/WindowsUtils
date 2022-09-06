@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <Version>1.1.0</Version>
     <Authors>UncleCisco</Authors>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>x64</Platforms>
     <AssemblyName>WindowsUtilsPowerShell</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <BaseIntermediateOutputPath />
@@ -27,10 +27,10 @@
 
   <ItemGroup>
     <Reference Include="WindowsUtils">
-      <HintPath>..\..\Release\WindowsUtils\WindowsUtils.dll</HintPath>
+      <HintPath>..\..\Output\WindowsUtils\WindowsUtils.dll</HintPath>
     </Reference>
     <Reference Include="Wrapper">
-      <HintPath>..\..\Release\WindowsUtils\Wrapper.dll</HintPath>
+      <HintPath>..\..\Output\WindowsUtils\Wrapper.dll</HintPath>
     </Reference>
   </ItemGroup>
 
