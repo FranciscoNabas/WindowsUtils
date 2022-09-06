@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>1.1.0</Version>
+    <Authors>UncleCisco</Authors>
+    <Platforms>AnyCPU;x64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management.Automation" Version="7.2.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="WindowsUtils">
+      <HintPath>..\..\bin\Release\WindowsUtils.dll</HintPath>
+    </Reference>
+    <Reference Include="Wrapper">
+      <HintPath>..\..\bin\Release\Wrapper.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+
+</Project>

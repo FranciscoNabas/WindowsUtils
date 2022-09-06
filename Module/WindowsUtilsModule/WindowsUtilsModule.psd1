@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-# RootModule = ''
+RootModule = 'WindowsUtilsModule.dll'
 
 # Version number of this module.
 ModuleVersion = '1.0'
@@ -24,7 +24,7 @@ GUID = 'a558fb07-cef4-4f03-b279-04cf7ec34d77'
 Author = 'Francisco Nabas'
 
 # Company or vendor of this module
-CompanyName = 'Unknown'
+# CompanyName = 'Unknown'
 
 # Copyright statement for this module
 Copyright = '(c) Francisco Nabas. All rights reserved.'
@@ -72,18 +72,7 @@ ProcessorArchitecture = 'Amd64'
 FunctionsToExport = @()
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @(
-    Get-ComputerSession
-    Get-FileHandle
-    Get-FormattedError
-    Get-LastWin32Error
-    Get-LastWinSockError
-    Get-MsiProperties
-    Get-RemoteMessageOptions
-    Get-ResourceMessageTable
-    Invoke-RemoteMessage
-    Send-Click
-)
+CmdletsToExport = @(*)
 
 # Variables to export from this module
 VariablesToExport = '*'
