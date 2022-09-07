@@ -1,8 +1,4 @@
-[CmdletBinding()]
-param (
-    [Parameter()]
-    [string]$PsgSec
-)
+param ($psgsec)
 
 ## Building project
 . dotnet build Module\src\WindowsUtilsModule.csproj --arch x64 --configuration Release --output Module\src\bin\Release
@@ -16,6 +12,6 @@ Compress-Archive -Path .\Module\src\bin\Release\* -DestinationPath .\WindowsUtil
 ## Publishing module
 try {
     Write-Output 'Trying to publish module...'
-    Publish-Module -Path Module\src\bin\Release -NuGetApiKey $PsgSec -Repository PSGallery
+    Publish-Module -Path Module\src\bin\Release -NuGetApiKey $psgsec -Repository PSGallery
 }
 catch { Write-Output "Failed to publish module. $($PSItem.Exception.Message)" }
