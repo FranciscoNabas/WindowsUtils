@@ -1,5 +1,6 @@
 param ($psgsec)
 
+## Artifact output path
 $releaseDir = '.\Module\src\bin\Release'
 
 ## Building project
