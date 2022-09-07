@@ -19,7 +19,7 @@ jobs:
       env:
         PSGAL_APIKEY: ${{ secrets.PSGAL_APIKEY }}
       run: |
-        .\Module\src\Build.ps1 -PgsSec "$PSGAL_APIKEY"
+        .\Module\src\Build.ps1 -psgsec "$env:PSGAL_APIKEY"
     - name: Automatic Releases
       uses: marvinpinto/action-automatic-releases@v1.2.1
       with:
