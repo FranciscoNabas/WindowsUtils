@@ -16,7 +16,10 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Build and Compress
-      run: .\Module\src\Build.ps1 -PgsSec "${{ secrets.PSGAL_APIKEY }}"
+      env:
+        PSGAL_APIKEY: ${{ secrets.PSGAL_APIKEY }}
+      run: |
+        .\Module\src\Build.ps1 -PgsSec "$PSGAL_APIKEY"
     - name: Automatic Releases
       uses: marvinpinto/action-automatic-releases@v1.2.1
       with:
