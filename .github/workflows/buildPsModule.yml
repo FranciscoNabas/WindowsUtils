@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 env:
-  PSGAL_APIKEY: ${{ PowershellModule.secrets.PSGAL_APIKEY }}
+  PSGAL_APIKEY: ${{ secrets.PSGAL_APIKEY }}
 
 jobs:
   build:
