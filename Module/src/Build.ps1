@@ -1,17 +1,22 @@
 param ($psgsec)
 
+$releaseDir = '.\Module\src\bin\Release'
+
 ## Building project
 . dotnet build Module\src\WindowsUtilsModule.csproj --arch x64 --configuration Release --output Module\src\bin\Release
 
+## Removing files
+'*.config', '*.pdb', '*.json' | ForEach-Object { Remove-Item -Path "$releaseDir\*" -Filter $PSItem -Force }
+
 ## Copying license and compressing output
 Write-Output 'Copying license...'
-Copy-Item -Path .\LICENSE -Destination .\Module\src\bin\Release -Force
+Copy-Item -Path .\LICENSE -Destination $releaseDir -Force
 Write-Output 'Compressing artifact...'
-Compress-Archive -Path .\Module\src\bin\Release\* -DestinationPath .\WindowsUtilsModule.zip
+Compress-Archive -Path "$releaseDir\*" -DestinationPath .\WindowsUtilsModule.zip
 
 ## Publishing module
 try {
     Write-Output 'Trying to publish module...'
-    Publish-Module -Path Module\src\bin\Release -NuGetApiKey $psgsec -Repository PSGallery
+    Publish-Module -Path $releaseDir -NuGetApiKey $psgsec -Repository PSGallery
 }
 catch { Write-Output "Failed to publish module. $($PSItem.Exception.Message)" }
