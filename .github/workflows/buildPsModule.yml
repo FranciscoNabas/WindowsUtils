@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "main" ]
 
+env:
+  PSGAL_APIKEY: ${{ secrets.PSGAL_APIKEY }}
+
 jobs:
   build:
 
@@ -16,8 +19,7 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Build and Compress
-      env:
-        PSGAL_APIKEY: ${{ secrets.PSGAL_APIKEY }}
+      
       run: |
         .\Module\src\Build.ps1 -psgsec "$env:PSGAL_APIKEY"
     - name: Automatic Releases
