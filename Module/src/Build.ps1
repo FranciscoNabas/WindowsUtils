@@ -1,10 +1,10 @@
 param ($psgsec)
 
 ## Artifact output path
-$releaseDir = '.\Module\src\bin\Release'
+$releaseDir = '.\Module\src\bin\WindowsUtilsModule'
 
 ## Building project
-. dotnet build Module\src\WindowsUtilsModule.csproj --arch x64 --configuration Release --output Module\src\bin\Release
+. dotnet build Module\src\WindowsUtilsModule.csproj --arch x64 --configuration Release --output Module\src\bin\WindowsUtilsModule
 
 ## Removing files
 '*.config', '*.pdb', '*.json' | ForEach-Object { Remove-Item -Path "$releaseDir\*" -Filter $PSItem -Force }
