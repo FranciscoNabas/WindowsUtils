@@ -35,10 +35,10 @@
 
   <ItemGroup>
     <Reference Include="UtilitiesLibrary">
-      <HintPath>UtilitiesLibrary\bin\Release\UtilitiesLibrary.dll</HintPath>
+      <HintPath>StaticDependencies\UtilitiesLibrary.dll</HintPath>
     </Reference>
     <Reference Include="Wrapper">
-      <HintPath>Wrapper\Release\Wrapper.dll</HintPath>
+      <HintPath>StaticDependencies\Wrapper.dll</HintPath>
     </Reference>
   </ItemGroup>
 

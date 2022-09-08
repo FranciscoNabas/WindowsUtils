@@ -1,0 +1,93 @@
+ImageRuntimeVersion: v4.0.30319
+Assembly Wrapper, Version=1.0.*, Culture=Invariant Language (Invariant Country): 
+	hash=SHA1, flags=PublicKey
+Assembly mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=None, flags=None
+Assembly System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35: 
+	hash=None, flags=None
+Struct Unmanaged.Utilities: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct Unmanaged.Utilities+MessageDumpOutput: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct Unmanaged.Utilities+FileHandleOutput: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct Unmanaged.Utilities+RpcMapperOutput: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct Unmanaged.WindowsTerminalServices.TerminalServices: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct Unmanaged.WindowsTerminalServices.TerminalServices+WtsSessionState: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
+Struct Unmanaged.WindowsTerminalServices.TerminalServices+SessionEnumOutput: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Class Wrapper.Managed: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Fields:
+    Unmanaged.WindowsTerminalServices.TerminalServices* wtsPtr : Public
+    Unmanaged.Utilities* utlPtr : Public
+    Int32 strucSize : Public
+    System.Type strucType : Public
+  Methods:
+    GetEnumeratedSession(IntPtr, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
+    InvokeMessage(IntPtr, Int32[], String, String, UInt32, Int32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
+    GetResourceMessageTable(String): PrivateScope, Public, HideBySig
+    MapRpcEndpoints(): PrivateScope, Public, HideBySig
+    GetFormatedError(Int32): PrivateScope, Public, HideBySig
+    GetFormatedWin32Error(): PrivateScope, Public, HideBySig
+    GetFormatedWSError(): PrivateScope, Public, HideBySig
+    GetProcessFileHandle(String): PrivateScope, Public, HideBySig
+    GetMsiProperties(String): PrivateScope, Public, HideBySig
+Struct Wrapper.Managed+WtsSessionState: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
+    WtsSessionState Active = 0 : Public, Static, Literal, HasDefault
+    WtsSessionState Connected = 1 : Public, Static, Literal, HasDefault
+    WtsSessionState ConnectQuery = 2 : Public, Static, Literal, HasDefault
+    WtsSessionState Shadow = 3 : Public, Static, Literal, HasDefault
+    WtsSessionState Disconnected = 4 : Public, Static, Literal, HasDefault
+    WtsSessionState Idle = 5 : Public, Static, Literal, HasDefault
+    WtsSessionState Listen = 6 : Public, Static, Literal, HasDefault
+    WtsSessionState Reset = 7 : Public, Static, Literal, HasDefault
+    WtsSessionState Down = 8 : Public, Static, Literal, HasDefault
+    WtsSessionState Init = 9 : Public, Static, Literal, HasDefault
+Struct Wrapper.Managed+AppType: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
+    AppType UnknownApp = 0 : Public, Static, Literal, HasDefault
+    AppType MainWindow = 1 : Public, Static, Literal, HasDefault
+    AppType OtherWindow = 2 : Public, Static, Literal, HasDefault
+    AppType Service = 3 : Public, Static, Literal, HasDefault
+    AppType Explorer = 4 : Public, Static, Literal, HasDefault
+    AppType Console = 5 : Public, Static, Literal, HasDefault
+    AppType Critical = 1000 : Public, Static, Literal, HasDefault
+Class Wrapper.Managed+SessionEnumOutput: AutoLayout, AnsiClass, Class, NestedPublic, BeforeFieldInit
+    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Fields:
+    Int32 SessionId : Public
+    System.String UserName : Public
+    System.String SessionName : Public
+    WtsSessionState SessionState : Public
+Class Wrapper.Managed+MessageDumpOutput: AutoLayout, AnsiClass, Class, NestedPublic, BeforeFieldInit
+    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Fields:
+    Int64 Id : Public
+    System.String Message : Public
+Class Wrapper.Managed+RpcMapperOutput: AutoLayout, AnsiClass, Class, NestedPublic, BeforeFieldInit
+    Void .ctor(System.String, System.String): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Interfaces:
+    System.IDisposable
+  Fields:
+    System.String BindingString : Public
+    System.String Annotation : Public
+  Methods:
+    Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
+Class Wrapper.Managed+FileHandleOutput: AutoLayout, AnsiClass, Class, NestedPublic, BeforeFieldInit
+    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Fields:
+    System.ValueType ProcessId UInt32 IsBoxed : Public
+    AppType AppType : Public
+    System.String AppName : Public
+    System.String ImagePath : Public
