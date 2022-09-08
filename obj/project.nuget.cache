@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "/GAArNfHjZ1eByMdZ7jTegJJq57wygfOT84pM8KTQG57ubx5IsSUd4jqcfGprmR/yPU5BsCBnF35mpoLrFxKKw==",
+  "success": true,
+  "projectFilePath": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Cisco\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
+    "C:\\Users\\Cisco\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512",
+    "C:\\Users\\Cisco\\.nuget\\packages\\powershellstandard.library\\5.1.0-preview-06\\powershellstandard.library.5.1.0-preview-06.nupkg.sha512"
+  ],
+  "logs": []
+}

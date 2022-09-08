@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WindowsUtils": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
