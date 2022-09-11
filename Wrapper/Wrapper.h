@@ -22,6 +22,7 @@ using namespace System::Runtime::InteropServices;
 using namespace System::Management::Automation;
 using namespace Unmanaged;
 using namespace Unmanaged::WindowsTerminalServices;
+using namespace Unmanaged::WindowsEventTracing;
 
 namespace Wrapper {
 
@@ -30,6 +31,7 @@ namespace Wrapper {
 	public:
 		TerminalServices* wtsPtr;
 		Utilities* utlPtr;
+		EventTracing* evtPtr;
 
 		int strucSize = sizeof(TerminalServices::SessionEnumOutput);
 		Type^ strucType = TerminalServices::SessionEnumOutput::typeid;
@@ -264,6 +266,15 @@ namespace Wrapper {
 			}
 
 			return output;
+		}
+		
+		Int32 StartRegistryTrace(String^ sessionName)
+		{
+			GUID traceid;
+			pin_ptr<const wchar_t> wlogfilename = PtrToStringChars(sessionName);
+			Int32 result = evtPtr->StartRegistryTrace(traceid, (LPWSTR)wlogfilename);
+			wlogfilename = nullptr;
+			return result;
 		}
 	};
 }

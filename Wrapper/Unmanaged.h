@@ -14,6 +14,7 @@
 #include <WinSock2.h>
 #include <RestartManager.h>
 #include <MsiQuery.h>
+#include <Objbase.h>
 
 #ifndef UNICODE
 #define UNICODE
@@ -100,6 +101,17 @@ namespace Unmanaged
 
 			void GetEnumeratedSession(std::vector<TerminalServices::SessionEnumOutput>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
 			std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
+		};
+	}
+
+	namespace WindowsEventTracing
+	{
+		extern "C" public class __declspec(dllexport) EventTracing
+		{
+		public:
+
+			DWORD StartRegistryTrace(GUID& traceid, LPWSTR psessname);
+			DWORD StopRegistryTrace(GUID traceid, LPWSTR psessname);
 		};
 	}
 }

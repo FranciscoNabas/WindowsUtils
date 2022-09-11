@@ -1,5 +1,6 @@
 #include "pch.h"
-#include "Unmanaged.h"
+#include <winreg.h>
+#include <Windows.h>
 
 #ifndef UNICODE
 #define UNICODE
@@ -10,5 +11,4 @@ using namespace std;
 
 namespace Unmanaged::WindowsManagementInstrumentation
 {
-
 }

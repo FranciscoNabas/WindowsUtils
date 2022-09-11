@@ -368,6 +368,12 @@ namespace UtilitiesLibrary
             return unWrapper.GetMsiProperties(fileName);
         }
 
+        public static int StartRegistryTrace(string logFilePath)
+        {
+            Managed unWrapper = new();
+            return unWrapper.StartRegistryTrace(logFilePath);
+        }
+
         internal static void WriteWarning(string warning, bool newLine = true, bool prefix = true)
         {
             ConsoleColor currentCollor = Console.ForegroundColor;

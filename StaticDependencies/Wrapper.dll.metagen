@@ -21,11 +21,14 @@ Struct Unmanaged.WindowsTerminalServices.TerminalServices+WtsSessionState: AutoL
     Int32 value__ : Public, SpecialName, RTSpecialName
 Struct Unmanaged.WindowsTerminalServices.TerminalServices+SessionEnumOutput: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+Struct Unmanaged.WindowsEventTracing.EventTracing: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
 Class Wrapper.Managed: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Fields:
     Unmanaged.WindowsTerminalServices.TerminalServices* wtsPtr : Public
     Unmanaged.Utilities* utlPtr : Public
+    Unmanaged.WindowsEventTracing.EventTracing* evtPtr : Public
     Int32 strucSize : Public
     System.Type strucType : Public
   Methods:
@@ -38,6 +41,7 @@ Class Wrapper.Managed: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     GetFormatedWSError(): PrivateScope, Public, HideBySig
     GetProcessFileHandle(String): PrivateScope, Public, HideBySig
     GetMsiProperties(String): PrivateScope, Public, HideBySig
+    StartRegistryTrace(String): PrivateScope, Public, HideBySig
 Struct Wrapper.Managed+WtsSessionState: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
   :System.Enum
   Fields:
