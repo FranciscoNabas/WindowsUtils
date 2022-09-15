@@ -18,6 +18,7 @@
 
 using namespace System;
 using namespace System::Collections::Generic;
+
 using namespace System::Runtime::InteropServices;
 using namespace System::Management::Automation;
 using namespace Unmanaged;
@@ -242,7 +243,7 @@ namespace Wrapper {
 		PSObject^ GetMsiProperties(String^ fileName)
 		{
 			PSObject^ output = gcnew PSObject();
-			std::shared_ptr<std::map<LPWSTR, LPWSTR>> ppresult = std::make_shared<std::map<LPWSTR, LPWSTR>>();
+			std::shared_ptr<std::map<std::wstring, std::wstring>> ppresult = std::make_shared<std::map<std::wstring, std::wstring>>();
 			pin_ptr<const wchar_t> wfilename = PtrToStringChars(fileName);
 
 			DWORD result = utlPtr->GetMsiProperties(*ppresult, (LPWSTR)wfilename);
@@ -257,10 +258,10 @@ namespace Wrapper {
 					throw gcnew SystemException(GetFormatedError(result));
 			}
 
-			std::map<LPWSTR, LPWSTR>::iterator itr;
+			std::map<std::wstring, std::wstring>::iterator itr;
 			for (itr = ppresult->begin(); itr != ppresult->end(); itr++)
 			{
-				output->Members->Add(gcnew PSNoteProperty(gcnew String(itr->first), gcnew String(itr->second)));
+				output->Members->Add(gcnew PSNoteProperty(gcnew String(itr->first.c_str()), gcnew String(itr->second.c_str())));
 			}
 
 			return output;

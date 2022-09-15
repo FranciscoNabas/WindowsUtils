@@ -52,7 +52,7 @@ namespace Unmanaged
 		return uiStatus;
 	}
 
-	DWORD Utilities::GetMsiProperties(map<LPWSTR, LPWSTR>& ppmapout, LPWSTR fileName)
+	DWORD Utilities::GetMsiProperties(map<wstring, wstring>& ppmapout, LPWSTR fileName)
 	{
 		PMSIHANDLE pDatabase;
 		PMSIHANDLE pView;
@@ -97,7 +97,10 @@ namespace Unmanaged
 						uiReturn = MsiRecordGetString(pRecord, 2, pRecValue, &dwRecValBuffer);
 						IFFAILRETURNDW(uiReturn);
 
-						ppmapout.emplace(pRecProperty, pRecValue);
+						wstring recproperty(pRecProperty);
+						wstring recvalue(pRecValue);
+
+						ppmapout[recproperty] = recvalue;
 
 					} while (pRecord != 0);
 				}
