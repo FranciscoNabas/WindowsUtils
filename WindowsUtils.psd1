@@ -12,7 +12,7 @@
 RootModule = 'WindowsUtils.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.1'
+ModuleVersion = '1.1.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -30,7 +30,7 @@ CompanyName = 'Unknown'
 Copyright = '(c) Francisco Nabas. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'This module was designed to contain tools aiming in facilitate the administration of Windows computers.'
+Description = 'This module contain tools to facilitate the administration of Windows computers.'
 
 # Minimum version of the PowerShell engine required by this module
 # PowerShellVersion = ''
