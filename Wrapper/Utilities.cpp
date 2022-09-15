@@ -9,7 +9,6 @@
 
 #define CHECKDWRESULT(result, err) if (result != ERROR_SUCCESS) { err = GetLastError(); goto CLEANUP; }
 #define IFFAILRETURNDW(result) if (ERROR_SUCCESS != result) { return result; }
-#define RELEASEMSI(hMsi) if (NULL != hMsi) { MsiCloseHandle(hMsi); }
 
 using namespace std;
 
@@ -53,11 +52,11 @@ namespace Unmanaged
 		return uiStatus;
 	}
 
-	DWORD Utilities::GetMsiProperties(map<LPWSTR, LPWSTR>& ppmapout, LPWSTR fileName)
+	DWORD Utilities::GetMsiProperties(map<wstring, wstring>& ppmapout, LPWSTR fileName)
 	{
-		MSIHANDLE pDatabase;
-		MSIHANDLE pView;
-		MSIHANDLE pRecord;
+		PMSIHANDLE pDatabase;
+		PMSIHANDLE pView;
+		PMSIHANDLE pRecord;
 		UINT uiReturn = 0;
 		DWORD dwRecValBuffer = 0;
 		LPWSTR pRecProperty;
@@ -98,16 +97,16 @@ namespace Unmanaged
 						uiReturn = MsiRecordGetString(pRecord, 2, pRecValue, &dwRecValBuffer);
 						IFFAILRETURNDW(uiReturn);
 
-						ppmapout.emplace(pRecProperty, pRecValue);
+						wstring recproperty(pRecProperty);
+						wstring recvalue(pRecValue);
+
+						ppmapout[recproperty] = recvalue;
 
 					} while (pRecord != 0);
 				}
 			}
 		}
 
-		RELEASEMSI(pRecord);
-		RELEASEMSI(pView);
-		RELEASEMSI(pDatabase);
 		return uiReturn;
 	}
 

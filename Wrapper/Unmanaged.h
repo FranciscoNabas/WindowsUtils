@@ -55,7 +55,7 @@ namespace Unmanaged
 		LPWSTR GetFormatedWin32Error();
 		LPWSTR GetFormatedError(DWORD errorCode);
 		DWORD GetProcessFileHandle(std::vector<FileHandleOutput>& ppvecfho, PCWSTR fileName);
-		DWORD GetMsiProperties(std::map<LPWSTR, LPWSTR>& ppmapout, LPWSTR fileName);
+		DWORD GetMsiProperties(std::map<std::wstring, std::wstring>& ppmapout, LPWSTR fileName);
 		DWORD GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage);
 	};
 
