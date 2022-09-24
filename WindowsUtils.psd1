@@ -12,7 +12,7 @@
 RootModule = 'WindowsUtils.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.3'
+ModuleVersion = '1.2.0.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -110,7 +110,14 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = @'
+        This version new features:
+            'LogonDate' and 'IdleTime' properties for 'Get-ComputerSession' cmdlet;
+            Creation of a type file for managing cmdlet output;
+        Improvements:
+            Setting 'enumerateCollection' parameter to 'true' on 'WriteObject' when returning collection of objects;
+            Migrating 'Get-RemoteMessageOptions' DefaultDisplayPropertySet to the type file;
+'@
 
         # Prerelease string of this module
         # Prerelease = ''
