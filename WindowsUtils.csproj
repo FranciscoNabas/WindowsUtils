@@ -30,6 +30,9 @@
     <None Update="WindowsUtils.psm1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="WindowsUtils-Types.ps1xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

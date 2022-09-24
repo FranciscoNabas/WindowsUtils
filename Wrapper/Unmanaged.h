@@ -83,24 +83,15 @@ namespace Unmanaged
 				int				SessionId;
 				LPWSTR			UserName;
 				LPWSTR			SessionName;
+				LARGE_INTEGER	IdleTime;
+				LARGE_INTEGER	LogonTime;
 				WtsSessionState	SessionState;
 
 				SessionEnumOutput() { };
-
-				SessionEnumOutput(LPWSTR usrName, LPWSTR sessName) {
-					size_t usrSz = wcslen(usrName) + 1;
-					size_t sesSz = wcslen(sessName) + 1;
-
-					UserName = new wchar_t[usrSz];
-					SessionName = new wchar_t[sesSz];
-
-					wcscpy_s(UserName, usrSz, usrName);
-					wcscpy_s(SessionName, sesSz, sessName);
-				};
 				~SessionEnumOutput() { };
 			}SessionEnumOutput, *PSessionEnumOutput;
 
-			DWORD GetEnumeratedSession(std::vector<TerminalServices::SessionEnumOutput>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
+			DWORD GetEnumeratedSession(std::vector<TerminalServices::SessionEnumOutput>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
 			std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
 		};
 	}

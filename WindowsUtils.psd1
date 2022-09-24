@@ -60,7 +60,7 @@ Description = 'This module contain tools to facilitate the administration of Win
 # ScriptsToProcess = @()
 
 # Type files (.ps1xml) to be loaded when importing this module
-# TypesToProcess = @()
+TypesToProcess = @('WindowsUtils-Types.ps1xml')
 
 # Format files (.ps1xml) to be loaded when importing this module
 # FormatsToProcess = @()

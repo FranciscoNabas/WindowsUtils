@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UtilitiesLibrary.TerminalServices;
-using System.Management.Automation;
 
 #nullable enable
 namespace UtilitiesLibrary.Abstraction
@@ -62,30 +61,30 @@ namespace UtilitiesLibrary.Abstraction
             Type = type;
         }
 
-        public static List<PSObject> GetAvailableOptions()
-        {
-            string[] defaultProp = { "Name", "Value" };
-            List<PSObject> output = new List<PSObject>();
-            foreach (MessageBoxOption item in InGetAvailableOptions())
-            {
-                PSObject inner = new PSObject(item);
-                List<PSMemberInfo> memberSet = new List<PSMemberInfo>();
-                memberSet.Add(new PSPropertySet("DefaultDisplayPropertySet", defaultProp));
-                inner.Members.Add(new PSMemberSet("PSStandardMembers", memberSet));
-                output.Add(inner);
-            }
-            return output;
-        }
+        //public static List<PSObject> GetAvailableOptions()
+        //{
+        //    string[] defaultProp = { "Name", "Value" };
+        //    List<PSObject> output = new List<PSObject>();
+        //    foreach (MessageBoxOption item in InGetAvailableOptions())
+        //    {
+        //        PSObject inner = new PSObject(item);
+        //        List<PSMemberInfo> memberSet = new List<PSMemberInfo>();
+        //        memberSet.Add(new PSPropertySet("DefaultDisplayPropertySet", defaultProp));
+        //        inner.Members.Add(new PSMemberSet("PSStandardMembers", memberSet));
+        //        output.Add(inner);
+        //    }
+        //    return output;
+        //}
 
-        private static List<MessageBoxOption> InGetAvailableOptions()
+        public static MessageBoxOption[] GetAvailableOptions()
         {
-            List<MessageBoxOption> output = new List<MessageBoxOption>();
-
-            GetAll<MessageBoxButton>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
-            GetAll<MessageBoxDefaultButton>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
-            GetAll<MessageBoxIcon>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
-            GetAll<MessageBoxModal>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
-            GetAll<MessageBoxType>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output.Add(f));
+            MessageBoxOption[] output = new MessageBoxOption[23];
+            int arrindex = 0;
+            GetAll<MessageBoxButton>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
+            GetAll<MessageBoxDefaultButton>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
+            GetAll<MessageBoxIcon>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
+            GetAll<MessageBoxModal>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
+            GetAll<MessageBoxType>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
 
             return output;
         }
@@ -93,7 +92,7 @@ namespace UtilitiesLibrary.Abstraction
         internal static uint MbOptionsResolver(string[] input)
         {
             List<string> processed = new List<string>();
-            List<MessageBoxOption> allNames = InGetAvailableOptions();
+            MessageBoxOption[] allNames = GetAvailableOptions();
             uint output = 0;
 
             foreach (string item in input)
