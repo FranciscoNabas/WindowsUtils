@@ -69,6 +69,8 @@ Class Wrapper.Managed+SessionEnumOutput: AutoLayout, AnsiClass, Class, NestedPub
     Int32 SessionId : Public
     System.String UserName : Public
     System.String SessionName : Public
+    System.Nullable`1[System.TimeSpan] IdleTime : Public
+    System.Nullable`1[System.DateTime] LogonDate : Public
     WtsSessionState SessionState : Public
 Class Wrapper.Managed+MessageDumpOutput: AutoLayout, AnsiClass, Class, NestedPublic, BeforeFieldInit
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName

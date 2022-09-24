@@ -66,6 +66,8 @@ namespace Wrapper {
 			int SessionId;
 			String^ UserName;
 			String^ SessionName;
+			Nullable<TimeSpan> IdleTime;
+			Nullable<DateTime> LogonDate;
 			WtsSessionState SessionState;
 		};
 
@@ -95,11 +97,11 @@ namespace Wrapper {
 			String^ ImagePath;
 		};
 
-		List<SessionEnumOutput^>^ GetEnumeratedSession(IntPtr session, bool onlyActive, bool excludeSystemSessions)
+		List<SessionEnumOutput^>^ GetEnumeratedSession(IntPtr session, bool onlyActive, bool includeSystemSessions)
 		{
 			List<SessionEnumOutput^>^ output = gcnew List<SessionEnumOutput^>();
 			std::shared_ptr<std::vector<TerminalServices::SessionEnumOutput>> result = std::make_shared<std::vector<TerminalServices::SessionEnumOutput>>();
-			DWORD opresult = wtsPtr->GetEnumeratedSession(*result, (HANDLE)session, onlyActive, excludeSystemSessions);
+			DWORD opresult = wtsPtr->GetEnumeratedSession(*result, (HANDLE)session, onlyActive, includeSystemSessions);
 			if (opresult != ERROR_SUCCESS)
 				throw gcnew SystemException(GetFormatedError(opresult));
 
@@ -110,6 +112,12 @@ namespace Wrapper {
 				inner->UserName = gcnew String(result->at(it).UserName);
 				inner->SessionName = gcnew String(result->at(it).SessionName);
 				inner->SessionState = (WtsSessionState)result->at(it).SessionState;
+				inner->LogonDate = DateTime::FromFileTime(result->at(it).LogonTime.QuadPart);
+				if (result->at(it).IdleTime.QuadPart > 0)
+					inner->IdleTime = DateTime::Now - DateTime::FromFileTime(result->at(it).IdleTime.QuadPart);
+				else
+					inner->IdleTime = TimeSpan::Zero;
+				
 				output->Add(inner);
 			}
 

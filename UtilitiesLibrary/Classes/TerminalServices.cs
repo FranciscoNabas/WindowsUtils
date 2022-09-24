@@ -1,11 +1,14 @@
-﻿using UtilitiesLibrary.Abstraction;
+﻿using System;
+using Wrapper;
+using UtilitiesLibrary.Abstraction;
 
+#nullable enable
 namespace UtilitiesLibrary.TerminalServices
 {
     internal class Session
     {
-        internal string ComputerName { get; set; }
-        internal SystemSafeHandle SessionHandle { get; set; }
+        internal string? ComputerName { get; set; }
+        internal SystemSafeHandle? SessionHandle { get; set; }
     }
     public class MessageBoxButton : MessageBoxOption
     {
@@ -70,24 +73,5 @@ namespace UtilitiesLibrary.TerminalServices
         TimeOut = 32000,
         AsyncReturn = 32001
     }
-    public enum SessionState : uint
-    {
-        Active = 0,
-        Connected = 1,
-        ConnectQuery = 2,
-        Shadow = 3,
-        Disconnected = 4,
-        Idle = 5,
-        Listen = 6,
-        Reset = 7,
-        Down = 8,
-        Init = 9
-    }
-    internal class ComputerSessionOutput
-    {
-        public string UserName { get; internal set; }
-        public string SessionName { get; internal set; }
-        public SessionState SessionState { get; internal set; }
-
-    }
+    
 }
