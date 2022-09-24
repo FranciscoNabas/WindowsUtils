@@ -54,7 +54,7 @@ namespace WindowsUtils
     {
         protected override void ProcessRecord()
         {
-            WriteObject(MessageBoxOption.GetAvailableOptions());
+            WriteObject(MessageBoxOption.GetAvailableOptions(), true);
         }
     }
     
@@ -69,14 +69,15 @@ namespace WindowsUtils
         public SwitchParameter ActiveOnly { get; set; } = false;
 
         [Parameter()]
-        public SwitchParameter ExcludeSystemSession { get; set; } = false;
+        public SwitchParameter IncludeSystemSession { get; set; } = false;
 
         protected override void ProcessRecord()
         {
+
             if (string.IsNullOrEmpty(ComputerName))
-                WriteObject(Utilities.GetComputerSession(ActiveOnly, ExcludeSystemSession));
+                WriteObject(Utilities.GetComputerSession(ActiveOnly, IncludeSystemSession), true);
             else
-                WriteObject(Utilities.GetComputerSession(ComputerName, ActiveOnly, ExcludeSystemSession));
+                WriteObject(Utilities.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession), true);
         }
     }
     

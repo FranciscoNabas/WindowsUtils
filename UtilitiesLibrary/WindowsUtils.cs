@@ -16,7 +16,7 @@ namespace UtilitiesLibrary
     {
         private static Session sessionInfo = new();
 
-        public static List<Managed.SessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
+        public static List<Managed.SessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool IncludeSystemSession)
         {
             try { IPHostEntry hostEntry = Dns.GetHostEntry(computerName); }
             catch (SocketException ex) { throw ex; }
@@ -43,7 +43,15 @@ namespace UtilitiesLibrary
                 }
             }
             Managed unWrapper = new Managed();
-            return unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), onlyActive, excludeSystemSessions);
+            List<Managed.SessionEnumOutput> result = unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, IncludeSystemSession);
+            foreach (Managed.SessionEnumOutput session in result)
+            {
+                if (session.IdleTime == TimeSpan.Zero)
+                    session.IdleTime = null;
+                if (session.LogonDate == DateTime.FromFileTime(0))
+                    session.LogonDate = null;
+            }
+            return result;
         }
         public static List<Managed.SessionEnumOutput> GetComputerSession(string computerName)
         {
@@ -72,12 +80,32 @@ namespace UtilitiesLibrary
                 }
             }
             Managed unWrapper = new Managed();
-            return unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), false, false);
+            List<Managed.SessionEnumOutput> result = unWrapper.GetEnumeratedSession(IntPtr.Zero, false, false);
+            foreach (Managed.SessionEnumOutput session in result)
+            {
+                if (session.IdleTime == TimeSpan.Zero)
+                    session.IdleTime = null;
+                if (session.LogonDate == DateTime.FromFileTime(0))
+                    session.LogonDate = null;
+            }
+            return result;
         }
-        public static List<Managed.SessionEnumOutput> GetComputerSession(bool onlyActive, bool excludeSystemSessions)
+        public static List<Managed.SessionEnumOutput> GetComputerSession(bool onlyActive, bool IncludeSystemSession)
         {
             Managed unWrapper = new Managed();
-            return unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, excludeSystemSessions);
+            if (IncludeSystemSession == false)
+                return unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, IncludeSystemSession);
+            
+            List<Managed.SessionEnumOutput> result = unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, IncludeSystemSession);
+            foreach (Managed.SessionEnumOutput session in result)
+            {
+                if (string.IsNullOrEmpty(session.UserName))
+                {
+                    session.LogonDate = null;
+                    session.IdleTime = null;
+                }
+            }
+            return result;
         }
         public static List<Managed.SessionEnumOutput> GetComputerSession()
         {

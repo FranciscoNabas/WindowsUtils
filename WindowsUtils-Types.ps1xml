@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Types>
+    <Type>
+        <Name>Wrapper.Managed+SessionEnumOutput</Name>
+        <Members>
+            <MemberSet>
+                <Name>PSStandardMembers</Name>
+                <Members>
+                    <PropertySet>
+                        <Name>DefaultDisplayPropertySet</Name>
+                        <ReferencedProperties>
+                            <Name>SessionId</Name>
+                            <Name>UserName</Name>
+                            <Name>SessionName</Name>
+                            <Name>SessionState</Name>
+                        </ReferencedProperties>
+                    </PropertySet>
+                    <PropertySet>
+                        <Name>DefaultKeyPropertySet</Name>
+                        <ReferencedProperties>
+                            <Name>SessionId</Name>
+                        </ReferencedProperties>
+                    </PropertySet>
+                </Members>
+            </MemberSet>
+        </Members>
+    </Type>
+    <Type>
+        <Name>UtilitiesLibrary.Abstraction.MessageBoxOption</Name>
+        <Members>
+            <MemberSet>
+                <Name>PSStandardMembers</Name>
+                <Members>
+                    <PropertySet>
+                        <Name>DefaultDisplayPropertySet</Name>
+                        <ReferencedProperties>
+                            <Name>Name</Name>
+                            <Name>Value</Name>
+                        </ReferencedProperties>
+                    </PropertySet>
+                </Members>
+            </MemberSet>
+        </Members>
+    </Type>
+</Types>

@@ -78,38 +78,40 @@ namespace Unmanaged::WindowsTerminalServices
 	DWORD GetSessionOutput(TerminalServices::SessionEnumOutput& poutput, HANDLE session, WTS_SESSION_INFO info)
 	{
 		DWORD pBytesReturned = 0;
-		LPWSTR ppBuffer = L"";
 		DWORD result = ERROR_SUCCESS;
+		PWTSINFOW sessinfoex;
 
-		BOOL queryres = WTSQuerySessionInformationW(session, info.SessionId, WTSUserName, &ppBuffer, &pBytesReturned);
+		BOOL queryres = WTSQuerySessionInformationW(session, info.SessionId, WTSSessionInfo, (LPWSTR*)&sessinfoex, &pBytesReturned);
 		if (queryres == 0)
 			return GetLastError();
 
-		if (wcslen(ppBuffer) > 0) {
-			size_t buffsize = wcslen(ppBuffer) + 1;
-			size_t sessnamesize = wcslen(info.pWinStationName) + 1;
+		size_t usrnsize = wcslen(sessinfoex->UserName) + 1;
+		size_t sessnamesize = wcslen(info.pWinStationName) + 1;
 
-			poutput.UserName = new WCHAR[buffsize];
+		if (usrnsize > 1) {
+			poutput.UserName = new WCHAR[usrnsize];
 			poutput.SessionName = new WCHAR[sessnamesize];
 
-			wcscpy_s(poutput.UserName, buffsize, ppBuffer);
+			wcscpy_s(poutput.UserName, usrnsize, sessinfoex->UserName);
 			wcscpy_s(poutput.SessionName, sessnamesize, info.pWinStationName);
 
+			poutput.LogonTime = sessinfoex->LogonTime;
+			poutput.IdleTime = sessinfoex->LastInputTime;
 			poutput.SessionId = info.SessionId;
 			poutput.SessionState = (TerminalServices::WtsSessionState)info.State;
 
-			WTSFreeMemory(ppBuffer);
+			WTSFreeMemory(sessinfoex);
 			return result;
 		}
 		else {
-			size_t sessnamesize = wcslen(info.pWinStationName) + 1;
-
-			poutput.UserName = new WCHAR[7];
+			poutput.UserName = new WCHAR[1];
 			poutput.SessionName = new WCHAR[sessnamesize];
 
-			wcscpy_s(poutput.UserName, 7, L"System");
+			wcscpy_s(poutput.UserName, 1, L"");
 			wcscpy_s(poutput.SessionName, sessnamesize, info.pWinStationName);
 
+			poutput.LogonTime = sessinfoex->LogonTime;
+			poutput.IdleTime = sessinfoex->LastInputTime;
 			poutput.SessionId = info.SessionId;
 			poutput.SessionState = (TerminalServices::WtsSessionState)info.State;
 			return result;
@@ -120,7 +122,7 @@ namespace Unmanaged::WindowsTerminalServices
 		vector<TerminalServices::SessionEnumOutput>& ppOutVec,
 		HANDLE session = WTS_CURRENT_SERVER_HANDLE,
 		BOOL onlyActive = 0,
-		BOOL excludeSystemSessions = 0
+		BOOL includeSystemSessions = 0
 	)
 	{
 		BOOL enumResult = 0;
@@ -161,7 +163,7 @@ namespace Unmanaged::WindowsTerminalServices
 			break;
 
 		default:
-			if (excludeSystemSessions == 0)
+			if (includeSystemSessions == 1)
 			{
 				for (DWORD i = 0; i < pCount; i++)
 				{
@@ -184,7 +186,7 @@ namespace Unmanaged::WindowsTerminalServices
 					if (result != ERROR_SUCCESS)
 						goto END;
 
-					if (single.UserName != L"System") { ppOutVec.push_back(single); }
+					if (wcslen(single.UserName) > 0) { ppOutVec.push_back(single); }
 				}
 			}
 			break;
