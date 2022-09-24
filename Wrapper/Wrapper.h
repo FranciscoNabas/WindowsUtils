@@ -99,7 +99,9 @@ namespace Wrapper {
 		{
 			List<SessionEnumOutput^>^ output = gcnew List<SessionEnumOutput^>();
 			std::shared_ptr<std::vector<TerminalServices::SessionEnumOutput>> result = std::make_shared<std::vector<TerminalServices::SessionEnumOutput>>();
-			wtsPtr->GetEnumeratedSession(*result, (HANDLE)session, onlyActive, excludeSystemSessions);
+			DWORD opresult = wtsPtr->GetEnumeratedSession(*result, (HANDLE)session, onlyActive, excludeSystemSessions);
+			if (opresult != ERROR_SUCCESS)
+				throw gcnew SystemException(GetFormatedError(opresult));
 
 			for (size_t it = 0; it < result->size(); it++)
 			{

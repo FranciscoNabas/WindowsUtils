@@ -75,27 +75,48 @@ namespace Unmanaged::WindowsTerminalServices
 		return output;
 	}
 
-	TerminalServices::SessionEnumOutput GetSessionOutput(HANDLE session, WTS_SESSION_INFO info)
+	DWORD GetSessionOutput(TerminalServices::SessionEnumOutput& poutput, HANDLE session, WTS_SESSION_INFO info)
 	{
 		DWORD pBytesReturned = 0;
 		LPWSTR ppBuffer = L"";
-		WTSQuerySessionInformation(session, info.SessionId, WTSUserName, &ppBuffer, &pBytesReturned);
+		DWORD result = ERROR_SUCCESS;
+
+		BOOL queryres = WTSQuerySessionInformationW(session, info.SessionId, WTSUserName, &ppBuffer, &pBytesReturned);
+		if (queryres == 0)
+			return GetLastError();
 
 		if (wcslen(ppBuffer) > 0) {
-			TerminalServices::SessionEnumOutput result = TerminalServices::SessionEnumOutput(ppBuffer, info.pWinStationName);
-			result.SessionId = info.SessionId;
-			result.SessionState = (TerminalServices::WtsSessionState)info.State;
+			size_t buffsize = wcslen(ppBuffer) + 1;
+			size_t sessnamesize = wcslen(info.pWinStationName) + 1;
+
+			poutput.UserName = new WCHAR[buffsize];
+			poutput.SessionName = new WCHAR[sessnamesize];
+
+			wcscpy_s(poutput.UserName, buffsize, ppBuffer);
+			wcscpy_s(poutput.SessionName, sessnamesize, info.pWinStationName);
+
+			poutput.SessionId = info.SessionId;
+			poutput.SessionState = (TerminalServices::WtsSessionState)info.State;
+
+			WTSFreeMemory(ppBuffer);
 			return result;
 		}
 		else {
-			TerminalServices::SessionEnumOutput result = TerminalServices::SessionEnumOutput(L"System", info.pWinStationName);
-			result.SessionId = info.SessionId;
-			result.SessionState = (TerminalServices::WtsSessionState)info.State;
+			size_t sessnamesize = wcslen(info.pWinStationName) + 1;
+
+			poutput.UserName = new WCHAR[7];
+			poutput.SessionName = new WCHAR[sessnamesize];
+
+			wcscpy_s(poutput.UserName, 7, L"System");
+			wcscpy_s(poutput.SessionName, sessnamesize, info.pWinStationName);
+
+			poutput.SessionId = info.SessionId;
+			poutput.SessionState = (TerminalServices::WtsSessionState)info.State;
 			return result;
 		}
 	}
 
-	void TerminalServices::GetEnumeratedSession(
+	DWORD TerminalServices::GetEnumeratedSession(
 		vector<TerminalServices::SessionEnumOutput>& ppOutVec,
 		HANDLE session = WTS_CURRENT_SERVER_HANDLE,
 		BOOL onlyActive = 0,
@@ -105,11 +126,21 @@ namespace Unmanaged::WindowsTerminalServices
 		BOOL enumResult = 0;
 		DWORD pCount = 0;
 		DWORD pLevel = 1;
+		DWORD result = ERROR_SUCCESS;
 
-		PWTS_SESSION_INFO sessionInfo = (PWTS_SESSION_INFO)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(WTS_SESSION_INFO));
+		PWTS_SESSION_INFOW sessionInfo = (PWTS_SESSION_INFOW)LocalAlloc(LMEM_ZEROINIT, sizeof(PWTS_SESSION_INFOW));
+		if (nullptr == sessionInfo)
+		{
+			result = ERROR_NOT_ENOUGH_MEMORY;
+			goto END;
+		}
 
-		enumResult = WTSEnumerateSessions(session, 0, 1, &sessionInfo, &pCount);
-		if (enumResult == 0) { goto END; }
+		enumResult = WTSEnumerateSessionsW(session, 0, 1, &sessionInfo, &pCount);
+		if (enumResult == 0)
+		{
+			result = GetLastError();
+			goto END;
+		}
 
 		switch (onlyActive)
 		{
@@ -119,8 +150,12 @@ namespace Unmanaged::WindowsTerminalServices
 				WTS_SESSION_INFO innerSes = sessionInfo[i];
 				if (innerSes.State == WTSActive)
 				{
-					TerminalServices::SessionEnumOutput result = GetSessionOutput(session, innerSes);
-					ppOutVec.push_back(result);
+					TerminalServices::SessionEnumOutput single;
+					result = GetSessionOutput(single, session, innerSes);
+					if (result != ERROR_SUCCESS)
+						goto END;
+
+					ppOutVec.push_back(single);
 				}
 			}
 			break;
@@ -131,8 +166,12 @@ namespace Unmanaged::WindowsTerminalServices
 				for (DWORD i = 0; i < pCount; i++)
 				{
 					WTS_SESSION_INFO innerSes = sessionInfo[i];
-					TerminalServices::SessionEnumOutput result = GetSessionOutput(session, innerSes);
-					ppOutVec.push_back(result);
+					TerminalServices::SessionEnumOutput single;
+					result = GetSessionOutput(single, session, innerSes);
+					if (result != ERROR_SUCCESS)
+						goto END;
+
+					ppOutVec.push_back(single);
 				}
 			}
 			else
@@ -140,8 +179,12 @@ namespace Unmanaged::WindowsTerminalServices
 				for (DWORD i = 0; i < pCount; i++)
 				{
 					WTS_SESSION_INFO innerSes = sessionInfo[i];
-					TerminalServices::SessionEnumOutput result = GetSessionOutput(session, innerSes);
-					if (result.UserName != L"System") { ppOutVec.push_back(result); }
+					TerminalServices::SessionEnumOutput single;
+					result = GetSessionOutput(single, session, innerSes);
+					if (result != ERROR_SUCCESS)
+						goto END;
+
+					if (single.UserName != L"System") { ppOutVec.push_back(single); }
 				}
 			}
 			break;
@@ -149,5 +192,6 @@ namespace Unmanaged::WindowsTerminalServices
 
 	END:
 		if (pCount > 0) { WTSFreeMemory(sessionInfo); }
+		return result;
 	}
 }

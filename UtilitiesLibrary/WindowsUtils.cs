@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Management.Automation;
 using UtilitiesLibrary.Abstraction;
 using UtilitiesLibrary.TerminalServices;
@@ -16,16 +18,27 @@ namespace UtilitiesLibrary
 
         public static List<Managed.SessionEnumOutput> GetComputerSession(string computerName, bool onlyActive, bool excludeSystemSessions)
         {
+            try { IPHostEntry hostEntry = Dns.GetHostEntry(computerName); }
+            catch (SocketException ex) { throw ex; }
+
             if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
             {
+                sessionInfo.SessionHandle = null;
                 sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                if (null == sessionInfo.SessionHandle || sessionInfo.SessionHandle.ToIntPtr() == IntPtr.Zero)
+                    throw new SystemException(GetFormattedWin32Error());
+
                 sessionInfo.ComputerName = computerName;
             }
             else
             {
                 if (sessionInfo.ComputerName != computerName)
                 {
+                    sessionInfo.SessionHandle = null;
                     sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                    if (null == sessionInfo.SessionHandle || sessionInfo.SessionHandle.ToIntPtr() == IntPtr.Zero)
+                        throw new SystemException(GetFormattedWin32Error());
+
                     sessionInfo.ComputerName = computerName;
                 }
             }
@@ -34,16 +47,27 @@ namespace UtilitiesLibrary
         }
         public static List<Managed.SessionEnumOutput> GetComputerSession(string computerName)
         {
+            try { IPHostEntry hostEntry = Dns.GetHostEntry(computerName); }
+            catch (SocketException ex) { throw ex; }
+
             if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
             {
+                sessionInfo.SessionHandle = null;
                 sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                if (null == sessionInfo.SessionHandle || sessionInfo.SessionHandle.ToIntPtr() == IntPtr.Zero)
+                    throw new SystemException(GetFormattedWin32Error());
+
                 sessionInfo.ComputerName = computerName;
             }
             else
             {
                 if (sessionInfo.ComputerName != computerName)
                 {
+                    sessionInfo.SessionHandle = null;
                     sessionInfo.SessionHandle = Interop.WTSOpenServerW(computerName);
+                    if (null == sessionInfo.SessionHandle || sessionInfo.SessionHandle.ToIntPtr() == IntPtr.Zero)
+                        throw new SystemException(GetFormattedWin32Error());
+
                     sessionInfo.ComputerName = computerName;
                 }
             }

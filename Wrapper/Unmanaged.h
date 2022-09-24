@@ -77,13 +77,15 @@ namespace Unmanaged
 				Init = WTSInit,
 			};
 
-			class SessionEnumOutput
+			typedef struct SessionEnumOutput
 			{
 			public:
 				int				SessionId;
 				LPWSTR			UserName;
 				LPWSTR			SessionName;
 				WtsSessionState	SessionState;
+
+				SessionEnumOutput() { };
 
 				SessionEnumOutput(LPWSTR usrName, LPWSTR sessName) {
 					size_t usrSz = wcslen(usrName) + 1;
@@ -95,10 +97,10 @@ namespace Unmanaged
 					wcscpy_s(UserName, usrSz, usrName);
 					wcscpy_s(SessionName, sesSz, sessName);
 				};
-				~SessionEnumOutput() {};
-			}*PSessionEnumOutput;
+				~SessionEnumOutput() { };
+			}SessionEnumOutput, *PSessionEnumOutput;
 
-			void GetEnumeratedSession(std::vector<TerminalServices::SessionEnumOutput>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
+			DWORD GetEnumeratedSession(std::vector<TerminalServices::SessionEnumOutput>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL excludeSystemSessions);
 			std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
 		};
 	}
