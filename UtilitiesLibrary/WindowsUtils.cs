@@ -43,7 +43,7 @@ namespace UtilitiesLibrary
                 }
             }
             Managed unWrapper = new Managed();
-            List<Managed.SessionEnumOutput> result = unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, IncludeSystemSession);
+            List<Managed.SessionEnumOutput> result = unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), onlyActive, IncludeSystemSession);
             foreach (Managed.SessionEnumOutput session in result)
             {
                 if (session.IdleTime == TimeSpan.Zero)
@@ -80,7 +80,7 @@ namespace UtilitiesLibrary
                 }
             }
             Managed unWrapper = new Managed();
-            List<Managed.SessionEnumOutput> result = unWrapper.GetEnumeratedSession(IntPtr.Zero, false, false);
+            List<Managed.SessionEnumOutput> result = unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), false, false);
             foreach (Managed.SessionEnumOutput session in result)
             {
                 if (session.IdleTime == TimeSpan.Zero)
@@ -363,6 +363,88 @@ namespace UtilitiesLibrary
             }
 
             return output;
+        }
+
+        public static void DisconnectSession(string? computername, int sessionid, bool wait, bool confirm = true)
+        {
+            if (string.IsNullOrEmpty(computername))
+            {
+                if (confirm)
+                {
+                    string input = InvokeConfirmationRequest("This will disconnect session " + sessionid + " on the current computer.");
+                    if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase)) { return; }
+                    else
+                    {
+                        Managed unwrapper = new();
+                        unwrapper.DisconnectSession(IntPtr.Zero, sessionid, wait);
+                    }
+                }
+                else
+                {
+                    Managed unwrapper = new();
+                    unwrapper.DisconnectSession(IntPtr.Zero, sessionid, wait);
+                }
+            }
+            else
+            {
+                try { IPHostEntry hostEntry = Dns.GetHostEntry(computername); }
+                catch (SocketException ex) { throw ex; }
+
+                if (sessionInfo.SessionHandle == null || string.IsNullOrEmpty(sessionInfo.ComputerName))
+                {
+                    sessionInfo.SessionHandle = null;
+                    sessionInfo.SessionHandle = Interop.WTSOpenServerW(computername);
+                    if (null == sessionInfo.SessionHandle || sessionInfo.SessionHandle.ToIntPtr() == IntPtr.Zero)
+                        throw new SystemException(GetFormattedWin32Error());
+
+                    sessionInfo.ComputerName = computername;
+                }
+                else
+                {
+                    if (sessionInfo.ComputerName != computername)
+                    {
+                        sessionInfo.SessionHandle = null;
+                        sessionInfo.SessionHandle = Interop.WTSOpenServerW(computername);
+                        if (null == sessionInfo.SessionHandle || sessionInfo.SessionHandle.ToIntPtr() == IntPtr.Zero)
+                            throw new SystemException(GetFormattedWin32Error());
+
+                        sessionInfo.ComputerName = computername;
+                    }
+                }
+                if (confirm)
+                {
+                    string input = InvokeConfirmationRequest("This will disconnect session " + sessionid + " on computer " + computername +".");
+                    if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase)) { return; }
+                    else
+                    {
+                        Managed unwrapper = new();
+                        unwrapper.DisconnectSession(sessionInfo.SessionHandle.ToIntPtr(), sessionid, wait);
+                    }
+                }
+                else
+                {
+                    Managed unwrapper = new();
+                    unwrapper.DisconnectSession(sessionInfo.SessionHandle.ToIntPtr(), sessionid, wait);
+                }
+            }
+        }
+        public static void DisconnectSession(bool confirm = true)
+        {
+            if (confirm)
+            {
+                string input = InvokeConfirmationRequest("This will disconnect the current session on this computer.");
+                if (string.Equals(input, "N", StringComparison.OrdinalIgnoreCase)) { return; }
+                else
+                {
+                    Managed unwrapper = new();
+                    unwrapper.DisconnectSession(IntPtr.Zero, false);
+                }
+            }
+            else
+            {
+                Managed unwrapper = new();
+                unwrapper.DisconnectSession(IntPtr.Zero, false);
+            }
         }
 
         public static List<Managed.RpcMapperOutput> MapRpcEndpoints()

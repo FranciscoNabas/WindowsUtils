@@ -276,5 +276,18 @@ namespace Wrapper {
 
 			return output;
 		}
+
+		void DisconnectSession(IntPtr session, Int32 sessionid, bool wait)
+		{
+			DWORD result = wtsPtr->DisconnectSession((HANDLE)session, (DWORD)sessionid, wait);
+			if (result != ERROR_SUCCESS)
+				throw gcnew SystemException(GetFormatedError(result));
+		}
+		void DisconnectSession(IntPtr session, bool wait)
+		{
+			DWORD result = wtsPtr->DisconnectSession((HANDLE)session, NULL, wait);
+			if (result != ERROR_SUCCESS)
+				throw gcnew SystemException(GetFormatedError(result));
+		}
 	};
 }

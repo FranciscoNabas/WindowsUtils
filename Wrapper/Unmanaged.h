@@ -93,6 +93,7 @@ namespace Unmanaged
 
 			DWORD GetEnumeratedSession(std::vector<TerminalServices::SessionEnumOutput>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
 			std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
+			DWORD DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);
 		};
 	}
 }
