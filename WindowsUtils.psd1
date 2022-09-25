@@ -12,7 +12,7 @@
 RootModule = 'WindowsUtils.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.0.0'
+ModuleVersion = '1.2.1.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -72,7 +72,7 @@ NestedModules = @('WindowsUtils.dll')
 FunctionsToExport = 'Get-ComputerSession', 'Get-FileHandle', 'Get-FormattedError', 
                'Get-LastWin32Error', 'Get-LastWinSockError', 'Get-MsiProperties', 
                'Get-RemoteMessageOptions', 'Get-ResourceMessageTable', 
-               'Invoke-RemoteMessage', 'Send-Click'
+               'Invoke-RemoteMessage', 'Send-Click', 'Disconnect-Session'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
@@ -111,12 +111,11 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
-        This version new features:
-            'LogonDate' and 'IdleTime' properties for 'Get-ComputerSession' cmdlet;
-            Creation of a type file for managing cmdlet output;
-        Improvements:
-            Setting 'enumerateCollection' parameter to 'true' on 'WriteObject' when returning collection of objects;
-            Migrating 'Get-RemoteMessageOptions' DefaultDisplayPropertySet to the type file;
+            Bugs:
+                'Get-ComputerSession' returning only local computer session regardless of computer name.
+            
+            New features:
+                New Cmdlet 'Disconnect-Session'. Logs off a interactive session on the local or remote computer.
 '@
 
         # Prerelease string of this module

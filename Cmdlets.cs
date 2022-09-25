@@ -6,7 +6,7 @@ using Wrapper;
 namespace WindowsUtils
 {
     [Cmdlet(VerbsLifecycle.Invoke, "RemoteMessage")]
-    public class InvokeRemoteMessageCmdlet : PSCmdlet
+    public class InvokeRemoteMessageCmdlet : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0)]
         [ValidateNotNullOrEmpty]
@@ -50,7 +50,7 @@ namespace WindowsUtils
     }
     
     [Cmdlet(VerbsCommon.Get, "RemoteMessageOptions")]
-    public class GetRemoteMessageOptionsCmdlet : PSCmdlet
+    public class GetRemoteMessageOptionsCmdlet : Cmdlet
     {
         protected override void ProcessRecord()
         {
@@ -59,7 +59,7 @@ namespace WindowsUtils
     }
     
     [Cmdlet(VerbsCommon.Get, "ComputerSession")]
-    public class GetComputerSessionCmdlet : PSCmdlet
+    public class GetComputerSessionCmdlet : Cmdlet
     {
         [Parameter(Position = 0)]
         [ValidateNotNullOrEmpty]
@@ -82,7 +82,7 @@ namespace WindowsUtils
     }
     
     [Cmdlet(VerbsCommunications.Send, "Click")]
-    public class SendClickCmdlet : PSCmdlet
+    public class SendClickCmdlet : Cmdlet
     {
         protected override void ProcessRecord()
         {
@@ -91,7 +91,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "ResourceMessageTable")]
-    public class GetResourceMessageTableCmdlet : PSCmdlet
+    public class GetResourceMessageTableCmdlet : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
@@ -105,7 +105,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "FormattedError")]
-    public class GetFormattedErrorCmdlet : PSCmdlet
+    public class GetFormattedErrorCmdlet : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         public int ErrorCode { get; set; }
@@ -118,7 +118,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "LastWin32Error")]
-    public class GetLastWin32ErrorCmdlet : PSCmdlet
+    public class GetLastWin32ErrorCmdlet : Cmdlet
     {
         protected override void ProcessRecord()
         {
@@ -128,7 +128,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "LastWinSockError")]
-    public class GetLastWinSockErrorCmdlet : PSCmdlet
+    public class GetLastWinSockErrorCmdlet : Cmdlet
     {
         protected override void ProcessRecord()
         {
@@ -138,7 +138,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "FileHandle")]
-    public class GetFileHandleCmdlet : PSCmdlet
+    public class GetFileHandleCmdlet : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
@@ -152,7 +152,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "MsiProperties")]
-    public class GetMsiPropertiesCmdlet : PSCmdlet
+    public class GetMsiPropertiesCmdlet : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
@@ -162,6 +162,61 @@ namespace WindowsUtils
         {
             Managed unWrapper = new Managed();
             WriteObject(unWrapper.GetMsiProperties(Path));
+        }
+    }
+
+    [Cmdlet(VerbsCommunications.Disconnect, "Session", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.High, DefaultParameterSetName = "NoComputerName")]
+    [Alias("disconnect")]
+    public class DisconnectCmdlet : Cmdlet
+    {
+        [Parameter(Mandatory = true, ParameterSetName = "WithComputerName")]
+        [ValidateNotNullOrEmpty()]
+        public string? ComputerName { get; set; }
+
+        [Parameter(Mandatory = true, ParameterSetName = "WithComputerName")]
+        [ValidateNotNullOrEmpty()]
+        public int? SessionId { get; set; }
+
+        [Parameter(ParameterSetName = "WithComputerName")]
+        [Parameter(ParameterSetName = "NoComputerName")]
+        [ValidateNotNullOrEmpty()]
+        public SwitchParameter Wait { get; set; }
+
+        protected override void ProcessRecord()
+        {
+            if(string.IsNullOrEmpty(ComputerName))
+            {
+                if (SessionId == null)
+                {
+                    if (ShouldProcess(
+                        "Disconnecting current session from this computer.",
+                        "Are you sure you want to disconnect the current session on this computer?",
+                        "Disconnect session"))
+                    {
+                        Utilities.DisconnectSession(false);
+                    }
+                }
+                else
+                {
+                    if (ShouldProcess(
+                        "Disconnecting session ID " + SessionId + " from current computer.",
+                        "Are you sure you want to disconnect sesion ID " + SessionId + " on the current computer?",
+                        "Disconnect session"))
+                    {
+                        Utilities.DisconnectSession(null, (int)SessionId, Wait, false);
+                    }
+                }
+            }
+            else
+            {
+                if (ShouldProcess(
+                        "Disconnecting session ID " + SessionId + " from computer " + ComputerName + ".",
+                        "Are you sure you want to disconnect sesion ID " + SessionId + " on computer " + ComputerName + "?",
+                        "Disconnect session"))
+                {
+                    Utilities.DisconnectSession(ComputerName, (int)SessionId, Wait, false);
+                }
+            }
         }
     }
 }
