@@ -38,6 +38,8 @@ Class Wrapper.Managed: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     GetFormatedWSError(): PrivateScope, Public, HideBySig
     GetProcessFileHandle(String): PrivateScope, Public, HideBySig
     GetMsiProperties(String): PrivateScope, Public, HideBySig
+    DisconnectSession(IntPtr, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
+    DisconnectSession(IntPtr, Int32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
 Struct Wrapper.Managed+WtsSessionState: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
   :System.Enum
   Fields:

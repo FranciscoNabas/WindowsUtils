@@ -196,4 +196,18 @@ namespace Unmanaged::WindowsTerminalServices
 		if (pCount > 0) { WTSFreeMemory(sessionInfo); }
 		return result;
 	}
+
+	DWORD TerminalServices::DisconnectSession(
+		HANDLE session = WTS_CURRENT_SERVER_HANDLE,
+		DWORD sessionid = WTS_CURRENT_SESSION,
+		BOOL wait = 0
+	)
+	{
+		DWORD result = 0;
+		BOOL call = WTSLogoffSession(session, sessionid, wait);
+		if (call == 0)
+			result = GetLastError();
+
+		return result;
+	}
 }
