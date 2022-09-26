@@ -3,10 +3,10 @@ using UtilitiesLibrary.Abstraction;
 using UtilitiesLibrary;
 using Wrapper;
 
-namespace WindowsUtils
+namespace WindowsUtils.Commands
 {
     [Cmdlet(VerbsLifecycle.Invoke, "RemoteMessage")]
-    public class InvokeRemoteMessageCmdlet : Cmdlet
+    public class InvokeRemoteMessageCommand : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0)]
         [ValidateNotNullOrEmpty]
@@ -50,7 +50,7 @@ namespace WindowsUtils
     }
     
     [Cmdlet(VerbsCommon.Get, "RemoteMessageOptions")]
-    public class GetRemoteMessageOptionsCmdlet : Cmdlet
+    public class GetRemoteMessageOptionsCommand : Cmdlet
     {
         protected override void ProcessRecord()
         {
@@ -59,7 +59,7 @@ namespace WindowsUtils
     }
     
     [Cmdlet(VerbsCommon.Get, "ComputerSession")]
-    public class GetComputerSessionCmdlet : Cmdlet
+    public class GetComputerSessionCommand : Cmdlet
     {
         [Parameter(Position = 0)]
         [ValidateNotNullOrEmpty]
@@ -77,12 +77,13 @@ namespace WindowsUtils
             if (string.IsNullOrEmpty(ComputerName))
                 WriteObject(Utilities.GetComputerSession(ActiveOnly, IncludeSystemSession), true);
             else
-                WriteObject(Utilities.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession), true);
+                if (ComputerName is not null)
+                    WriteObject(Utilities.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession), true);
         }
     }
     
     [Cmdlet(VerbsCommunications.Send, "Click")]
-    public class SendClickCmdlet : Cmdlet
+    public class SendClickCommand : Cmdlet
     {
         protected override void ProcessRecord()
         {
@@ -91,7 +92,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "ResourceMessageTable")]
-    public class GetResourceMessageTableCmdlet : Cmdlet
+    public class GetResourceMessageTableCommand : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
@@ -105,7 +106,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "FormattedError")]
-    public class GetFormattedErrorCmdlet : Cmdlet
+    public class GetFormattedErrorCommand : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         public int ErrorCode { get; set; }
@@ -118,7 +119,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "LastWin32Error")]
-    public class GetLastWin32ErrorCmdlet : Cmdlet
+    public class GetLastWin32ErrorCommand : Cmdlet
     {
         protected override void ProcessRecord()
         {
@@ -128,7 +129,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "LastWinSockError")]
-    public class GetLastWinSockErrorCmdlet : Cmdlet
+    public class GetLastWinSockErrorCommand : Cmdlet
     {
         protected override void ProcessRecord()
         {
@@ -138,7 +139,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "FileHandle")]
-    public class GetFileHandleCmdlet : Cmdlet
+    public class GetFileHandleCommand : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
@@ -152,7 +153,7 @@ namespace WindowsUtils
     }
 
     [Cmdlet(VerbsCommon.Get, "MsiProperties")]
-    public class GetMsiPropertiesCmdlet : Cmdlet
+    public class GetMsiPropertiesCommand : Cmdlet
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
@@ -167,15 +168,15 @@ namespace WindowsUtils
 
     [Cmdlet(VerbsCommunications.Disconnect, "Session", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.High, DefaultParameterSetName = "NoComputerName")]
     [Alias("disconnect")]
-    public class DisconnectCmdlet : Cmdlet
+    public class DisconnectSessionCommand : Cmdlet
     {
         [Parameter(Mandatory = true, ParameterSetName = "WithComputerName")]
         [ValidateNotNullOrEmpty()]
-        public string? ComputerName { get; set; }
+        public string ComputerName { get; set; }
 
         [Parameter(Mandatory = true, ParameterSetName = "WithComputerName")]
         [ValidateNotNullOrEmpty()]
-        public int? SessionId { get; set; }
+        public int SessionId { get; set; }
 
         [Parameter(ParameterSetName = "WithComputerName")]
         [Parameter(ParameterSetName = "NoComputerName")]
