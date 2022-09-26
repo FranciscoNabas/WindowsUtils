@@ -5,12 +5,12 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Management.Automation;
-using UtilitiesLibrary.Abstraction;
-using UtilitiesLibrary.TerminalServices;
+using WindowsUtils.Abstraction;
+using WindowsUtils.TerminalServices;
 using Wrapper;
 
 #nullable enable
-namespace UtilitiesLibrary
+namespace WindowsUtils
 {
     public class Utilities
     {

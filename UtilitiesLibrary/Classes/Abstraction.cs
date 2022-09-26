@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UtilitiesLibrary.TerminalServices;
+using WindowsUtils.TerminalServices;
 
 #nullable enable
-namespace UtilitiesLibrary.Abstraction
+namespace WindowsUtils.Abstraction
 {
     public abstract class Enumeration : IComparable
     {
@@ -60,21 +60,6 @@ namespace UtilitiesLibrary.Abstraction
             Value = value;
             Type = type;
         }
-
-        //public static List<PSObject> GetAvailableOptions()
-        //{
-        //    string[] defaultProp = { "Name", "Value" };
-        //    List<PSObject> output = new List<PSObject>();
-        //    foreach (MessageBoxOption item in InGetAvailableOptions())
-        //    {
-        //        PSObject inner = new PSObject(item);
-        //        List<PSMemberInfo> memberSet = new List<PSMemberInfo>();
-        //        memberSet.Add(new PSPropertySet("DefaultDisplayPropertySet", defaultProp));
-        //        inner.Members.Add(new PSMemberSet("PSStandardMembers", memberSet));
-        //        output.Add(inner);
-        //    }
-        //    return output;
-        //}
 
         public static MessageBoxOption[] GetAvailableOptions()
         {

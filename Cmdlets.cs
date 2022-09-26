@@ -1,6 +1,5 @@
 ﻿using System.Management.Automation;
-using UtilitiesLibrary.Abstraction;
-using UtilitiesLibrary;
+using WindowsUtils.Abstraction;
 using Wrapper;
 
 namespace WindowsUtils.Commands

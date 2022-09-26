@@ -1,9 +1,7 @@
-﻿using System;
-using Wrapper;
-using UtilitiesLibrary.Abstraction;
+﻿using WindowsUtils.Abstraction;
 
 #nullable enable
-namespace UtilitiesLibrary.TerminalServices
+namespace WindowsUtils.TerminalServices
 {
     internal class Session
     {

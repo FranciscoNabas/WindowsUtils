@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.ConstrainedExecution;
 using Microsoft.Win32.SafeHandles;
 
-namespace UtilitiesLibrary
+namespace WindowsUtils
 {
     internal class SystemSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
