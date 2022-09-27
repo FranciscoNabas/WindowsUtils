@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Types>
     <Type>
-        <Name>Wrapper.Managed+SessionEnumOutput</Name>
+        <Name>WindowsUtils.ComputerSession</Name>
         <Members>
             <MemberSet>
                 <Name>PSStandardMembers</Name>
@@ -26,7 +26,7 @@
         </Members>
     </Type>
     <Type>
-        <Name>UtilitiesLibrary.Abstraction.MessageBoxOption</Name>
+        <Name>WindowsUtils.Abstraction.MessageBoxOption</Name>
         <Members>
             <MemberSet>
                 <Name>PSStandardMembers</Name>
@@ -42,4 +42,27 @@
             </MemberSet>
         </Members>
     </Type>
+  <Type>
+    <Name>WindowsUtils.ResourceMessageTable</Name>
+    <Members>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Id</Name>
+              <Name>Message</Name>
+            </ReferencedProperties>
+          </PropertySet>
+          <PropertySet>
+            <Name>DefaultKeyPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Id</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+    </Members>
+  </Type>
 </Types>

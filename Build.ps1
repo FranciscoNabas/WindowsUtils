@@ -4,7 +4,7 @@ param ($psgsec)
 $releaseDir = '.\bin\WindowsUtils'
 
 ## Building project
-. dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output bin\WindowsUtils
+. dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output bin\WindowsUtils --no-incremental
 
 ## Removing files
 '*.config', '*.pdb', '*.json' | ForEach-Object { Remove-Item -Path "$releaseDir\*" -Filter $PSItem -Force }

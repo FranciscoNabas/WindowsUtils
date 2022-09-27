@@ -6,27 +6,25 @@
 #define _UNICODE
 #endif // UNICODE
 
-using namespace std;
-
-namespace Unmanaged::WindowsTerminalServices
+namespace WindowsUtils
 {
-	vector<DWORD> TerminalServices::InvokeMessage (
+	std::vector<DWORD> Unmanaged::InvokeMessage (
 		LPWSTR pTitle,
 		LPWSTR pMessage,
 		DWORD style,
 		DWORD timeout,
 		BOOL bWait,
-		vector<DWORD> sessionId,
+		std::vector<DWORD> sessionId,
 		HANDLE session = WTS_CURRENT_SERVER_HANDLE
 	)
 	{
-		vector<DWORD> output;
+		std::vector<DWORD> output;
 		if (sessionId.empty())
 		{
 			DWORD pCount;
 			BOOL enumResult;
 			BOOL mesResult;
-			shared_ptr<PWTS_SESSION_INFO> sessInfo = make_shared<PWTS_SESSION_INFO>();
+			std::shared_ptr<PWTS_SESSION_INFO> sessInfo = std::make_shared<PWTS_SESSION_INFO>();
 			enumResult = WTSEnumerateSessions(session, 0, 1, &*sessInfo, &pCount);
 
 			for (DWORD i = 0; i < pCount; i++)
@@ -75,7 +73,7 @@ namespace Unmanaged::WindowsTerminalServices
 		return output;
 	}
 
-	DWORD GetSessionOutput(TerminalServices::SessionEnumOutput& poutput, HANDLE session, WTS_SESSION_INFO info)
+	DWORD GetSessionOutput(Unmanaged::ComputerSession& poutput, HANDLE session, WTS_SESSION_INFO info)
 	{
 		DWORD pBytesReturned = 0;
 		DWORD result = ERROR_SUCCESS;
@@ -87,39 +85,56 @@ namespace Unmanaged::WindowsTerminalServices
 
 		size_t usrnsize = wcslen(sessinfoex->UserName) + 1;
 		size_t sessnamesize = wcslen(info.pWinStationName) + 1;
+		size_t domainnsize = wcslen(sessinfoex->Domain) + 1;
 
 		if (usrnsize > 1) {
-			poutput.UserName = new WCHAR[usrnsize];
-			poutput.SessionName = new WCHAR[sessnamesize];
+			poutput.SessionId = info.SessionId;
+			
+			if (domainnsize > 1)
+			{
+				size_t tsize = domainnsize + usrnsize;
+				LPWSTR fqdun = new WCHAR[tsize];
+				wcscpy_s(fqdun, domainnsize, sessinfoex->Domain);
+				wcscat_s(fqdun, tsize, L"\\");
+				wcscat_s(fqdun, tsize, sessinfoex->UserName);
 
-			wcscpy_s(poutput.UserName, usrnsize, sessinfoex->UserName);
+				poutput.UserName = new WCHAR[tsize];
+				wcscpy_s(poutput.UserName, tsize, fqdun);
+			}
+			else
+			{
+				poutput.UserName = new WCHAR[usrnsize];
+				wcscpy_s(poutput.UserName, usrnsize, sessinfoex->UserName);
+			}
+			
+			poutput.SessionName = new WCHAR[sessnamesize];
 			wcscpy_s(poutput.SessionName, sessnamesize, info.pWinStationName);
 
-			poutput.LogonTime = sessinfoex->LogonTime;
 			poutput.IdleTime = sessinfoex->LastInputTime;
-			poutput.SessionId = info.SessionId;
-			poutput.SessionState = (TerminalServices::WtsSessionState)info.State;
-
+			poutput.SessionState = info.State;
+			poutput.LogonTime = sessinfoex->LogonTime;
+			
 			WTSFreeMemory(sessinfoex);
 			return result;
 		}
 		else {
+			poutput.SessionId = info.SessionId;
 			poutput.UserName = new WCHAR[1];
 			poutput.SessionName = new WCHAR[sessnamesize];
 
 			wcscpy_s(poutput.UserName, 1, L"");
 			wcscpy_s(poutput.SessionName, sessnamesize, info.pWinStationName);
 
-			poutput.LogonTime = sessinfoex->LogonTime;
 			poutput.IdleTime = sessinfoex->LastInputTime;
-			poutput.SessionId = info.SessionId;
-			poutput.SessionState = (TerminalServices::WtsSessionState)info.State;
+			poutput.SessionState = info.State;
+			poutput.LogonTime = sessinfoex->LogonTime;
+			
 			return result;
 		}
 	}
 
-	DWORD TerminalServices::GetEnumeratedSession(
-		vector<TerminalServices::SessionEnumOutput>& ppOutVec,
+	DWORD Unmanaged::GetEnumeratedSession(
+		std::vector<Unmanaged::ComputerSession>& ppOutVec,
 		HANDLE session = WTS_CURRENT_SERVER_HANDLE,
 		BOOL onlyActive = 0,
 		BOOL includeSystemSessions = 0
@@ -152,7 +167,7 @@ namespace Unmanaged::WindowsTerminalServices
 				WTS_SESSION_INFO innerSes = sessionInfo[i];
 				if (innerSes.State == WTSActive)
 				{
-					TerminalServices::SessionEnumOutput single;
+					Unmanaged::ComputerSession single;
 					result = GetSessionOutput(single, session, innerSes);
 					if (result != ERROR_SUCCESS)
 						goto END;
@@ -168,7 +183,7 @@ namespace Unmanaged::WindowsTerminalServices
 				for (DWORD i = 0; i < pCount; i++)
 				{
 					WTS_SESSION_INFO innerSes = sessionInfo[i];
-					TerminalServices::SessionEnumOutput single;
+					Unmanaged::ComputerSession single;
 					result = GetSessionOutput(single, session, innerSes);
 					if (result != ERROR_SUCCESS)
 						goto END;
@@ -181,7 +196,7 @@ namespace Unmanaged::WindowsTerminalServices
 				for (DWORD i = 0; i < pCount; i++)
 				{
 					WTS_SESSION_INFO innerSes = sessionInfo[i];
-					TerminalServices::SessionEnumOutput single;
+					Unmanaged::ComputerSession single;
 					result = GetSessionOutput(single, session, innerSes);
 					if (result != ERROR_SUCCESS)
 						goto END;
@@ -197,7 +212,7 @@ namespace Unmanaged::WindowsTerminalServices
 		return result;
 	}
 
-	DWORD TerminalServices::DisconnectSession(
+	DWORD Unmanaged::DisconnectSession(
 		HANDLE session = WTS_CURRENT_SERVER_HANDLE,
 		DWORD sessionid = WTS_CURRENT_SESSION,
 		BOOL wait = 0

@@ -12,7 +12,7 @@
 RootModule = 'WindowsUtils.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.1.0'
+ModuleVersion = '1.2.1.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -60,10 +60,10 @@ Description = 'This module contain tools to facilitate the administration of Win
 # ScriptsToProcess = @()
 
 # Type files (.ps1xml) to be loaded when importing this module
-TypesToProcess = @('WindowsUtils-Types.ps1xml')
+TypesToProcess = @('WindowsUtils.Types.ps1xml')
 
 # Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @()
+# FormatsToProcess = @('WindowsUtils.Format.ps1xml')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 NestedModules = @('WindowsUtils.dll')
@@ -111,11 +111,11 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
-            Bugs:
-                'Get-ComputerSession' returning only local computer session regardless of computer name.
-            
-            New features:
-                New Cmdlet 'Disconnect-Session'. Logs off a interactive session on the local or remote computer.
+            - Wrapping native classes to avoid object property management. Huge performance increase.
+            - Bringing some objects to managed .NET (enum classes abstraction)
+            - Organizing .NET types.
+            - Using original function's return types on native objects.
+            - Removed Get-LastWinSockError. It's effectively the same as Get-LastWin32Error
 '@
 
         # Prerelease string of this module

@@ -1,6 +1,5 @@
 ﻿using System.Management.Automation;
 using WindowsUtils.Abstraction;
-using Wrapper;
 
 namespace WindowsUtils.Commands
 {
@@ -99,7 +98,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new Managed();
+            WrappedFunctions unWrapper = new();
             WriteObject(unWrapper.GetResourceMessageTable(Path));
         }
     }
@@ -112,7 +111,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new Managed();
+            WrappedFunctions unWrapper = new();
             WriteObject(unWrapper.GetFormatedError(ErrorCode));
         }
     }
@@ -122,18 +121,8 @@ namespace WindowsUtils.Commands
     {
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new Managed();
+            WrappedFunctions unWrapper = new();
             WriteObject(unWrapper.GetFormatedWin32Error());
-        }
-    }
-
-    [Cmdlet(VerbsCommon.Get, "LastWinSockError")]
-    public class GetLastWinSockErrorCommand : Cmdlet
-    {
-        protected override void ProcessRecord()
-        {
-            Managed unWrapper = new Managed();
-            WriteObject(unWrapper.GetFormatedWSError());
         }
     }
 
@@ -146,7 +135,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new Managed();
+            WrappedFunctions unWrapper = new();
             WriteObject(unWrapper.GetProcessFileHandle(Path));
         }
     }
@@ -160,7 +149,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            Managed unWrapper = new Managed();
+            WrappedFunctions unWrapper = new();
             WriteObject(unWrapper.GetMsiProperties(Path));
         }
     }
