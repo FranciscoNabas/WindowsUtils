@@ -18,7 +18,7 @@
 
 using namespace System;
 using namespace System::Collections::Generic;
-
+using namespace WindowsUtils::Abstraction;
 using namespace System::Runtime::InteropServices;
 using namespace System::Management::Automation;
 
@@ -72,7 +72,7 @@ namespace WindowsUtils {
 		}
 		property WindowsUtils::SessionState^ SessionState {
 			WindowsUtils::SessionState^ get() {
-				return WindowsUtils::SessionState::GetSessionStateById(wrapper->SessionState);
+				return Enumeration::GetById<WindowsUtils::SessionState^>(wrapper->SessionState);
 			}
 		}
 
@@ -125,7 +125,7 @@ namespace WindowsUtils {
 	public ref class FileHandle
 	{
 	public:
-		property Unmanaged::AppType AppType { Unmanaged::AppType get() { return wrapper->AppType; } }
+		property WindowsUtils::AppType^ AppType { WindowsUtils::AppType^ get() { return Enumeration::GetById<WindowsUtils::AppType^>(wrapper->AppType); } }
 		property UInt32 ProcessId { UInt32 get() { return wrapper->ProcessId; } }
 		property String^ AppName { String^ get() { return gcnew String(wrapper->AppName); } }
 		property String^ ImagePath { String^ get() { return gcnew String(wrapper->ImagePath); } }

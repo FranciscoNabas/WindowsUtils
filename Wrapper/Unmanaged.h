@@ -26,17 +26,6 @@ namespace WindowsUtils
 	{
 	public:
 
-		enum class AppType
-		{
-			UnknownApp = RM_APP_TYPE::RmUnknownApp,
-			MainWindow = RM_APP_TYPE::RmMainWindow,
-			OtherWindow = RM_APP_TYPE::RmOtherWindow,
-			Service = RM_APP_TYPE::RmService,
-			Explorer = RM_APP_TYPE::RmExplorer,
-			Console = RM_APP_TYPE::RmConsole,
-			Critical = RM_APP_TYPE::RmCritical
-		};
-
 		class ComputerSession
 		{
 		public:
@@ -64,12 +53,12 @@ namespace WindowsUtils
 		class FileHandle
 		{
 		public:
-			AppType		AppType;
+			RM_APP_TYPE	AppType;
 			DWORD		ProcessId;
 			LPWSTR		AppName;
 			LPWSTR		ImagePath;
 			FileHandle() { }
-			FileHandle(Unmanaged::AppType apptype, DWORD pid, LPWSTR appname, LPWSTR imgpath) : AppType(apptype), ProcessId(pid), AppName(appname), ImagePath(imgpath) { }
+			FileHandle(RM_APP_TYPE apptype, DWORD pid, LPWSTR appname, LPWSTR imgpath) : AppType(apptype), ProcessId(pid), AppName(appname), ImagePath(imgpath) { }
 		};
 
 		class RpcEndpoint

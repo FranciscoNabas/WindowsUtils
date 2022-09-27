@@ -1,6 +1,36 @@
 ﻿using WindowsUtils.Abstraction;
 
 #nullable enable
+namespace WindowsUtils
+{
+    public class SessionState : Enumeration
+    {
+        public static SessionState Active = new(0, "Active");
+        public static SessionState Connected = new(1, "Connected");
+        public static SessionState ConnectQuery = new(2, "ConnectQuery");
+        public static SessionState Shadow = new(3, "Shadow");
+        public static SessionState Disconnected = new(4, "Disconnected");
+        public static SessionState Idle = new(5, "Idle");
+        public static SessionState Listen = new(6, "Listen");
+        public static SessionState Reset = new(7, "Reset");
+        public static SessionState Down = new(8, "Down");
+        public static SessionState Init = new(9, "Init");
+        SessionState(uint id, string name) : base(id, name) { }
+    }
+    public class AppType : Enumeration
+    {
+        public static AppType UnknownApp = new(0, "UnknownApp");
+        public static AppType MainWindow = new(1, "MainWindow");
+        public static AppType OtherWindow = new(2, "OtherWindow");
+        public static AppType Service = new(3, "Service");
+        public static AppType Explorer = new(4, "Explorer");
+        public static AppType Console = new(5, "Console");
+        public static AppType Critical = new(1000, "Critical");
+        AppType(uint id, string name) : base(id, name) { }
+    }
+}
+
+#nullable enable
 namespace WindowsUtils.TerminalServices
 {
     internal class Session
@@ -71,5 +101,4 @@ namespace WindowsUtils.TerminalServices
         TimeOut = 32000,
         AsyncReturn = 32001
     }
-    
 }

@@ -9,10 +9,6 @@ Assembly UtilitiesLibrary, Version=1.0.*, Culture=Invariant Language (Invariant 
 	hash=None, flags=None
 Struct WindowsUtils.Unmanaged: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
-Struct WindowsUtils.Unmanaged+AppType: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
-  :System.Enum
-  Fields:
-    Int32 value__ : Public, SpecialName, RTSpecialName
 Struct WindowsUtils.Unmanaged+ComputerSession: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Unmanaged+ResourceMessageTable: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
@@ -74,7 +70,7 @@ Class WindowsUtils.FileHandle: AutoLayout, AnsiClass, Class, Public, BeforeField
     System.String ImagePath 'get ' : 
     System.String AppName 'get ' : 
     UInt32 ProcessId 'get ' : 
-    AppType AppType 'get ' : 
+    WindowsUtils.AppType AppType 'get ' : 
   Methods:
     get_AppType(): PrivateScope, Public, HideBySig, SpecialName
     get_ProcessId(): PrivateScope, Public, HideBySig, SpecialName

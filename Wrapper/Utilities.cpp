@@ -158,7 +158,7 @@ namespace WindowsUtils
 		{
 			appNameSize = wcslen(pprocInfo[i].strAppName) + 1;
 			
-			single.AppType = (AppType)pprocInfo[i].ApplicationType;
+			single.AppType = pprocInfo[i].ApplicationType;
 			single.ProcessId = pprocInfo[i].Process.dwProcessId;
 			single.AppName = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * appNameSize));
 			single.ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
