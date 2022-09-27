@@ -60,10 +60,10 @@ Description = 'This module contain tools to facilitate the administration of Win
 # ScriptsToProcess = @()
 
 # Type files (.ps1xml) to be loaded when importing this module
-TypesToProcess = @('WindowsUtils-Types.ps1xml')
+TypesToProcess = @('WindowsUtils.Types.ps1xml')
 
 # Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @()
+# FormatsToProcess = @('WindowsUtils.Format.ps1xml')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 NestedModules = @('WindowsUtils.dll')
@@ -111,11 +111,7 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
-            Bugs:
-                'Get-ComputerSession' returning only local computer session regardless of computer name.
-            
-            New features:
-                New Cmdlet 'Disconnect-Session'. Logs off a interactive session on the local or remote computer.
+            **Removed Get-LastWinSockError** Same as Get-LastWin32Error
 '@
 
         # Prerelease string of this module

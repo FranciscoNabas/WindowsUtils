@@ -20,80 +20,77 @@
 #define _UNICODE
 #endif // UNICODE
 
-namespace Unmanaged
+namespace WindowsUtils
 {
-	extern "C" public class __declspec(dllexport) Utilities
+	extern "C" public class __declspec(dllexport) Unmanaged
 	{
 	public:
-		typedef struct MessageDumpOutput {
-			MessageDumpOutput() {};
+
+		enum class AppType
+		{
+			UnknownApp = RM_APP_TYPE::RmUnknownApp,
+			MainWindow = RM_APP_TYPE::RmMainWindow,
+			OtherWindow = RM_APP_TYPE::RmOtherWindow,
+			Service = RM_APP_TYPE::RmService,
+			Explorer = RM_APP_TYPE::RmExplorer,
+			Console = RM_APP_TYPE::RmConsole,
+			Critical = RM_APP_TYPE::RmCritical
+		};
+
+		class ComputerSession
+		{
+		public:
+			int						SessionId;
+			LPWSTR					Domain;
+			LPWSTR					UserName;
+			LPWSTR					SessionName;
+			LARGE_INTEGER			IdleTime;
+			LARGE_INTEGER			LogonTime;
+			WTS_CONNECTSTATE_CLASS	SessionState;
+			ComputerSession() { }
+			ComputerSession(int sessid, LPWSTR domain, LPWSTR usrname, LPWSTR sessname, LARGE_INTEGER idltime, LARGE_INTEGER lgtime, WTS_CONNECTSTATE_CLASS sesstate)
+				: SessionId(sessid), UserName(usrname), SessionName(sessname), IdleTime(idltime), LogonTime(lgtime), SessionState(sesstate) { }
+		};
+
+		class ResourceMessageTable
+		{
+		public:
 			DWORD	Id;
 			LPWSTR	Message;
-		}MessageDumpOutput, * PMessageDumpOutput;
+			ResourceMessageTable() { }
+			ResourceMessageTable(DWORD id, LPWSTR message) : Id(id), Message(message) { }
+		};
 
-		typedef struct FileHandleOutput {
-			RM_APP_TYPE	AppType;
+		class FileHandle
+		{
+		public:
+			AppType		AppType;
 			DWORD		ProcessId;
 			LPWSTR		AppName;
 			LPWSTR		ImagePath;
+			FileHandle() { }
+			FileHandle(Unmanaged::AppType apptype, DWORD pid, LPWSTR appname, LPWSTR imgpath) : AppType(apptype), ProcessId(pid), AppName(appname), ImagePath(imgpath) { }
+		};
 
-			FileHandleOutput() { };
-			~FileHandleOutput() { }
-		}FileHandleOutput, * PFileHandleOutput;
-
-		typedef struct RpcMapperOutput {
+		class RpcEndpoint
+		{
+		public:
 			LPWSTR	BindingString;
 			LPWSTR	Annotation;
+			RpcEndpoint() { }
+			RpcEndpoint(LPWSTR bstr, LPWSTR ann) : BindingString(bstr), Annotation(ann) { }
+		};
 
-			RpcMapperOutput() { }
-			~RpcMapperOutput() { }
-		}RpcMapperOutput, *PRpcMapperOutput;
-
-		DWORD Utilities::GetResourceMessageTable(std::vector<Utilities::MessageDumpOutput>& ppvecmdo, LPTSTR libName);
-		DWORD MapRpcEndpoints(std::vector<Utilities::RpcMapperOutput>& ppOutVec);
+		DWORD GetResourceMessageTable(std::vector<ResourceMessageTable>& ppvecmdo, LPTSTR libName);
+		DWORD MapRpcEndpoints(std::vector<RpcEndpoint>& ppOutVec);
 		LPWSTR GetFormatedWSError();
 		LPWSTR GetFormatedWin32Error();
 		LPWSTR GetFormatedError(DWORD errorCode);
-		DWORD GetProcessFileHandle(std::vector<FileHandleOutput>& ppvecfho, PCWSTR fileName);
+		DWORD GetProcessFileHandle(std::vector<FileHandle>& ppvecfho, PCWSTR fileName);
 		DWORD GetMsiProperties(std::map<std::wstring, std::wstring>& ppmapout, LPWSTR fileName);
 		DWORD GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage);
+		DWORD GetEnumeratedSession(std::vector<ComputerSession>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
+		std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
+		DWORD DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);
 	};
-
-	namespace WindowsTerminalServices
-	{
-		extern "C" public class __declspec(dllexport) TerminalServices
-		{
-		public:
-			enum class WtsSessionState {
-				Active = WTSActive,
-				Connected = WTSConnected,
-				ConnectQuery = WTSConnectQuery,
-				Shadow = WTSShadow,
-				Disconnected = WTSDisconnected,
-				Idle = WTSIdle,
-				Listen = WTSListen,
-				Reset = WTSReset,
-				Down = WTSDown,
-				Init = WTSInit,
-			};
-
-			typedef struct SessionEnumOutput
-			{
-			public:
-				int				SessionId;
-				LPWSTR			UserName;
-				LPWSTR			SessionName;
-				LARGE_INTEGER	IdleTime;
-				LARGE_INTEGER	LogonTime;
-				WtsSessionState	SessionState;
-
-				SessionEnumOutput() { };
-				~SessionEnumOutput() { };
-			}SessionEnumOutput, *PSessionEnumOutput;
-
-			DWORD GetEnumeratedSession(std::vector<TerminalServices::SessionEnumOutput>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
-			std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
-			DWORD DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);
-		};
-	}
 }

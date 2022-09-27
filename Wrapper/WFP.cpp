@@ -17,7 +17,7 @@
 
 using namespace std;
 
-namespace Unmanaged::WindowsFilteringPlatform
+namespace WindowsUtils
 {
 	/**********************************
 	'Installing a provider', an example from MS Docs.

@@ -21,125 +21,169 @@ using namespace System::Collections::Generic;
 
 using namespace System::Runtime::InteropServices;
 using namespace System::Management::Automation;
-using namespace Unmanaged;
-using namespace Unmanaged::WindowsTerminalServices;
 
-namespace Wrapper {
+namespace WindowsUtils {
 
-	public ref class Managed
+	public ref class ComputerSession
 	{
 	public:
-		TerminalServices* wtsPtr;
-		Utilities* utlPtr;
+		// Allocate the native object on the C++ Heap via a constructor
+		ComputerSession() : wrapper( new Unmanaged::ComputerSession ) { }
+		
+		ComputerSession(Unmanaged::ComputerSession item) {
+			wrapper = new Unmanaged::ComputerSession(
+				item.SessionId,
+				item.Domain,
+				item.UserName,
+				item.SessionName,
+				item.IdleTime,
+				item.LogonTime,
+				item.SessionState
+			);
+		}
 
-		int strucSize = sizeof(TerminalServices::SessionEnumOutput);
-		Type^ strucType = TerminalServices::SessionEnumOutput::typeid;
+		// Deallocate the native object on a destructor
+		~ComputerSession() { delete wrapper; }
 
-		enum class WtsSessionState
+		// Defining managed properties
+		property Int32 SessionId {
+			Int32 get() { return wrapper->SessionId; }
+		}
+		property String^ UserName {
+			String^ get() {
+				return gcnew String(wrapper->UserName);
+			}
+		}
+		property String^ SessionName {
+			String^ get() { return gcnew String(wrapper->SessionName); }
+		}
+		property TimeSpan IdleTime {
+			TimeSpan get() {
+				if (wrapper->IdleTime.QuadPart == 0)
+					return TimeSpan::Zero;
+				else
+					return DateTime::Now - DateTime::FromFileTime(wrapper->IdleTime.QuadPart);
+			}
+		}
+		property DateTime LogonTime {
+			DateTime get() {
+				return DateTime::FromFileTime(wrapper->LogonTime.QuadPart);
+			}
+		}
+		property WindowsUtils::SessionState^ SessionState {
+			WindowsUtils::SessionState^ get() {
+				return WindowsUtils::SessionState::GetSessionStateById(wrapper->SessionState);
+			}
+		}
+
+	protected:
+		// Deallocate the native object on the finalizer just in case no destructor is called
+		!ComputerSession() { delete wrapper; }
+
+	private:
+		Unmanaged::ComputerSession* wrapper;
+	};
+
+	public ref class ResourceMessageTable
+	{
+	public:
+		property Int64 Id { Int64 get() { return wrapper->Id; } }
+		property String^ Message { String^ get() { return gcnew String(wrapper->Message); } }
+		
+		ResourceMessageTable() : wrapper( new Unmanaged::ResourceMessageTable ) { }
+		ResourceMessageTable(Unmanaged::ResourceMessageTable item) {
+			wrapper = new Unmanaged::ResourceMessageTable(item.Id, item.Message);
+		}
+		~ResourceMessageTable() { delete wrapper; }
+
+	protected:
+		!ResourceMessageTable() { delete wrapper; }
+
+	private:
+		Unmanaged::ResourceMessageTable* wrapper;
+	};
+
+	public ref class RpcEndpoint
+	{
+	public:
+		property String^ BindingString { String^ get() { return gcnew String(wrapper->BindingString); } }
+		property String^ Annotation { String^ get() { return gcnew String(wrapper->Annotation); } }
+
+		RpcEndpoint() : wrapper( new Unmanaged::RpcEndpoint ) { }
+		RpcEndpoint(Unmanaged::RpcEndpoint item) {
+			wrapper = new Unmanaged::RpcEndpoint(item.BindingString, item.Annotation);
+		}
+		~RpcEndpoint() { delete wrapper; }
+
+	protected:
+		!RpcEndpoint() { delete wrapper; }
+
+	private:
+		Unmanaged::RpcEndpoint* wrapper;
+	};
+
+	public ref class FileHandle
+	{
+	public:
+		property Unmanaged::AppType AppType { Unmanaged::AppType get() { return wrapper->AppType; } }
+		property UInt32 ProcessId { UInt32 get() { return wrapper->ProcessId; } }
+		property String^ AppName { String^ get() { return gcnew String(wrapper->AppName); } }
+		property String^ ImagePath { String^ get() { return gcnew String(wrapper->ImagePath); } }
+
+		FileHandle() : wrapper( new Unmanaged::FileHandle ) { }
+		FileHandle(Unmanaged::FileHandle item) {
+			wrapper = new Unmanaged::FileHandle(
+				item.AppType,
+				item.ProcessId,
+				item.AppName,
+				item.ImagePath
+			);
+		}
+		~FileHandle() { delete wrapper; }
+
+	protected:
+		!FileHandle() { delete wrapper; }
+
+	private:
+		Unmanaged::FileHandle* wrapper;
+	};
+
+	public ref class WrappedFunctions
+	{
+	public:
+		Unmanaged* extptr;
+
+		array<ComputerSession^>^ GetEnumeratedSession(IntPtr session, bool onlyActive, bool includeSystemSessions)
 		{
-			Active,
-			Connected,
-			ConnectQuery,
-			Shadow,
-			Disconnected,
-			Idle,
-			Listen,
-			Reset,
-			Down,
-			Init
-		};
-
-		enum class AppType
-		{
-			UnknownApp = 0,
-			MainWindow = 1,
-			OtherWindow = 2,
-			Service = 3,
-			Explorer = 4,
-			Console = 5,
-			Critical = 1000
-		};
-
-		ref class SessionEnumOutput
-		{
-		public:
-			int SessionId;
-			String^ UserName;
-			String^ SessionName;
-			Nullable<TimeSpan> IdleTime;
-			Nullable<DateTime> LogonDate;
-			WtsSessionState SessionState;
-		};
-
-		ref class MessageDumpOutput
-		{
-		public:
-			Int64 Id;
-			String^ Message;
-		};
-
-		ref class RpcMapperOutput
-		{
-		public:
-			String^	BindingString;
-			String^ Annotation;
-
-			RpcMapperOutput(String^ bs, String^ an) : BindingString(bs), Annotation(an) { }
-			~RpcMapperOutput() { }
-		};
-
-		ref class FileHandleOutput
-		{
-		public:
-			UInt32^ ProcessId;
-			AppType AppType;
-			String^ AppName;
-			String^ ImagePath;
-		};
-
-		List<SessionEnumOutput^>^ GetEnumeratedSession(IntPtr session, bool onlyActive, bool includeSystemSessions)
-		{
-			List<SessionEnumOutput^>^ output = gcnew List<SessionEnumOutput^>();
-			std::shared_ptr<std::vector<TerminalServices::SessionEnumOutput>> result = std::make_shared<std::vector<TerminalServices::SessionEnumOutput>>();
-			DWORD opresult = wtsPtr->GetEnumeratedSession(*result, (HANDLE)session, onlyActive, includeSystemSessions);
+			SharedVecPtr(Unmanaged::ComputerSession) result = MakeVecPtr(Unmanaged::ComputerSession);
+			DWORD opresult = extptr->GetEnumeratedSession(*result, (HANDLE)session, onlyActive, includeSystemSessions);
 			if (opresult != ERROR_SUCCESS)
 				throw gcnew SystemException(GetFormatedError(opresult));
 
-			for (size_t it = 0; it < result->size(); it++)
-			{
-				SessionEnumOutput^ inner = gcnew SessionEnumOutput();
-				inner->SessionId = result->at(it).SessionId;
-				inner->UserName = gcnew String(result->at(it).UserName);
-				inner->SessionName = gcnew String(result->at(it).SessionName);
-				inner->SessionState = (WtsSessionState)result->at(it).SessionState;
-				inner->LogonDate = DateTime::FromFileTime(result->at(it).LogonTime.QuadPart);
-				if (result->at(it).IdleTime.QuadPart > 0)
-					inner->IdleTime = DateTime::Now - DateTime::FromFileTime(result->at(it).IdleTime.QuadPart);
-				else
-					inner->IdleTime = TimeSpan::Zero;
-				
-				output->Add(inner);
-			}
+			array<ComputerSession^>^ output = gcnew array<ComputerSession^>((int)result->size());
+			for (size_t i = 0; i < result->size(); i++)
+				output[(int)i] = gcnew ComputerSession(result->at(i));
 
 			return output;
 		}
-
 		List<int>^ InvokeMessage(IntPtr session, array<int>^ sessionId, String^ title, String^ message, UInt32 style, int timeout, bool wait)
 		{
+			// To do: convert to smart pointer.
 			std::vector<DWORD>* result = new std::vector<DWORD>();
 			std::vector<DWORD>* unSessionId = (std::vector<DWORD>*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(std::vector<DWORD>));
 			unSessionId->clear();
+
 			pin_ptr<const wchar_t> wTitle = PtrToStringChars(title);
 			pin_ptr<const wchar_t> wMessage = PtrToStringChars(message);
 
 			if (sessionId == nullptr)
 			{
-				*result = wtsPtr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *unSessionId, (HANDLE)session);
+				*result = extptr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *unSessionId, (HANDLE)session);
 			}
 			else
 			{
 				for (int i = 0; i < sessionId->Length; i++) { unSessionId->push_back((DWORD)sessionId[i]); }
-				*result = wtsPtr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *unSessionId, (HANDLE)session);
+				*result = extptr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *unSessionId, (HANDLE)session);
 			}
 			
 			List<int>^ output = gcnew List<int>();
@@ -149,119 +193,95 @@ namespace Wrapper {
 			HeapFree(GetProcessHeap(), NULL, unSessionId);
 			return output;
 		}
-
-		List<MessageDumpOutput^>^ GetResourceMessageTable(String^ libPath)
+		array<ResourceMessageTable^>^ GetResourceMessageTable(String^ libPath)
 		{
-			SharedVecPtr(Utilities::MessageDumpOutput) ppResult = MakeVecPtr(Utilities::MessageDumpOutput);
-			List<MessageDumpOutput^>^ output = gcnew List<MessageDumpOutput^>();
+			SharedVecPtr(Unmanaged::ResourceMessageTable) ppResult = MakeVecPtr(Unmanaged::ResourceMessageTable);
 			pin_ptr<const wchar_t> wLibPath = PtrToStringChars(libPath);
 
-			DWORD result = utlPtr->GetResourceMessageTable(*ppResult, (LPWSTR)wLibPath);
-
+			DWORD result = extptr->GetResourceMessageTable(*ppResult, (LPWSTR)wLibPath);
 			if (result != ERROR_SUCCESS)
 			{
 				wLibPath = nullptr;
 				throw gcnew SystemException(GetFormatedError(result));
 			}
 
+			array<ResourceMessageTable^>^ output = gcnew array<ResourceMessageTable^>((int)ppResult->size());
 			for (size_t i = 0; i < ppResult->size(); i++)
-			{
-				Utilities::MessageDumpOutput single = ppResult->at(i);
-				MessageDumpOutput^ inner = gcnew MessageDumpOutput();
-
-				inner->Id = single.Id;
-				inner->Message = gcnew String(single.Message);
-
-				output->Add(inner);
-			}
+				output[(int)i] = gcnew ResourceMessageTable(ppResult->at(i));
 
 			wLibPath = nullptr;
 			return output;
 		}
-
-		List<RpcMapperOutput^>^ MapRpcEndpoints()
+		array<RpcEndpoint^>^ MapRpcEndpoints()
 		{
-			List<RpcMapperOutput^>^ output = gcnew List<RpcMapperOutput^>();
-			SharedVecPtr(Utilities::RpcMapperOutput) result = MakeVecPtr(Utilities::RpcMapperOutput);;
+			SharedVecPtr(Unmanaged::RpcEndpoint) result = MakeVecPtr(Unmanaged::RpcEndpoint);;
+			DWORD opresult = extptr->MapRpcEndpoints(*result);
+			if (opresult != ERROR_SUCCESS)
+				throw gcnew SystemException(GetFormatedError(opresult));
 
-			utlPtr->MapRpcEndpoints(*result);
-
+			array<RpcEndpoint^>^ output = gcnew array<RpcEndpoint^>((int)result->size());
 			for (size_t i = 0; i < result->size(); i++)
-			{
-				output->Add(gcnew RpcMapperOutput(gcnew String(result->at(i).BindingString), gcnew String(result->at(i).Annotation)));
-			}
+				output[(int)i] = gcnew RpcEndpoint(result->at(i));
 
 			return output;
 		}
-
 		String^ GetFormatedError(int errorCode)
 		{
-			LPWSTR result = utlPtr->GetFormatedError((DWORD)errorCode);
+			LPWSTR result = extptr->GetFormatedError((DWORD)errorCode);
 			String^ output = gcnew String(result);
 			GlobalFree(result);
 			return output;
 		}
 		String^ GetFormatedWin32Error()
 		{
-			LPWSTR result = utlPtr->GetFormatedWin32Error();
+			LPWSTR result = extptr->GetFormatedWin32Error();
 			String^ output = gcnew String(result);
 			GlobalFree(result);
 			return output;
 		}
 		String^ GetFormatedWSError()
 		{
-			LPWSTR result = utlPtr->GetFormatedWSError();
+			LPWSTR result = extptr->GetFormatedWSError();
 			String^ output = gcnew String(result);
 			GlobalFree(result);
 			return output;
 		}
-
-		List<FileHandleOutput^>^ GetProcessFileHandle(String^ fileName)
+		array<FileHandle^>^ GetProcessFileHandle(String^ fileName)
 		{
-			List<FileHandleOutput^>^ output = gcnew List<FileHandleOutput^>();
-			SharedVecPtr(Unmanaged::Utilities::FileHandleOutput) ppOutput = MakeVecPtr(Unmanaged::Utilities::FileHandleOutput);
+			SharedVecPtr(Unmanaged::FileHandle) ppOutput = MakeVecPtr(Unmanaged::FileHandle);
 			pin_ptr<const wchar_t> wFileName = PtrToStringChars(fileName);
-			UINT result = utlPtr->GetProcessFileHandle(*ppOutput, (PCWSTR)wFileName);
+			UINT result = extptr->GetProcessFileHandle(*ppOutput, (PCWSTR)wFileName);
 
 			if (result != ERROR_SUCCESS)
 			{
 				wFileName = nullptr;
 				throw gcnew SystemException(GetFormatedError(result));
 			}
-
 			if (ppOutput->size() == 0)
 			{
 				wFileName = nullptr;
 				return nullptr;
 			}
 
+			array<FileHandle^>^ output = gcnew array<FileHandle^>((int)ppOutput->size());
 			for (size_t i = 0; i < ppOutput->size(); i++)
-			{
-				FileHandleOutput^ single = gcnew FileHandleOutput();
-				single->ProcessId = ppOutput->at(i).ProcessId;
-				single->AppType = (AppType)ppOutput->at(i).AppType;
-				single->AppName = gcnew String(ppOutput->at(i).AppName);
-				single->ImagePath = gcnew String(ppOutput->at(i).ImagePath);
-
-				output->Add(single);
-			}
+				output[(int)i] = gcnew FileHandle(ppOutput->at(i));
 
 			wFileName = nullptr;
 			return output;
 		}
-	
 		PSObject^ GetMsiProperties(String^ fileName)
 		{
 			PSObject^ output = gcnew PSObject();
 			std::shared_ptr<std::map<std::wstring, std::wstring>> ppresult = std::make_shared<std::map<std::wstring, std::wstring>>();
 			pin_ptr<const wchar_t> wfilename = PtrToStringChars(fileName);
 
-			DWORD result = utlPtr->GetMsiProperties(*ppresult, (LPWSTR)wfilename);
+			DWORD result = extptr->GetMsiProperties(*ppresult, (LPWSTR)wfilename);
 			if (ERROR_SUCCESS != result && ERROR_NO_MORE_ITEMS != result)
 			{
 				wfilename = nullptr;
 				LPWSTR pextmsierr;
-				DWORD inResu = utlPtr->GetMsiExtendedErrorMessage(pextmsierr);
+				DWORD inResu = extptr->GetMsiExtendedErrorMessage(pextmsierr);
 				if (ERROR_SUCCESS == inResu)
 					throw gcnew SystemException(gcnew String(pextmsierr));
 				else
@@ -276,16 +296,15 @@ namespace Wrapper {
 
 			return output;
 		}
-
 		void DisconnectSession(IntPtr session, Int32 sessionid, bool wait)
 		{
-			DWORD result = wtsPtr->DisconnectSession((HANDLE)session, (DWORD)sessionid, wait);
+			DWORD result = extptr->DisconnectSession((HANDLE)session, (DWORD)sessionid, wait);
 			if (result != ERROR_SUCCESS)
 				throw gcnew SystemException(GetFormatedError(result));
 		}
 		void DisconnectSession(IntPtr session, bool wait)
 		{
-			DWORD result = wtsPtr->DisconnectSession((HANDLE)session, NULL, wait);
+			DWORD result = extptr->DisconnectSession((HANDLE)session, NULL, wait);
 			if (result != ERROR_SUCCESS)
 				throw gcnew SystemException(GetFormatedError(result));
 		}

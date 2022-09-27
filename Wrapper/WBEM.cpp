@@ -8,7 +8,7 @@
 
 using namespace std;
 
-namespace Unmanaged::WindowsManagementInstrumentation
+namespace WindowsUtils
 {
 
 }

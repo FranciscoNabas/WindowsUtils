@@ -10,9 +10,7 @@
 #define CHECKDWRESULT(result, err) if (result != ERROR_SUCCESS) { err = GetLastError(); goto CLEANUP; }
 #define IFFAILRETURNDW(result) if (ERROR_SUCCESS != result) { return result; }
 
-using namespace std;
-
-namespace Unmanaged
+namespace WindowsUtils
 {
 	void PrintBuffer(LPWSTR& pwref, wchar_t const* const format, ...)
 	{
@@ -27,7 +25,7 @@ namespace Unmanaged
 		va_end(args);
 	}
 
-	DWORD Utilities::GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage)
+	DWORD Unmanaged::GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage)
 	{
 		UINT uiStatus = 0;
 		DWORD extErrBuffSize = 0;
@@ -52,7 +50,7 @@ namespace Unmanaged
 		return uiStatus;
 	}
 
-	DWORD Utilities::GetMsiProperties(map<wstring, wstring>& ppmapout, LPWSTR fileName)
+	DWORD Unmanaged::GetMsiProperties(std::map<std::wstring, std::wstring>& ppmapout, LPWSTR fileName)
 	{
 		PMSIHANDLE pDatabase;
 		PMSIHANDLE pView;
@@ -97,8 +95,8 @@ namespace Unmanaged
 						uiReturn = MsiRecordGetString(pRecord, 2, pRecValue, &dwRecValBuffer);
 						IFFAILRETURNDW(uiReturn);
 
-						wstring recproperty(pRecProperty);
-						wstring recvalue(pRecValue);
+						std::wstring recproperty(pRecProperty);
+						std::wstring recvalue(pRecValue);
 
 						ppmapout[recproperty] = recvalue;
 
@@ -110,7 +108,7 @@ namespace Unmanaged
 		return uiReturn;
 	}
 
-	DWORD Utilities::GetProcessFileHandle(vector<Utilities::FileHandleOutput>& ppvecfho, PCWSTR fileName)
+	DWORD Unmanaged::GetProcessFileHandle(std::vector<Unmanaged::FileHandle>& ppvecfho, PCWSTR fileName)
 	{
 		WCHAR szSessionKey[CCH_RM_SESSION_KEY + 1] = { 0 };
 		DWORD session;
@@ -120,7 +118,7 @@ namespace Unmanaged
 		DWORD err = 0;
 		DWORD res = 0;
 		size_t appNameSize;
-		Utilities::FileHandleOutput single;
+		Unmanaged::FileHandle single;
 		
 		if (!SUCCEEDED(RmStartSession(&session, 0, szSessionKey)))
 		{
@@ -160,7 +158,7 @@ namespace Unmanaged
 		{
 			appNameSize = wcslen(pprocInfo[i].strAppName) + 1;
 			
-			single.AppType = pprocInfo[i].ApplicationType;
+			single.AppType = (AppType)pprocInfo[i].ApplicationType;
 			single.ProcessId = pprocInfo[i].Process.dwProcessId;
 			single.AppName = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * appNameSize));
 			single.ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
@@ -188,7 +186,7 @@ namespace Unmanaged
 		return err;
 	}
 
-	LPWSTR Utilities::GetFormatedWSError()
+	LPWSTR Unmanaged::GetFormatedWSError()
 	{
 		LPWSTR inter = NULL;
 		FormatMessageW(
@@ -202,7 +200,7 @@ namespace Unmanaged
 		);
 		return inter;
 	}
-	LPWSTR Utilities::GetFormatedWin32Error()
+	LPWSTR Unmanaged::GetFormatedWin32Error()
 	{
 		LPWSTR inter = NULL;
 		FormatMessageW(
@@ -216,7 +214,7 @@ namespace Unmanaged
 		);
 		return inter;
 	}
-	LPWSTR Utilities::GetFormatedError(DWORD errorCode)
+	LPWSTR Unmanaged::GetFormatedError(DWORD errorCode)
 	{
 		LPWSTR inter = NULL;
 		FormatMessageW(
@@ -231,10 +229,10 @@ namespace Unmanaged
 		return inter;
 	}
 
-	DWORD Utilities::GetResourceMessageTable(vector<Utilities::MessageDumpOutput>& ppvecmdo, LPTSTR libName)
+	DWORD Unmanaged::GetResourceMessageTable(std::vector<Unmanaged::ResourceMessageTable>& ppvecmdo, LPTSTR libName)
 	{
 		DWORD err = 0;
-		Utilities::MessageDumpOutput inner;
+		Unmanaged::ResourceMessageTable inner;
 
 		HMODULE hDll = LoadLibraryEx(libName, NULL, LOAD_LIBRARY_AS_DATAFILE);
 		if (hDll != NULL)
@@ -277,7 +275,7 @@ namespace Unmanaged
 		return err;
 	}
 
-	DWORD Utilities::MapRpcEndpoints(vector<Utilities::RpcMapperOutput> &ppOutVec)
+	DWORD Unmanaged::MapRpcEndpoints(std::vector<Unmanaged::RpcEndpoint> &ppOutVec)
 	{
 		RPC_EP_INQ_HANDLE inqContext;
 		RPC_STATUS result = 0;
@@ -292,7 +290,7 @@ namespace Unmanaged
 
 		do
 		{
-			Utilities::RpcMapperOutput inner;
+			Unmanaged::RpcEndpoint inner;
 			result = RpcMgmtEpEltInqNextW(inqContext, NULL, &bindingHandle, NULL, &annotation);
 			if (result != 0 || result == RPC_X_NO_MORE_ENTRIES)
 				break;
