@@ -17,6 +17,8 @@ Struct WindowsUtils.Unmanaged+FileHandle: AutoLayout, AnsiClass, Class, NestedPu
   :System.ValueType
 Struct WindowsUtils.Unmanaged+RpcEndpoint: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+Struct WindowsUtils.Unmanaged+ResourceList: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
 Class WindowsUtils.ComputerSession: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(ComputerSession): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
@@ -89,7 +91,8 @@ Class WindowsUtils.WrappedFunctions: AutoLayout, AnsiClass, Class, Public, Befor
     GetFormatedError(Int32): PrivateScope, Public, HideBySig
     GetFormatedWin32Error(): PrivateScope, Public, HideBySig
     GetFormatedWSError(): PrivateScope, Public, HideBySig
-    GetProcessFileHandle(String): PrivateScope, Public, HideBySig
+    GetProcessFileHandle(String[]): PrivateScope, Public, HideBySig
     GetMsiProperties(String): PrivateScope, Public, HideBySig
     DisconnectSession(IntPtr, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     DisconnectSession(IntPtr, Int32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
+    Test(vector<wchar_t const \*\,std::allocator<wchar_t const \*> >*): PrivateScope, Public, HideBySig

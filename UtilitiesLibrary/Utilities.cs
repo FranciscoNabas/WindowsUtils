@@ -7,13 +7,16 @@ using System.Net.Sockets;
 using System.Management.Automation;
 using WindowsUtils.Abstraction;
 using WindowsUtils.TerminalServices;
+using System.Text;
+using System.Runtime.InteropServices;
 
 #nullable enable
 namespace WindowsUtils
 {
     public class Utilities
     {
-        private static Session sessionInfo = new();
+        private static WtsSession sessionInfo = new();
+        private static RestartManagerSession rmSessionHandle = new();
         
         public static ComputerSession[] GetComputerSession(string computerName, bool onlyActive, bool IncludeSystemSession)
         {
@@ -465,7 +468,7 @@ namespace WindowsUtils
             return unWrapper.GetFormatedWSError();
         }
 
-        public static FileHandle[]? GetProcessFileHandle(string fileName)
+        public static FileHandle[]? GetProcessFileHandle(string[] fileName)
         {
             WrappedFunctions unWrapper = new();
             return unWrapper.GetProcessFileHandle(fileName);

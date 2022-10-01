@@ -22,6 +22,8 @@
 
 namespace WindowsUtils
 {
+	
+
 	extern "C" public class __declspec(dllexport) Unmanaged
 	{
 	public:
@@ -70,12 +72,18 @@ namespace WindowsUtils
 			RpcEndpoint(LPWSTR bstr, LPWSTR ann) : BindingString(bstr), Annotation(ann) { }
 		};
 
+		typedef struct ResourceList
+		{
+			WCHAR* Resource;
+
+		}ResourceList, *PResourceList;
+
+		DWORD GetProcessFileHandle(std::vector<FileHandle>& ppvecfho, std::vector<LPCWSTR> reslist);
 		DWORD GetResourceMessageTable(std::vector<ResourceMessageTable>& ppvecmdo, LPTSTR libName);
 		DWORD MapRpcEndpoints(std::vector<RpcEndpoint>& ppOutVec);
 		LPWSTR GetFormatedWSError();
 		LPWSTR GetFormatedWin32Error();
 		LPWSTR GetFormatedError(DWORD errorCode);
-		DWORD GetProcessFileHandle(std::vector<FileHandle>& ppvecfho, PCWSTR fileName);
 		DWORD GetMsiProperties(std::map<std::wstring, std::wstring>& ppmapout, LPWSTR fileName);
 		DWORD GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage);
 		DWORD GetEnumeratedSession(std::vector<ComputerSession>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);

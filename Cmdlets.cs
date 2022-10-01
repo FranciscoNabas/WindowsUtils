@@ -131,12 +131,12 @@ namespace WindowsUtils.Commands
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
-        public string Path { get; set; }
+        public string[] Path { get; set; }
 
         protected override void ProcessRecord()
         {
             WrappedFunctions unWrapper = new();
-            WriteObject(unWrapper.GetProcessFileHandle(Path));
+            WriteObject(unWrapper.GetProcessFileHandle(Path), true);
         }
     }
 

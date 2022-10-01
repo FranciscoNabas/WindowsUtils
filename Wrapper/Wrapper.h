@@ -17,6 +17,7 @@
 #define MakeVecPtr(T) std::make_shared<std::vector<T>>()
 
 using namespace System;
+using namespace System::Text;
 using namespace System::Collections::Generic;
 using namespace WindowsUtils::Abstraction;
 using namespace System::Runtime::InteropServices;
@@ -148,6 +149,9 @@ namespace WindowsUtils {
 		Unmanaged::FileHandle* wrapper;
 	};
 
+	/*
+		All calls to native code functions
+	*/
 	public ref class WrappedFunctions
 	{
 	public:
@@ -246,20 +250,25 @@ namespace WindowsUtils {
 			GlobalFree(result);
 			return output;
 		}
-		array<FileHandle^>^ GetProcessFileHandle(String^ fileName)
+		array<FileHandle^>^ GetProcessFileHandle(array<String^>^ fileName)
 		{
 			SharedVecPtr(Unmanaged::FileHandle) ppOutput = MakeVecPtr(Unmanaged::FileHandle);
-			pin_ptr<const wchar_t> wFileName = PtrToStringChars(fileName);
-			UINT result = extptr->GetProcessFileHandle(*ppOutput, (PCWSTR)wFileName);
+			SharedVecPtr(LPCWSTR) reslist = MakeVecPtr(LPCWSTR);
+			
+			for (int i = 0; i < fileName->Length; i++)
+			{
+				pin_ptr<const WCHAR> single = PtrToStringChars(fileName[i]);
+				reslist->push_back((LPCWSTR)single);
+				single = nullptr;
+			}
 
+			UINT result = extptr->GetProcessFileHandle(*ppOutput, *reslist);
 			if (result != ERROR_SUCCESS)
 			{
-				wFileName = nullptr;
 				throw gcnew SystemException(GetFormatedError(result));
 			}
 			if (ppOutput->size() == 0)
 			{
-				wFileName = nullptr;
 				return nullptr;
 			}
 
@@ -267,7 +276,6 @@ namespace WindowsUtils {
 			for (size_t i = 0; i < ppOutput->size(); i++)
 				output[(int)i] = gcnew FileHandle(ppOutput->at(i));
 
-			wFileName = nullptr;
 			return output;
 		}
 		PSObject^ GetMsiProperties(String^ fileName)
@@ -307,6 +315,24 @@ namespace WindowsUtils {
 			DWORD result = extptr->DisconnectSession((HANDLE)session, NULL, wait);
 			if (result != ERROR_SUCCESS)
 				throw gcnew SystemException(GetFormatedError(result));
+		}
+	
+		void Test(std::vector<LPCWSTR> input)
+		{
+			size_t vecsize = input.size();
+			LPCWSTR* resourcelist = new LPCWSTR[vecsize];
+
+			for (size_t i = 0; i < input.size(); i++)
+			{
+				LPCWSTR single = input.at(i);
+				size_t strsize = wcslen(single);
+				resourcelist[i] = new WCHAR[strsize];
+				wcscpy_s((WCHAR*)resourcelist[i], strsize, single);
+			}
+
+			/*
+				The rest of the code...
+			*/
 		}
 	};
 }

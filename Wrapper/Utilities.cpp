@@ -7,7 +7,7 @@
 #define _UNICODE
 #endif // UNICODE
 
-#define CHECKDWRESULT(result, err) if (result != ERROR_SUCCESS) { err = GetLastError(); goto CLEANUP; }
+#define CHECKDWRESULT(result) if (ERROR_SUCCESS != result) { goto CLEANUP; }
 #define IFFAILRETURNDW(result) if (ERROR_SUCCESS != result) { return result; }
 
 namespace WindowsUtils
@@ -95,10 +95,14 @@ namespace WindowsUtils
 						uiReturn = MsiRecordGetString(pRecord, 2, pRecValue, &dwRecValBuffer);
 						IFFAILRETURNDW(uiReturn);
 
-						std::wstring recproperty(pRecProperty);
-						std::wstring recvalue(pRecValue);
-
-						ppmapout[recproperty] = recvalue;
+						if (nullptr != pRecProperty && nullptr != pRecValue)
+						{
+							std::wstring recproperty(pRecProperty);
+							std::wstring recvalue(pRecValue);
+							ppmapout[recproperty] = recvalue;
+						}
+						else
+							return ERROR_NOT_ENOUGH_MEMORY;
 
 					} while (pRecord != 0);
 				}
@@ -108,62 +112,74 @@ namespace WindowsUtils
 		return uiReturn;
 	}
 
-	DWORD Unmanaged::GetProcessFileHandle(std::vector<Unmanaged::FileHandle>& ppvecfho, PCWSTR fileName)
+	DWORD Unmanaged::GetProcessFileHandle
+	(
+		std::vector<Unmanaged::FileHandle>& ppvecfho,
+		std::vector<LPCWSTR> reslist
+	)
 	{
-		WCHAR szSessionKey[CCH_RM_SESSION_KEY + 1] = { 0 };
-		DWORD session;
+		// Invalid handle value for DWORD
+		DWORD sessionHandle = 0xFFFFFFFF;
+		
 		UINT nProcInfo = 0;
-		UINT nProcInfoNeeded;
-		DWORD rebReason;
-		DWORD err = 0;
+		UINT nProcInfoNeeded = 0;
+		RM_REBOOT_REASON rebReason = RmRebootReasonNone;
+		PRM_PROCESS_INFO pprocInfo = NULL;
+
 		DWORD res = 0;
+		UINT retry = 0;
 		size_t appNameSize;
 		Unmanaged::FileHandle single;
-		
-		if (!SUCCEEDED(RmStartSession(&session, 0, szSessionKey)))
-		{
-			err = GetLastError();
-			return err;
-		}
-		if (!SUCCEEDED(RmRegisterResources(session, 1, &fileName, 0, NULL, 0, NULL)))
-		{
-			err = GetLastError();
-			return err;
-		}
-		
-		/* First call passing '0' to retrieve the number of processes, to size our array.
-		If this call returns '0', the file is not in use by any process.*/
-		res = RmGetList(session, &nProcInfoNeeded, &nProcInfo, NULL, &rebReason);
-		if (res == ERROR_SUCCESS)
-			return err;
 
-		if (res != ERROR_MORE_DATA) 
-		{
-			err = GetLastError();
-			return err;
-		}
-
-		RM_PROCESS_INFO* pprocInfo = (RM_PROCESS_INFO*)LocalAlloc(LPTR, (sizeof(RM_PROCESS_INFO) * nProcInfoNeeded));
-		nProcInfo = nProcInfoNeeded;
-
-		// Call to get the RM_PROCESS_INFO objects
-		res = RmGetList(session, &nProcInfoNeeded, &nProcInfo, pprocInfo, &rebReason);
-		if (res != ERROR_SUCCESS)
-		{
-			err = GetLastError();
-			return err;
-		}
+		WCHAR szSessionKey[CCH_RM_SESSION_KEY + 1] = { 0 };
+		res = RmStartSession(&sessionHandle, 0, szSessionKey);
+		CHECKDWRESULT(res);
 		
+		res = RmRegisterResources(sessionHandle, reslist.size(), reslist.data(), 0, NULL, 0, NULL);
+		CHECKDWRESULT(res);
+		
+		/*
+			We need to call the Restart Manager first to know the size of the RM_PROCESS_INFO array.
+			However, RM updates every time RmGetList() is called, so it's possible that the value returned on the first call is not enough to allocate the result.
+			So we implement a loop who tries to get the right size every time ERROR_MORE_DATA is returned.
+			We give up after 3 calls.
+			Ref.: https://learn.microsoft.com/en-us/windows/win32/rstmgr/using-restart-manager-with-a-secondary-installer
+		*/
+		do
+		{
+			res = RmGetList(sessionHandle, &nProcInfoNeeded, &nProcInfo, pprocInfo, (LPDWORD)(&rebReason));
+
+			if (ERROR_SUCCESS == res)
+				break;
+			if (ERROR_MORE_DATA != res)
+				goto CLEANUP;
+
+			nProcInfo = nProcInfoNeeded;
+			if (NULL != pprocInfo)
+			{
+				delete[] pprocInfo;
+				pprocInfo = NULL;
+			}
+
+			pprocInfo = new RM_PROCESS_INFO[nProcInfo];
+
+		} while ((ERROR_MORE_DATA == res) && (retry ++ < 3));
+
 		for (UINT i = 0; i < nProcInfo; i++)
 		{
+			if (nullptr == pprocInfo)
+				return ERROR_NOT_ENOUGH_MEMORY;
+			
 			appNameSize = wcslen(pprocInfo[i].strAppName) + 1;
 			
 			single.AppType = pprocInfo[i].ApplicationType;
 			single.ProcessId = pprocInfo[i].Process.dwProcessId;
 			single.AppName = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * appNameSize));
-			single.ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
-
-			wcscpy_s(single.AppName, appNameSize, pprocInfo[i].strAppName);
+			
+			if (nullptr != single.AppName)
+				wcscpy_s(single.AppName, appNameSize, pprocInfo[i].strAppName);
+			else
+				return ERROR_NOT_ENOUGH_MEMORY;
 
 			HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pprocInfo[i].Process.dwProcessId);
 			if (INVALID_HANDLE_VALUE != hProcess)
@@ -171,9 +187,15 @@ namespace WindowsUtils
 				FILETIME ftCreate, ftExit, ftKernel, ftUser;
 				if (GetProcessTimes(hProcess, &ftCreate, &ftExit, &ftKernel, &ftUser) && CompareFileTime(&pprocInfo[i].Process.ProcessStartTime, &ftCreate) == 0)
 				{
-					DWORD cch = MAX_PATH;
-					if (!QueryFullProcessImageNameW(hProcess, 0, single.ImagePath, &cch))
-						single.ImagePath = L"";
+					single.ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
+					if (nullptr != single.ImagePath)
+					{
+						DWORD cch = MAX_PATH;
+						if (!QueryFullProcessImageNameW(hProcess, 0, single.ImagePath, &cch))
+							single.ImagePath = L"";
+					}
+					else
+						return ERROR_NOT_ENOUGH_MEMORY;
 				}
 				CloseHandle(hProcess);
 			}
@@ -181,9 +203,22 @@ namespace WindowsUtils
 			ppvecfho.push_back(single);
 		}
 		
-		if (nullptr != pprocInfo) { LocalFree(pprocInfo); }
-	
-		return err;
+	CLEANUP:
+
+		if (NULL != pprocInfo)
+		{
+			delete[] pprocInfo;
+			pprocInfo = NULL;
+		}
+
+		// We cannot reuse a session handle for new calls with different files. I tried.
+		if (0xFFFFFFFF != sessionHandle)
+		{
+			RmEndSession(sessionHandle);
+			sessionHandle = 0xFFFFFFFF;
+		}
+
+		return res;
 	}
 
 	LPWSTR Unmanaged::GetFormatedWSError()
@@ -225,7 +260,7 @@ namespace WindowsUtils
 			(LPWSTR)&inter,
 			0,
 			NULL
-		);
+			);
 		return inter;
 	}
 
@@ -275,7 +310,7 @@ namespace WindowsUtils
 		return err;
 	}
 
-	DWORD Unmanaged::MapRpcEndpoints(std::vector<Unmanaged::RpcEndpoint> &ppOutVec)
+	DWORD Unmanaged::MapRpcEndpoints(std::vector<Unmanaged::RpcEndpoint>& ppOutVec)
 	{
 		RPC_EP_INQ_HANDLE inqContext;
 		RPC_STATUS result = 0;
