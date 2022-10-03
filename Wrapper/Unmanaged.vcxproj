@@ -126,7 +126,7 @@
       <LanguageStandard_C>Default</LanguageStandard_C>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Msi.lib;Rstrtmgr.lib;shlwapi.lib;Shell32.lib;Rpcrt4.lib;fwpuclnt.lib;Ws2_32.lib;wtsapi32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Version.lib;Msi.lib;Rstrtmgr.lib;shlwapi.lib;Shell32.lib;Rpcrt4.lib;fwpuclnt.lib;Ws2_32.lib;wtsapi32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
@@ -156,6 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="NtUtilities.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugg|Win32'">Create</PrecompiledHeader>

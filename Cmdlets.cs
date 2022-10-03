@@ -1,4 +1,5 @@
 ﻿using System.Management.Automation;
+using System.Runtime.InteropServices.ComTypes;
 using WindowsUtils.Abstraction;
 
 namespace WindowsUtils.Commands
@@ -28,7 +29,7 @@ namespace WindowsUtils.Commands
         public int Timeout { get; set; } = 0;
 
         [Parameter()]
-        public bool Wait { get; set; } = false;
+        public SwitchParameter Wait { get; set; } = false;
 
         [Parameter()]
         public SwitchParameter Force { get; set; } = false;
@@ -131,12 +132,29 @@ namespace WindowsUtils.Commands
     {
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
-        public string Path { get; set; }
+        public string[] Path { get; set; }
+        private List<string> validPaths = new List<string>();
 
         protected override void ProcessRecord()
         {
+            for (int i = 0; i < Path.Length; i++)
+            {
+                string path = Path[i];
+                if (File.Exists(path.Trim()) || Directory.Exists(path.Trim()))
+                    validPaths.Add(path);
+                else
+                    WriteWarning("Object '" + path + "' not found.");
+            }
+
+            if (validPaths.Count == 0)
+                throw new ItemNotFoundException("No object found for the specified path(s).");
+
+            string[] validsent = new string[validPaths.Count];
+            for (int i = 0; i < validPaths.Count; i++)
+                validsent[i] = validPaths[i].Trim();
+
             WrappedFunctions unWrapper = new();
-            WriteObject(unWrapper.GetProcessFileHandle(Path));
+            WriteObject(unWrapper.GetProcessFileHandle(validsent), true);
         }
     }
 

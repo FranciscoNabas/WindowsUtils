@@ -1,8 +1,19 @@
-﻿using WindowsUtils.Abstraction;
+﻿using System.Text;
+using WindowsUtils.Abstraction;
 
 #nullable enable
 namespace WindowsUtils
 {
+    internal class WtsSession
+    {
+        internal string? ComputerName { get; set; }
+        internal SystemSafeHandle? SessionHandle { get; set; }
+    }
+    public class RestartManagerSession
+    {
+        public uint SessionHandle { set; get; }
+        ~RestartManagerSession() => Interop.RmEndSession(SessionHandle);
+    }
     public class SessionState : Enumeration
     {
         public static SessionState Active = new(0, "Active");
@@ -33,11 +44,6 @@ namespace WindowsUtils
 #nullable enable
 namespace WindowsUtils.TerminalServices
 {
-    internal class Session
-    {
-        internal string? ComputerName { get; set; }
-        internal SystemSafeHandle? SessionHandle { get; set; }
-    }
     public class MessageBoxButton : MessageBoxOption
     {
         public static MessageBoxButton MB_ABORTRETRYIGNORE = new(0x00000002, "MB_ABORTRETRYIGNORE");

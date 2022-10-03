@@ -7,11 +7,42 @@
 #define _UNICODE
 #endif // UNICODE
 
-#define CHECKDWRESULT(result, err) if (result != ERROR_SUCCESS) { err = GetLastError(); goto CLEANUP; }
+#define CHECKDWRESULT(result) if (ERROR_SUCCESS != result) { goto CLEANUP; }
 #define IFFAILRETURNDW(result) if (ERROR_SUCCESS != result) { return result; }
 
 namespace WindowsUtils
 {
+	// Wrapper for SHCreateItemFromParsingName(), IShellItem2::GetString()
+	// Throws std::system_error in case of any error.
+	HRESULT GetShellPropStringFromPath(LPCWSTR pPath, std::vector<FileProperty>& propertyinfo)
+	{
+		HRESULT hresult = S_OK;
+		hresult = CoInitialize(nullptr);
+		if (hresult != S_OK && hresult != S_FALSE && hresult != RPC_E_CHANGED_MODE) // Success ,already initialized and thread mode already set
+			return hresult;
+
+		// Use CComPtr to automatically release the IShellItem2 interface when the function returns
+		// or an exception is thrown.
+		CComPtr<IShellItem2> pItem;
+		hresult = SHCreateItemFromParsingName(pPath, nullptr, IID_PPV_ARGS(&pItem));
+		if (FAILED(hresult))
+			return hresult;
+
+		// Use CComHeapPtr to automatically release the string allocated by the shell when the function returns
+		// or an exception is thrown (calls CoTaskMemFree).
+
+		for (size_t i = 0; i < propertyinfo.size(); i++)
+		{
+			hresult = pItem->GetString(propertyinfo.at(i).Property, &propertyinfo.at(i).Value);
+			if (FAILED(hresult))
+				return hresult;
+		}
+
+		CoUninitialize();
+		
+		return hresult;;
+	}
+
 	void PrintBuffer(LPWSTR& pwref, wchar_t const* const format, ...)
 	{
 		va_list args;
@@ -95,10 +126,14 @@ namespace WindowsUtils
 						uiReturn = MsiRecordGetString(pRecord, 2, pRecValue, &dwRecValBuffer);
 						IFFAILRETURNDW(uiReturn);
 
-						std::wstring recproperty(pRecProperty);
-						std::wstring recvalue(pRecValue);
-
-						ppmapout[recproperty] = recvalue;
+						if (nullptr != pRecProperty && nullptr != pRecValue)
+						{
+							std::wstring recproperty(pRecProperty);
+							std::wstring recvalue(pRecValue);
+							ppmapout[recproperty] = recvalue;
+						}
+						else
+							return ERROR_NOT_ENOUGH_MEMORY;
 
 					} while (pRecord != 0);
 				}
@@ -108,82 +143,99 @@ namespace WindowsUtils
 		return uiReturn;
 	}
 
-	DWORD Unmanaged::GetProcessFileHandle(std::vector<Unmanaged::FileHandle>& ppvecfho, PCWSTR fileName)
+	DWORD Unmanaged::GetProcessFileHandle
+	(
+		std::vector<Unmanaged::FileHandle>& ppvecfho,
+		std::vector<LPCWSTR> reslist
+	)
 	{
-		WCHAR szSessionKey[CCH_RM_SESSION_KEY + 1] = { 0 };
-		DWORD session;
+		// Invalid handle value for DWORD
+		DWORD sessionHandle = 0xFFFFFFFF;
+		
 		UINT nProcInfo = 0;
-		UINT nProcInfoNeeded;
-		DWORD rebReason;
-		DWORD err = 0;
+		UINT nProcInfoNeeded = 0;
+		RM_REBOOT_REASON rebReason = RmRebootReasonNone;
+		PRM_PROCESS_INFO pprocInfo = NULL;
+		
 		DWORD res = 0;
-		size_t appNameSize;
-		Unmanaged::FileHandle single;
-		
-		if (!SUCCEEDED(RmStartSession(&session, 0, szSessionKey)))
-		{
-			err = GetLastError();
-			return err;
-		}
-		if (!SUCCEEDED(RmRegisterResources(session, 1, &fileName, 0, NULL, 0, NULL)))
-		{
-			err = GetLastError();
-			return err;
-		}
-		
-		/* First call passing '0' to retrieve the number of processes, to size our array.
-		If this call returns '0', the file is not in use by any process.*/
-		res = RmGetList(session, &nProcInfoNeeded, &nProcInfo, NULL, &rebReason);
-		if (res == ERROR_SUCCESS)
-			return err;
+		NTSTATUS ntcall;
+		UINT retry = 0;
+		Unmanaged::FileHandle* single = new Unmanaged::FileHandle;
 
-		if (res != ERROR_MORE_DATA) 
+		for (size_t i = 0; i < reslist.size(); i++)
 		{
-			err = GetLastError();
-			return err;
-		}
+			HRESULT hresult = S_OK;
+			PFILE_PROCESS_IDS_USING_FILE_INFORMATION ntprocinfo = (PFILE_PROCESS_IDS_USING_FILE_INFORMATION)LocalAlloc(LMEM_ZEROINIT, sizeof(FILE_PROCESS_IDS_USING_FILE_INFORMATION));
+			if (nullptr == ntprocinfo)
+				return ERROR_NOT_ENOUGH_MEMORY;
 
-		RM_PROCESS_INFO* pprocInfo = (RM_PROCESS_INFO*)LocalAlloc(LPTR, (sizeof(RM_PROCESS_INFO) * nProcInfoNeeded));
-		nProcInfo = nProcInfoNeeded;
-
-		// Call to get the RM_PROCESS_INFO objects
-		res = RmGetList(session, &nProcInfoNeeded, &nProcInfo, pprocInfo, &rebReason);
-		if (res != ERROR_SUCCESS)
-		{
-			err = GetLastError();
-			return err;
-		}
-		
-		for (UINT i = 0; i < nProcInfo; i++)
-		{
-			appNameSize = wcslen(pprocInfo[i].strAppName) + 1;
+			single->FileName = (LPWSTR)LocalAlloc(LMEM_ZEROINIT, (sizeof(WCHAR) * MAX_PATH));
+			if (nullptr == single->FileName)
+				return ERROR_NOT_ENOUGH_MEMORY;
 			
-			single.AppType = pprocInfo[i].ApplicationType;
-			single.ProcessId = pprocInfo[i].Process.dwProcessId;
-			single.AppName = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * appNameSize));
-			single.ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
+			wcscpy_s(single->FileName, MAX_PATH, reslist.at(i));
+			PathStripPathW(single->FileName);
 
-			wcscpy_s(single.AppName, appNameSize, pprocInfo[i].strAppName);
-
-			HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pprocInfo[i].Process.dwProcessId);
-			if (INVALID_HANDLE_VALUE != hProcess)
+			// TODO: Error handling
+			ntcall = GetNtProcessUsingFileList(reslist.at(i), ntprocinfo);
+			
+			for (ULONG j = 0; j < ntprocinfo->NumberOfProcessIdsInList; j++)
 			{
-				FILETIME ftCreate, ftExit, ftKernel, ftUser;
-				if (GetProcessTimes(hProcess, &ftCreate, &ftExit, &ftKernel, &ftUser) && CompareFileTime(&pprocInfo[i].Process.ProcessStartTime, &ftCreate) == 0)
+				single->ProcessId = (DWORD)ntprocinfo->ProcessIdList[j];
+				std::vector<FileProperty>* imageprop = (std::vector<FileProperty>*)LocalAlloc(LMEM_ZEROINIT, sizeof(std::vector<FileProperty>));
+				if (nullptr == imageprop)
+					return ERROR_NOT_ENOUGH_MEMORY;
+
+				HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, (DWORD)ntprocinfo->ProcessIdList[j]);
+				if (INVALID_HANDLE_VALUE != hProcess)
 				{
-					DWORD cch = MAX_PATH;
-					if (!QueryFullProcessImageNameW(hProcess, 0, single.ImagePath, &cch))
-						single.ImagePath = L"";
+					single->ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
+					if (nullptr != single->ImagePath)
+					{
+						DWORD cch = MAX_PATH;
+						if (!QueryFullProcessImageNameW(hProcess, 0, single->ImagePath, &cch))
+							single->ImagePath = L"";
+					}
+					else
+						return ERROR_NOT_ENOUGH_MEMORY;
+
+
+					imageprop->push_back(FileProperty(PKEY_FileDescription, LPWSTR(L"")));
+					imageprop->push_back(FileProperty(PKEY_Software_ProductName, LPWSTR(L"")));
+					imageprop->push_back(FileProperty(PKEY_FileVersion, LPWSTR(L"")));
+
+					hresult = GetShellPropStringFromPath(single->ImagePath, *imageprop);
+
+					for (size_t k = 0; k < imageprop->size(); k++)
+					{
+						FileProperty innerprop = imageprop->at(k);
+						if (innerprop.Property == PKEY_FileDescription)
+							single->Application = innerprop.Value;
+
+						if (innerprop.Property == PKEY_FileVersion)
+							single->FileVersion = innerprop.Value;
+
+						if (innerprop.Property == PKEY_Software_ProductName)
+							single->ProductName = innerprop.Value;
+					}
+					
+					CloseHandle(hProcess);
 				}
-				CloseHandle(hProcess);
+
+				ppvecfho.push_back(*single);
+
+				if (nullptr != imageprop)
+					LocalFree(imageprop);
 			}
 
-			ppvecfho.push_back(single);
+			if (nullptr != ntprocinfo)
+				LocalFree(ntprocinfo);
 		}
-		
-		if (nullptr != pprocInfo) { LocalFree(pprocInfo); }
-	
-		return err;
+
+		if (nullptr != single)
+			delete single;
+
+		return res;
 	}
 
 	LPWSTR Unmanaged::GetFormatedWSError()
@@ -225,7 +277,7 @@ namespace WindowsUtils
 			(LPWSTR)&inter,
 			0,
 			NULL
-		);
+			);
 		return inter;
 	}
 
@@ -275,7 +327,7 @@ namespace WindowsUtils
 		return err;
 	}
 
-	DWORD Unmanaged::MapRpcEndpoints(std::vector<Unmanaged::RpcEndpoint> &ppOutVec)
+	DWORD Unmanaged::MapRpcEndpoints(std::vector<Unmanaged::RpcEndpoint>& ppOutVec)
 	{
 		RPC_EP_INQ_HANDLE inqContext;
 		RPC_STATUS result = 0;
