@@ -12,6 +12,37 @@
 
 namespace WindowsUtils
 {
+	// Wrapper for SHCreateItemFromParsingName(), IShellItem2::GetString()
+	// Throws std::system_error in case of any error.
+	HRESULT GetShellPropStringFromPath(LPCWSTR pPath, std::vector<FileProperty>& propertyinfo)
+	{
+		HRESULT hresult = S_OK;
+		hresult = CoInitialize(nullptr);
+		if (hresult != S_OK && hresult != S_FALSE && hresult != RPC_E_CHANGED_MODE) // Success ,already initialized and thread mode already set
+			return hresult;
+
+		// Use CComPtr to automatically release the IShellItem2 interface when the function returns
+		// or an exception is thrown.
+		CComPtr<IShellItem2> pItem;
+		hresult = SHCreateItemFromParsingName(pPath, nullptr, IID_PPV_ARGS(&pItem));
+		if (FAILED(hresult))
+			return hresult;
+
+		// Use CComHeapPtr to automatically release the string allocated by the shell when the function returns
+		// or an exception is thrown (calls CoTaskMemFree).
+
+		for (size_t i = 0; i < propertyinfo.size(); i++)
+		{
+			hresult = pItem->GetString(propertyinfo.at(i).Property, &propertyinfo.at(i).Value);
+			if (FAILED(hresult))
+				return hresult;
+		}
+
+		CoUninitialize();
+		
+		return hresult;;
+	}
+
 	void PrintBuffer(LPWSTR& pwref, wchar_t const* const format, ...)
 	{
 		va_list args;
@@ -125,98 +156,84 @@ namespace WindowsUtils
 		UINT nProcInfoNeeded = 0;
 		RM_REBOOT_REASON rebReason = RmRebootReasonNone;
 		PRM_PROCESS_INFO pprocInfo = NULL;
-
+		
 		DWORD res = 0;
+		NTSTATUS ntcall;
 		UINT retry = 0;
-		size_t appNameSize;
-		Unmanaged::FileHandle single;
+		Unmanaged::FileHandle* single = new Unmanaged::FileHandle;
 
-		WCHAR szSessionKey[CCH_RM_SESSION_KEY + 1] = { 0 };
-		res = RmStartSession(&sessionHandle, 0, szSessionKey);
-		CHECKDWRESULT(res);
-		
-		res = RmRegisterResources(sessionHandle, reslist.size(), reslist.data(), 0, NULL, 0, NULL);
-		CHECKDWRESULT(res);
-		
-		/*
-			We need to call the Restart Manager first to know the size of the RM_PROCESS_INFO array.
-			However, RM updates every time RmGetList() is called, so it's possible that the value returned on the first call is not enough to allocate the result.
-			So we implement a loop who tries to get the right size every time ERROR_MORE_DATA is returned.
-			We give up after 3 calls.
-			Ref.: https://learn.microsoft.com/en-us/windows/win32/rstmgr/using-restart-manager-with-a-secondary-installer
-		*/
-		do
+		for (size_t i = 0; i < reslist.size(); i++)
 		{
-			res = RmGetList(sessionHandle, &nProcInfoNeeded, &nProcInfo, pprocInfo, (LPDWORD)(&rebReason));
-
-			if (ERROR_SUCCESS == res)
-				break;
-			if (ERROR_MORE_DATA != res)
-				goto CLEANUP;
-
-			nProcInfo = nProcInfoNeeded;
-			if (NULL != pprocInfo)
-			{
-				delete[] pprocInfo;
-				pprocInfo = NULL;
-			}
-
-			pprocInfo = new RM_PROCESS_INFO[nProcInfo];
-
-		} while ((ERROR_MORE_DATA == res) && (retry ++ < 3));
-
-		for (UINT i = 0; i < nProcInfo; i++)
-		{
-			if (nullptr == pprocInfo)
-				return ERROR_NOT_ENOUGH_MEMORY;
-			
-			appNameSize = wcslen(pprocInfo[i].strAppName) + 1;
-			
-			single.AppType = pprocInfo[i].ApplicationType;
-			single.ProcessId = pprocInfo[i].Process.dwProcessId;
-			single.AppName = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * appNameSize));
-			
-			if (nullptr != single.AppName)
-				wcscpy_s(single.AppName, appNameSize, pprocInfo[i].strAppName);
-			else
+			HRESULT hresult = S_OK;
+			PFILE_PROCESS_IDS_USING_FILE_INFORMATION ntprocinfo = (PFILE_PROCESS_IDS_USING_FILE_INFORMATION)LocalAlloc(LMEM_ZEROINIT, sizeof(FILE_PROCESS_IDS_USING_FILE_INFORMATION));
+			if (nullptr == ntprocinfo)
 				return ERROR_NOT_ENOUGH_MEMORY;
 
-			HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pprocInfo[i].Process.dwProcessId);
-			if (INVALID_HANDLE_VALUE != hProcess)
+			single->FileName = (LPWSTR)LocalAlloc(LMEM_ZEROINIT, (sizeof(WCHAR) * MAX_PATH));
+			if (nullptr == single->FileName)
+				return ERROR_NOT_ENOUGH_MEMORY;
+			
+			wcscpy_s(single->FileName, MAX_PATH, reslist.at(i));
+			PathStripPathW(single->FileName);
+
+			// TODO: Error handling
+			ntcall = GetNtProcessUsingFileList(reslist.at(i), ntprocinfo);
+			
+			for (ULONG j = 0; j < ntprocinfo->NumberOfProcessIdsInList; j++)
 			{
-				FILETIME ftCreate, ftExit, ftKernel, ftUser;
-				if (GetProcessTimes(hProcess, &ftCreate, &ftExit, &ftKernel, &ftUser) && CompareFileTime(&pprocInfo[i].Process.ProcessStartTime, &ftCreate) == 0)
+				single->ProcessId = (DWORD)ntprocinfo->ProcessIdList[j];
+				std::vector<FileProperty>* imageprop = (std::vector<FileProperty>*)LocalAlloc(LMEM_ZEROINIT, sizeof(std::vector<FileProperty>));
+				if (nullptr == imageprop)
+					return ERROR_NOT_ENOUGH_MEMORY;
+
+				HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, (DWORD)ntprocinfo->ProcessIdList[j]);
+				if (INVALID_HANDLE_VALUE != hProcess)
 				{
-					single.ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
-					if (nullptr != single.ImagePath)
+					single->ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
+					if (nullptr != single->ImagePath)
 					{
 						DWORD cch = MAX_PATH;
-						if (!QueryFullProcessImageNameW(hProcess, 0, single.ImagePath, &cch))
-							single.ImagePath = L"";
+						if (!QueryFullProcessImageNameW(hProcess, 0, single->ImagePath, &cch))
+							single->ImagePath = L"";
 					}
 					else
 						return ERROR_NOT_ENOUGH_MEMORY;
+
+
+					imageprop->push_back(FileProperty(PKEY_FileDescription, LPWSTR(L"")));
+					imageprop->push_back(FileProperty(PKEY_Software_ProductName, LPWSTR(L"")));
+					imageprop->push_back(FileProperty(PKEY_FileVersion, LPWSTR(L"")));
+
+					hresult = GetShellPropStringFromPath(single->ImagePath, *imageprop);
+
+					for (size_t k = 0; k < imageprop->size(); k++)
+					{
+						FileProperty innerprop = imageprop->at(k);
+						if (innerprop.Property == PKEY_FileDescription)
+							single->Application = innerprop.Value;
+
+						if (innerprop.Property == PKEY_FileVersion)
+							single->FileVersion = innerprop.Value;
+
+						if (innerprop.Property == PKEY_Software_ProductName)
+							single->ProductName = innerprop.Value;
+					}
+					
+					CloseHandle(hProcess);
 				}
-				CloseHandle(hProcess);
+
+				ppvecfho.push_back(*single);
+
+				if (nullptr != imageprop)
+					LocalFree(imageprop);
 			}
 
-			ppvecfho.push_back(single);
-		}
-		
-	CLEANUP:
-
-		if (NULL != pprocInfo)
-		{
-			delete[] pprocInfo;
-			pprocInfo = NULL;
+			if (nullptr != ntprocinfo)
+				LocalFree(ntprocinfo);
 		}
 
-		// We cannot reuse a session handle for new calls with different files. I tried.
-		if (0xFFFFFFFF != sessionHandle)
-		{
-			RmEndSession(sessionHandle);
-			sessionHandle = 0xFFFFFFFF;
-		}
+		if (nullptr != single)
+			delete single;
 
 		return res;
 	}

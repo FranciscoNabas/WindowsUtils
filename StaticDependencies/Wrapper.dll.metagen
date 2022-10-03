@@ -17,8 +17,6 @@ Struct WindowsUtils.Unmanaged+FileHandle: AutoLayout, AnsiClass, Class, NestedPu
   :System.ValueType
 Struct WindowsUtils.Unmanaged+RpcEndpoint: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
-Struct WindowsUtils.Unmanaged+ResourceList: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
-  :System.ValueType
 Class WindowsUtils.ComputerSession: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(ComputerSession): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
@@ -70,13 +68,17 @@ Class WindowsUtils.FileHandle: AutoLayout, AnsiClass, Class, Public, BeforeField
     System.IDisposable
   Properties:
     System.String ImagePath 'get ' : 
-    System.String AppName 'get ' : 
+    System.String FileVersion 'get ' : 
+    System.String ProductName 'get ' : 
+    System.String Application 'get ' : 
     UInt32 ProcessId 'get ' : 
-    WindowsUtils.AppType AppType 'get ' : 
+    System.String FileName 'get ' : 
   Methods:
-    get_AppType(): PrivateScope, Public, HideBySig, SpecialName
+    get_FileName(): PrivateScope, Public, HideBySig, SpecialName
     get_ProcessId(): PrivateScope, Public, HideBySig, SpecialName
-    get_AppName(): PrivateScope, Public, HideBySig, SpecialName
+    get_Application(): PrivateScope, Public, HideBySig, SpecialName
+    get_ProductName(): PrivateScope, Public, HideBySig, SpecialName
+    get_FileVersion(): PrivateScope, Public, HideBySig, SpecialName
     get_ImagePath(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
 Class WindowsUtils.WrappedFunctions: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit

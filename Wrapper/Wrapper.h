@@ -126,17 +126,21 @@ namespace WindowsUtils {
 	public ref class FileHandle
 	{
 	public:
-		property WindowsUtils::AppType^ AppType { WindowsUtils::AppType^ get() { return Enumeration::GetById<WindowsUtils::AppType^>(wrapper->AppType); } }
+		property String^ FileName { String^ get() { return gcnew String(wrapper->FileName); } }
 		property UInt32 ProcessId { UInt32 get() { return wrapper->ProcessId; } }
-		property String^ AppName { String^ get() { return gcnew String(wrapper->AppName); } }
+		property String^ Application { String^ get() { return gcnew String(wrapper->Application); } }
+		property String^ ProductName { String^ get() { return gcnew String(wrapper->ProductName); } }
+		property String^ FileVersion { String^ get() { return gcnew String(wrapper->FileVersion); } }
 		property String^ ImagePath { String^ get() { return gcnew String(wrapper->ImagePath); } }
 
 		FileHandle() : wrapper( new Unmanaged::FileHandle ) { }
 		FileHandle(Unmanaged::FileHandle item) {
 			wrapper = new Unmanaged::FileHandle(
-				item.AppType,
+				item.FileName,
 				item.ProcessId,
-				item.AppName,
+				item.Application,
+				item.ProductName,
+				item.FileVersion,
 				item.ImagePath
 			);
 		}

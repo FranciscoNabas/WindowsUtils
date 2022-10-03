@@ -9,6 +9,7 @@ using WindowsUtils.Abstraction;
 using WindowsUtils.TerminalServices;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.IO;
 
 #nullable enable
 namespace WindowsUtils
@@ -470,8 +471,25 @@ namespace WindowsUtils
 
         public static FileHandle[]? GetProcessFileHandle(string[] fileName)
         {
+            List<string> validPaths = new List<string>();
+            for (int i = 0; i < fileName.Length; i++)
+            {
+                string path = fileName[i];
+                if (File.Exists(path.Trim()) || Directory.Exists(path.Trim()))
+                    validPaths.Add(path);
+                else
+                    WriteWarning("Object '" + path + "' not found.");
+            }
+
+            if (validPaths.Count == 0)
+                throw new ItemNotFoundException();
+
+            string[] validsent = new string[validPaths.Count];
+            for (int i = 0; i < validPaths.Count; i++)
+                validsent[i] = validPaths[i].Trim();
+
             WrappedFunctions unWrapper = new();
-            return unWrapper.GetProcessFileHandle(fileName);
+            return unWrapper.GetProcessFileHandle(validsent);
         }
 
         public static PSObject GetMsiProperties(string fileName)

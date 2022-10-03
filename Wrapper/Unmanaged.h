@@ -14,6 +14,16 @@
 #include <WinSock2.h>
 #include <RestartManager.h>
 #include <MsiQuery.h>
+#include <ntddkbd.h>
+#include <winternl.h>
+#include <Psapi.h>
+#include <ShlObj.h>    // Shell API
+#include <Propkey.h>   // PKEY_* constants
+#include <atlbase.h>   // CComPtr, CComHeapPtr
+
+#define CHECKNTSTATUS(stat) if (STATUS_SUCCESS != stat) { return stat; }
+#define STATUS_SUCCESS ERROR_SUCCESS
+constexpr auto STATUS_INFO_LENGTH_MISMATCH = -1073741820;
 
 #ifndef UNICODE
 #define UNICODE
@@ -22,8 +32,6 @@
 
 namespace WindowsUtils
 {
-	
-
 	extern "C" public class __declspec(dllexport) Unmanaged
 	{
 	public:
@@ -55,12 +63,15 @@ namespace WindowsUtils
 		class FileHandle
 		{
 		public:
-			RM_APP_TYPE	AppType;
+			LPWSTR		FileName;
 			DWORD		ProcessId;
-			LPWSTR		AppName;
+			LPWSTR		Application;
+			LPWSTR		ProductName;
+			LPWSTR		FileVersion;
 			LPWSTR		ImagePath;
 			FileHandle() { }
-			FileHandle(RM_APP_TYPE apptype, DWORD pid, LPWSTR appname, LPWSTR imgpath) : AppType(apptype), ProcessId(pid), AppName(appname), ImagePath(imgpath) { }
+			FileHandle(LPWSTR filename, DWORD pid, LPWSTR appname, LPWSTR procname, LPWSTR fileversion, LPWSTR imgpath)
+				: FileName(filename), ProcessId(pid), Application(appname), ProductName(procname), FileVersion(fileversion), ImagePath(imgpath) { }
 		};
 
 		class RpcEndpoint
@@ -71,12 +82,6 @@ namespace WindowsUtils
 			RpcEndpoint() { }
 			RpcEndpoint(LPWSTR bstr, LPWSTR ann) : BindingString(bstr), Annotation(ann) { }
 		};
-
-		typedef struct ResourceList
-		{
-			WCHAR* Resource;
-
-		}ResourceList, *PResourceList;
 
 		DWORD GetProcessFileHandle(std::vector<FileHandle>& ppvecfho, std::vector<LPCWSTR> reslist);
 		DWORD GetResourceMessageTable(std::vector<ResourceMessageTable>& ppvecmdo, LPTSTR libName);

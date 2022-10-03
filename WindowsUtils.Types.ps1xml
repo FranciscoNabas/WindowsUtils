@@ -65,4 +65,23 @@
       </MemberSet>
     </Members>
   </Type>
+  <Type>
+    <Name>WindowsUtils.FileHandle</Name>
+    <Members>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Application</Name>
+              <Name>ProcessId</Name>
+              <Name>ImagePath</Name>
+              <Name>FileName</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+    </Members>
+  </Type>
 </Types>
