@@ -1,23 +1,38 @@
-param ($psgsec)
+param (
+    [switch]$Local,
+    [string]$psgak
+)
 
-## Artifact output path
 $releaseDir = '.\bin\WindowsUtils'
 
-## Building project
-. dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output bin\WindowsUtils --no-incremental
+Write-Host Building... -ForegroundColor DarkGreen
+[void](. dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output bin\WindowsUtils --no-incremental)
 
-## Removing files
-'*.config', '*.pdb', '*.json' | ForEach-Object { Remove-Item -Path "$releaseDir\*" -Filter $PSItem -Force }
+if ($Local) {
+    Write-Host Generating help... -ForegroundColor DarkGreen
+    [void](. 'C:\Repositories\NuGet\xmldoc2cmdletdoc\0.3.0\tools\XmlDoc2CmdletDoc.exe' "$releaseDir\WindowsUtils.dll")
+}
 
-## Copying license and compressing output
-Write-Output 'Copying license...'
+Write-Host 'Cleaning files...' -ForegroundColor DarkGreen
+'*.config', '*.pdb', '*.json', 'WindowsUtils.xml' | ForEach-Object { Remove-Item -Path "$releaseDir\*" -Filter $PSItem -Force }
+
+Write-Host 'Copying files...' -ForegroundColor DarkGreen
 Copy-Item -Path .\LICENSE -Destination $releaseDir -Force
-Write-Output 'Compressing artifact...'
-Compress-Archive -Path "$releaseDir\*" -DestinationPath .\WindowsUtils.zip
+if (!(Test-Path "$releaseDir\en-us")) { [void](mkdir "$releaseDir\en-us") }
+Move-Item "$releaseDir\WindowsUtils.dll-Help.xml" "$releaseDir\en-us\WindowsUtils.dll-Help.xml" -Force
 
-## Publishing module
-#try {
-#    Write-Output 'Trying to publish module...'
-#    Publish-Module -Path $releaseDir -NuGetApiKey $psgsec -Repository PSGallery
-#}
-#catch { Write-Output "Failed to publish module. $($PSItem.Exception.Message)" }
+if (!$Local) { Write-Host 'Compressing files...' -ForegroundColor DarkGreen; Compress-Archive -Path "$releaseDir\*" -DestinationPath .\WindowsUtils.zip }
+
+if ($Local) {
+    if ([string]::IsNullOrEmpty($psgak)) { Write-Warning "psgak is null" }
+    else {
+        Write-Host 'Publishing module...' -ForegroundColor DarkGreen
+        try {
+            $mdata = Test-ModuleManifest "$releaseDir\WindowsUtils.psd1" -ErrorAction Stop
+            Write-Output $mdata.Version
+            Start-Sleep 7
+            Publish-Module -Path $releaseDir -NuGetApiKey $psgak -Repository PSGallery
+        }
+        catch { Write-Output "Failed to publish module. $($PSItem.Exception.Message)" }            
+    }
+}

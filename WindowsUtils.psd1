@@ -12,7 +12,7 @@
 RootModule = 'WindowsUtils.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.0'
+ModuleVersion = '1.3.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -111,11 +111,8 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
-            - Wrapping native classes to avoid object property management. Huge performance increase.
-            - Bringing some objects to managed .NET (enum classes abstraction)
-            - Organizing .NET types.
-            - Using original function's return types on native objects.
-            - Removed Get-LastWinSockError. It's effectively the same as Get-LastWin32Error
+            - Fixing help file bugs.
+            - Including XmlDoc2CmdletDoc for help file management.
 '@
 
         # Prerelease string of this module

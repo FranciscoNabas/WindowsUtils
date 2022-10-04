@@ -4,33 +4,67 @@ using WindowsUtils.Abstraction;
 
 namespace WindowsUtils.Commands
 {
+    /// <summary>
+    /// <para type="synopsis">Sends a message to sessions on local or remote computers.</para>
+    /// <para type="description">The Invoke-RemoteMessage cmdlet sends a MessageBox-Style message to sessions on local or remote computers.</para>
+    ///</summary>
     [Cmdlet(VerbsLifecycle.Invoke, "RemoteMessage")]
     public class InvokeRemoteMessageCommand : Cmdlet
     {
+        /// <summary>
+        /// <para type="description">The message box title.</para>
+        /// </summary>
         [Parameter(Mandatory = true, Position = 0)]
         [ValidateNotNullOrEmpty]
         public string Title { get; set; }
 
+        /// <summary>
+        /// <para type="description">The message text.</para>
+        /// </summary>
         [Parameter(Mandatory = true, Position = 1)]
         [ValidateNotNullOrEmpty]
         public string Message { get; set; }
 
+        /// <summary>
+        /// <para type="description">The computer name to send the nessage.</para>
+        /// <para type="description">If not specified, sends the message to the local host.</para>
+        /// </summary>
         [Parameter()]
         public string ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">The session(s) to receive the message.</para>
+        /// <para type="description">If not specified, sends the message to all sessions.</para>
+        /// </summary>
         [Parameter()]
         public int[] SessionId { get; set; }
 
+        /// <summary>
+        /// <para type="description">A list of MessageBox style enum objects.</para>
+        /// <para type="description">To obtaing a list of available options, call 'Get-RemoteMessageOptions', or see definition for the MessageBox function.</para>
+        /// </summary>
         [Parameter()]
         [ValidateNotNullOrEmpty]
         public string[] Style { get; set; } = { "MB_OK" };
 
+        /// <summary>
+        /// <para type="description">The timeout, in seconds, to wait for a response.</para>
+        /// <para type="description">If the timeout expires, the cmdlet returns 'Timeout'. The message is not closed.</para>
+        /// </summary>
         [Parameter()]
         public int Timeout { get; set; } = 0;
 
+        /// <summary>
+        /// <para type="description">If called, waits for the user response in the specified 'Timeout'.</para>
+        /// <para type="description">If not, the Cmdlet returns 'AsyncReturn'.</para>
+        /// </summary>
         [Parameter()]
         public SwitchParameter Wait { get; set; } = false;
 
+        /// <summary>
+        /// <para type="description">If 'SessionId' is not specified, the cmdlet prompts for confirmation before sending the message to all sessions.</para>
+        /// <para type="description">Use the 'Force' parameter to avoid confirmation.</para>
+        /// </summary>
         [Parameter()]
         public SwitchParameter Force { get; set; } = false;
 
@@ -47,7 +81,11 @@ namespace WindowsUtils.Commands
                 Utilities.InvokeRemoteMessage(ComputerName, SessionId, Title, Message, Style, Timeout, Wait);
         }
     }
-    
+
+    /// <summary>
+    /// <para type="synopsis">Retrieves the options to be used with Invoke-RemoteMessage.</para>
+    /// <para type="description">This Cmdlet returns a list of options available to be used with the parameter 'Style', from Invoke-RemoteMessage.</para>
+    /// </summary>
     [Cmdlet(VerbsCommon.Get, "RemoteMessageOptions")]
     public class GetRemoteMessageOptionsCommand : Cmdlet
     {
@@ -56,17 +94,33 @@ namespace WindowsUtils.Commands
             WriteObject(MessageBoxOption.GetAvailableOptions(), true);
         }
     }
-    
+
+    /// <summary>
+    /// <para type="synopsis">Returns the user sessions on the local or remote computer.</para>
+    /// <para type="description">This Cmdlet returns the sessions on the local or remote computer.</para>
+    /// <para type="description">By default, only brings sessions that has an user name assigned.</para>
+    /// </summary>
     [Cmdlet(VerbsCommon.Get, "ComputerSession")]
     public class GetComputerSessionCommand : Cmdlet
     {
+        /// <summary>
+        /// <para type="description">The computer name.</para>
+        /// <para type="description">If no computer name is informed, it returns sessions on the current computer.</para>
+        /// </summary>
         [Parameter(Position = 0)]
         [ValidateNotNullOrEmpty]
         public string ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">When called, this Cmdlet returns only active sessions.</para>
+        /// </summary>
         [Parameter()]
         public SwitchParameter ActiveOnly { get; set; } = false;
 
+        /// <summary>
+        /// <para type="description">When called, this Cmdlet includes sessions without an user name assigned.</para>
+        /// <para type="description">Sessions without user name are marked as 'System'.</para>
+        /// </summary>
         [Parameter()]
         public SwitchParameter IncludeSystemSession { get; set; } = false;
 
@@ -80,7 +134,11 @@ namespace WindowsUtils.Commands
                     WriteObject(Utilities.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession), true);
         }
     }
-    
+
+    /// <summary>
+    /// <para type="synopsis">Sends a click.</para>
+    /// <para type="description">When called, this cmdlet sends a click on the current desktop.</para>
+    /// </summary>
     [Cmdlet(VerbsCommunications.Send, "Click")]
     public class SendClickCommand : Cmdlet
     {
@@ -90,9 +148,18 @@ namespace WindowsUtils.Commands
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Returns the message table stored in a file.</para>
+    /// <para type="description">This Cmdlet lists all messages, and their index from a resource message table.</para>
+    /// <para type="description">These message tables are stored into files, like DLL or EXE.</para>
+    /// <para type="description">I.E.: on kernel32.dll are stored the Win32 system error messages.</para>
+    /// </summary>
     [Cmdlet(VerbsCommon.Get, "ResourceMessageTable")]
     public class GetResourceMessageTableCommand : Cmdlet
     {
+        /// <summary>
+        /// <para type="description">The path to the file containing the message table.</para>
+        /// </summary>
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
         public string Path { get; set; }
@@ -104,9 +171,30 @@ namespace WindowsUtils.Commands
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Returns the error message for a system error code.</para>
+    /// <para type="description">This Cmdlet uses FormatMessage to return the message text for a given 'Win32' system error.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-FormattedMessage -ErrorCode 5</code>
+    ///     <para>Returning the message for a given error code.</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>[System.Runtime.InteropServices.Marshal]::GetLastWin32Error() | Get-FormattedError</code>
+    ///     <para>Calling GetLastWin32Error and providing it to the Cmdlet to get the message string.</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
     [Cmdlet(VerbsCommon.Get, "FormattedError")]
     public class GetFormattedErrorCommand : Cmdlet
     {
+        /// <summary>
+        /// <para type="description">The error code.</para>
+        /// </summary>
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         public int ErrorCode { get; set; }
 
@@ -117,6 +205,10 @@ namespace WindowsUtils.Commands
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Returns the last 'Win32' system error message.</para>
+    /// <para type="description">This Cmdlet gets the last error thrown by the system, and returns the message string.</para>
+    /// </summary>
     [Cmdlet(VerbsCommon.Get, "LastWin32Error")]
     public class GetLastWin32ErrorCommand : Cmdlet
     {
@@ -127,9 +219,33 @@ namespace WindowsUtils.Commands
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Returns all processes that have a handle to a file or directory.</para>
+    /// <para type="description">This Cmdlet return all processes that have a handle to a file or directory.</para>
+    /// <para type="description">This is particularly useful when a process is preventing a file from being read, modified or deleted.</para>
+    /// <para type="description">Although working in a different way, this Cmdlet was designed to mimic handle.exe, from Sysinternals suite.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-FileHandle -Path "$env:windir\System32\kernel32.dll", "$env:windir\System32\ntdll.dll"</code>
+    ///     <para>Returning processes that have open handles to a list of files.</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-ChildItem -Path $env:TEMP -Filter '*.tmp' | Get-FileHandle</code>
+    ///     <para>Listing all .tmp files on the temp folder, and listing the processes with open handles to those files.</para>
+    ///     <para>The Cmdlet lists the processes related to the files queried to make it easier identify processes when querying a list of files.</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
     [Cmdlet(VerbsCommon.Get, "FileHandle")]
     public class GetFileHandleCommand : Cmdlet
     {
+        /// <summary>
+        /// <para type="description">The file system object path.</para>
+        /// </summary>
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
         public string[] Path { get; set; }
@@ -158,9 +274,17 @@ namespace WindowsUtils.Commands
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Returns the installer properties from a MSI file.</para>
+    /// <para type="description">This Cmdlet returns the installer properties from the installer database.</para>
+    /// <para type="description">Besides standard information, like Product Code, it brings vendor-specific information.</para>
+    /// </summary>
     [Cmdlet(VerbsCommon.Get, "MsiProperties")]
     public class GetMsiPropertiesCommand : Cmdlet
     {
+        /// <summary>
+        /// <para type="description">The MSI file path.</para>
+        /// </summary>
         [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
         [ValidateNotNullOrEmpty]
         public string Path { get; set; }
@@ -172,18 +296,47 @@ namespace WindowsUtils.Commands
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Logs off an interactive session on the local or remote computer.</para>
+    /// <para type="description">This Cmdlet disconnects, or logs off, an interactive session on the local or remote computer.</para>
+    /// <para type="description">You can retrieve the SessionId with Get-ComputerSession, and use this Cmdled to logoff users.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Disconnect-Session -SessionId 3</code>
+    ///     <para>Disconnects a session with a given session id.</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-ComputerSession -ComputerName 'MYAWESOMEPC.contoso.com' | Where-Object { $PSItem.UserName -eq 'CONTOSO\user.name' } | Disconnect-Session -ComputerName 'MYAWESOMEPC.contoso.com' -SessionId $PSItem.SessionId </code>
+    ///     <para>Gets the session from a specific user on a remote computer, and loggs it off.</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
     [Cmdlet(VerbsCommunications.Disconnect, "Session", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.High, DefaultParameterSetName = "NoComputerName")]
     [Alias("disconnect")]
     public class DisconnectSessionCommand : Cmdlet
     {
+        /// <summary>
+        /// <para type="description">The computer name to disconnect a session.</para>
+        /// <para type="description">If not informed, it disconnects the session from the local computer.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "WithComputerName")]
         [ValidateNotNullOrEmpty()]
         public string ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">The session id to disconnect.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "WithComputerName")]
         [ValidateNotNullOrEmpty()]
         public int SessionId { get; set; }
 
+        /// <summary>
+        /// <para type="description">If called, the Cmdlet waits the logoff process to finish before returning.</para>
+        /// </summary>
         [Parameter(ParameterSetName = "WithComputerName")]
         [Parameter(ParameterSetName = "NoComputerName")]
         [ValidateNotNullOrEmpty()]

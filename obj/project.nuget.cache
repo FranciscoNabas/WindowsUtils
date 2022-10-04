@@ -1,12 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "tsOuGePvbr93pJbxiuBg4JhBnPGoph+N+Ih8qB2tEG7U/fPQkbocbphfUO9zLrcraSn7yXoQa4n3nSmwll19vA==",
+  "dgSpecHash": "P4Hbqs2TedvuNtnAvjhtmvEgh/Rsj+smtgIRo5HV6Arz/ojSSDWWllnI+u11DeBaP9Tzcnxz5Zv78LaXA7F4Ag==",
   "success": true,
   "projectFilePath": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\francisco.nabas\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
-    "C:\\Users\\francisco.nabas\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512",
-    "C:\\Users\\francisco.nabas\\.nuget\\packages\\powershellstandard.library\\5.1.0-preview-06\\powershellstandard.library.5.1.0-preview-06.nupkg.sha512"
+    "C:\\Repositories\\NuGet\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
+    "C:\\Repositories\\NuGet\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512",
+    "C:\\Repositories\\NuGet\\powershellstandard.library\\5.1.1\\powershellstandard.library.5.1.1.nupkg.sha512",
+    "C:\\Repositories\\NuGet\\xmldoc2cmdletdoc\\0.3.0\\xmldoc2cmdletdoc.0.3.0.nupkg.sha512"
   ],
   "logs": []
 }
