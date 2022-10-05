@@ -1,6 +1,7 @@
-﻿using System.Management.Automation;
-using System.Runtime.InteropServices.ComTypes;
-using WindowsUtils.Abstraction;
+﻿using Microsoft.PowerShell.Commands;
+using System.IO;
+using System.Management.Automation;
+using WindowsUtils.Core;
 
 namespace WindowsUtils.Commands
 {
@@ -241,36 +242,78 @@ namespace WindowsUtils.Commands
     /// </example>
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "FileHandle")]
-    public class GetFileHandleCommand : Cmdlet
+    public class GetFileHandleCommand : PSCmdlet
     {
+        private List<string> validPaths = new List<string>();
+        private string[] _path;
+        private bool _shouldExpandWildcards;
+
         /// <summary>
         /// <para type="description">The file system object path.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ValueFromPipeline = true,
+            ValueFromPipelineByPropertyName = true,
+            ParameterSetName = "byPath")]
         [ValidateNotNullOrEmpty]
-        public string[] Path { get; set; }
-        private List<string> validPaths = new List<string>();
+        public string[] Path
+        {
+            get { return _path; }
+            set
+            {
+                _shouldExpandWildcards = true;
+                _path = value;
+            }
+        }
+
+        /// <summary>
+        /// <para Type="description">Provider-aware file system object path.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            ValueFromPipeline = false,
+            ValueFromPipelineByPropertyName = true,
+            ParameterSetName = "byLiteral")]
+        [Alias("PSPath")]
+        [ValidateNotNullOrEmpty]
+        public string[] LiteralPath
+        {
+            get { return _path; }
+            set { _path = value; }
+        }
 
         protected override void ProcessRecord()
         {
-            for (int i = 0; i < Path.Length; i++)
+            List<string> pathlist = new();
+            validPaths.Clear();
+            foreach (string path in _path)
             {
-                string path = Path[i];
-                if (File.Exists(path.Trim()) || Directory.Exists(path.Trim()))
-                    validPaths.Add(path);
+                ProviderInfo provider;
+                PSDriveInfo drive;
+
+                if (_shouldExpandWildcards)
+                    pathlist.AddRange(this.GetResolvedProviderPathFromPSPath(path, out provider));
+                
                 else
-                    WriteWarning("Object '" + path + "' not found.");
+                    pathlist.Add(this.SessionState.Path.GetUnresolvedProviderPathFromPSPath(path, out provider, out drive));
+                
+                foreach (string filepath in pathlist)
+                {
+                    if (File.Exists(filepath) || Directory.Exists(filepath))
+                        validPaths.Add(filepath);
+                    else
+                        WriteWarning("Object '" + filepath + "' not found.");
+                }
+
             }
 
             if (validPaths.Count == 0)
                 throw new ItemNotFoundException("No object found for the specified path(s).");
-
-            string[] validsent = new string[validPaths.Count];
-            for (int i = 0; i < validPaths.Count; i++)
-                validsent[i] = validPaths[i].Trim();
-
+            
             WrappedFunctions unWrapper = new();
-            WriteObject(unWrapper.GetProcessFileHandle(validsent), true);
+            WriteObject(unWrapper.GetProcessFileHandle(validPaths.ToArray()), true);
         }
     }
 

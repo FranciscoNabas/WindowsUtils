@@ -34,11 +34,40 @@
         "runtime": {
           "lib/netstandard2.0/System.Management.Automation.dll": {}
         }
-      },
-      "XmlDoc2CmdletDoc/0.3.0": {
+      }
+    },
+    ".NETStandard,Version=v2.0/win-x64": {
+      "Microsoft.NETCore.Platforms/1.1.0": {
         "type": "package",
+        "compile": {
+          "lib/netstandard1.0/_._": {}
+        },
+        "runtime": {
+          "lib/netstandard1.0/_._": {}
+        }
+      },
+      "NETStandard.Library/2.0.3": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0"
+        },
+        "compile": {
+          "lib/netstandard1.0/_._": {}
+        },
+        "runtime": {
+          "lib/netstandard1.0/_._": {}
+        },
         "build": {
-          "build/XmlDoc2CmdletDoc.targets": {}
+          "build/netstandard2.0/NETStandard.Library.targets": {}
+        }
+      },
+      "PowerShellStandard.Library/5.1.1": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/System.Management.Automation.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/System.Management.Automation.dll": {}
         }
       }
     }
@@ -200,32 +229,12 @@
         "powershellstandard.library.5.1.1.nupkg.sha512",
         "powershellstandard.library.nuspec"
       ]
-    },
-    "XmlDoc2CmdletDoc/0.3.0": {
-      "sha512": "ireYcj9rKHRua77P9KmkSIlitooN+Zq7X5cY0rPjeN1QaI0H643Tle6UxzUILrl7cb+tlzDotIIGp1BxSNIvxg==",
-      "type": "package",
-      "path": "xmldoc2cmdletdoc/0.3.0",
-      "hasTools": true,
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "build/XmlDoc2CmdletDoc.targets",
-        "license/LICENSE.md",
-        "tools/Jolt.dll",
-        "tools/System.Management.Automation.dll",
-        "tools/XmlDoc2CmdletDoc.Core.dll",
-        "tools/XmlDoc2CmdletDoc.exe",
-        "tools/XmlDoc2CmdletDoc32.exe",
-        "xmldoc2cmdletdoc.0.3.0.nupkg.sha512",
-        "xmldoc2cmdletdoc.nuspec"
-      ]
     }
   },
   "projectFileDependencyGroups": {
     ".NETStandard,Version=v2.0": [
       "NETStandard.Library >= 2.0.3",
-      "PowerShellStandard.Library >= 5.1.1",
-      "XmlDoc2CmdletDoc >= 0.3.0"
+      "PowerShellStandard.Library >= 5.1.1"
     ]
   },
   "packageFolders": {
@@ -282,12 +291,6 @@
             "suppressParent": "All",
             "target": "Package",
             "version": "[5.1.1, )"
-          },
-          "XmlDoc2CmdletDoc": {
-            "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
-            "suppressParent": "All",
-            "target": "Package",
-            "version": "[0.3.0, )"
           }
         },
         "imports": [
@@ -302,6 +305,11 @@
         "assetTargetFallback": true,
         "warn": true,
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.100-rc.1.22431.12\\RuntimeIdentifierGraph.json"
+      }
+    },
+    "runtimes": {
+      "win-x64": {
+        "#import": []
       }
     }
   }

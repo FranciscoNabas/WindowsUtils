@@ -29,10 +29,10 @@ if ($Local) {
         Write-Host 'Publishing module...' -ForegroundColor DarkGreen
         try {
             $mdata = Test-ModuleManifest "$releaseDir\WindowsUtils.psd1" -ErrorAction Stop
-            Write-Output $mdata.Version
+            Write-Host "Manifest version: $($mdata.Version.ToString())" -ForegroundColor DarkGreen
             Start-Sleep 7
             Publish-Module -Path $releaseDir -NuGetApiKey $psgak -Repository PSGallery
         }
-        catch { Write-Output "Failed to publish module. $($PSItem.Exception.Message)" }            
+        catch { Write-Host "Failed to publish module. $($PSItem.Exception.Message)" -ForegroundColor Yellow }            
     }
 }
