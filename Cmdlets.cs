@@ -258,6 +258,7 @@ namespace WindowsUtils.Commands
             ValueFromPipelineByPropertyName = true,
             ParameterSetName = "byPath")]
         [ValidateNotNullOrEmpty]
+        [SupportsWildcards()]
         public string[] Path
         {
             get { return _path; }

@@ -2,7 +2,7 @@
   
 **WindowsUtils** is a PowerShell module designed to make easier the administration of Windows computers.  
 The module consists in a library written in C++/CLI which contains the main functions, and the .NET wrapper, and an utilities-library written in C#.  
-All PowerShell Cmdlets have an equivalent C# method in the utilities-library.  
+To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.  
   
 - [WindowsUtils](#windowsutils)
   - [Installation](#installation)
@@ -53,7 +53,6 @@ Invoke-RemoteMessage -Title 'Awesome message!' -Message 'Hello dude.' -SessionId
   
 This Cmdlet returns all options available to be used with the parameter **Style**, from **Invoke-RemoteMessage**.  
 These options are named like the ones from the [MessageBox](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messagebox) function.  
-On the C# equivalent method, you can use the objects derived from the **WindowsUtils.Abstraction.MessageBoxOptions** class, present in the **WindowsUtils.TerminalServices** namespace.  
   
 ```powershell
 Get-RemoteMessageOptions | Format-Table * -Autosize
@@ -117,7 +116,9 @@ The first of which can be achieved with the **-c** parameter, in the original ha
   
 ```powershell
 Get-FileHandle -Path 'C:\Windows\System32\kernel32.dll', 'C:\Windows\System32\ntdll.dll'
-Get-ChildItem -Path $env:TEMP | Get-FileHandle
+Get-FileHandle -Path "$env:TEMP\*.tmp"
+
+PS C:\Windows\System32>_ Get-FileHandle csrss*
 ```
   
 ### Get-MsiProperties
