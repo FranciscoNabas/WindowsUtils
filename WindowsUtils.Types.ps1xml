@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Types>
     <Type>
-        <Name>WindowsUtils.ComputerSession</Name>
+        <Name>WindowsUtils.Core.ComputerSession</Name>
         <Members>
             <MemberSet>
                 <Name>PSStandardMembers</Name>
@@ -26,7 +26,7 @@
         </Members>
     </Type>
     <Type>
-        <Name>WindowsUtils.Abstraction.MessageBoxOption</Name>
+        <Name>WindowsUtils.Core.MessageBoxOption</Name>
         <Members>
             <MemberSet>
                 <Name>PSStandardMembers</Name>
@@ -43,7 +43,7 @@
         </Members>
     </Type>
   <Type>
-    <Name>WindowsUtils.ResourceMessageTable</Name>
+    <Name>WindowsUtils.Core.ResourceMessageTable</Name>
     <Members>
       <MemberSet>
         <Name>PSStandardMembers</Name>
@@ -66,7 +66,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>WindowsUtils.FileHandle</Name>
+    <Name>WindowsUtils.Core.FileHandle</Name>
     <Members>
       <MemberSet>
         <Name>PSStandardMembers</Name>
