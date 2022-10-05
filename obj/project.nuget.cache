@@ -1,12 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "cbr9lbGyWJ8hmLpbsjTLavrDNU8OI4p4OdE2o/b/Se7R7E5NJgXYyP3Q6rbG/3Xjgushpff+JhQ8W3un97EYQw==",
+  "dgSpecHash": "QwB+Gthfxx5w/ZsNee24W6MUubGisngJsCOC3uMpR1gmLS2hwmybe4hAvvgPdnn6d0WRB7Ph8sElTmeeGM3zvA==",
   "success": true,
   "projectFilePath": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
   "expectedPackageFiles": [
     "C:\\Repositories\\NuGet\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
     "C:\\Repositories\\NuGet\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512",
-    "C:\\Repositories\\NuGet\\powershellstandard.library\\5.1.1\\powershellstandard.library.5.1.1.nupkg.sha512"
+    "C:\\Repositories\\NuGet\\powershellstandard.library\\5.1.1\\powershellstandard.library.5.1.1.nupkg.sha512",
+    "C:\\Repositories\\NuGet\\xmldoc2cmdletdoc\\0.3.0\\xmldoc2cmdletdoc.0.3.0.nupkg.sha512"
   ],
   "logs": []
 }

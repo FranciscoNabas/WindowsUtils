@@ -13,4 +13,7 @@
     <SourceRoot Include="C:\Repositories\NuGet\" />
     <SourceRoot Include="C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages\" />
   </ItemGroup>
+  <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <PkgXmlDoc2CmdletDoc Condition=" '$(PkgXmlDoc2CmdletDoc)' == '' ">C:\Repositories\NuGet\xmldoc2cmdletdoc\0.3.0</PkgXmlDoc2CmdletDoc>
+  </PropertyGroup>
 </Project>

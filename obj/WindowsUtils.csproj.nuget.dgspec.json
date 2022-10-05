@@ -54,6 +54,12 @@
               "suppressParent": "All",
               "target": "Package",
               "version": "[5.1.1, )"
+            },
+            "XmlDoc2CmdletDoc": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[0.3.0, )"
             }
           },
           "imports": [
