@@ -17,6 +17,12 @@ Struct WindowsUtils.Core.Unmanaged+FileHandle: AutoLayout, AnsiClass, Class, Nes
   :System.ValueType
 Struct WindowsUtils.Core.Unmanaged+RpcEndpoint: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+Struct WindowsUtils.Core.Unmanaged+_SystemHandleOutInfo: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct WindowsUtils.Core.Unmanaged+_SYSTEM_HANDLE: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct WindowsUtils.Core.Unmanaged+_SYSTEM_HANDLE_INFORMATION: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
 Class WindowsUtils.Core.ComputerSession: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(ComputerSession): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
@@ -81,6 +87,14 @@ Class WindowsUtils.Core.FileHandle: AutoLayout, AnsiClass, Class, Public, Before
     get_FileVersion(): PrivateScope, Public, HideBySig, SpecialName
     get_ImagePath(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
+Class WindowsUtils.Core.SystemHandle: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Fields:
+    UInt32 ProcessId : Public
+    Byte ObjectTypeNumber : Public
+    System.String ObjectTypeName : Public
+    System.String ExtPropertyInfo : Public
+    Byte Flags : Public
 Class WindowsUtils.Core.WrappedFunctions: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Fields:
@@ -97,4 +111,4 @@ Class WindowsUtils.Core.WrappedFunctions: AutoLayout, AnsiClass, Class, Public, 
     GetMsiProperties(String): PrivateScope, Public, HideBySig
     DisconnectSession(IntPtr, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     DisconnectSession(IntPtr, Int32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
-    Test(vector<wchar_t const \*\,std::allocator<wchar_t const \*> >*): PrivateScope, Public, HideBySig
+    GetNtSystemHandleInformation(): PrivateScope, Public, HideBySig

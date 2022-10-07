@@ -525,5 +525,20 @@ namespace WindowsUtils.Core
             }
             return input;
         }
+
+
+        /*
+            Testing stuff 
+        */
+        public static List<SystemHandle> GetSystemHandles()
+        {
+            WrappedFunctions unWrapper = new();
+            return unWrapper.GetNtSystemHandleInformation();
+        }
+
+        public static void GetObjectTypes()
+        {
+
+        }
     }
 }

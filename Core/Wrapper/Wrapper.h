@@ -153,6 +153,17 @@ namespace WindowsUtils::Core
 		Unmanaged::FileHandle* wrapper;
 	};
 
+
+	public ref class SystemHandle
+	{
+	public:
+		UInt32 ProcessId;
+		Byte ObjectTypeNumber;
+		String^ ObjectTypeName;
+		String^ ExtPropertyInfo;
+		Byte Flags;
+	};
+
 	/*
 		All calls to native code functions
 	*/
@@ -321,22 +332,34 @@ namespace WindowsUtils::Core
 				throw gcnew SystemException(GetFormatedError(result));
 		}
 	
-		void Test(std::vector<LPCWSTR> input)
-		{
-			size_t vecsize = input.size();
-			LPCWSTR* resourcelist = new LPCWSTR[vecsize];
+		/*
+			Testing stuff
+		*/
 
-			for (size_t i = 0; i < input.size(); i++)
+		
+
+		List<SystemHandle^>^ GetNtSystemHandleInformation()
+		{
+			SharedVecPtr(Unmanaged::SystemHandleOutInfo) pvout = MakeVecPtr(Unmanaged::SystemHandleOutInfo);
+			NTSTATUS result = extptr->GetNtSystemInformation(*pvout);
+			List<SystemHandle^>^ output = gcnew List<SystemHandle^>();
+
+			for (size_t i = 0; i < pvout->size(); i++)
 			{
-				LPCWSTR single = input.at(i);
-				size_t strsize = wcslen(single);
-				resourcelist[i] = new WCHAR[strsize];
-				wcscpy_s((WCHAR*)resourcelist[i], strsize, single);
+				Unmanaged::SystemHandleOutInfo single = pvout->at(i);
+				SystemHandle^ inner = gcnew SystemHandle();
+				
+				inner->ProcessId = single.ProcessId;
+				inner->ObjectTypeNumber = single.ObjectTypeNumber;
+				inner->Flags = single.Flags;
+				inner->ObjectTypeName = gcnew String(single.ObjectTypeName);
+				inner->ExtPropertyInfo = gcnew String(single.ExtPropertyInfo);
+
+				output->Add(inner);
 			}
 
-			/*
-				The rest of the code...
-			*/
+			return output;
 		}
+
 	};
 }

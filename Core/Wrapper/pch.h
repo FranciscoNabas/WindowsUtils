@@ -9,6 +9,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+// To avoid warning C4005. This definition is done via compiler command line.
+#undef __CLR_VER
+
 // add headers that you want to pre-compile here
 
 #endif //PCH_H

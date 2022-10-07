@@ -21,9 +21,11 @@
 #include <Propkey.h>   // PKEY_* constants
 #include <atlbase.h>   // CComPtr, CComHeapPtr
 
-#define CHECKNTSTATUS(stat) if (STATUS_SUCCESS != stat) { return stat; }
+#define NTSTATUSCHECK(status, rgle) if (STATUS_SUCCESS != status) { if (rgle == FALSE) { return status; } else { return GetLastError(); } }
 #define STATUS_SUCCESS ERROR_SUCCESS
-constexpr auto STATUS_INFO_LENGTH_MISMATCH = -1073741820;
+constexpr auto STATUS_INFO_LENGTH_MISMATCH = 0xc0000004;
+#define LOCFREEWCHECK(mem) if (NULL != mem) { LocalFree(mem); }
+#define ALLCHECK(ptr) if (NULL == ptr) { return ERROR_NOT_ENOUGH_MEMORY; }
 
 #ifndef UNICODE
 #define UNICODE
@@ -94,5 +96,34 @@ namespace WindowsUtils::Core
 		DWORD GetEnumeratedSession(std::vector<ComputerSession>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
 		std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
 		DWORD DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);
+
+
+		
+		typedef struct _SystemHandleOutInfo {
+			ULONG		ProcessId;
+			BYTE		ObjectTypeNumber;
+			LPWSTR		ObjectTypeName;
+			LPWSTR		ExtPropertyInfo;
+			BYTE		Flags;
+			ACCESS_MASK	GrantedAccess;
+		}SystemHandleOutInfo, *PSystemHandleOutInfo;
+		
+		typedef struct _SYSTEM_HANDLE
+		{
+			ULONG ProcessId;
+			BYTE ObjectTypeNumber;
+			BYTE Flags;
+			USHORT Handle;
+			PVOID Object;
+			ACCESS_MASK GrantedAccess;
+		} SYSTEM_HANDLE, * PSYSTEM_HANDLE;
+
+		typedef struct _SYSTEM_HANDLE_INFORMATION
+		{
+			ULONG HandleCount;
+			SYSTEM_HANDLE Handles[1];
+		} SYSTEM_HANDLE_INFORMATION, * PSYSTEM_HANDLE_INFORMATION;
+
+		NTSTATUS GetNtSystemInformation(std::vector<SystemHandleOutInfo>& pvout);
 	};
 }

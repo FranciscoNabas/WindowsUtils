@@ -199,7 +199,6 @@ namespace WindowsUtils::Core
 					else
 						return ERROR_NOT_ENOUGH_MEMORY;
 
-
 					imageprop->push_back(FileProperty(PKEY_FileDescription, LPWSTR(L"")));
 					imageprop->push_back(FileProperty(PKEY_Software_ProductName, LPWSTR(L"")));
 					imageprop->push_back(FileProperty(PKEY_FileVersion, LPWSTR(L"")));
