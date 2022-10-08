@@ -13,7 +13,6 @@ namespace WindowsUtils.Core
     public class Utilities
     {
         private static WtsSession sessionInfo = new();
-        private static RestartManagerSession rmSessionHandle = new();
         
         public static ComputerSession[] GetComputerSession(string computerName, bool onlyActive, bool IncludeSystemSession)
         {
@@ -42,7 +41,7 @@ namespace WindowsUtils.Core
                 }
             }
             WrappedFunctions unWrapper = new();
-            ComputerSession[] result = unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), onlyActive, IncludeSystemSession);
+            ComputerSession[] result = unWrapper.GetEnumeratedSession(computerName, sessionInfo.SessionHandle.ToIntPtr(), onlyActive, IncludeSystemSession);
             return result;
         }
         public static ComputerSession[] GetComputerSession(string computerName)
@@ -72,22 +71,22 @@ namespace WindowsUtils.Core
                 }
             }
             WrappedFunctions unWrapper = new();
-            ComputerSession[] result = unWrapper.GetEnumeratedSession(sessionInfo.SessionHandle.ToIntPtr(), false, false);
+            ComputerSession[] result = unWrapper.GetEnumeratedSession(computerName, sessionInfo.SessionHandle.ToIntPtr(), false, false);
             return result;
         }
         public static ComputerSession[] GetComputerSession(bool onlyActive, bool IncludeSystemSession)
         {
             WrappedFunctions unWrapper = new();
             if (IncludeSystemSession == false)
-                return unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, IncludeSystemSession);
+                return unWrapper.GetEnumeratedSession(null, IntPtr.Zero, onlyActive, IncludeSystemSession);
 
-            ComputerSession[] result = unWrapper.GetEnumeratedSession(IntPtr.Zero, onlyActive, IncludeSystemSession);
+            ComputerSession[] result = unWrapper.GetEnumeratedSession(null, IntPtr.Zero, onlyActive, IncludeSystemSession);
             return result;
         }
         public static ComputerSession[] GetComputerSession()
         {
             WrappedFunctions unWrapper = new();
-            return unWrapper.GetEnumeratedSession(IntPtr.Zero, false, false);
+            return unWrapper.GetEnumeratedSession(null, IntPtr.Zero, false, false);
         }
 
         public static List<MessageBoxReturn>? InvokeRemoteMessage(string title, string message, bool confirm = true)

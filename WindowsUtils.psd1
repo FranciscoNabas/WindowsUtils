@@ -12,7 +12,7 @@
 RootModule = 'WindowsUtils.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.3'
+ModuleVersion = '1.3.4'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -112,12 +112,9 @@ PrivateData = @{
         # ReleaseNotes of this module
         ReleaseNotes = @'
             Changed Features:
-                - Get-FileHandle changed to Get-ObjectHandle. This Cmdlet also works with directories, and allow future expansion to other system objects.  
-                - Get-ObjectHandle 'FileName' property changed to 'InputObject' to comply with the Cmdlet scope.  
-            Bugs:
-                - Get-ObjectHandle was not returning a considerable number of image properties. This was due the Cmdlet using a Shell interface to get properties from the files themselves.  
-                  This implementation was replaced by VerQueryValue.  
-                  Besides increasing performance, the only cases where properties are not shown is when the image does not contain a resource section, or access denied to the process.  
+                - Get-ComputerSession had an additional property on its output object. ComputerName returns a value when the cmdlet is run for a remote computer.  
+                  This allows the output to be passed to Disconnect-Session.  
+                - Disconnect-Session parameters ComputerName and SessionId now accepts pipeline input by property name.  
 '@
 
         # Prerelease string of this module

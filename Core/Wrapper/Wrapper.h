@@ -43,6 +43,19 @@ namespace WindowsUtils::Core
 			);
 		}
 
+		ComputerSession(Unmanaged::ComputerSession item, String^ _computername) {
+			wrapper = new Unmanaged::ComputerSession(
+				item.SessionId,
+				item.Domain,
+				item.UserName,
+				item.SessionName,
+				item.IdleTime,
+				item.LogonTime,
+				item.SessionState
+			);
+			computerName = _computername;
+		}
+
 		// Deallocate the native object on a destructor
 		~ComputerSession() { delete wrapper; }
 
@@ -76,12 +89,19 @@ namespace WindowsUtils::Core
 				return WindowsUtils::Core::Enumeration::GetById<WindowsUtils::Core::SessionState^>(wrapper->SessionState);
 			}
 		}
+		property String^ ComputerName { 
+			String^ get() {
+				return computerName;
+			}
+		
+		}
 
 	protected:
 		// Deallocate the native object on the finalizer just in case no destructor is called
 		!ComputerSession() { delete wrapper; }
 
 	private:
+		String^ computerName;
 		Unmanaged::ComputerSession* wrapper;
 	};
 
@@ -202,7 +222,7 @@ namespace WindowsUtils::Core
 	public:
 		Unmanaged* extptr;
 
-		array<ComputerSession^>^ GetEnumeratedSession(IntPtr session, bool onlyActive, bool includeSystemSessions)
+		array<ComputerSession^>^ GetEnumeratedSession(String^ computerName, IntPtr session, bool onlyActive, bool includeSystemSessions)
 		{
 			SharedVecPtr(Unmanaged::ComputerSession) result = MakeVecPtr(Unmanaged::ComputerSession);
 			DWORD opresult = extptr->GetEnumeratedSession(*result, (HANDLE)session, onlyActive, includeSystemSessions);
@@ -210,8 +230,13 @@ namespace WindowsUtils::Core
 				throw gcnew SystemException(GetFormatedError(opresult));
 
 			array<ComputerSession^>^ output = gcnew array<ComputerSession^>((int)result->size());
-			for (size_t i = 0; i < result->size(); i++)
-				output[(int)i] = gcnew ComputerSession(result->at(i));
+			
+			if (nullptr != computerName)
+				for (size_t i = 0; i < result->size(); i++)
+					output[(int)i] = gcnew ComputerSession(result->at(i), computerName);
+			else
+				for (size_t i = 0; i < result->size(); i++)
+					output[(int)i] = gcnew ComputerSession(result->at(i));
 
 			return output;
 		}

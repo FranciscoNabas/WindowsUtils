@@ -24,11 +24,13 @@ Struct WindowsUtils.Core.Unmanaged+_SYSTEM_HANDLE: AutoLayout, AnsiClass, Class,
 Struct WindowsUtils.Core.Unmanaged+_SYSTEM_HANDLE_INFORMATION: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Class WindowsUtils.Core.ComputerSession: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+    Void .ctor(ComputerSession, System.String): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(ComputerSession): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Interfaces:
     System.IDisposable
   Properties:
+    System.String ComputerName 'get ' : 
     WindowsUtils.Core.SessionState SessionState 'get ' : 
     System.DateTime LogonTime 'get ' : 
     System.TimeSpan IdleTime 'get ' : 
@@ -42,6 +44,7 @@ Class WindowsUtils.Core.ComputerSession: AutoLayout, AnsiClass, Class, Public, B
     get_IdleTime(): PrivateScope, Public, HideBySig, SpecialName
     get_LogonTime(): PrivateScope, Public, HideBySig, SpecialName
     get_SessionState(): PrivateScope, Public, HideBySig, SpecialName
+    get_ComputerName(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
 Class WindowsUtils.Core.ResourceMessageTable: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(ResourceMessageTable): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
@@ -102,7 +105,7 @@ Class WindowsUtils.Core.WrappedFunctions: AutoLayout, AnsiClass, Class, Public, 
   Fields:
     WindowsUtils.Core.Unmanaged* extptr : Public
   Methods:
-    GetEnumeratedSession(IntPtr, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
+    GetEnumeratedSession(String, IntPtr, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     InvokeMessage(IntPtr, Int32[], String, String, UInt32, Int32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     GetResourceMessageTable(String): PrivateScope, Public, HideBySig
     MapRpcEndpoints(): PrivateScope, Public, HideBySig

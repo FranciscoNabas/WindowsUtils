@@ -8,11 +8,7 @@ namespace WindowsUtils.Core
         internal string? ComputerName { get; set; }
         internal SystemSafeHandle? SessionHandle { get; set; }
     }
-    public class RestartManagerSession
-    {
-        public uint SessionHandle { set; get; }
-        ~RestartManagerSession() => Interop.RmEndSession(SessionHandle);
-    }
+    
     public class SessionState : Enumeration
     {
         public static SessionState Active = new(0, "Active");

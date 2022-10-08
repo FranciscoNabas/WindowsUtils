@@ -256,7 +256,8 @@ namespace WindowsUtils.Commands
             Position = 0,
             ValueFromPipeline = true,
             ValueFromPipelineByPropertyName = true,
-            ParameterSetName = "byPath")]
+            ParameterSetName = "byPath"
+        )]
         [ValidateNotNullOrEmpty]
         [SupportsWildcards()]
         public string[] Path
@@ -276,7 +277,8 @@ namespace WindowsUtils.Commands
             Mandatory = true,
             ValueFromPipeline = false,
             ValueFromPipelineByPropertyName = true,
-            ParameterSetName = "byLiteral")]
+            ParameterSetName = "byLiteral"
+        )]
         [Alias("PSPath")]
         [ValidateNotNullOrEmpty]
         public string[] LiteralPath
@@ -359,7 +361,12 @@ namespace WindowsUtils.Commands
     ///     <para></para>
     /// </example>
     /// </summary>
-    [Cmdlet(VerbsCommunications.Disconnect, "Session", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.High, DefaultParameterSetName = "NoComputerName")]
+    [Cmdlet(
+        VerbsCommunications.Disconnect, "Session",
+        SupportsShouldProcess = true,
+        ConfirmImpact = ConfirmImpact.High,
+        DefaultParameterSetName = "NoComputerName"
+    )]
     [Alias("disconnect")]
     public class DisconnectSessionCommand : Cmdlet
     {
@@ -367,15 +374,27 @@ namespace WindowsUtils.Commands
         /// <para type="description">The computer name to disconnect a session.</para>
         /// <para type="description">If not informed, it disconnects the session from the local computer.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "WithComputerName")]
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "WithComputerName",
+            ValueFromPipelineByPropertyName = true
+        )]
         [ValidateNotNullOrEmpty()]
         public string ComputerName { get; set; }
 
         /// <summary>
         /// <para type="description">The session id to disconnect.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "WithComputerName")]
-        [ValidateNotNullOrEmpty()]
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "WithComputerName",
+            ValueFromPipelineByPropertyName = true
+        )]
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "NoComputerName",
+            ValueFromPipelineByPropertyName = true
+        )]
         public int SessionId { get; set; }
 
         /// <summary>

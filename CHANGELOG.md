@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
   
+## [1.3.4] - 2022-10-08
+
+Version 1.3.4 improves interoperability between existing WTS Cmdlets.  
+  
+## Changed Features
+  
+-   Get-ComputerSession had an additional property on its output object. ComputerName returns a value when the cmdlet is run for a remote computer.  
+    This allows the output to be passed to Disconnect-Session.  
+-   Disconnect-Session parameters ComputerName and SessionId now accepts pipeline input by property name.  
+  
 ## [1.3.3] - 2022-10-07
   
 ### Changed Features
