@@ -12,7 +12,7 @@
 RootModule = 'WindowsUtils.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.2'
+ModuleVersion = '1.3.3'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -69,7 +69,7 @@ TypesToProcess = @('WindowsUtils.Types.ps1xml')
 NestedModules = @('WindowsUtils.dll')
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-ComputerSession', 'Get-FileHandle', 'Get-FormattedError', 
+FunctionsToExport = 'Get-ComputerSession', 'Get-ObjectHandle', 'Get-FormattedError', 
                'Get-LastWin32Error', 'Get-LastWinSockError', 'Get-MsiProperties', 
                'Get-RemoteMessageOptions', 'Get-ResourceMessageTable', 
                'Invoke-RemoteMessage', 'Send-Click', 'Disconnect-Session'
@@ -111,8 +111,13 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
-            - Fix Get-Filehandle when using pipeline input.
-            - Get-FileHandle provider-awareness and wildcard acceptance.
+            Changed Features:
+                - Get-FileHandle changed to Get-ObjectHandle. This Cmdlet also works with directories, and allow future expansion to other system objects.  
+                - Get-ObjectHandle 'FileName' property changed to 'InputObject' to comply with the Cmdlet scope.  
+            Bugs:
+                - Get-ObjectHandle was not returning a considerable number of image properties. This was due the Cmdlet using a Shell interface to get properties from the files themselves.  
+                  This implementation was replaced by VerQueryValue.  
+                  Besides increasing performance, the only cases where properties are not shown is when the image does not contain a resource section, or access denied to the process.  
 '@
 
         # Prerelease string of this module

@@ -8,7 +8,7 @@
             "name": "PowerShell cmdlets: Windows PowerShell",
             "type": "clr",
             "request": "launch",
-            "preLaunchTask": "build",
+            //"preLaunchTask": "build",
             "program": "powershell",
             "args": [
                 "-NoExit",

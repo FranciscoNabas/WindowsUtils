@@ -14,7 +14,7 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [Get-ResourceMessageTable](#get-resourcemessagetable)
     - [Get-FormattedError](#get-formattederror)
     - [Get-LastWin32Error](#get-lastwin32error)
-    - [Get-FileHandle](#get-filehandle)
+    - [Get-ObjectHandle](#get-objecthandle)
     - [Get-MsiProperties](#get-msiproperties)
     - [Disconnect-Session](#disconnect-session)
   - [Changelog](#changelog)
@@ -106,7 +106,7 @@ Does the same as the **GetLastWin32Error()** method, from **System.Runtime.Inter
 Get-LastWin32Error
 ```  
   
-### Get-FileHandle
+### Get-ObjectHandle
   
 My favorite one, and the one I had most fun building.  
 This Cmdlet was designed to mimic the famous [Handle](https://learn.microsoft.com/en-us/sysinternals/downloads/handle), from Sysinternals.  
@@ -115,10 +115,10 @@ In future implementations, is planned to include **Close Handle** and **Kill Pro
 The first of which can be achieved with the **-c** parameter, in the original handle.exe.  
   
 ```powershell
-Get-FileHandle -Path 'C:\Windows\System32\kernel32.dll', 'C:\Windows\System32\ntdll.dll'
-Get-FileHandle -Path "$env:TEMP\*.tmp"
+Get-ObjectHandle -Path 'C:\Windows\System32\kernel32.dll', 'C:\Windows\System32\ntdll.dll'
+Get-ObjectHandle -Path "$env:TEMP\*.tmp"
 
-PS C:\Windows\System32>_ Get-FileHandle csrss*
+PS C:\Windows\System32>_ Get-ObjectHandle csrss*
 ```
   
 ### Get-MsiProperties

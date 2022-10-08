@@ -13,7 +13,7 @@ Struct WindowsUtils.Core.Unmanaged+ComputerSession: AutoLayout, AnsiClass, Class
   :System.ValueType
 Struct WindowsUtils.Core.Unmanaged+ResourceMessageTable: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
-Struct WindowsUtils.Core.Unmanaged+FileHandle: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+Struct WindowsUtils.Core.Unmanaged+ObjectHandle: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Unmanaged+RpcEndpoint: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
@@ -67,24 +67,26 @@ Class WindowsUtils.Core.RpcEndpoint: AutoLayout, AnsiClass, Class, Public, Befor
     get_BindingString(): PrivateScope, Public, HideBySig, SpecialName
     get_Annotation(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
-Class WindowsUtils.Core.FileHandle: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
-    Void .ctor(FileHandle): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+Class WindowsUtils.Core.ObjectHandle: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+    Void .ctor(ObjectHandle): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Interfaces:
     System.IDisposable
   Properties:
     System.String ImagePath 'get ' : 
+    System.String CompanyName 'get ' : 
     System.String FileVersion 'get ' : 
     System.String ProductName 'get ' : 
     System.String Application 'get ' : 
     UInt32 ProcessId 'get ' : 
-    System.String FileName 'get ' : 
+    System.String InputObject 'get ' : 
   Methods:
-    get_FileName(): PrivateScope, Public, HideBySig, SpecialName
+    get_InputObject(): PrivateScope, Public, HideBySig, SpecialName
     get_ProcessId(): PrivateScope, Public, HideBySig, SpecialName
     get_Application(): PrivateScope, Public, HideBySig, SpecialName
     get_ProductName(): PrivateScope, Public, HideBySig, SpecialName
     get_FileVersion(): PrivateScope, Public, HideBySig, SpecialName
+    get_CompanyName(): PrivateScope, Public, HideBySig, SpecialName
     get_ImagePath(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
 Class WindowsUtils.Core.SystemHandle: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
@@ -107,7 +109,7 @@ Class WindowsUtils.Core.WrappedFunctions: AutoLayout, AnsiClass, Class, Public, 
     GetFormatedError(Int32): PrivateScope, Public, HideBySig
     GetFormatedWin32Error(): PrivateScope, Public, HideBySig
     GetFormatedWSError(): PrivateScope, Public, HideBySig
-    GetProcessFileHandle(String[]): PrivateScope, Public, HideBySig
+    GetProcessObjectHandle(String[]): PrivateScope, Public, HideBySig
     GetMsiProperties(String): PrivateScope, Public, HideBySig
     DisconnectSession(IntPtr, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     DisconnectSession(IntPtr, Int32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig

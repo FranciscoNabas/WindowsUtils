@@ -199,7 +199,7 @@ namespace WindowsUtils::Core
 		std::vector<UCHAR> buffer(FIELD_OFFSET(KEY_NAME_INFORMATION, Name) + sizeof(WCHAR) * REG_KEY_PATH_LENGTH);
 		do
 		{
-			result = NtQueryKey(hkey, KeyNameInformation, buffer.data(), buffer.size(), &sizeneeded);
+			result = NtQueryKey(hkey, KeyNameInformation, buffer.data(), (ULONG)buffer.size(), &sizeneeded);
 			
 			// Why have only one buffer size error, when we can have two and confuse everyone?
 			if (STATUS_SUCCESS != result && STATUS_BUFFER_TOO_SMALL != result && result != STATUS_BUFFER_OVERFLOW)
@@ -216,7 +216,7 @@ namespace WindowsUtils::Core
 		_keypath.assign(pknameinfo->Name, pknameinfo->NameLength / sizeof(WCHAR));
 
 
-		strsize = wcslen(_keypath.c_str()) + 1;
+		strsize = (ULONG)wcslen(_keypath.c_str()) + 1;
 		keypath = new WCHAR[strsize];
 
 		wcscpy_s(keypath, strsize, _keypath.c_str());

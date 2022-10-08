@@ -227,22 +227,22 @@ namespace WindowsUtils.Commands
     /// <para type="description">Although working in a different way, this Cmdlet was designed to mimic handle.exe, from Sysinternals suite.</para>
     /// <example>
     ///     <para></para>
-    ///     <code>Get-FileHandle -Path "$env:windir\System32\kernel32.dll", "$env:windir\System32\ntdll.dll"</code>
+    ///     <code>Get-ObjectHandle -Path "$env:windir\System32\kernel32.dll", "$env:windir\System32\ntdll.dll"</code>
     ///     <para>Returning processes that have open handles to a list of files.</para>
     ///     <para></para>
     ///     <para></para>
     /// </example>
     /// <example>
     ///     <para></para>
-    ///     <code>Get-ChildItem -Path $env:TEMP -Filter '*.tmp' | Get-FileHandle</code>
+    ///     <code>Get-ObjectHandle $env:TEMP\*.tmp</code>
     ///     <para>Listing all .tmp files on the temp folder, and listing the processes with open handles to those files.</para>
     ///     <para>The Cmdlet lists the processes related to the files queried to make it easier identify processes when querying a list of files.</para>
     ///     <para></para>
     ///     <para></para>
     /// </example>
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "FileHandle")]
-    public class GetFileHandleCommand : PSCmdlet
+    [Cmdlet(VerbsCommon.Get, "ObjectHandle")]
+    public class GetObjectHandleCommand : PSCmdlet
     {
         private List<string> validPaths = new List<string>();
         private string[] _path;
@@ -314,7 +314,7 @@ namespace WindowsUtils.Commands
                 throw new ItemNotFoundException("No object found for the specified path(s).");
             
             WrappedFunctions unWrapper = new();
-            WriteObject(unWrapper.GetProcessFileHandle(validPaths.ToArray()), true);
+            WriteObject(unWrapper.GetProcessObjectHandle(validPaths.ToArray()), true);
         }
     }
 

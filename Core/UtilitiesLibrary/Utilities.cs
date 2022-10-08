@@ -465,7 +465,7 @@ namespace WindowsUtils.Core
             return unWrapper.GetFormatedWSError();
         }
 
-        public static FileHandle[]? GetProcessFileHandle(string[] fileName)
+        public static ObjectHandle[]? GetProcessFileHandle(string[] fileName)
         {
             List<string> validPaths = new List<string>();
             for (int i = 0; i < fileName.Length; i++)
@@ -485,7 +485,7 @@ namespace WindowsUtils.Core
                 validsent[i] = validPaths[i].Trim();
 
             WrappedFunctions unWrapper = new();
-            return unWrapper.GetProcessFileHandle(validsent);
+            return unWrapper.GetProcessObjectHandle(validsent);
         }
 
         public static PSObject GetMsiProperties(string fileName)
