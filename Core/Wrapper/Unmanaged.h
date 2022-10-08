@@ -62,18 +62,20 @@ namespace WindowsUtils::Core
 			ResourceMessageTable(DWORD id, LPWSTR message) : Id(id), Message(message) { }
 		};
 
-		class FileHandle
+		class ObjectHandle
 		{
 		public:
-			LPWSTR		FileName;
+			LPWSTR		InputObject;
 			DWORD		ProcessId;
 			LPWSTR		Application;
 			LPWSTR		ProductName;
 			LPWSTR		FileVersion;
+			LPWSTR		CompanyName;
 			LPWSTR		ImagePath;
-			FileHandle() { }
-			FileHandle(LPWSTR filename, DWORD pid, LPWSTR appname, LPWSTR procname, LPWSTR fileversion, LPWSTR imgpath)
-				: FileName(filename), ProcessId(pid), Application(appname), ProductName(procname), FileVersion(fileversion), ImagePath(imgpath) { }
+			
+			ObjectHandle() { }
+			ObjectHandle(LPWSTR inpobj, DWORD pid, LPWSTR appname, LPWSTR procname, LPWSTR fileversion, LPWSTR compname, LPWSTR imgpath)
+				: InputObject(inpobj), ProcessId(pid), Application(appname), ProductName(procname), FileVersion(fileversion), CompanyName(compname), ImagePath(imgpath) { }
 		};
 
 		class RpcEndpoint
@@ -85,7 +87,7 @@ namespace WindowsUtils::Core
 			RpcEndpoint(LPWSTR bstr, LPWSTR ann) : BindingString(bstr), Annotation(ann) { }
 		};
 
-		DWORD GetProcessFileHandle(std::vector<FileHandle>& ppvecfho, std::vector<LPCWSTR> reslist);
+		DWORD GetProcessObjectHandle(std::vector<ObjectHandle>& ppvecfho, std::vector<LPCWSTR>& reslist);
 		DWORD GetResourceMessageTable(std::vector<ResourceMessageTable>& ppvecmdo, LPTSTR libName);
 		DWORD MapRpcEndpoints(std::vector<RpcEndpoint>& ppOutVec);
 		LPWSTR GetFormatedWSError();

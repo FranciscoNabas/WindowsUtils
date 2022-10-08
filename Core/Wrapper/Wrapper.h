@@ -123,34 +123,64 @@ namespace WindowsUtils::Core
 		Unmanaged::RpcEndpoint* wrapper;
 	};
 
-	public ref class FileHandle
+	public ref class ObjectHandle
 	{
 	public:
-		property String^ FileName { String^ get() { return gcnew String(wrapper->FileName); } }
+		property String^ InputObject { String^ get() { return gcnew String(wrapper->InputObject); } }
 		property UInt32 ProcessId { UInt32 get() { return wrapper->ProcessId; } }
-		property String^ Application { String^ get() { return gcnew String(wrapper->Application); } }
-		property String^ ProductName { String^ get() { return gcnew String(wrapper->ProductName); } }
-		property String^ FileVersion { String^ get() { return gcnew String(wrapper->FileVersion); } }
+		property String^ Application {
+			String^ get() {
+				if (NULL != wrapper->Application)
+					return gcnew String(wrapper->Application);
+
+				return nullptr;
+			}
+		}
+		property String^ ProductName {
+			String^ get() {
+				if (NULL != wrapper->ProductName)
+					return gcnew String(wrapper->ProductName);
+				
+				return nullptr;
+			}
+		}
+		property String^ FileVersion {
+			String^ get() {
+				if (NULL != wrapper->FileVersion)
+					return gcnew String(wrapper->FileVersion);
+
+				return nullptr;
+			}
+		}
+		property String^ CompanyName {
+			String^ get() {
+				if (NULL != wrapper->CompanyName)
+					return gcnew String(wrapper->CompanyName);
+
+				return nullptr;
+			}
+		}
 		property String^ ImagePath { String^ get() { return gcnew String(wrapper->ImagePath); } }
 
-		FileHandle() : wrapper( new Unmanaged::FileHandle ) { }
-		FileHandle(Unmanaged::FileHandle item) {
-			wrapper = new Unmanaged::FileHandle(
-				item.FileName,
+		ObjectHandle() : wrapper( new Unmanaged::ObjectHandle) { }
+		ObjectHandle(Unmanaged::ObjectHandle item) {
+			wrapper = new Unmanaged::ObjectHandle(
+				item.InputObject,
 				item.ProcessId,
 				item.Application,
 				item.ProductName,
 				item.FileVersion,
+				item.CompanyName,
 				item.ImagePath
 			);
 		}
-		~FileHandle() { delete wrapper; }
+		~ObjectHandle() { delete wrapper; }
 
 	protected:
-		!FileHandle() { delete wrapper; }
+		!ObjectHandle() { delete wrapper; }
 
 	private:
-		Unmanaged::FileHandle* wrapper;
+		Unmanaged::ObjectHandle* wrapper;
 	};
 
 
@@ -265,9 +295,9 @@ namespace WindowsUtils::Core
 			GlobalFree(result);
 			return output;
 		}
-		array<FileHandle^>^ GetProcessFileHandle(array<String^>^ fileName)
+		array<ObjectHandle^>^ GetProcessObjectHandle(array<String^>^ fileName)
 		{
-			SharedVecPtr(Unmanaged::FileHandle) ppOutput = MakeVecPtr(Unmanaged::FileHandle);
+			SharedVecPtr(Unmanaged::ObjectHandle) ppOutput = MakeVecPtr(Unmanaged::ObjectHandle);
 			SharedVecPtr(LPCWSTR) reslist = MakeVecPtr(LPCWSTR);
 			
 			for (int i = 0; i < fileName->Length; i++)
@@ -277,7 +307,7 @@ namespace WindowsUtils::Core
 				single = nullptr;
 			}
 
-			UINT result = extptr->GetProcessFileHandle(*ppOutput, *reslist);
+			UINT result = extptr->GetProcessObjectHandle(*ppOutput, *reslist);
 			if (result != ERROR_SUCCESS)
 			{
 				throw gcnew SystemException(GetFormatedError(result));
@@ -287,9 +317,9 @@ namespace WindowsUtils::Core
 				return nullptr;
 			}
 
-			array<FileHandle^>^ output = gcnew array<FileHandle^>((int)ppOutput->size());
+			array<ObjectHandle^>^ output = gcnew array<ObjectHandle^>((int)ppOutput->size());
 			for (size_t i = 0; i < ppOutput->size(); i++)
-				output[(int)i] = gcnew FileHandle(ppOutput->at(i));
+				output[(int)i] = gcnew ObjectHandle(ppOutput->at(i));
 
 			return output;
 		}

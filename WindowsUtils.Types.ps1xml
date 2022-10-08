@@ -66,7 +66,7 @@
     </Members>
   </Type>
   <Type>
-    <Name>WindowsUtils.Core.FileHandle</Name>
+    <Name>WindowsUtils.Core.ObjectHandle</Name>
     <Members>
       <MemberSet>
         <Name>PSStandardMembers</Name>
@@ -74,10 +74,10 @@
           <PropertySet>
             <Name>DefaultDisplayPropertySet</Name>
             <ReferencedProperties>
+              <Name>InputObject</Name>
               <Name>Application</Name>
               <Name>ProcessId</Name>
               <Name>ImagePath</Name>
-              <Name>FileName</Name>
             </ReferencedProperties>
           </PropertySet>
         </Members>

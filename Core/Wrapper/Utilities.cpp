@@ -12,48 +12,57 @@
 
 namespace WindowsUtils::Core
 {
-	// Wrapper for SHCreateItemFromParsingName(), IShellItem2::GetString()
-	// Throws std::system_error in case of any error.
-	HRESULT GetShellPropStringFromPath(LPCWSTR pPath, std::vector<FileProperty>& propertyinfo)
+	DWORD GetProcessImageVersionInfo(LPWSTR& imagepath, const LPCWSTR& propname, LPWSTR& value)
 	{
-		HRESULT hresult = S_OK;
-		hresult = CoInitialize(nullptr);
-		if (hresult != S_OK && hresult != S_FALSE && hresult != RPC_E_CHANGED_MODE) // Success ,already initialized and thread mode already set
-			return hresult;
+		DWORD result = S_OK;
+		DWORD verinfosize = 0;
+		LPVOID databuffer;
+		UINT transdatasize = 0;
+		LPWSTR subblockfuffer = L"";
 
-		// Use CComPtr to automatically release the IShellItem2 interface when the function returns
-		// or an exception is thrown.
-		CComPtr<IShellItem2> pItem;
-		hresult = SHCreateItemFromParsingName(pPath, nullptr, IID_PPV_ARGS(&pItem));
-		if (FAILED(hresult))
-			return hresult;
+		struct LANGUAGE_AND_CODEPAGE {
+			WORD	Language;
+			WORD	CodePage;
+		} *PLANGUAGE_AND_CODEPAGE;
 
-		// Use CComHeapPtr to automatically release the string allocated by the shell when the function returns
-		// or an exception is thrown (calls CoTaskMemFree).
+		verinfosize = GetFileVersionInfoSizeW(imagepath, NULL);
+		if (verinfosize == 0)
+			return GetLastError();
 
-		for (size_t i = 0; i < propertyinfo.size(); i++)
+		databuffer = (LPVOID)LocalAlloc(LMEM_ZEROINIT, verinfosize);
+		ALLCHECK(databuffer);
+
+		if (FALSE == (GetFileVersionInfoW(imagepath, NULL, verinfosize, databuffer)))
+			return GetLastError();
+
+		if (FALSE == (VerQueryValueW(databuffer, L"\\VarFileInfo\\Translation", (LPVOID*)&PLANGUAGE_AND_CODEPAGE, &transdatasize)))
+			return GetLastError();
+
+		for (UINT i = 0; i < (transdatasize / sizeof(struct LANGUAGE_AND_CODEPAGE)); i++)
 		{
-			hresult = pItem->GetString(propertyinfo.at(i).Property, &propertyinfo.at(i).Value);
-			if (FAILED(hresult))
-				return hresult;
+			subblockfuffer = (LPWSTR)LocalAlloc(LMEM_ZEROINIT, sizeof(WCHAR) * MAX_PATH);
+			ALLCHECK(subblockfuffer);
+
+			LPVOID propbuffer;
+			UINT currdatasize = 0;
+
+			StringCchPrintfW(subblockfuffer, MAX_PATH, L"\\StringFileInfo\\%04x%04x\\", PLANGUAGE_AND_CODEPAGE[i].Language, PLANGUAGE_AND_CODEPAGE[i].CodePage);
+
+			size_t tsubbstrsize = wcslen(subblockfuffer) + wcslen(propname) + 2;
+			wcscat_s(subblockfuffer, tsubbstrsize, propname);
+
+			VerQueryValueW(databuffer, subblockfuffer, &propbuffer, &currdatasize);
+			
+			LPWSTR strbuff = static_cast<LPWSTR>(propbuffer);
+			size_t bufflen = wcslen(strbuff) + 1;
+
+			value = new WCHAR[bufflen];
+			wcscpy_s(value, bufflen, strbuff);
+
+			LOCFREEWCHECK(subblockfuffer);
 		}
 
-		CoUninitialize();
-		
-		return hresult;;
-	}
-
-	void PrintBuffer(LPWSTR& pwref, wchar_t const* const format, ...)
-	{
-		va_list args;
-		int len;
-		va_start(args, format);
-		
-		len = _vscwprintf(format, args) + 1;
-		pwref = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * len));
-		vswprintf_s(pwref, len, format, args);
-		
-		va_end(args);
+		return result;
 	}
 
 	DWORD Unmanaged::GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage)
@@ -143,51 +152,50 @@ namespace WindowsUtils::Core
 		return uiReturn;
 	}
 
-	DWORD Unmanaged::GetProcessFileHandle
+	DWORD Unmanaged::GetProcessObjectHandle
 	(
-		std::vector<Unmanaged::FileHandle>& ppvecfho,
-		std::vector<LPCWSTR> reslist
+		std::vector<Unmanaged::ObjectHandle>& ppvecfho,
+		std::vector<LPCWSTR>& reslist
 	)
 	{
 		// Invalid handle value for DWORD
 		DWORD sessionHandle = 0xFFFFFFFF;
-		
 		UINT nProcInfo = 0;
 		UINT nProcInfoNeeded = 0;
 		RM_REBOOT_REASON rebReason = RmRebootReasonNone;
 		PRM_PROCESS_INFO pprocInfo = NULL;
-		
 		DWORD res = 0;
 		NTSTATUS ntcall;
 		UINT retry = 0;
-		Unmanaged::FileHandle* single = new Unmanaged::FileHandle;
+
+		Unmanaged::ObjectHandle* single;
 
 		for (size_t i = 0; i < reslist.size(); i++)
 		{
 			HRESULT hresult = S_OK;
-			PFILE_PROCESS_IDS_USING_FILE_INFORMATION ntprocinfo = (PFILE_PROCESS_IDS_USING_FILE_INFORMATION)LocalAlloc(LMEM_ZEROINIT, sizeof(FILE_PROCESS_IDS_USING_FILE_INFORMATION));
-			if (nullptr == ntprocinfo)
-				return ERROR_NOT_ENOUGH_MEMORY;
 
-			single->FileName = (LPWSTR)LocalAlloc(LMEM_ZEROINIT, (sizeof(WCHAR) * MAX_PATH));
-			if (nullptr == single->FileName)
-				return ERROR_NOT_ENOUGH_MEMORY;
-			
-			wcscpy_s(single->FileName, MAX_PATH, reslist.at(i));
-			PathStripPathW(single->FileName);
+			PFILE_PROCESS_IDS_USING_FILE_INFORMATION ntprocinfo = (PFILE_PROCESS_IDS_USING_FILE_INFORMATION)LocalAlloc(LMEM_ZEROINIT, sizeof(FILE_PROCESS_IDS_USING_FILE_INFORMATION));
+			ALLCHECK(ntprocinfo);
+
+			size_t pathsz = wcslen(reslist.at(i)) + 1;
+			LPWSTR inputobj = new WCHAR[pathsz];
+
+			wcscpy_s(inputobj, pathsz, reslist.at(i));
+			PathStripPathW(inputobj);
 
 			// TODO: Error handling
 			ntcall = GetNtProcessUsingFileList(reslist.at(i), ntprocinfo);
 			
 			for (ULONG j = 0; j < ntprocinfo->NumberOfProcessIdsInList; j++)
 			{
+				single = (Unmanaged::ObjectHandle*)LocalAlloc(LMEM_ZEROINIT, sizeof(Unmanaged::ObjectHandle));
+				ALLCHECK(single);
+
+				single->InputObject = inputobj;
 				single->ProcessId = (DWORD)ntprocinfo->ProcessIdList[j];
-				std::vector<FileProperty>* imageprop = (std::vector<FileProperty>*)LocalAlloc(LMEM_ZEROINIT, sizeof(std::vector<FileProperty>));
-				if (nullptr == imageprop)
-					return ERROR_NOT_ENOUGH_MEMORY;
 
 				HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, (DWORD)ntprocinfo->ProcessIdList[j]);
-				if (INVALID_HANDLE_VALUE != hProcess)
+				if (INVALID_HANDLE_VALUE != hProcess && NULL != hProcess)
 				{
 					single->ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
 					if (nullptr != single->ImagePath)
@@ -199,41 +207,34 @@ namespace WindowsUtils::Core
 					else
 						return ERROR_NOT_ENOUGH_MEMORY;
 
-					imageprop->push_back(FileProperty(PKEY_FileDescription, LPWSTR(L"")));
-					imageprop->push_back(FileProperty(PKEY_Software_ProductName, LPWSTR(L"")));
-					imageprop->push_back(FileProperty(PKEY_FileVersion, LPWSTR(L"")));
+					res = GetProcessImageVersionInfo(single->ImagePath, L"FileDescription", single->Application);
+					if (res != 0)
+						single->Application = L"";
+					
+					res = GetProcessImageVersionInfo(single->ImagePath, L"FileVersion", single->FileVersion);
+					if (res != 0)
+						single->FileVersion = L"";
 
-					hresult = GetShellPropStringFromPath(single->ImagePath, *imageprop);
+					res = GetProcessImageVersionInfo(single->ImagePath, L"CompanyName", single->CompanyName);
+					if (res != 0)
+						single->CompanyName = L"";
 
-					for (size_t k = 0; k < imageprop->size(); k++)
-					{
-						FileProperty innerprop = imageprop->at(k);
-						if (innerprop.Property == PKEY_FileDescription)
-							single->Application = innerprop.Value;
-
-						if (innerprop.Property == PKEY_FileVersion)
-							single->FileVersion = innerprop.Value;
-
-						if (innerprop.Property == PKEY_Software_ProductName)
-							single->ProductName = innerprop.Value;
-					}
+					res = GetProcessImageVersionInfo(single->ImagePath, L"ProductName", single->ProductName);
+					if (res != 0)
+						single->ProductName = L"";
 					
 					CloseHandle(hProcess);
 				}
-
+				
 				ppvecfho.push_back(*single);
-
-				if (nullptr != imageprop)
-					LocalFree(imageprop);
+			
+				if (nullptr != single)
+					LocalFree(single);
 			}
 
 			if (nullptr != ntprocinfo)
 				LocalFree(ntprocinfo);
 		}
-
-		if (nullptr != single)
-			delete single;
-
 		return res;
 	}
 
@@ -311,7 +312,8 @@ namespace WindowsUtils::Core
 									(DWORD)messageBlock[block].OffsetToEntries + offset);
 
 							inner.Id = id;
-							PrintBuffer(inner.Message, L"%s", messageEntry->Text);
+
+							StringCchPrintfW(inner.Message, STRSAFE_MAX_CCH, L"%s", messageEntry->Text);
 
 							ppvecmdo.push_back(inner);
 							offset += messageEntry->Length;
