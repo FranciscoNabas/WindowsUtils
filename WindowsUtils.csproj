@@ -29,18 +29,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="WindowsUtils.psd1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="WindowsUtils.psm1">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="WindowsUtils.Types.ps1xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" PrivateAssets="all" />
     <PackageReference Include="XmlDoc2CmdletDoc" Version="0.3.0">
       <PrivateAssets>all</PrivateAssets>
