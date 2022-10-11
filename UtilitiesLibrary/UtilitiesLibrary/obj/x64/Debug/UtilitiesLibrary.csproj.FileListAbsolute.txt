@@ -1,0 +1,2 @@
+C:\Repositories\WindowsUtils\UtilitiesLibrary\UtilitiesLibrary\obj\x64\Debug\UtilitiesLibrary.csproj.AssemblyReference.cache
+C:\Repositories\WindowsUtils\UtilitiesLibrary\UtilitiesLibrary\obj\x64\Debug\UtilitiesLibrary.csproj.CoreCompileInputs.cache

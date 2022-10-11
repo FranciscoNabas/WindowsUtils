@@ -37,11 +37,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Core">
+      <HintPath>StaticDependencies\Core.dll</HintPath>
+    </Reference>
     <Reference Include="UtilitiesLibrary">
       <HintPath>StaticDependencies\UtilitiesLibrary.dll</HintPath>
-    </Reference>
-    <Reference Include="Wrapper">
-      <HintPath>StaticDependencies\Wrapper.dll</HintPath>
     </Reference>
   </ItemGroup>
 

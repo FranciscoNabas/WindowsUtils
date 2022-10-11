@@ -1,6 +1,5 @@
-﻿using Microsoft.PowerShell.Commands;
-using System.IO;
-using System.Management.Automation;
+﻿using System.Management.Automation;
+using System.Runtime.InteropServices;
 using WindowsUtils.Core;
 
 namespace WindowsUtils.Commands
@@ -9,7 +8,11 @@ namespace WindowsUtils.Commands
     /// <para type="synopsis">Sends a message to sessions on local or remote computers.</para>
     /// <para type="description">The Invoke-RemoteMessage cmdlet sends a MessageBox-Style message to sessions on local or remote computers.</para>
     ///</summary>
-    [Cmdlet(VerbsLifecycle.Invoke, "RemoteMessage")]
+    [Cmdlet(
+        VerbsLifecycle.Invoke, "RemoteMessage",
+        SupportsShouldProcess = true,
+        ConfirmImpact = ConfirmImpact.High
+    )]
     public class InvokeRemoteMessageCommand : Cmdlet
     {
         /// <summary>
@@ -62,24 +65,58 @@ namespace WindowsUtils.Commands
         [Parameter()]
         public SwitchParameter Wait { get; set; } = false;
 
-        /// <summary>
-        /// <para type="description">If 'SessionId' is not specified, the cmdlet prompts for confirmation before sending the message to all sessions.</para>
-        /// <para type="description">Use the 'Force' parameter to avoid confirmation.</para>
-        /// </summary>
-        [Parameter()]
-        public SwitchParameter Force { get; set; } = false;
-
         protected override void ProcessRecord()
         {
-            if(SessionId == null)
+            WrappedFunctions unwrapper = new();
+            uint nativestyle = MessageBoxOption.MbOptionsResolver(Style);
+            List<int> result = new();
+
+            if (string.IsNullOrEmpty(ComputerName))
             {
-                if (Force)
-                    Utilities.InvokeRemoteMessage(ComputerName, Title, Message, Style, Timeout, Wait, false);
+                if (SessionId.Length == 0)
+                {
+                    if (ShouldProcess(
+                        "Sending message to all sessions on the current computer.",
+                        "Are you sure you want to send the message to all sessions on this computer?",
+                        "Send message"
+                        ))
+                    {
+                        result = unwrapper.InvokeMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
+                        result.ForEach(x => WriteObject((MessageBoxReturn)x));
+                    }
+                }
                 else
-                    Utilities.InvokeRemoteMessage(ComputerName, Title, Message, Style, Timeout, Wait);
+                {
+                    result = unwrapper.InvokeMessage(IntPtr.Zero, SessionId, Title, Message, nativestyle, Timeout, Wait);
+                    result.ForEach(x => WriteObject((MessageBoxReturn)x));
+                }
             }
             else
-                Utilities.InvokeRemoteMessage(ComputerName, SessionId, Title, Message, Style, Timeout, Wait);
+            {
+                if (SessionId.Length == 0)
+                {
+                    if (ShouldProcess(
+                        "Sending message to all sessions on computer " + ComputerName + ".",
+                        "Are you sure you want to send the message to all sessions on computer " + ComputerName + "?",
+                        "Send message"
+                        ))
+                    {
+                        WtsSession.StageComputerSession(ComputerName);
+                        if (WtsSession.SessionHandle is not null)
+                            result = unwrapper.InvokeMessage(WtsSession.SessionHandle.ToIntPtr(), null, Title, Message, nativestyle, Timeout, Wait);
+                        
+                        result.ForEach(x => WriteObject((MessageBoxReturn)x));
+                    }
+                }
+                else
+                {
+                    WtsSession.StageComputerSession(ComputerName);
+                    if (WtsSession.SessionHandle is not null)
+                        result = unwrapper.InvokeMessage(WtsSession.SessionHandle.ToIntPtr(), SessionId, Title, Message, nativestyle, Timeout, Wait);
+
+                    result.ForEach(x => WriteObject((MessageBoxReturn)x));
+                }
+            }
         }
     }
 
@@ -127,12 +164,17 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-
+            WrappedFunctions unwrapper = new();
+            
             if (string.IsNullOrEmpty(ComputerName))
-                WriteObject(Utilities.GetComputerSession(ActiveOnly, IncludeSystemSession), true);
+            {
+                WtsSession.StageComputerSession(ComputerName);
+                if (WtsSession.SessionHandle is not null)
+                    WriteObject((ComputerSession[])unwrapper.GetEnumeratedSession(ComputerName, WtsSession.SessionHandle.ToIntPtr(), ActiveOnly, IncludeSystemSession));
+            }
             else
-                if (ComputerName is not null)
-                    WriteObject(Utilities.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession), true);
+                WriteObject((ComputerSession[])unwrapper.GetEnumeratedSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession));
+
         }
     }
 
@@ -145,7 +187,8 @@ namespace WindowsUtils.Commands
     {
         protected override void ProcessRecord()
         {
-            Utilities.SendClick();
+            WrappedFunctions unwrapper = new();
+            unwrapper.SendClick();
         }
     }
 
@@ -298,10 +341,10 @@ namespace WindowsUtils.Commands
 
                 if (_shouldExpandWildcards)
                     pathlist.AddRange(this.GetResolvedProviderPathFromPSPath(path, out provider));
-                
+
                 else
                     pathlist.Add(this.SessionState.Path.GetUnresolvedProviderPathFromPSPath(path, out provider, out drive));
-                
+
                 foreach (string filepath in pathlist)
                 {
                     if (File.Exists(filepath) || Directory.Exists(filepath))
@@ -314,7 +357,7 @@ namespace WindowsUtils.Commands
 
             if (validPaths.Count == 0)
                 throw new ItemNotFoundException("No object found for the specified path(s).");
-            
+
             WrappedFunctions unWrapper = new();
             WriteObject(unWrapper.GetProcessObjectHandle(validPaths.ToArray()), true);
         }
@@ -407,7 +450,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            if(string.IsNullOrEmpty(ComputerName))
+            if (string.IsNullOrEmpty(ComputerName))
             {
                 if (SessionId == null)
                 {
