@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.3.4</Version>
+    <Version>1.4.0</Version>
     <Authors>FranciscoNabas</Authors>
     <Platforms>x64</Platforms>
     <AssemblyName></AssemblyName>
@@ -29,6 +29,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\Windows\System32\msvcp140.dll" Link="msvcp140.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Windows\System32\vcruntime140.dll" Link="vcruntime140.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" PrivateAssets="all" />
     <PackageReference Include="XmlDoc2CmdletDoc" Version="0.3.0">
       <PrivateAssets>all</PrivateAssets>
@@ -40,9 +49,12 @@
     <Reference Include="Core">
       <HintPath>StaticDependencies\Core.dll</HintPath>
     </Reference>
-    <Reference Include="UtilitiesLibrary">
-      <HintPath>StaticDependencies\UtilitiesLibrary.dll</HintPath>
-    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="vcruntime140_1.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

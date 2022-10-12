@@ -266,7 +266,7 @@ namespace WindowsUtils::Core
 		);
 		return inter;
 	}
-	LPWSTR Unmanaged::GetFormatedError(DWORD errorCode)
+	LPWSTR Unmanaged::GetFormattedError(DWORD errorCode)
 	{
 		LPWSTR inter = NULL;
 		FormatMessageW(
@@ -284,7 +284,13 @@ namespace WindowsUtils::Core
 	DWORD Unmanaged::GetResourceMessageTable(std::vector<Unmanaged::ResourceMessageTable>& ppvecmdo, LPTSTR libName)
 	{
 		DWORD err = 0;
-		Unmanaged::ResourceMessageTable inner;
+		Unmanaged::ResourceMessageTable* psingle;
+		
+		if (nullptr == psingle)
+		{
+			err = GetLastError();
+			goto CLEANUP;
+		}
 
 		HMODULE hDll = LoadLibraryEx(libName, NULL, LOAD_LIBRARY_AS_DATAFILE);
 		if (hDll != NULL)
@@ -307,23 +313,42 @@ namespace WindowsUtils::Core
 
 						for (DWORD id = lowId; id <= highId; id++)
 						{
+							psingle = (Unmanaged::ResourceMessageTable*)LocalAlloc(LMEM_ZEROINIT, sizeof(Unmanaged::ResourceMessageTable));
+							if (nullptr == psingle)
+							{
+								err = GetLastError();
+								goto CLEANUP;
+							}
+
 							PMESSAGE_RESOURCE_ENTRY messageEntry =
 								(PMESSAGE_RESOURCE_ENTRY)((PBYTE)messageTable +
 									(DWORD)messageBlock[block].OffsetToEntries + offset);
 
-							inner.Id = id;
+							psingle->Id = id;
+							psingle->Message = new WCHAR[150];
+							StringCchPrintfW(psingle->Message, 150, L"%s", messageEntry->Text);
 
-							StringCchPrintfW(inner.Message, STRSAFE_MAX_CCH, L"%s", messageEntry->Text);
+							ppvecmdo.push_back(*psingle);
+							if (NULL == LocalFree(psingle))
+								psingle = NULL;
 
-							ppvecmdo.push_back(inner);
 							offset += messageEntry->Length;
 						}
 					}
 				}
 			}
-			FreeLibrary(hDll);
+			
 		}
-		else { err = GetLastError(); }
+		else
+			err = GetLastError();
+
+	CLEANUP:
+
+		if (NULL != psingle)
+			LocalFree(psingle);
+
+		if (NULL != hDll)
+			FreeLibrary(hDll);
 
 		return err;
 	}

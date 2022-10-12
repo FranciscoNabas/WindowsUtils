@@ -15,6 +15,8 @@ Struct WindowsUtils.Core.Unmanaged+ObjectHandle: AutoLayout, AnsiClass, Class, N
   :System.ValueType
 Struct WindowsUtils.Core.Unmanaged+RpcEndpoint: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+Struct WindowsUtils.Core.Unmanaged+MessageResponse: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
 Struct WindowsUtils.Core.Unmanaged+_SystemHandleOutInfo: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Unmanaged+_SYSTEM_HANDLE: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
@@ -44,7 +46,7 @@ Class WindowsUtils.Core.ComputerSessionBase: AutoLayout, AnsiClass, Class, Publi
     get_SessionState(): PrivateScope, Public, HideBySig, SpecialName
     get_ComputerName(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
-Class WindowsUtils.Core.ResourceMessageTable: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+Class WindowsUtils.Core.ResourceMessageTableCore: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(ResourceMessageTable): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Interfaces:
@@ -68,7 +70,7 @@ Class WindowsUtils.Core.RpcEndpoint: AutoLayout, AnsiClass, Class, Public, Befor
     get_BindingString(): PrivateScope, Public, HideBySig, SpecialName
     get_Annotation(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
-Class WindowsUtils.Core.ObjectHandle: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+Class WindowsUtils.Core.ObjectHandleBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(ObjectHandle): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Interfaces:
@@ -90,6 +92,18 @@ Class WindowsUtils.Core.ObjectHandle: AutoLayout, AnsiClass, Class, Public, Befo
     get_CompanyName(): PrivateScope, Public, HideBySig, SpecialName
     get_ImagePath(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
+Class WindowsUtils.Core.MessageResponseBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+    Void .ctor(MessageResponse): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Interfaces:
+    System.IDisposable
+  Properties:
+    UInt32 Response 'get ' : 
+    UInt32 SessionId 'get ' : 
+  Methods:
+    get_SessionId(): PrivateScope, Public, HideBySig, SpecialName
+    get_Response(): PrivateScope, Public, HideBySig, SpecialName
+    Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
 Class WindowsUtils.Core.SystemHandle: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Fields:
@@ -107,12 +121,12 @@ Class WindowsUtils.Core.WrappedFunctions: AutoLayout, AnsiClass, Class, Public, 
     InvokeMessage(IntPtr, Int32[], String, String, UInt32, Int32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     GetResourceMessageTable(String): PrivateScope, Public, HideBySig
     MapRpcEndpoints(): PrivateScope, Public, HideBySig
-    GetFormatedError(Int32): PrivateScope, Public, HideBySig
+    GetFormattedError(Int32): PrivateScope, Public, HideBySig
     GetFormatedWin32Error(): PrivateScope, Public, HideBySig
     GetFormatedWSError(): PrivateScope, Public, HideBySig
     GetProcessObjectHandle(String[]): PrivateScope, Public, HideBySig
     GetMsiProperties(String): PrivateScope, Public, HideBySig
     DisconnectSession(IntPtr, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
-    DisconnectSession(IntPtr, Int32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
+    DisconnectSession(IntPtr, UInt32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     SendClick(): PrivateScope, Public, HideBySig
     GetNtSystemHandleInformation(): PrivateScope, Public, HideBySig

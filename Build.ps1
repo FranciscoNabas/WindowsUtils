@@ -4,6 +4,15 @@ param (
 )
 
 $releaseDir = '.\bin\WindowsUtils'
+$copypath = @(
+    '.\LICENSE'
+    '.\ModuleInfo\WindowsUtils.psd1'
+    '.\ModuleInfo\WindowsUtils.psm1'
+    '.\ModuleInfo\WindowsUtils.Types.ps1xml'
+    '.\StaticDependencies\msvcp140.dll'
+    '.\StaticDependencies\vcruntime140.dll'
+    '.\StaticDependencies\vcruntime140_1.dll'
+)
 
 if ($Local) {
     Write-Host Building... -ForegroundColor DarkGreen
@@ -20,7 +29,7 @@ Write-Host 'Cleaning files...' -ForegroundColor DarkGreen
 '*.config', '*.pdb', '*.json', 'WindowsUtils.xml' | ForEach-Object { Remove-Item -Path "$releaseDir\*" -Filter $PSItem -Force }
 
 Write-Host 'Copying files...' -ForegroundColor DarkGreen
-Copy-Item -Path '.\LICENSE', '.\ModuleInfo\WindowsUtils.psd1', '.\ModuleInfo\WindowsUtils.psm1', '.\ModuleInfo\WindowsUtils.Types.ps1xml' -Destination $releaseDir -Force
+Copy-Item -Path $copypath -Destination $releaseDir -Force
 
 if (!(Test-Path "$releaseDir\en-us")) { [void](mkdir "$releaseDir\en-us") }
 Move-Item "$releaseDir\WindowsUtils.dll-Help.xml" "$releaseDir\en-us\WindowsUtils.dll-Help.xml" -Force

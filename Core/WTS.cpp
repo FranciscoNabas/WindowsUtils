@@ -8,52 +8,71 @@
 
 namespace WindowsUtils::Core
 {
-	std::vector<DWORD> Unmanaged::InvokeMessage (
+	DWORD Unmanaged::InvokeMessage (
 		LPWSTR pTitle,
 		LPWSTR pMessage,
 		DWORD style,
 		DWORD timeout,
 		BOOL bWait,
-		std::vector<DWORD> sessionId,
+		std::vector<DWORD>& sessionId,
+		std::vector<Unmanaged::MessageResponse>& pvecres,
 		HANDLE session = WTS_CURRENT_SERVER_HANDLE
 	)
 	{
-		std::vector<DWORD> output;
+		DWORD result = ERROR_SUCCESS;
+		Unmanaged::MessageResponse* psingle;
+		
 		if (sessionId.empty())
 		{
 			DWORD pCount;
-			BOOL enumResult;
-			BOOL mesResult;
 			std::shared_ptr<PWTS_SESSION_INFO> sessInfo = std::make_shared<PWTS_SESSION_INFO>();
-			enumResult = WTSEnumerateSessions(session, 0, 1, &*sessInfo, &pCount);
+			if (FALSE == WTSEnumerateSessionsW(session, 0, 1, &*sessInfo, &pCount))
+				return GetLastError();
 
 			for (DWORD i = 0; i < pCount; i++)
 			{
-				DWORD response;
-				mesResult = WTSSendMessageW(
-					session,
-					(*sessInfo)[i].SessionId,
-					pTitle,
-					(DWORD)wcslen(pTitle) * 2,
-					pMessage,
-					(DWORD)wcslen(pMessage) * 2,
-					style,
-					timeout,
-					&response,
-					bWait
-				);
+				DWORD dwinerr = ERROR_SUCCESS;
+				psingle = (Unmanaged::MessageResponse*)LocalAlloc(LMEM_ZEROINIT, sizeof(Unmanaged::MessageResponse));
+				ALLCHECK(psingle);
 
-				output.push_back(response);
+				// We're not allowed to send messages to the 'Services' session.
+				if (0 != (*sessInfo)[i].SessionId)
+				{
+					if (FALSE == WTSSendMessageW(
+						session,
+						(*sessInfo)[i].SessionId,
+						pTitle,
+						(DWORD)wcslen(pTitle) * 2,
+						pMessage,
+						(DWORD)wcslen(pMessage) * 2,
+						style,
+						timeout,
+						&psingle->Response,
+						bWait
+					))
+					{
+						dwinerr = GetLastError();
+						if (dwinerr != ERROR_FILE_NOT_FOUND) // We don't wanna break if the session type cannot receive messages.
+							return dwinerr;
+					}
+
+					psingle->SessionId = (*sessInfo)[i].SessionId;
+					pvecres.push_back(*psingle);
+				}
+				
+				if (NULL == LocalFree(psingle))
+					psingle = NULL;
 			}
 		}
 		else
 		{
-			BOOL mesResult;
-
 			for (size_t i = 0; i < sessionId.size(); i++)
 			{
-				DWORD response;
-				mesResult = WTSSendMessageW(
+				DWORD dwinerr = ERROR_SUCCESS;
+				psingle = (Unmanaged::MessageResponse*)LocalAlloc(LMEM_ZEROINIT, sizeof(Unmanaged::MessageResponse));
+				ALLCHECK(psingle);
+
+				if (FALSE == WTSSendMessageW(
 					session,
 					sessionId.at(i),
 					pTitle,
@@ -62,15 +81,24 @@ namespace WindowsUtils::Core
 					(DWORD)wcslen(pMessage) * 2,
 					style,
 					timeout,
-					&response,
+					&psingle->Response,
 					bWait
-				);
+				))
+				{
+					dwinerr = GetLastError();
+					if (dwinerr != ERROR_FILE_NOT_FOUND) // We don't wanna break if the session type cannot receive messages.
+						return dwinerr;
+				}
 
-				output.push_back(response);
+				psingle->SessionId = sessionId.at(i);
+				pvecres.push_back(*psingle);
+
+				if (NULL == LocalFree(psingle))
+					psingle = NULL;
 			}
 		}
 
-		return output;
+		return result;
 	}
 
 	DWORD GetSessionOutput(Unmanaged::ComputerSession& poutput, HANDLE session, WTS_SESSION_INFO info)

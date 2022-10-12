@@ -1,10 +1,85 @@
+using System.Runtime.CompilerServices;
 using WindowsUtils.Core;
 
 namespace WindowsUtils
 {
-    public class ComputerSession : ComputerSessionBase
+    /// <summary>
+    /// Object used on WTS Cmdlets
+    /// </summary>
+    public class ComputerSession
     {
-        new public SessionState SessionState => (SessionState)base.SessionState;
+        public int SessionId => wrapper.SessionId;
+        public string UserName => wrapper.UserName;
+        public string SessionName => wrapper.SessionName;
+        public TimeSpan IdleTime => wrapper.IdleTime;
+        public DateTime LogonTime => wrapper.LogonTime;
+        public SessionState SessionState => (SessionState)wrapper.SessionState;
+        public string ComputerName => wrapper.ComputerName;
+        
+        public static explicit operator ComputerSession(ComputerSessionBase csbase) => new(csbase);
+        public ComputerSession(ComputerSessionBase csbase) => wrapper = csbase;
+
+        private readonly ComputerSessionBase wrapper;
+    }
+
+    /// <summary>
+    /// Object from Get-ResourceMessageTable
+    /// </summary>
+    public class ResourceMessageTable
+    {
+        public long Id => wrapper.Id;
+        public string Message => wrapper.Message;
+
+        public static explicit operator ResourceMessageTable(ResourceMessageTableCore resmesbase) => new(resmesbase);
+        public ResourceMessageTable(ResourceMessageTableCore resmesbase) => wrapper = resmesbase;
+
+        private readonly ResourceMessageTableCore wrapper;
+    }
+
+    /// <summary>
+    /// Object from Get-ObjectHandle
+    /// </summary>
+    public class ObjectHandle
+    {
+        public string InputObject => wrapper.InputObject;
+        public uint ProcessId => wrapper.ProcessId;
+        public string Application => wrapper.Application;
+        public string ProductName => wrapper.ProductName;
+        public object FileVersion
+        {
+            get
+            {
+                try
+                {
+                    return Version.Parse(wrapper.FileVersion);
+                }
+                catch (Exception)
+                {
+                    return wrapper.FileVersion;
+                }
+            }
+        }
+        public string CompanyName => wrapper.CompanyName;
+        public string ImagePath => wrapper.ImagePath;
+
+        public static explicit operator ObjectHandle(ObjectHandleBase ohbase) => new (ohbase);
+        public ObjectHandle(ObjectHandleBase ohbase) => wrapper = ohbase;
+
+        private readonly ObjectHandleBase wrapper;
+    }
+
+    /// <summary>
+    /// Oject from Invoke-RemoteMessage
+    /// </summary>
+    public class MessageResponse
+    {
+        public uint SessionId => wrapper.SessionId;
+        public MessageBoxReturn Response => (MessageBoxReturn)wrapper.Response;
+
+        public static explicit operator MessageResponse(MessageResponseBase mrbase) => new (mrbase);
+        public MessageResponse(MessageResponseBase mrbase) => wrapper = mrbase;
+
+        private readonly MessageResponseBase wrapper;
     }
 
     internal static class WtsSession
@@ -18,15 +93,22 @@ namespace WindowsUtils
             {
                 //TODO: Error handling.
                 SessionHandle = Interop.WTSOpenServerW(computerName);
+                if (SessionHandle is null)
+                    throw new SystemException(Utilites.GetLastWin32Error());
+
                 ComputerName = computerName;
             }
             else
             {
                 if (ComputerName != computerName)
                 {
-                    //TODO: Error handling.
-                    if (!SessionHandle.IsInvalid && !SessionHandle.IsClosed) { Interop.CloseHandle(SessionHandle.ToIntPtr()); }
+                    if (!SessionHandle.IsInvalid && !SessionHandle.IsClosed)
+                        Interop.CloseHandle(SessionHandle.ToIntPtr());
+
                     SessionHandle = Interop.WTSOpenServerW(computerName);
+                    if (SessionHandle is null)
+                        throw new SystemException(Utilites.GetLastWin32Error());
+
                     ComputerName = computerName;
                 }
             }

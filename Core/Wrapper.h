@@ -24,7 +24,6 @@ using namespace System::Management::Automation;
 
 namespace WindowsUtils::Core
 {
-
 	public ref class ComputerSessionBase
 	{
 	public:
@@ -105,20 +104,20 @@ namespace WindowsUtils::Core
 		Unmanaged::ComputerSession* wrapper;
 	};
 
-	public ref class ResourceMessageTable
+	public ref class ResourceMessageTableCore
 	{
 	public:
 		property Int64 Id { Int64 get() { return wrapper->Id; } }
 		property String^ Message { String^ get() { return gcnew String(wrapper->Message); } }
 		
-		ResourceMessageTable() : wrapper( new Unmanaged::ResourceMessageTable ) { }
-		ResourceMessageTable(Unmanaged::ResourceMessageTable item) {
+		ResourceMessageTableCore() : wrapper( new Unmanaged::ResourceMessageTable ) { }
+		ResourceMessageTableCore(Unmanaged::ResourceMessageTable item) {
 			wrapper = new Unmanaged::ResourceMessageTable(item.Id, item.Message);
 		}
-		~ResourceMessageTable() { delete wrapper; }
+		~ResourceMessageTableCore() { delete wrapper; }
 
 	protected:
-		!ResourceMessageTable() { delete wrapper; }
+		!ResourceMessageTableCore() { delete wrapper; }
 
 	private:
 		Unmanaged::ResourceMessageTable* wrapper;
@@ -143,7 +142,7 @@ namespace WindowsUtils::Core
 		Unmanaged::RpcEndpoint* wrapper;
 	};
 
-	public ref class ObjectHandle
+	public ref class ObjectHandleBase
 	{
 	public:
 		property String^ InputObject { String^ get() { return gcnew String(wrapper->InputObject); } }
@@ -182,8 +181,8 @@ namespace WindowsUtils::Core
 		}
 		property String^ ImagePath { String^ get() { return gcnew String(wrapper->ImagePath); } }
 
-		ObjectHandle() : wrapper( new Unmanaged::ObjectHandle) { }
-		ObjectHandle(Unmanaged::ObjectHandle item) {
+		ObjectHandleBase() : wrapper( new Unmanaged::ObjectHandle) { }
+		ObjectHandleBase(Unmanaged::ObjectHandle item) {
 			wrapper = new Unmanaged::ObjectHandle(
 				item.InputObject,
 				item.ProcessId,
@@ -194,13 +193,35 @@ namespace WindowsUtils::Core
 				item.ImagePath
 			);
 		}
-		~ObjectHandle() { delete wrapper; }
+		~ObjectHandleBase() { delete wrapper; }
 
 	protected:
-		!ObjectHandle() { delete wrapper; }
+		!ObjectHandleBase() { delete wrapper; }
 
 	private:
 		Unmanaged::ObjectHandle* wrapper;
+	};
+
+	public ref class MessageResponseBase
+	{
+	public:
+		property UInt32 SessionId { UInt32 get() { return wrapper->SessionId; } }
+		property UInt32 Response { UInt32 get() { return wrapper->Response; } }
+
+		MessageResponseBase() : wrapper( new Unmanaged::MessageResponse ) { }
+		MessageResponseBase(Unmanaged::MessageResponse item) {
+			wrapper = new Unmanaged::MessageResponse(
+				item.SessionId,
+				item.Response
+			);
+		}
+		~MessageResponseBase() { delete wrapper; }
+
+	protected:
+		!MessageResponseBase() { delete wrapper; }
+
+	private:
+		Unmanaged::MessageResponse* wrapper;
 	};
 
 
@@ -227,7 +248,7 @@ namespace WindowsUtils::Core
 			SharedVecPtr(Unmanaged::ComputerSession) result = MakeVecPtr(Unmanaged::ComputerSession);
 			DWORD opresult = extptr->GetEnumeratedSession(*result, (HANDLE)session, onlyActive, includeSystemSessions);
 			if (opresult != ERROR_SUCCESS)
-				throw gcnew SystemException(GetFormatedError(opresult));
+				throw gcnew SystemException(GetFormattedError(opresult));
 
 			array<ComputerSessionBase^>^ output = gcnew array<ComputerSessionBase^>((int)result->size());
 			
@@ -240,34 +261,38 @@ namespace WindowsUtils::Core
 
 			return output;
 		}
-		List<int>^ InvokeMessage(IntPtr session, array<int>^ sessionId, String^ title, String^ message, UInt32 style, int timeout, bool wait)
+		array<MessageResponseBase^>^ InvokeMessage(IntPtr session, array<int>^ sessionId, String^ title, String^ message, UInt32 style, int timeout, bool wait)
 		{
-			// To do: convert to smart pointer.
-			std::vector<DWORD>* result = new std::vector<DWORD>();
-			std::vector<DWORD>* unSessionId = (std::vector<DWORD>*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(std::vector<DWORD>));
-			unSessionId->clear();
+			DWORD dwresult = ERROR_SUCCESS;
+			SharedVecPtr(Unmanaged::MessageResponse) presult = MakeVecPtr(Unmanaged::MessageResponse);
+			SharedVecPtr(DWORD) psessid = MakeVecPtr(DWORD);
 
 			pin_ptr<const wchar_t> wTitle = PtrToStringChars(title);
 			pin_ptr<const wchar_t> wMessage = PtrToStringChars(message);
 
 			if (sessionId == nullptr)
-			{
-				*result = extptr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *unSessionId, (HANDLE)session);
-			}
+				dwresult = extptr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *psessid, *presult, (HANDLE)session);
+			
 			else
 			{
-				for (int i = 0; i < sessionId->Length; i++) { unSessionId->push_back((DWORD)sessionId[i]); }
-				*result = extptr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *unSessionId, (HANDLE)session);
-			}
-			
-			List<int>^ output = gcnew List<int>();
-			for (size_t i = 0; i < result->size(); i++) { output->Add(result->at(i)); }
+				for (int i = 0; i < sessionId->Length; i++)
+					psessid->push_back((DWORD)sessionId[i]);
 
-			delete result;
-			HeapFree(GetProcessHeap(), NULL, unSessionId);
+				dwresult = extptr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *psessid, *presult, (HANDLE)session);
+			}
+
+			if (ERROR_SUCCESS != dwresult)
+				throw gcnew SystemException(GetFormattedError(dwresult));
+			
+			array<MessageResponseBase^>^ output = gcnew array<MessageResponseBase^>((int)presult->size());
+			
+			for (size_t i = 0; i < presult->size(); i++)
+				if (presult->at(i).Response != 0)
+					output[(int)i] = gcnew MessageResponseBase(presult->at(i));
+
 			return output;
 		}
-		array<ResourceMessageTable^>^ GetResourceMessageTable(String^ libPath)
+		array<ResourceMessageTableCore^>^ GetResourceMessageTable(String^ libPath)
 		{
 			SharedVecPtr(Unmanaged::ResourceMessageTable) ppResult = MakeVecPtr(Unmanaged::ResourceMessageTable);
 			pin_ptr<const wchar_t> wLibPath = PtrToStringChars(libPath);
@@ -276,12 +301,12 @@ namespace WindowsUtils::Core
 			if (result != ERROR_SUCCESS)
 			{
 				wLibPath = nullptr;
-				throw gcnew SystemException(GetFormatedError(result));
+				throw gcnew SystemException(GetFormattedError(result));
 			}
 
-			array<ResourceMessageTable^>^ output = gcnew array<ResourceMessageTable^>((int)ppResult->size());
+			array<ResourceMessageTableCore^>^ output = gcnew array<ResourceMessageTableCore^>((int)ppResult->size());
 			for (size_t i = 0; i < ppResult->size(); i++)
-				output[(int)i] = gcnew ResourceMessageTable(ppResult->at(i));
+				output[(int)i] = gcnew ResourceMessageTableCore(ppResult->at(i));
 
 			wLibPath = nullptr;
 			return output;
@@ -291,7 +316,7 @@ namespace WindowsUtils::Core
 			SharedVecPtr(Unmanaged::RpcEndpoint) result = MakeVecPtr(Unmanaged::RpcEndpoint);;
 			DWORD opresult = extptr->MapRpcEndpoints(*result);
 			if (opresult != ERROR_SUCCESS)
-				throw gcnew SystemException(GetFormatedError(opresult));
+				throw gcnew SystemException(GetFormattedError(opresult));
 
 			array<RpcEndpoint^>^ output = gcnew array<RpcEndpoint^>((int)result->size());
 			for (size_t i = 0; i < result->size(); i++)
@@ -299,9 +324,9 @@ namespace WindowsUtils::Core
 
 			return output;
 		}
-		String^ GetFormatedError(int errorCode)
+		String^ GetFormattedError(int errorCode)
 		{
-			LPWSTR result = extptr->GetFormatedError((DWORD)errorCode);
+			LPWSTR result = extptr->GetFormattedError((DWORD)errorCode);
 			String^ output = gcnew String(result);
 			GlobalFree(result);
 			return output;
@@ -320,7 +345,7 @@ namespace WindowsUtils::Core
 			GlobalFree(result);
 			return output;
 		}
-		array<ObjectHandle^>^ GetProcessObjectHandle(array<String^>^ fileName)
+		array<ObjectHandleBase^>^ GetProcessObjectHandle(array<String^>^ fileName)
 		{
 			SharedVecPtr(Unmanaged::ObjectHandle) ppOutput = MakeVecPtr(Unmanaged::ObjectHandle);
 			SharedVecPtr(LPCWSTR) reslist = MakeVecPtr(LPCWSTR);
@@ -335,16 +360,16 @@ namespace WindowsUtils::Core
 			UINT result = extptr->GetProcessObjectHandle(*ppOutput, *reslist);
 			if (result != ERROR_SUCCESS)
 			{
-				throw gcnew SystemException(GetFormatedError(result));
+				throw gcnew SystemException(GetFormattedError(result));
 			}
 			if (ppOutput->size() == 0)
 			{
 				return nullptr;
 			}
 
-			array<ObjectHandle^>^ output = gcnew array<ObjectHandle^>((int)ppOutput->size());
+			array<ObjectHandleBase^>^ output = gcnew array<ObjectHandleBase^>((int)ppOutput->size());
 			for (size_t i = 0; i < ppOutput->size(); i++)
-				output[(int)i] = gcnew ObjectHandle(ppOutput->at(i));
+				output[(int)i] = gcnew ObjectHandleBase(ppOutput->at(i));
 
 			return output;
 		}
@@ -363,7 +388,7 @@ namespace WindowsUtils::Core
 				if (ERROR_SUCCESS == inResu)
 					throw gcnew SystemException(gcnew String(pextmsierr));
 				else
-					throw gcnew SystemException(GetFormatedError(result));
+					throw gcnew SystemException(GetFormattedError(result));
 			}
 
 			std::map<std::wstring, std::wstring>::iterator itr;
@@ -374,17 +399,17 @@ namespace WindowsUtils::Core
 
 			return output;
 		}
-		void DisconnectSession(IntPtr session, Int32 sessionid, bool wait)
+		void DisconnectSession(IntPtr session, UInt32 sessionid, bool wait)
 		{
 			DWORD result = extptr->DisconnectSession((HANDLE)session, (DWORD)sessionid, wait);
 			if (result != ERROR_SUCCESS)
-				throw gcnew SystemException(GetFormatedError(result));
+				throw gcnew SystemException(GetFormattedError(result));
 		}
 		void DisconnectSession(IntPtr session, bool wait)
 		{
 			DWORD result = extptr->DisconnectSession((HANDLE)session, NULL, wait);
 			if (result != ERROR_SUCCESS)
-				throw gcnew SystemException(GetFormatedError(result));
+				throw gcnew SystemException(GetFormattedError(result));
 		}
 
 		void SendClick()
@@ -392,7 +417,7 @@ namespace WindowsUtils::Core
 			DWORD result = extptr->SendClick();
 			
 			if (ERROR_SUCCESS != result)
-				throw gcnew SystemException(GetFormatedError(result));
+				throw gcnew SystemException(GetFormattedError(result));
 		}
 	
 		/*

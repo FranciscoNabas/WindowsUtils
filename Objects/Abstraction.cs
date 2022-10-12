@@ -1,6 +1,6 @@
 using System.Reflection;
-using System.Management.Automation;
 using WindowsUtils.Commands;
+using WindowsUtils.Core;
 
 namespace WindowsUtils
 {
@@ -73,10 +73,10 @@ namespace WindowsUtils
             return output;
         }
 
-        internal static uint MbOptionsResolver(string[] input)
+        public static uint MbOptionsResolver(string[] input)
         {
             InvokeRemoteMessageCommand pshook = new InvokeRemoteMessageCommand();
-            List<string> processed = new List<string>();
+            List<string> processed = new();
             MessageBoxOption[] allNames = GetAvailableOptions();
             uint output = 0;
 
@@ -89,7 +89,7 @@ namespace WindowsUtils
                     if (processed.Contains(item)) { pshook.WriteWarning("Duplicate item " + item + ". Ignoring."); }
                     else
                     {
-                        output = output | current.Value;
+                        output |= current.Value;
                         processed.Add(item);
                     }
                 }
@@ -97,6 +97,15 @@ namespace WindowsUtils
             }
 
             return output;
+        }
+    }
+
+    internal class Utilites
+    {
+        internal static string GetLastWin32Error()
+        {
+            WrappedFunctions unwrapper = new();
+            return unwrapper.GetFormatedWin32Error();
         }
     }
 }

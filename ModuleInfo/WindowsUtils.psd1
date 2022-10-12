@@ -12,7 +12,7 @@
 RootModule = 'WindowsUtils.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.3.4'
+ModuleVersion = '1.4.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -110,12 +110,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = @'
-            Changed Features:
-                - Get-ComputerSession had an additional property on its output object. ComputerName returns a value when the cmdlet is run for a remote computer.  
-                  This allows the output to be passed to Disconnect-Session.  
-                - Disconnect-Session parameters ComputerName and SessionId now accepts pipeline input by property name.  
-'@
+        ReleaseNotes = 'https://github.com/FranciscoNabas/WindowsUtils/blob/main/CHANGELOG.md'
 
         # Prerelease string of this module
         # Prerelease = ''

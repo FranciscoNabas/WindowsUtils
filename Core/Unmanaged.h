@@ -83,8 +83,19 @@ namespace WindowsUtils::Core
 		public:
 			LPWSTR	BindingString;
 			LPWSTR	Annotation;
+			
 			RpcEndpoint() { }
 			RpcEndpoint(LPWSTR bstr, LPWSTR ann) : BindingString(bstr), Annotation(ann) { }
+		};
+
+		class MessageResponse
+		{
+		public:
+			DWORD	SessionId;
+			DWORD	Response;
+
+			MessageResponse() { }
+			MessageResponse(DWORD sessid, DWORD resp) : SessionId(sessid), Response(resp) { }
 		};
 
 		DWORD GetProcessObjectHandle(std::vector<ObjectHandle>& ppvecfho, std::vector<LPCWSTR>& reslist);
@@ -92,11 +103,11 @@ namespace WindowsUtils::Core
 		DWORD MapRpcEndpoints(std::vector<RpcEndpoint>& ppOutVec);
 		LPWSTR GetFormatedWSError();
 		LPWSTR GetFormatedWin32Error();
-		LPWSTR GetFormatedError(DWORD errorCode);
+		LPWSTR GetFormattedError(DWORD errorCode);
 		DWORD GetMsiProperties(std::map<std::wstring, std::wstring>& ppmapout, LPWSTR fileName);
 		DWORD GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage);
 		DWORD GetEnumeratedSession(std::vector<ComputerSession>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
-		std::vector<DWORD> InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD> sessionId, HANDLE session);
+		DWORD InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD>& sessionId, std::vector<MessageResponse>& pvecres, HANDLE session);
 		DWORD DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);
 		DWORD SendClick();
 

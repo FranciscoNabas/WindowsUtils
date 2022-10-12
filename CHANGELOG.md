@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
   
+## [1.4.0] - 2022-10-12
+  
+### Bugs
+  
+-   Some module functionalities depend on VC++ libraries. To avoid having to install the redistributable runtime, these assemblies are provided with the module.  
+-   Invoke-RemoteMessage:  
+    -   Sessions who doesn't support message box was returning the same response of the last session.  
+    -   When 'Wait' was called with 'Timeout' equals to zero, and there are more than one valid session on the target computer, the console would wait all session's response.  
+        This causes the console to hang if there were missing responses.  
+        Now, if Wait is specified, Timeout is mandatory, and an error is thrown if the user inputs zero.  
+
+### Added Features
+  
+-   StageComputerSession() method added to WtsSession to manage persistent WTS computer sessions.  
+-   Get-ObjectHandle new alias 'gethandle'.  
+-   New output object for Invoke-RemoteMessage. MessageResponse, with Session ID and Response.  
+  
+### Changed Features
+  
+-   Release notes on the module manifest, thus also on PowerShell Gallery now points to this document.  
+-   WtsSession as a static class to use it as a 'Global Object'.  
+-   Send-Click now is called from unmanaged code using SendInput. Previously was called using explicit PInvoke.  
+-   Disconnect-Session parameter 'SessionId' not mandatory when disconnecting a session on the local computer. It will log off the current session.  
+-   All output objects are now .NET wrapper classes for the CLR ref class. This helps with cyclical dependencies, and further module expansion.  
+-   Get-ObjectHandle parameter 'Path' not mandatory anymore. It will query objects in the current directory.  
+-   Invoke-RemoteMessage:  
+    -   Now supports should process. Previously confirmation was managed by the UtilitiesLibrary.  
+    -   Converting SessionId and Response vectors to smart pointer. Previously they were statically allocated/Deallocated on the heap.  
+    -   Unmanaged function now returns a DWORD and receives arguments as reference. This is part of the unmanaged code, and error handling standardization.  
+    -   Ignoring response type 0. This is returned when the session does not support message boxes.  
+  
+### Removed Features
+  
+-   UtilitiesLibrary was completely removed from the project. All functionalities were migrated to the module itself. The 'Wrapper' library now is called 'Core', contained in its own namespace.  
+    This solves cyclical dependency issues, and helps standardize the output objecs.  
+  
 ## [1.3.4] - 2022-10-08
 
 Version 1.3.4 improves interoperability between existing WTS Cmdlets.  
