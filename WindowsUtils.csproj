@@ -29,15 +29,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\Windows\System32\msvcp140.dll" Link="msvcp140.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Windows\System32\vcruntime140.dll" Link="vcruntime140.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" PrivateAssets="all" />
     <PackageReference Include="XmlDoc2CmdletDoc" Version="0.3.0">
       <PrivateAssets>all</PrivateAssets>
