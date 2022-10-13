@@ -1,6 +1,7 @@
 .vs
 .vs/*
 .vscode/
+.vscode/*
 
 # Local History for Visual Studio Code
 .history/
