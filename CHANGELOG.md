@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
   
+## [1.4.1] - 2022-10-14
+  
+### Bugs
+  
+- General:  
+  - Cmdlets that return custom objects where not treating null values and exceptions were thrown.  
+- Get-ResourceMessageTable:  
+  - Inputting a non-existing file caused heap corruption trying to read invalid memory. The 'single' unmanaged output object was not being initialized. At the end, the app was trying to free unallocated memory.  
+  - Inputting a non-valid Win32 application resulted in '%1 is not a valid Win32 application.'. Treating exception to replace '%1' with the input object name.  
+
 ## [1.4.0] - 2022-10-12
   
 ### Bugs

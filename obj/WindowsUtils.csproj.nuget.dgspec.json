@@ -5,7 +5,7 @@
   },
   "projects": {
     "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj": {
-      "version": "1.4.0",
+      "version": "1.4.1",
       "restore": {
         "projectUniqueName": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
         "projectName": "WindowsUtils",
@@ -74,11 +74,6 @@
           "assetTargetFallback": true,
           "warn": true,
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.100-rc.1.22431.12\\RuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
         }
       }
     }
