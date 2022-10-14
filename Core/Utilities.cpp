@@ -283,66 +283,56 @@ namespace WindowsUtils::Core
 
 	DWORD Unmanaged::GetResourceMessageTable(std::vector<Unmanaged::ResourceMessageTable>& ppvecmdo, LPTSTR libName)
 	{
-		DWORD err = 0;
-		Unmanaged::ResourceMessageTable* psingle;
-		
-		if (nullptr == psingle)
-		{
-			err = GetLastError();
-			goto CLEANUP;
-		}
+		DWORD result = ERROR_SUCCESS;
+		Unmanaged::ResourceMessageTable* psingle = NULL;
 
 		HMODULE hDll = LoadLibraryEx(libName, NULL, LOAD_LIBRARY_AS_DATAFILE);
-		if (hDll != NULL)
+		if (NULL == hDll)
+			return GetLastError();
+
+		HRSRC resource = FindResource(hDll, MAKEINTRESOURCE(1), RT_MESSAGETABLE);
+		if (NULL == resource)
+			goto CLEANUP;
+
+		HGLOBAL load = LoadResource(hDll, resource);
+		if (NULL == load)
+			goto CLEANUP;
+
+		PVOID messageTable = LockResource(load);
+		DWORD blockNumber = ((PMESSAGE_RESOURCE_DATA)messageTable)->NumberOfBlocks;
+		PMESSAGE_RESOURCE_BLOCK messageBlock = ((PMESSAGE_RESOURCE_DATA)messageTable)->Blocks;
+
+		for (DWORD block = 0; block < blockNumber; block++)
 		{
-			HRSRC resource = FindResource(hDll, MAKEINTRESOURCE(1), RT_MESSAGETABLE);
-			if (resource != NULL)
+			DWORD lowId = messageBlock[block].LowId;
+			DWORD highId = messageBlock[block].HighId;
+			DWORD offset = 0;
+
+			for (DWORD id = lowId; id <= highId; id++)
 			{
-				HGLOBAL load = LoadResource(hDll, resource);
-				if (load != NULL)
-				{
-					PVOID messageTable = LockResource(load);
-					DWORD blockNumber = ((PMESSAGE_RESOURCE_DATA)messageTable)->NumberOfBlocks;
-					PMESSAGE_RESOURCE_BLOCK messageBlock = ((PMESSAGE_RESOURCE_DATA)messageTable)->Blocks;
+				psingle = (Unmanaged::ResourceMessageTable*)LocalAlloc(LMEM_ZEROINIT, sizeof(Unmanaged::ResourceMessageTable));
+				if (nullptr == psingle)
+					goto CLEANUP;
 
-					for (DWORD block = 0; block < blockNumber; block++)
-					{
-						DWORD lowId = messageBlock[block].LowId;
-						DWORD highId = messageBlock[block].HighId;
-						DWORD offset = 0;
+				PMESSAGE_RESOURCE_ENTRY messageEntry =
+					(PMESSAGE_RESOURCE_ENTRY)((PBYTE)messageTable +
+						(DWORD)messageBlock[block].OffsetToEntries + offset);
 
-						for (DWORD id = lowId; id <= highId; id++)
-						{
-							psingle = (Unmanaged::ResourceMessageTable*)LocalAlloc(LMEM_ZEROINIT, sizeof(Unmanaged::ResourceMessageTable));
-							if (nullptr == psingle)
-							{
-								err = GetLastError();
-								goto CLEANUP;
-							}
+				psingle->Id = id;
+				psingle->Message = new WCHAR[150];
+				StringCchPrintfW(psingle->Message, 150, L"%s", messageEntry->Text);
 
-							PMESSAGE_RESOURCE_ENTRY messageEntry =
-								(PMESSAGE_RESOURCE_ENTRY)((PBYTE)messageTable +
-									(DWORD)messageBlock[block].OffsetToEntries + offset);
+				ppvecmdo.push_back(*psingle);
+				if (NULL == LocalFree(psingle))
+					psingle = NULL;
 
-							psingle->Id = id;
-							psingle->Message = new WCHAR[150];
-							StringCchPrintfW(psingle->Message, 150, L"%s", messageEntry->Text);
-
-							ppvecmdo.push_back(*psingle);
-							if (NULL == LocalFree(psingle))
-								psingle = NULL;
-
-							offset += messageEntry->Length;
-						}
-					}
-				}
+				offset += messageEntry->Length;
 			}
-			
 		}
-		else
-			err = GetLastError();
 
 	CLEANUP:
+
+		result = GetLastError();
 
 		if (NULL != psingle)
 			LocalFree(psingle);
@@ -350,7 +340,7 @@ namespace WindowsUtils::Core
 		if (NULL != hDll)
 			FreeLibrary(hDll);
 
-		return err;
+		return result;
 	}
 
 	DWORD Unmanaged::MapRpcEndpoints(std::vector<Unmanaged::RpcEndpoint>& ppOutVec)

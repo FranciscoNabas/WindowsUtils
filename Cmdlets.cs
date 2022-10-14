@@ -106,7 +106,7 @@ namespace WindowsUtils.Commands
                         ))
                     {
                         MessageResponseBase[] result = unwrapper.InvokeMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
-                        result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                        result?.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                     }
                 }
                 else
@@ -120,13 +120,13 @@ namespace WindowsUtils.Commands
                         ))
                         {
                             MessageResponseBase[] result = unwrapper.InvokeMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
-                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                            result?.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                     }
                     else
                     {
                         MessageResponseBase[] result = unwrapper.InvokeMessage(IntPtr.Zero, SessionId, Title, Message, nativestyle, Timeout, Wait);
-                        result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                        result?.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                     }
                 }
             }
@@ -144,7 +144,7 @@ namespace WindowsUtils.Commands
                         if (WtsSession.SessionHandle is not null)
                         {
                             MessageResponseBase[] result = unwrapper.InvokeMessage(WtsSession.SessionHandle.ToIntPtr(), null, Title, Message, nativestyle, Timeout, Wait);
-                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                            result?.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                     }
                 }
@@ -162,13 +162,13 @@ namespace WindowsUtils.Commands
                             ))
                             {
                                 MessageResponseBase[] result = unwrapper.InvokeMessage(WtsSession.SessionHandle.ToIntPtr(), null, Title, Message, nativestyle, Timeout, Wait);
-                                result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                                result?.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                             }
                         }
                         else
                         {
                             MessageResponseBase[] result = unwrapper.InvokeMessage(WtsSession.SessionHandle.ToIntPtr(), SessionId, Title, Message, nativestyle, Timeout, Wait);
-                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                            result?.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                     }
                 }
@@ -225,7 +225,7 @@ namespace WindowsUtils.Commands
             if (string.IsNullOrEmpty(ComputerName))
             {
                 ComputerSessionBase[] result = unwrapper.GetEnumeratedSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
-                result.ToList().ForEach(x => WriteObject((ComputerSession)x));
+                result?.ToList().ForEach(x => WriteObject((ComputerSession)x));
             }
             else
             {
@@ -233,7 +233,7 @@ namespace WindowsUtils.Commands
                 if (WtsSession.SessionHandle is not null)
                 {
                     ComputerSessionBase[] result = unwrapper.GetEnumeratedSession(ComputerName, WtsSession.SessionHandle.ToIntPtr(), ActiveOnly, IncludeSystemSession);
-                    result.ToList().ForEach(x => WriteObject((ComputerSession)x));
+                    result?.ToList().ForEach(x => WriteObject((ComputerSession)x));
                 }
             }
 
@@ -274,7 +274,7 @@ namespace WindowsUtils.Commands
         {
             WrappedFunctions unWrapper = new();
             ResourceMessageTableCore[] result = unWrapper.GetResourceMessageTable(Path);
-            result.ToList().ForEach(x => WriteObject((ResourceMessageTable)x));
+            result?.ToList().ForEach(x => WriteObject((ResourceMessageTable)x));
         }
     }
 
@@ -425,7 +425,7 @@ namespace WindowsUtils.Commands
 
             WrappedFunctions unWrapper = new();
             ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray());
-            result.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+            result?.ToList().ForEach(x => WriteObject((ObjectHandle)x));
         }
     }
 
