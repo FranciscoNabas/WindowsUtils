@@ -300,8 +300,18 @@ namespace WindowsUtils::Core
 			DWORD result = extptr->GetResourceMessageTable(*ppResult, (LPWSTR)wLibPath);
 			if (result != ERROR_SUCCESS)
 			{
-				wLibPath = nullptr;
-				throw gcnew SystemException(GetFormattedError(result));
+				if (result == ERROR_BAD_EXE_FORMAT)
+				{
+					PathStripPathW((LPWSTR)wLibPath);
+					String^ errormsg = gcnew String(wLibPath);
+					wLibPath = nullptr;
+					throw gcnew SystemException(errormsg + " is not a valid Win32 application.");
+				}
+				else
+				{
+					wLibPath = nullptr;
+					throw gcnew SystemException(GetFormattedError(result));
+				}
 			}
 
 			array<ResourceMessageTableCore^>^ output = gcnew array<ResourceMessageTableCore^>((int)ppResult->size());
