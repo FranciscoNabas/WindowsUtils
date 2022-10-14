@@ -232,6 +232,7 @@ namespace WindowsUtils::Core
 		Byte ObjectTypeNumber;
 		String^ ObjectTypeName;
 		String^ ExtPropertyInfo;
+		UInt32 GrantedAccess;
 		Byte Flags;
 	};
 
@@ -345,7 +346,7 @@ namespace WindowsUtils::Core
 			GlobalFree(result);
 			return output;
 		}
-		array<ObjectHandleBase^>^ GetProcessObjectHandle(array<String^>^ fileName)
+		array<ObjectHandleBase^>^ GetProcessObjectHandle(array<String^>^ fileName, bool closeHandle, bool terminateProcess)
 		{
 			SharedVecPtr(Unmanaged::ObjectHandle) ppOutput = MakeVecPtr(Unmanaged::ObjectHandle);
 			SharedVecPtr(LPCWSTR) reslist = MakeVecPtr(LPCWSTR);
@@ -357,7 +358,7 @@ namespace WindowsUtils::Core
 				single = nullptr;
 			}
 
-			UINT result = extptr->GetProcessObjectHandle(*ppOutput, *reslist);
+			UINT result = extptr->GetProcessObjectHandle(*ppOutput, *reslist, closeHandle, terminateProcess);
 			if (result != ERROR_SUCCESS)
 			{
 				throw gcnew SystemException(GetFormattedError(result));
@@ -424,7 +425,6 @@ namespace WindowsUtils::Core
 			Testing stuff
 		*/
 
-		
 
 		List<SystemHandle^>^ GetNtSystemHandleInformation()
 		{
@@ -442,6 +442,7 @@ namespace WindowsUtils::Core
 				inner->Flags = single.Flags;
 				inner->ObjectTypeName = gcnew String(single.ObjectTypeName);
 				inner->ExtPropertyInfo = gcnew String(single.ExtPropertyInfo);
+				inner->GrantedAccess = single.GrantedAccess;
 
 				output->Add(inner);
 			}

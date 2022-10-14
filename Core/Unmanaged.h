@@ -23,7 +23,7 @@
 
 #define NTSTATUSCHECK(status, rgle) if (STATUS_SUCCESS != status) { if (rgle == FALSE) { return status; } else { return GetLastError(); } }
 #define STATUS_SUCCESS ERROR_SUCCESS
-constexpr auto STATUS_INFO_LENGTH_MISMATCH = 0xc0000004;
+#define STATUS_INFO_LENGTH_MISMATCH 0xc0000004
 #define LOCFREEWCHECK(mem) if (NULL != mem) { LocalFree(mem); }
 #define ALLCHECK(ptr) if (NULL == ptr) { return ERROR_NOT_ENOUGH_MEMORY; }
 
@@ -98,7 +98,7 @@ namespace WindowsUtils::Core
 			MessageResponse(DWORD sessid, DWORD resp) : SessionId(sessid), Response(resp) { }
 		};
 
-		DWORD GetProcessObjectHandle(std::vector<ObjectHandle>& ppvecfho, std::vector<LPCWSTR>& reslist);
+		DWORD GetProcessObjectHandle(std::vector<ObjectHandle>& ppvecfho, std::vector<LPCWSTR>& reslist, BOOL closeHandle, BOOL terminateProcess);
 		DWORD GetResourceMessageTable(std::vector<ResourceMessageTable>& ppvecmdo, LPTSTR libName);
 		DWORD MapRpcEndpoints(std::vector<RpcEndpoint>& ppOutVec);
 		LPWSTR GetFormatedWSError();

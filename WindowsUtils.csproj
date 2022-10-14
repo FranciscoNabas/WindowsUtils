@@ -16,6 +16,10 @@
     <DocumentationFile>bin\WindowsUtils\WindowsUtils.xml</DocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="Core\**" />
     <Compile Remove="UtilitiesLibrary\**" />

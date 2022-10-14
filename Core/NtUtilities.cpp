@@ -34,7 +34,7 @@ namespace WindowsUtils::Core
 		*/
 		do
 		{
-			result = NtQueryInformationFile(hfile, piostatblock, pfpidfileinfo, infosize, 47);
+			result = NtQueryInformationFile(hfile, piostatblock, pfpidfileinfo, infosize, FileProcessIdsUsingFileInformation);
 			if (STATUS_SUCCESS != result && STATUS_INFO_LENGTH_MISMATCH != result)
 				return result;
 
@@ -56,6 +56,8 @@ namespace WindowsUtils::Core
 
 		return result;
 	}
+
+
 
 	NTSTATUS Unmanaged::GetNtSystemInformation(std::vector<SystemHandleOutInfo>& pvout)
 	{
@@ -116,7 +118,7 @@ namespace WindowsUtils::Core
 			inner->GrantedAccess = single.GrantedAccess;
 			inner->ObjectTypeNumber = single.ObjectTypeNumber;
 			inner->ProcessId = single.ProcessId;
-
+			
 			pvout.push_back(*inner);
 
 			delete inner;
@@ -168,10 +170,10 @@ namespace WindowsUtils::Core
 
 		} while (result == STATUS_INFO_LENGTH_MISMATCH);
 		
-		size_t tnamesize = wcslen(objinfo->Name.Buffer) + 1;
+		size_t tnamesize = wcslen(objinfo->TypeName.Buffer) + 1;
 		objTypeName = new WCHAR[tnamesize];
 
-		wcscpy_s(objTypeName, tnamesize, objinfo->Name.Buffer);
+		wcscpy_s(objTypeName, tnamesize, objinfo->TypeName.Buffer);
 		if (wcscmp(objTypeName, L"Key") == 0)
 		{
 			result = GetNtKeyInformation(hdup, hmodule, keyinfo);
@@ -202,7 +204,7 @@ namespace WindowsUtils::Core
 			result = NtQueryKey(hkey, KeyNameInformation, buffer.data(), (ULONG)buffer.size(), &sizeneeded);
 			
 			// Why have only one buffer size error, when we can have two and confuse everyone?
-			if (STATUS_SUCCESS != result && STATUS_BUFFER_TOO_SMALL != result && result != STATUS_BUFFER_OVERFLOW)
+			if (STATUS_SUCCESS != result && STATUS_INFO_LENGTH_MISMATCH != result && result != STATUS_BUFFER_OVERFLOW && result != STATUS_BUFFER_TOO_SMALL)
 				return result;
 
 			if (STATUS_SUCCESS == result)
@@ -210,7 +212,7 @@ namespace WindowsUtils::Core
 
 			buffer.resize(sizeneeded);
 
-		} while (result == STATUS_BUFFER_TOO_SMALL || result == STATUS_BUFFER_OVERFLOW);
+		} while (result == STATUS_BUFFER_TOO_SMALL || result == STATUS_BUFFER_OVERFLOW || result == STATUS_INFO_LENGTH_MISMATCH);
 
 		pknameinfo = reinterpret_cast<PKEY_NAME_INFORMATION>(buffer.data());
 		_keypath.assign(pknameinfo->Name, pknameinfo->NameLength / sizeof(WCHAR));
@@ -223,5 +225,142 @@ namespace WindowsUtils::Core
 
 		return result;
 
+	}
+
+	DWORD WINAPI NtQueryObjectRaw(LPVOID lpparam)
+	{
+		NTSTATUS result = STATUS_SUCCESS;
+		ULONG infoneeded = 0;
+		ULONG infosize = 0;
+		PTHREAD_FUNC_ARGUMENTS callarguments = (PTHREAD_FUNC_ARGUMENTS)lpparam;
+
+		HMODULE hmodule = GetModuleHandleW(L"ntdll.dll");
+		if (INVALID_HANDLE_VALUE == hmodule || NULL == hmodule)
+			return result;
+
+		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hmodule, "NtQueryObject");
+
+		if (callarguments->ObjectInformationClass == ObjectNameInformation)
+		{
+			callarguments->ObjectInfo = (POBJECT_NAME_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(OBJECT_NAME_INFORMATION));
+			if (NULL == callarguments->ObjectInfo)
+				return ERROR_NOT_ENOUGH_MEMORY;
+
+			do
+			{
+				result = NtQueryObject(callarguments->ObjectHandle, ObjectNameInformation, callarguments->ObjectInfo, infosize, &infoneeded);
+				if (STATUS_SUCCESS != result
+					&& STATUS_INFO_LENGTH_MISMATCH != result
+					&& result != STATUS_BUFFER_OVERFLOW
+					&& result != STATUS_BUFFER_TOO_SMALL)
+					return result;
+
+				if (STATUS_SUCCESS == result)
+					break;
+
+				infosize = infoneeded;
+				HeapFree(GetProcessHeap(), NULL, callarguments->ObjectInfo);
+				callarguments->ObjectInfo = (POBJECT_NAME_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, infosize);
+				if (NULL == callarguments->ObjectInfo)
+					return ERROR_NOT_ENOUGH_MEMORY;
+
+			} while (result == STATUS_BUFFER_TOO_SMALL || result == STATUS_BUFFER_OVERFLOW || result == STATUS_INFO_LENGTH_MISMATCH);
+		}
+		else
+		{
+			callarguments->ObjectInfo = (POBJECT_TYPE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(OBJECT_TYPE_INFORMATION));
+			if (NULL == callarguments->ObjectInfo)
+				return ERROR_NOT_ENOUGH_MEMORY;
+
+			do
+			{
+				result = NtQueryObject(callarguments->ObjectHandle, ObjectTypeInformation, callarguments->ObjectInfo, infosize, &infoneeded);
+				if (STATUS_SUCCESS != result
+					&& STATUS_INFO_LENGTH_MISMATCH != result
+					&& result != STATUS_BUFFER_OVERFLOW
+					&& result != STATUS_BUFFER_TOO_SMALL)
+					return result;
+
+				if (STATUS_SUCCESS == result)
+					break;
+
+				infosize = infoneeded;
+				HeapFree(GetProcessHeap(), NULL, callarguments->ObjectInfo);
+				callarguments->ObjectInfo = (POBJECT_TYPE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, infosize);
+				if (NULL == callarguments->ObjectInfo)
+					return ERROR_NOT_ENOUGH_MEMORY;
+
+			} while (result == STATUS_BUFFER_TOO_SMALL || result == STATUS_BUFFER_OVERFLOW || result == STATUS_INFO_LENGTH_MISMATCH);
+		}
+
+		return result;
+	}
+
+	NTSTATUS WINAPI NtQueryObjectWithTimeout(HANDLE hobject, OBJECT_INFORMATION_CLASS objinfoclass, PVOID objinfo, ULONG mstimeout)
+	{
+		NTSTATUS result = STATUS_SUCCESS;
+		HANDLE thread = NULL;
+		DWORD threadid = 0;
+		DWORD tresult = 0;
+		
+		PTHREAD_FUNC_ARGUMENTS threadcallargs = (THREAD_FUNC_ARGUMENTS*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(THREAD_FUNC_ARGUMENTS));
+		if (NULL == threadcallargs)
+			return ERROR_NOT_ENOUGH_MEMORY;
+
+		threadcallargs->ObjectHandle = hobject;
+		threadcallargs->ObjectInformationClass = objinfoclass;
+		threadcallargs->ObjectInfo;
+		threadcallargs->BufferSize = 0;
+
+		thread = CreateThread(NULL, 0, NtQueryObjectRaw, threadcallargs, 0, &threadid);
+		if (NULL == thread)
+			return GetLastError();
+
+		DWORD wait = WaitForSingleObject(thread, mstimeout);
+		if (wait != WAIT_OBJECT_0)
+			TerminateThread(thread, 0);
+		else
+		{
+			GetExitCodeThread(thread, &tresult);
+			CloseHandle(thread);
+		}
+
+		if (objinfoclass == ObjectNameInformation)
+		{
+			POBJECT_NAME_INFORMATION inter = (POBJECT_NAME_INFORMATION)threadcallargs->ObjectInfo;
+			size_t buffsz = sizeof(*inter);
+			size_t incsz = sizeof(*(POBJECT_NAME_INFORMATION)objinfo);
+			
+			if (incsz < buffsz)
+			{
+				HeapFree(GetProcessHeap(), NULL, objinfo);
+				objinfo = (POBJECT_NAME_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, buffsz);
+				if (NULL == objinfo)
+					return ERROR_NOT_ENOUGH_MEMORY;
+			}
+
+			CopyMemory(objinfo, inter, buffsz);
+		}
+		else
+		{
+			POBJECT_TYPE_INFORMATION inter = (POBJECT_TYPE_INFORMATION)threadcallargs->ObjectInfo;
+			size_t buffsz = sizeof(*inter);
+			size_t incsz = sizeof(*(POBJECT_TYPE_INFORMATION)objinfo);
+
+			if (incsz < buffsz)
+			{
+				HeapFree(GetProcessHeap(), NULL, objinfo);
+				objinfo = (POBJECT_TYPE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, buffsz);
+				if (NULL == objinfo)
+					return ERROR_NOT_ENOUGH_MEMORY;
+			}
+
+			CopyMemory(objinfo, inter, buffsz);
+		}
+
+		if (NULL != threadcallargs)
+			HeapFree(GetProcessHeap(), NULL, threadcallargs);
+
+		return result;
 	}
 }

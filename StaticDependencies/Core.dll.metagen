@@ -111,6 +111,7 @@ Class WindowsUtils.Core.SystemHandle: AutoLayout, AnsiClass, Class, Public, Befo
     Byte ObjectTypeNumber : Public
     System.String ObjectTypeName : Public
     System.String ExtPropertyInfo : Public
+    UInt32 GrantedAccess : Public
     Byte Flags : Public
 Class WindowsUtils.Core.WrappedFunctions: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
@@ -124,7 +125,7 @@ Class WindowsUtils.Core.WrappedFunctions: AutoLayout, AnsiClass, Class, Public, 
     GetFormattedError(Int32): PrivateScope, Public, HideBySig
     GetFormatedWin32Error(): PrivateScope, Public, HideBySig
     GetFormatedWSError(): PrivateScope, Public, HideBySig
-    GetProcessObjectHandle(String[]): PrivateScope, Public, HideBySig
+    GetProcessObjectHandle(String[], Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     GetMsiProperties(String): PrivateScope, Public, HideBySig
     DisconnectSession(IntPtr, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     DisconnectSession(IntPtr, UInt32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig

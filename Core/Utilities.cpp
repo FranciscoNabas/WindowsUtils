@@ -12,6 +12,119 @@
 
 namespace WindowsUtils::Core
 {
+	BOOL EndsWith(PWSTR& inputstr, LPCWSTR& comparestr)
+	{
+		LPCWSTR pdest = wcsstr(inputstr, comparestr);
+		if (NULL == pdest)
+			return FALSE;
+		else
+			return TRUE;
+	}
+
+	DWORD CloseExtProcessHandle(HANDLE& hsourceproc, LPCWSTR& objname)
+	{
+		DWORD result = ERROR_SUCCESS;
+		NTSTATUS ntcall = STATUS_SUCCESS;
+		HANDLE htarget = NULL;
+		HANDLE hdupproc = NULL;
+		
+		LPCWSTR pupath = PathSkipRootW(objname);
+		if (NULL == pupath)
+			return GetLastError();
+
+		HANDLE hproccurrent = GetCurrentProcess();
+		if (NULL == hproccurrent)
+		{
+			result = GetLastError();
+			goto CLEANUP;
+
+		}
+
+		HMODULE hmodule = GetModuleHandleW(L"ntdll.dll");
+		if (INVALID_HANDLE_VALUE == hmodule || NULL == hmodule)
+			return GetLastError();
+
+		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hmodule, "NtQueryObject");
+		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hmodule, "NtQueryInformationProcess");
+		_NtDuplicateObject NtDuplicateObject = (_NtDuplicateObject)GetProcAddress(hmodule, "NtDuplicateObject");
+
+		POBJECT_NAME_INFORMATION nameinfo = (POBJECT_NAME_INFORMATION)LocalAlloc(LMEM_ZEROINIT, sizeof(OBJECT_NAME_INFORMATION));
+		if(NULL == nameinfo)
+		{
+			result = GetLastError();
+			goto CLEANUP;
+		}
+
+		PPROCESS_HANDLE_SNAPSHOT_INFORMATION pprochandleinfo = (PPROCESS_HANDLE_SNAPSHOT_INFORMATION)LocalAlloc(LMEM_ZEROINIT, sizeof(PROCESS_HANDLE_SNAPSHOT_INFORMATION));
+		if (NULL == pprochandleinfo)
+		{
+			result = GetLastError();
+			goto CLEANUP;
+		}
+
+		ULONG infosize = (ULONG)sizeof(PROCESS_HANDLE_SNAPSHOT_INFORMATION);
+		ULONG infoneeded = 0;
+
+		do
+		{
+			ntcall = NtQueryInformationProcess(hsourceproc, ProcessHandleInformation, pprochandleinfo, infosize, &infoneeded);
+			if (STATUS_SUCCESS != ntcall && STATUS_INFO_LENGTH_MISMATCH != ntcall)
+				return ntcall;
+
+			if (STATUS_SUCCESS == ntcall)
+				break;
+
+			infosize = infoneeded;
+			LocalFree(pprochandleinfo);
+
+			pprochandleinfo = (PPROCESS_HANDLE_SNAPSHOT_INFORMATION)LocalAlloc(LMEM_ZEROINIT, infosize);
+			if (NULL == pprochandleinfo)
+			{
+				result = GetLastError();
+				goto CLEANUP;
+			}
+
+		} while (ntcall == STATUS_INFO_LENGTH_MISMATCH);
+
+		for (ULONG i = 0; i < pprochandleinfo->NumberOfHandles; i++)
+		{
+			HANDLE hcurrent = pprochandleinfo->Handles[i].HandleValue;
+			HANDLE hclose = NULL;
+
+			if (FALSE == DuplicateHandle(hsourceproc, hcurrent, hproccurrent, &htarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
+				continue;
+
+			POBJECT_NAME_INFORMATION objnameinfo = (POBJECT_NAME_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(OBJECT_NAME_INFORMATION));
+			if (NULL == objnameinfo)
+				return ERROR_NOT_ENOUGH_MEMORY;
+
+			ntcall = NtQueryObjectWithTimeout(htarget, ObjectNameInformation, objnameinfo, 200);
+			CloseHandle(htarget);
+
+			if (objnameinfo->Name.Buffer && TRUE == EndsWith(objnameinfo->Name.Buffer, pupath))
+			{
+				if (FALSE == DuplicateHandle(hsourceproc, hcurrent, hproccurrent, &hclose, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
+				{
+					result = GetLastError();
+					goto CLEANUP;
+				}
+				else
+				{
+					CloseHandle(hclose);
+					break;
+				}
+			}
+			
+			HeapFree(GetProcessHeap(), NULL, objnameinfo);
+		}
+
+	CLEANUP:
+
+		LOCFREEWCHECK(pprochandleinfo);
+
+		return result;
+	}
+
 	DWORD GetProcessImageVersionInfo(LPWSTR& imagepath, const LPCWSTR& propname, LPWSTR& value)
 	{
 		DWORD result = S_OK;
@@ -155,7 +268,9 @@ namespace WindowsUtils::Core
 	DWORD Unmanaged::GetProcessObjectHandle
 	(
 		std::vector<Unmanaged::ObjectHandle>& ppvecfho,
-		std::vector<LPCWSTR>& reslist
+		std::vector<LPCWSTR>& reslist,
+		BOOL closeHandle = FALSE,
+		BOOL terminateProcess = FALSE
 	)
 	{
 		// Invalid handle value for DWORD
@@ -167,6 +282,7 @@ namespace WindowsUtils::Core
 		DWORD res = 0;
 		NTSTATUS ntcall;
 		UINT retry = 0;
+		HANDLE hProcess = NULL;
 
 		Unmanaged::ObjectHandle* single;
 
@@ -194,7 +310,12 @@ namespace WindowsUtils::Core
 				single->InputObject = inputobj;
 				single->ProcessId = (DWORD)ntprocinfo->ProcessIdList[j];
 
-				HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, (DWORD)ntprocinfo->ProcessIdList[j]);
+				hProcess = OpenProcess(
+					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE,
+					FALSE,
+					(DWORD)ntprocinfo->ProcessIdList[j]
+				);
+				
 				if (INVALID_HANDLE_VALUE != hProcess && NULL != hProcess)
 				{
 					single->ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
@@ -222,6 +343,13 @@ namespace WindowsUtils::Core
 					res = GetProcessImageVersionInfo(single->ImagePath, L"ProductName", single->ProductName);
 					if (res != 0)
 						single->ProductName = L"";
+
+					if (TRUE == closeHandle)
+					{
+						res = CloseExtProcessHandle(hProcess, reslist.at(i));
+						if (ERROR_SUCCESS != res)
+							return res;
+					}
 					
 					CloseHandle(hProcess);
 				}

@@ -347,7 +347,11 @@ namespace WindowsUtils.Commands
     ///     <para></para>
     /// </example>
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "ObjectHandle")]
+    [Cmdlet(
+        VerbsCommon.Get, "ObjectHandle",
+        SupportsShouldProcess = true,
+        ConfirmImpact = ConfirmImpact.High
+    )]
     [Alias("gethandle")]
     public class GetObjectHandleCommand : PSCmdlet
     {
@@ -393,6 +397,14 @@ namespace WindowsUtils.Commands
             }
         }
 
+        [Parameter(Mandatory = false, ParameterSetName = "closingHandle")]
+        [Parameter(Mandatory = false, ParameterSetName = "byLiteral")]
+        [Parameter(Mandatory = false, ParameterSetName = "byPath")]
+        public SwitchParameter CloseHandle { get; set; }
+
+        [Parameter()]
+        public SwitchParameter Force { get; set; }
+
         protected override void ProcessRecord()
         {
             List<string> pathlist = new();
@@ -422,10 +434,30 @@ namespace WindowsUtils.Commands
 
             if (validPaths.Count == 0)
                 throw new ItemNotFoundException("No object found for the specified path(s).");
-
+            
             WrappedFunctions unWrapper = new();
-            ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray());
-            result.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+            if (CloseHandle)
+            {
+                if (Force || ShouldProcess(
+                        "",
+                        "Are you sure you want to close all handles for the input object(s)?",
+                        "ATTENTION! Closing handles can lead to system malfunction.\n"
+                        ))
+                {
+                    unWrapper.GetProcessObjectHandle(validPaths.ToArray(), true, false);
+                    ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false, false);
+                    if (result is not null)
+                    {
+                        WriteWarning("Failed to remove handles for the processes below.");
+                        result.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+                    }
+                }
+            }
+            else
+            {
+                ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false, false);
+                result?.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+            }
         }
     }
 
