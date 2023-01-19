@@ -111,12 +111,14 @@ Get-LastWin32Error
 My favorite one, and the one I had most fun building.  
 This Cmdlet was designed to mimic the famous [Handle](https://learn.microsoft.com/en-us/sysinternals/downloads/handle), from Sysinternals.  
 It shows which process holds a **handle** to a file or directory. This information can be used when you need to modify or delete a file locked by a process.  
-In future implementations, is planned to include **Close Handle** and **Kill Process** functionalities.  
-The first of which can be achieved with the **-c** parameter, in the original handle.exe.  
+You can close handles to objects using **-CloseHandle**.  
   
 ```powershell
 Get-ObjectHandle -Path 'C:\Windows\System32\kernel32.dll', 'C:\Windows\System32\ntdll.dll'
 Get-ObjectHandle -Path "$env:TEMP\*.tmp"
+
+Get-ObjectHandle -Path "${env:ProgramFiles(x86)}\7-zip\7-zip.dll" -CloseHandle
+Get-ObjectHandle -Path "${env:ProgramFiles(x86)}\7-zip\7-zip.dll" -CloseHandle -Force
 
 PS C:\Windows\System32>_ Get-ObjectHandle csrss*
 ```

@@ -24,16 +24,6 @@ namespace WindowsUtils
 
     internal class Interop
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct GUID
-        {
-            internal UInt32 Data1;
-            internal UInt16 Data2;
-            internal UInt16 Data3;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
-            internal byte[] Data4;
-        }
-
         [DllImport("kernel32", SetLastError = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal extern static bool CloseHandle(IntPtr handle);

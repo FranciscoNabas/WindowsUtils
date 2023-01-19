@@ -1,5 +1,5 @@
-﻿using System.Management.Automation;
-using System.Runtime.CompilerServices;
+﻿using System.Text;
+using System.Management.Automation;
 using WindowsUtils.Core;
 
 namespace WindowsUtils.Commands
@@ -62,10 +62,11 @@ namespace WindowsUtils.Commands
         [Parameter(ParameterSetName = "NoWait")]
         public int Timeout
         {
-            get {
+            get
+            {
                 if (true == Wait && _timeout == 0)
                     throw new InvalidOperationException("'Timeout' cannot be zero when using 'Wait'.");
-                
+
                 return _timeout;
             }
             set
@@ -86,7 +87,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrappedFunctions unwrapper = new();
+            WrapperFunctions unwrapper = new();
             uint nativestyle = MessageBoxOption.MbOptionsResolver(Style);
 
             /*
@@ -105,7 +106,7 @@ namespace WindowsUtils.Commands
                         "Sending message to all sessions on the current computer."
                         ))
                     {
-                        MessageResponseBase[] result = unwrapper.InvokeMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
+                        MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
                         result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                     }
                 }
@@ -119,13 +120,13 @@ namespace WindowsUtils.Commands
                         "Session '0' represent all sessions on the computer"
                         ))
                         {
-                            MessageResponseBase[] result = unwrapper.InvokeMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
+                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                     }
                     else
                     {
-                        MessageResponseBase[] result = unwrapper.InvokeMessage(IntPtr.Zero, SessionId, Title, Message, nativestyle, Timeout, Wait);
+                        MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativestyle, Timeout, Wait);
                         result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                     }
                 }
@@ -143,7 +144,7 @@ namespace WindowsUtils.Commands
                         WtsSession.StageComputerSession(ComputerName);
                         if (WtsSession.SessionHandle is not null)
                         {
-                            MessageResponseBase[] result = unwrapper.InvokeMessage(WtsSession.SessionHandle.ToIntPtr(), null, Title, Message, nativestyle, Timeout, Wait);
+                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(WtsSession.SessionHandle.ToIntPtr(), null, Title, Message, nativestyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                     }
@@ -161,13 +162,13 @@ namespace WindowsUtils.Commands
                             "Session '0' represent all sessions on the computer"
                             ))
                             {
-                                MessageResponseBase[] result = unwrapper.InvokeMessage(WtsSession.SessionHandle.ToIntPtr(), null, Title, Message, nativestyle, Timeout, Wait);
+                                MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(WtsSession.SessionHandle.ToIntPtr(), null, Title, Message, nativestyle, Timeout, Wait);
                                 result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                             }
                         }
                         else
                         {
-                            MessageResponseBase[] result = unwrapper.InvokeMessage(WtsSession.SessionHandle.ToIntPtr(), SessionId, Title, Message, nativestyle, Timeout, Wait);
+                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(WtsSession.SessionHandle.ToIntPtr(), SessionId, Title, Message, nativestyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                     }
@@ -220,11 +221,11 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrappedFunctions unwrapper = new();
-            
+            WrapperFunctions unwrapper = new();
+
             if (string.IsNullOrEmpty(ComputerName))
             {
-                ComputerSessionBase[] result = unwrapper.GetEnumeratedSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
+                ComputerSessionBase[] result = unwrapper.GetComputerSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
                 result.ToList().ForEach(x => WriteObject((ComputerSession)x));
             }
             else
@@ -232,7 +233,7 @@ namespace WindowsUtils.Commands
                 WtsSession.StageComputerSession(ComputerName);
                 if (WtsSession.SessionHandle is not null)
                 {
-                    ComputerSessionBase[] result = unwrapper.GetEnumeratedSession(ComputerName, WtsSession.SessionHandle.ToIntPtr(), ActiveOnly, IncludeSystemSession);
+                    ComputerSessionBase[] result = unwrapper.GetComputerSession(ComputerName, WtsSession.SessionHandle.ToIntPtr(), ActiveOnly, IncludeSystemSession);
                     result.ToList().ForEach(x => WriteObject((ComputerSession)x));
                 }
             }
@@ -249,7 +250,7 @@ namespace WindowsUtils.Commands
     {
         protected override void ProcessRecord()
         {
-            WrappedFunctions unwrapper = new();
+            WrapperFunctions unwrapper = new();
             unwrapper.SendClick();
         }
     }
@@ -272,7 +273,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrappedFunctions unWrapper = new();
+            WrapperFunctions unWrapper = new();
             ResourceMessageTableCore[] result = unWrapper.GetResourceMessageTable(Path);
             result.ToList().ForEach(x => WriteObject((ResourceMessageTable)x));
         }
@@ -307,7 +308,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrappedFunctions unWrapper = new();
+            WrapperFunctions unWrapper = new();
             WriteObject(unWrapper.GetFormattedError(ErrorCode));
         }
     }
@@ -321,8 +322,8 @@ namespace WindowsUtils.Commands
     {
         protected override void ProcessRecord()
         {
-            WrappedFunctions unWrapper = new();
-            WriteObject(unWrapper.GetFormatedWin32Error());
+            WrapperFunctions unWrapper = new();
+            WriteObject(unWrapper.GetLastWin32Error());
         }
     }
 
@@ -397,19 +398,22 @@ namespace WindowsUtils.Commands
             }
         }
 
-        [Parameter(Mandatory = false, ParameterSetName = "closingHandle")]
-        [Parameter(Mandatory = false, ParameterSetName = "byLiteral")]
-        [Parameter(Mandatory = false, ParameterSetName = "byPath")]
+        [Parameter()]
         public SwitchParameter CloseHandle { get; set; }
 
         [Parameter()]
         public SwitchParameter Force { get; set; }
 
+        protected override void BeginProcessing()
+        {
+            if (Force && !CloseHandle)
+                throw new InvalidOperationException("'Force' can only be used with 'CloseHandle'.");
+        }
         protected override void ProcessRecord()
         {
             List<string> pathlist = new();
             validPaths.Clear();
-            
+
             _path ??= new[] { ".\\*" };
 
             foreach (string path in _path)
@@ -422,6 +426,7 @@ namespace WindowsUtils.Commands
                 else
                     pathlist.Add(SessionState.Path.GetUnresolvedProviderPathFromPSPath(path, out provider, out PSDriveInfo drive));
 
+                // FIX THIS!!!!!!
                 foreach (string filepath in pathlist)
                 {
                     if (File.Exists(filepath) || Directory.Exists(filepath))
@@ -434,8 +439,8 @@ namespace WindowsUtils.Commands
 
             if (validPaths.Count == 0)
                 throw new ItemNotFoundException("No object found for the specified path(s).");
-            
-            WrappedFunctions unWrapper = new();
+
+            WrapperFunctions unWrapper = new();
             if (CloseHandle)
             {
                 if (Force || ShouldProcess(
@@ -444,8 +449,8 @@ namespace WindowsUtils.Commands
                         "ATTENTION! Closing handles can lead to system malfunction.\n"
                         ))
                 {
-                    unWrapper.GetProcessObjectHandle(validPaths.ToArray(), true, false);
-                    ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false, false);
+                    unWrapper.GetProcessObjectHandle(validPaths.ToArray(), true);
+                    ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
                     if (result is not null)
                     {
                         WriteWarning("Failed to remove handles for the processes below.");
@@ -455,7 +460,7 @@ namespace WindowsUtils.Commands
             }
             else
             {
-                ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false, false);
+                ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
                 result?.ToList().ForEach(x => WriteObject((ObjectHandle)x));
             }
         }
@@ -478,7 +483,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrappedFunctions unWrapper = new();
+            WrapperFunctions unWrapper = new();
             WriteObject(unWrapper.GetMsiProperties(Path));
         }
     }
@@ -548,7 +553,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrappedFunctions unWrapper = new();
+            WrapperFunctions unWrapper = new();
 
             if (string.IsNullOrEmpty(ComputerName))
             {
@@ -559,7 +564,7 @@ namespace WindowsUtils.Commands
                     "Are you sure you want to disconnect the current session on this computer?",
                     "Disconnect session"))
                     {
-                        unWrapper.DisconnectSession(IntPtr.Zero, Wait);
+                        unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
                     }
                 }
                 else
