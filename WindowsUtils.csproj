@@ -10,7 +10,7 @@
     <AssemblyName></AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <BaseIntermediateOutputPath />
-    <LangVersion>11</LangVersion>
+    <LangVersion>11.0</LangVersion>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <DocumentationFile>bin\WindowsUtils\WindowsUtils.xml</DocumentationFile>
