@@ -104,8 +104,8 @@ namespace WindowsUtils
     {
         internal static string GetLastWin32Error()
         {
-            WrappedFunctions unwrapper = new();
-            return unwrapper.GetFormatedWin32Error();
+            WrapperFunctions unwrapper = new();
+            return unwrapper.GetLastWin32Error();
         }
     }
 }

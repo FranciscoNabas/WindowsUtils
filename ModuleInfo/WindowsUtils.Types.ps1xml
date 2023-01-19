@@ -75,9 +75,9 @@
             <Name>DefaultDisplayPropertySet</Name>
             <ReferencedProperties>
               <Name>InputObject</Name>
-              <Name>Application</Name>
+              <Name>Name</Name>
               <Name>ProcessId</Name>
-              <Name>ImagePath</Name>
+              <Name>Description</Name>
             </ReferencedProperties>
           </PropertySet>
         </Members>

@@ -7,16 +7,28 @@
 #ifndef PCH_H
 #define PCH_H
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+
+#define _WIN32_WINNT 0x0600
 
 // To avoid warning C4005. This definition is done via compiler command line.
 #undef __CLR_VER
 
 // add headers that you want to pre-compile here
 
-#endif //PCH_H
-
 #ifndef UNICODE
 #define UNICODE
 #define _UNICODE
 #endif // UNICODE
+
+#include <Windows.h>
+#include <WtsApi32.h>
+#include <winternl.h>
+#include <strsafe.h>
+#include <Shlwapi.h>
+#include <MsiQuery.h>
+#include <string>
+#include <vector>
+#include <map>
+#include <memory>
+
+#endif //PCH_H

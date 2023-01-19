@@ -1,141 +1,120 @@
 #pragma once
+#pragma unmanaged
 
-#include "Unmanaged.h"
-#include <shlobj.h>
-#include <strsafe.h>
-#include <shlwapi.h>
+#include "pch.h"
+#include "NtUtilities.h"
 
-#define STATUS_BUFFER_TOO_SMALL 0xC0000023L
-#define STATUS_BUFFER_OVERFLOW 0x80000005
-#define SystemHandleInformation 16
-#define ObjectNameInformation 1
-#define REG_KEY_PATH_LENGTH 1024
+#define LOCFREEWCHECK(mem) if (NULL != mem) { LocalFree(mem); }
+#define ALLCHECK(ptr) if (NULL == ptr) { return ERROR_NOT_ENOUGH_MEMORY; }
+#define DWERRORCHECKV(result) if (ERROR_SUCCESS != result) { return result; }
+#define DWERRORCHECKF(result) if (ERROR_SUCCESS != result) { return GetLastError(); }
+
+#define SharedVecPtr(T) std::shared_ptr<std::vector<T>>
+#define MakeVecPtr(T) std::make_shared<std::vector<T>>()
 
 namespace WindowsUtils::Core
 {
-	typedef struct _IO_STATUS_BLOCK {
-		union {
-			NTSTATUS Status;
-			PVOID Pointer;
-		} DUMMYUNIONNAME;
+	extern "C" public class __declspec(dllexport) Utilities
+	{
+	public:
+		/*========================================
+		==		Unmanaged object definition		==
+		==========================================*/
 
-		ULONG_PTR Information;
-	} IO_STATUS_BLOCK, * PIO_STATUS_BLOCK;
+		// Get-ResourceMessageTable
+		typedef struct _WU_RESOURCE_MESSAGE_TABLE
+		{
+			DWORD	Id;			// Message ID.
+			LPWSTR	Message;	// Message text.
 
-	typedef  struct _FILE_PROCESS_IDS_USING_FILE_INFORMATION {
-		ULONG NumberOfProcessIdsInList;
-		ULONG_PTR ProcessIdList[1];
-	} FILE_PROCESS_IDS_USING_FILE_INFORMATION, * PFILE_PROCESS_IDS_USING_FILE_INFORMATION;
+			_WU_RESOURCE_MESSAGE_TABLE() { }
+			_WU_RESOURCE_MESSAGE_TABLE(DWORD id, LPWSTR message) : Id(id), Message(message) { }
+		}WU_RESOURCE_MESSAGE_TABLE, * PWU_RESOURCE_MESSAGE_TABLE;
 
-	typedef struct _FileProperty {
-		PROPERTYKEY	Property;
-		LPWSTR		Value;
+		// Get-ObjectHandle
+		typedef enum _VERSION_INFO_PROPERTY
+		{
+			FileDescription = 1U
+			, ProductName = 2U
+			, FileVersion = 3U
+			, CompanyName = 4U
 
-		_FileProperty(PROPERTYKEY key, LPWSTR value) : Property(key), Value(value) { };
+		}VERSION_INFO_PROPERTY;
 
-	}FileProperty, * PFileProperty;
+		typedef struct _WU_OBJECT_HANDLE
+		{
+			LPWSTR		InputObject;								// Input object path. Helps tracking which handle belongs to which object, when querying multiple objects.
+			DWORD		ProcessId;									// ID from the process owning the handle.
+			LPWSTR		Name;										// Process image name. File base name.
+			LPWSTR		ImagePath;									// Process image path.
+			std::map<VERSION_INFO_PROPERTY, LPCWSTR> VersionInfo;	// Image version information.
 
-	typedef struct _UNICODE_STRING {
-		USHORT Length;
-		USHORT MaximumLength;
-		PWSTR Buffer;
-	} UNICODE_STRING, * PUNICODE_STRING;
+			_WU_OBJECT_HANDLE() { }
+			_WU_OBJECT_HANDLE(LPWSTR inpobj, LPWSTR name, DWORD pid, LPWSTR imgpath, std::map<VERSION_INFO_PROPERTY, LPCWSTR> verinfo)
+				: InputObject(inpobj), Name(name), ProcessId(pid), ImagePath(imgpath), VersionInfo(verinfo) { }
+		}WU_OBJECT_HANDLE, * PWU_OBJECT_HANDLE;
 
-	typedef enum _POOL_TYPE {
-		NonPagedPool,
-		PagedPool,
-		NonPagedPoolMustSucceed,
-		DontUseThisType,
-		NonPagedPoolCacheAligned,
-		PagedPoolCacheAligned,
-		NonPagedPoolCacheAlignedMustS
-	} POOL_TYPE, * PPOOL_TYPE;
+		/*=========================================
+		==		 Function identification		 ==
+		===========================================*/
 
-	typedef struct _OBJECT_TYPE_INFORMATION {
-		UNICODE_STRING Name;
-		ULONG TotalNumberOfObjects;
-		ULONG TotalNumberOfHandles;
-		ULONG TotalPagedPoolUsage;
-		ULONG TotalNonPagedPoolUsage;
-		ULONG TotalNamePoolUsage;
-		ULONG TotalHandleTableUsage;
-		ULONG HighWaterNumberOfObjects;
-		ULONG HighWaterNumberOfHandles;
-		ULONG HighWaterPagedPoolUsage;
-		ULONG HighWaterNonPagedPoolUsage;
-		ULONG HighWaterNamePoolUsage;
-		ULONG HighWaterHandleTableUsage;
-		ULONG InvalidAttributes;
-		GENERIC_MAPPING GenericMapping;
-		ULONG ValidAccess;
-		BOOLEAN SecurityRequired;
-		BOOLEAN MaintainHandleCount;
-		USHORT MaintainTypeList;
-		POOL_TYPE PoolType;
-		ULONG PagedPoolUsage;
-		ULONG NonPagedPoolUsage;
-	} OBJECT_TYPE_INFORMATION, * POBJECT_TYPE_INFORMATION;
+		// Get-ObjectHandle
+		DWORD GetProcessObjectHandle(std::vector<WU_OBJECT_HANDLE>& ppvecfho, std::vector<LPCWSTR>& reslist, BOOL closeHandle);
 
-	typedef struct _KEY_NAME_INFORMATION {
-		ULONG NameLength;
-		WCHAR Name[1];
-	} KEY_NAME_INFORMATION, * PKEY_NAME_INFORMATION;
+		//Get-ResourceMessageTable
+		DWORD GetResourceMessageTable(std::vector<WU_RESOURCE_MESSAGE_TABLE>& rvecresmestb, LPWSTR& lplibName);
 
-	typedef enum _KEY_INFORMATION_CLASS {
-		KeyBasicInformation,
-		KeyNodeInformation,
-		KeyFullInformation,
-		KeyNameInformation,
-		KeyCachedInformation,
-		KeyFlagsInformation,
-		KeyVirtualizationInformation,
-		KeyHandleTagsInformation,
-		KeyTrustInformation,
-		KeyLayerInformation,
-		MaxKeyInfoClass
-	} KEY_INFORMATION_CLASS;
+		// Get-LastWin32Error
+		DWORD GetFormattedWin32Error(LPWSTR& rlperrormess);
+		// Get-FormattedError
+		DWORD GetFormattedError(DWORD dwerrorcode, LPWSTR& rlperrormess);
 
-	typedef NTSTATUS(__stdcall* _NtQueryInformationFile)(
-		HANDLE				fileHandle,
-		PIO_STATUS_BLOCK	ioStatusBlock,
-		PVOID				fileInformation,
-		ULONG				length,
-		UINT				fileInformationClass
-		);
+		// Get-MsiProperties
+		DWORD GetMsiProperties(std::map<LPWSTR, LPWSTR>& ppmapout, LPWSTR& fileName);
+		DWORD GetMsiExtendedError(LPWSTR& lperrormessage);
 
-	typedef NTSTATUS(__stdcall* _NtQuerySystemInformation)(
-		ULONG	SystemInformationClass,
-		PVOID	SystemInformation,
-		ULONG	SystemInformationLength,
-		PULONG	ReturnLength);
+		// Send-Click
+		DWORD SendClick();
+	};
 
-	typedef NTSTATUS(__stdcall* _NtQueryObject)(
-		HANDLE						Handle,
-		OBJECT_INFORMATION_CLASS	ObjectInformationClass,
-		PVOID						ObjectInformation,
-		ULONG						ObjectInformationLength,
-		PULONG						ReturnLength
-		);
+	/*
+	* This helper structure us used on cases where loading a module is not critical.
+	*/
+	typedef struct _LOAD_MODULE_ERROR_INFO
+	{
+		BOOL	IsLoaded;
+		DWORD	ErrorCode;
 
-	typedef NTSTATUS(__stdcall* _NtDuplicateObject)(
-		HANDLE		SourceProcessHandle,
-		HANDLE		SourceHandle,
-		HANDLE		TargetProcessHandle,
-		PHANDLE		TargetHandle,
-		ACCESS_MASK	DesiredAccess,
-		ULONG		Attributes,
-		ULONG		Options
-		);
+		_LOAD_MODULE_ERROR_INFO() : IsLoaded(TRUE), ErrorCode(ERROR_SUCCESS) { }
+	}LOAD_MODULE_ERROR_INFO, * PLOAD_MODULE_ERROR_INFO;
 
-	typedef NTSTATUS(__stdcall* _NtQueryKey)(
-		HANDLE		KeyHandle,
-		int			KeyinformationClass,
-		PVOID		KeyInformation,
-		ULONG		Length,
-		PULONG		ResultLength
-		);
+	/*
+	* Memory management class.
+	* Ok. I'm not a good C++ programmer, yet, and the fact that I'm not sure if memory is being deallocated properly freaks me out.
+	* I tried this in a couple of ways, but helper functions seems to be the easiest to implement without too much overhead.
+	* The initial idea was to overload the 'new' operator, but then I couldn't create objects with new inside the class.
+	* For now, I'm proud of myself. Until I learn a little more and cringeness assumes.
+	*/
 
-	NTSTATUS GetNtProcessUsingFileList(LPCWSTR filename, PFILE_PROCESS_IDS_USING_FILE_INFORMATION& pfpidfileinfo);
-	NTSTATUS GetNtObjectInformation(Unmanaged::SYSTEM_HANDLE handleObject, LPWSTR& objTypeName, LPWSTR& keyinfo);
-	NTSTATUS GetNtKeyInformation(HANDLE hkey, HMODULE hntdll, LPWSTR& keypath);
+	class _WuMemoryManagement
+	{
+	public:
+		_WuMemoryManagement();
+
+		PVOID Allocate(size_t size);
+		VOID Free(PVOID block);
+
+	private:
+		BOOL IsRegistered(PVOID block);
+		SharedVecPtr(PVOID) MemoryList;
+
+	};
+
+	DWORD GetProccesVersionInfo(LPWSTR& imagepath, Utilities::VERSION_INFO_PROPERTY& propname, LPWSTR& value);
+	DWORD CloseExtProcessHandle(HANDLE& hsourceproc, LPCWSTR& objname);
+	BOOL EndsWith(PWSTR& inputstr, LPCWSTR& comparestr);
+	VOID PrintBufferW(LPWSTR& lpbuffer, WCHAR const* const format, ...);
+	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr);
+	DWORD GetEnvVariableW(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue);
+		
 }

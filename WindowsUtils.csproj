@@ -10,10 +10,14 @@
     <AssemblyName></AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <BaseIntermediateOutputPath />
-    <LangVersion>10</LangVersion>
+    <LangVersion>11</LangVersion>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <DocumentationFile>bin\WindowsUtils\WindowsUtils.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Optimize>False</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,7 +33,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
     <PackageReference Include="XmlDoc2CmdletDoc" Version="0.3.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -40,12 +45,24 @@
     <Reference Include="Core">
       <HintPath>StaticDependencies\Core.dll</HintPath>
     </Reference>
+    <Reference Include="System.Management">
+      <HintPath>..\..\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Management\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Management.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="vcruntime140_1.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

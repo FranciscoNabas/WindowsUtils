@@ -1,444 +1,626 @@
 #include "pch.h"
-#include "Unmanaged.h"
 #include "Utilities.h"
+#include <psapi.h>
 
-#ifndef UNICODE
-#define UNICODE
-#define _UNICODE
-#endif // UNICODE
-
-#define CHECKDWRESULT(result) if (ERROR_SUCCESS != result) { goto CLEANUP; }
-#define IFFAILRETURNDW(result) if (ERROR_SUCCESS != result) { return result; }
+#pragma comment(lib, "Psapi")
 
 namespace WindowsUtils::Core
 {
-	DWORD GetProcessImageVersionInfo(LPWSTR& imagepath, const LPCWSTR& propname, LPWSTR& value)
-	{
-		DWORD result = S_OK;
-		DWORD verinfosize = 0;
-		LPVOID databuffer;
-		UINT transdatasize = 0;
-		LPWSTR subblockfuffer = L"";
+	/*========================================
+	==		 Main function definition		==
+	==========================================*/
 
-		struct LANGUAGE_AND_CODEPAGE {
-			WORD	Language;
-			WORD	CodePage;
-		} *PLANGUAGE_AND_CODEPAGE;
-
-		verinfosize = GetFileVersionInfoSizeW(imagepath, NULL);
-		if (verinfosize == 0)
-			return GetLastError();
-
-		databuffer = (LPVOID)LocalAlloc(LMEM_ZEROINIT, verinfosize);
-		ALLCHECK(databuffer);
-
-		if (FALSE == (GetFileVersionInfoW(imagepath, NULL, verinfosize, databuffer)))
-			return GetLastError();
-
-		if (FALSE == (VerQueryValueW(databuffer, L"\\VarFileInfo\\Translation", (LPVOID*)&PLANGUAGE_AND_CODEPAGE, &transdatasize)))
-			return GetLastError();
-
-		for (UINT i = 0; i < (transdatasize / sizeof(struct LANGUAGE_AND_CODEPAGE)); i++)
-		{
-			subblockfuffer = (LPWSTR)LocalAlloc(LMEM_ZEROINIT, sizeof(WCHAR) * MAX_PATH);
-			ALLCHECK(subblockfuffer);
-
-			LPVOID propbuffer;
-			UINT currdatasize = 0;
-
-			StringCchPrintfW(subblockfuffer, MAX_PATH, L"\\StringFileInfo\\%04x%04x\\", PLANGUAGE_AND_CODEPAGE[i].Language, PLANGUAGE_AND_CODEPAGE[i].CodePage);
-
-			size_t tsubbstrsize = wcslen(subblockfuffer) + wcslen(propname) + 2;
-			wcscat_s(subblockfuffer, tsubbstrsize, propname);
-
-			VerQueryValueW(databuffer, subblockfuffer, &propbuffer, &currdatasize);
-			
-			LPWSTR strbuff = static_cast<LPWSTR>(propbuffer);
-			size_t bufflen = wcslen(strbuff) + 1;
-
-			value = new WCHAR[bufflen];
-			wcscpy_s(value, bufflen, strbuff);
-
-			LOCFREEWCHECK(subblockfuffer);
-		}
-
-		return result;
-	}
-
-	DWORD Unmanaged::GetMsiExtendedErrorMessage(LPWSTR& pErrorMessage)
-	{
-		UINT uiStatus = 0;
-		DWORD extErrBuffSize = 0;
-
-		// The MSI engine disposes PMSIHANDLE objects as they go out of scope.
-		// With MSIHANDLE, you have to call MsiCloseHandle.
-		PMSIHANDLE hLastErr = MsiGetLastErrorRecord();
-		
-		if (hLastErr)
-		{
-			uiStatus = MsiFormatRecord(NULL, hLastErr, L"", &extErrBuffSize);
-			IFFAILRETURNDW(uiStatus);
-
-			extErrBuffSize++;
-			pErrorMessage = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * extErrBuffSize));
-			if (nullptr == pErrorMessage)
-				return ERROR_NOT_ENOUGH_MEMORY;
-
-			uiStatus = MsiFormatRecord(NULL, hLastErr, pErrorMessage, &extErrBuffSize);
-		}
-	
-		return uiStatus;
-	}
-
-	DWORD Unmanaged::GetMsiProperties(std::map<std::wstring, std::wstring>& ppmapout, LPWSTR fileName)
-	{
-		PMSIHANDLE pDatabase;
-		PMSIHANDLE pView;
-		PMSIHANDLE pRecord;
-		UINT uiReturn = 0;
-		DWORD dwRecValBuffer = 0;
-		LPWSTR pRecProperty;
-		LPWSTR pRecValue;
-		
-		uiReturn = MsiOpenDatabase(fileName, L"MSIDBOPEN_READONLY", &pDatabase);
-		if (ERROR_SUCCESS == uiReturn)
-		{
-			uiReturn = MsiDatabaseOpenView(pDatabase, L"Select Property, Value From Property", &pView);
-			if (ERROR_SUCCESS == uiReturn)
-			{
-				uiReturn = MsiViewExecute(pView, NULL);
-				if (ERROR_SUCCESS == uiReturn)
-				{
-					do
-					{
-						uiReturn = MsiViewFetch(pView, &pRecord);
-						IFFAILRETURNDW(uiReturn);
-
-						// First 'column'. Property name.
-						//Calculating buffer size.
-						uiReturn = MsiRecordGetString(pRecord, 1, 0, &dwRecValBuffer);
-						IFFAILRETURNDW(uiReturn);
-
-						// Getting property name.
-						dwRecValBuffer++;
-						pRecProperty = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * dwRecValBuffer));
-						uiReturn = MsiRecordGetString(pRecord, 1, pRecProperty, &dwRecValBuffer);
-						IFFAILRETURNDW(uiReturn);
-
-						// Second 'column'. Value.
-						dwRecValBuffer = 0;
-						uiReturn = MsiRecordGetString(pRecord, 2, 0, &dwRecValBuffer);
-						IFFAILRETURNDW(uiReturn);
-
-						dwRecValBuffer++;
-						pRecValue = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * dwRecValBuffer));
-						uiReturn = MsiRecordGetString(pRecord, 2, pRecValue, &dwRecValBuffer);
-						IFFAILRETURNDW(uiReturn);
-
-						if (nullptr != pRecProperty && nullptr != pRecValue)
-						{
-							std::wstring recproperty(pRecProperty);
-							std::wstring recvalue(pRecValue);
-							ppmapout[recproperty] = recvalue;
-						}
-						else
-							return ERROR_NOT_ENOUGH_MEMORY;
-
-					} while (pRecord != 0);
-				}
-			}
-		}
-
-		return uiReturn;
-	}
-
-	DWORD Unmanaged::GetProcessObjectHandle
-	(
-		std::vector<Unmanaged::ObjectHandle>& ppvecfho,
-		std::vector<LPCWSTR>& reslist
+	// Get-ObjectHandle
+	DWORD Utilities::GetProcessObjectHandle(
+		std::vector<Utilities::WU_OBJECT_HANDLE>& rvecobjhandle	// A vector of object handle output objects.
+		, std::vector<LPCWSTR>& rvecinputpath					// A vector of input objects.
+		, BOOL closehandle = FALSE								// TRUE for closing the handles found.
 	)
 	{
-		// Invalid handle value for DWORD
-		DWORD sessionHandle = 0xFFFFFFFF;
-		UINT nProcInfo = 0;
-		UINT nProcInfoNeeded = 0;
-		RM_REBOOT_REASON rebReason = RmRebootReasonNone;
-		PRM_PROCESS_INFO pprocInfo = NULL;
-		DWORD res = 0;
-		NTSTATUS ntcall;
-		UINT retry = 0;
+		DWORD result = ERROR_SUCCESS;
 
-		Unmanaged::ObjectHandle* single;
-
-		for (size_t i = 0; i < reslist.size(); i++)
+		for (size_t i = 0; i < rvecinputpath.size(); i++)
 		{
-			HRESULT hresult = S_OK;
+			/*
+			* This strips the path out of the input object so we can add it to the 'InputObject' property.
+			* This will need to be changed in the future to support multiple object types.
+			*/
+			WCHAR lpinputobj[MAX_PATH] = { 0 };
+			wcscpy_s(lpinputobj, MAX_PATH, rvecinputpath.at(i));
+			PathStripPathW(lpinputobj);
 
-			PFILE_PROCESS_IDS_USING_FILE_INFORMATION ntprocinfo = (PFILE_PROCESS_IDS_USING_FILE_INFORMATION)LocalAlloc(LMEM_ZEROINIT, sizeof(FILE_PROCESS_IDS_USING_FILE_INFORMATION));
-			ALLCHECK(ntprocinfo);
+			PFILE_PROCESS_IDS_USING_FILE_INFORMATION pprocidufile = NULL;
+			result = GetNtProcessUsingFile(rvecinputpath.at(i), pprocidufile);
 
-			size_t pathsz = wcslen(reslist.at(i)) + 1;
-			LPWSTR inputobj = new WCHAR[pathsz];
-
-			wcscpy_s(inputobj, pathsz, reslist.at(i));
-			PathStripPathW(inputobj);
-
-			// TODO: Error handling
-			ntcall = GetNtProcessUsingFileList(reslist.at(i), ntprocinfo);
-			
-			for (ULONG j = 0; j < ntprocinfo->NumberOfProcessIdsInList; j++)
+			for (ULONG j = 0; j < pprocidufile->NumberOfProcessIdsInList; j++)
 			{
-				single = (Unmanaged::ObjectHandle*)LocalAlloc(LMEM_ZEROINIT, sizeof(Unmanaged::ObjectHandle));
-				ALLCHECK(single);
+				PWU_OBJECT_HANDLE uphobj = new WU_OBJECT_HANDLE;
+				HANDLE hprocess = NULL;
 
-				single->InputObject = inputobj;
-				single->ProcessId = (DWORD)ntprocinfo->ProcessIdList[j];
+				size_t szinputobj = wcslen(lpinputobj) + 1;
+				uphobj->InputObject = new WCHAR[szinputobj];
+				wcscpy_s(uphobj->InputObject, szinputobj, lpinputobj);
 
-				HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, (DWORD)ntprocinfo->ProcessIdList[j]);
-				if (INVALID_HANDLE_VALUE != hProcess && NULL != hProcess)
+				uphobj->ProcessId = (DWORD)pprocidufile->ProcessIdList[j];
+
+				if (uphobj->ProcessId == 10220)
+					result = 0;
+
+				hprocess = OpenProcess(
+					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE
+					,FALSE
+					,(DWORD)pprocidufile->ProcessIdList[j]
+				);
+				if (NULL != hprocess)
 				{
-					single->ImagePath = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * MAX_PATH));
-					if (nullptr != single->ImagePath)
+					DWORD szmaxpath = MAX_PATH;
+					uphobj->ImagePath = new WCHAR[MAX_PATH]{ 0 };
+					uphobj->Name = new WCHAR[MAX_PATH]{ 0 };
+					::QueryFullProcessImageNameW(hprocess, 0, uphobj->ImagePath, &szmaxpath);
+
+					if (wcslen(uphobj->ImagePath) == 0)
 					{
-						DWORD cch = MAX_PATH;
-						if (!QueryFullProcessImageNameW(hProcess, 0, single->ImagePath, &cch))
-							single->ImagePath = L"";
+						result = GetProcessImageName(uphobj->ProcessId, uphobj->Name);
+						if (wcslen(uphobj->Name) > 0)
+						{
+							wcscpy_s(uphobj->ImagePath, MAX_PATH, uphobj->Name);
+							::PathStripPathW(uphobj->Name);
+						}
+						
 					}
 					else
-						return ERROR_NOT_ENOUGH_MEMORY;
-
-					res = GetProcessImageVersionInfo(single->ImagePath, L"FileDescription", single->Application);
-					if (res != 0)
-						single->Application = L"";
+					{
+						wcscpy_s(uphobj->Name, MAX_PATH, uphobj->ImagePath);
+						::PathStripPathW(uphobj->Name);
+					}
 					
-					res = GetProcessImageVersionInfo(single->ImagePath, L"FileVersion", single->FileVersion);
-					if (res != 0)
-						single->FileVersion = L"";
+					for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
+					{
+						LPWSTR lpinter = { 0 };
+						GetProccesVersionInfo(uphobj->ImagePath, verinfoprop, lpinter);
+						uphobj->VersionInfo.emplace(std::make_pair(verinfoprop, LPCWSTR(lpinter)));
+					}
 
-					res = GetProcessImageVersionInfo(single->ImagePath, L"CompanyName", single->CompanyName);
-					if (res != 0)
-						single->CompanyName = L"";
-
-					res = GetProcessImageVersionInfo(single->ImagePath, L"ProductName", single->ProductName);
-					if (res != 0)
-						single->ProductName = L"";
-					
-					CloseHandle(hProcess);
+					if (closehandle)
+					{
+						result = CloseExtProcessHandle(hprocess, rvecinputpath.at(i));
+						if (ERROR_SUCCESS != result)
+							return result;
+					}
+					::CloseHandle(hprocess);
 				}
-				
-				ppvecfho.push_back(*single);
-			
-				if (nullptr != single)
-					LocalFree(single);
+				else
+				{
+					if (ERROR_ACCESS_DENIED == ::GetLastError())
+					{
+						hprocess = OpenProcess(
+							PROCESS_QUERY_LIMITED_INFORMATION
+							,FALSE
+							,(DWORD)pprocidufile->ProcessIdList[j]
+						);
+
+						DWORD szmaxpath = MAX_PATH;
+						uphobj->ImagePath = new WCHAR[MAX_PATH]{ 0 };
+						uphobj->Name = new WCHAR[MAX_PATH]{ 0 };
+						if (::QueryFullProcessImageNameW(hprocess, 0, uphobj->ImagePath, &szmaxpath))
+						{
+							wcscpy_s(uphobj->Name, MAX_PATH, uphobj->ImagePath);
+							::PathStripPathW(uphobj->Name);
+							
+							for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
+							{
+								LPWSTR lpinter;
+								GetProccesVersionInfo(uphobj->ImagePath, verinfoprop, lpinter);
+								uphobj->VersionInfo.emplace(std::make_pair(verinfoprop, LPCWSTR(lpinter)));
+							}
+						}
+						else
+						{
+							if (ERROR_SUCCESS == GetProcessImageName(uphobj->ProcessId, uphobj->Name))
+							{
+								wcscpy_s(uphobj->ImagePath, MAX_PATH, uphobj->Name);
+								::PathStripPathW(uphobj->Name);
+							}
+							
+							if (
+								wcscmp(uphobj->Name, L"System") == 0
+								|| wcscmp(uphobj->Name, L"Secure System") == 0
+								|| wcscmp(uphobj->Name, L"Registry") == 0)
+							{
+								LPCWSTR windir = L"windir";
+								LPWSTR lpenvvalue;
+								result = GetEnvVariableW(windir, lpenvvalue);
+								DWERRORCHECKV(result);
+
+								std::wstring wstrwindir(lpenvvalue);
+								std::wstring imagepath = L"\\System32\\ntoskrnl.exe";
+								std::wstring fullimagepath = wstrwindir + imagepath;
+
+								wcscpy_s(uphobj->ImagePath, MAX_PATH, fullimagepath.c_str());
+
+								for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
+								{
+									LPWSTR lpinter;
+									GetProccesVersionInfo(uphobj->ImagePath, verinfoprop, lpinter);
+									uphobj->VersionInfo.emplace(std::make_pair(verinfoprop, LPCWSTR(lpinter)));
+								}
+							}
+						}
+					}	
+				}
+
+				rvecobjhandle.push_back(*uphobj);
+
+				delete uphobj;
 			}
-
-			if (nullptr != ntprocinfo)
-				LocalFree(ntprocinfo);
 		}
-		return res;
+
+		return result;
 	}
 
-	LPWSTR Unmanaged::GetFormatedWSError()
+	// Get-FormattedMessage
+	DWORD Utilities::GetFormattedError(
+		DWORD dwerrorcode				// The Win32 error code.
+		, LPWSTR& rlperrormess			// The output message string.
+	)
 	{
-		LPWSTR inter = NULL;
-		FormatMessageW(
-			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-			NULL,
-			WSAGetLastError(),
-			0,
-			(LPWSTR)&inter,
-			0,
-			NULL
-		);
-		return inter;
-	}
-	LPWSTR Unmanaged::GetFormatedWin32Error()
-	{
-		LPWSTR inter = NULL;
-		FormatMessageW(
-			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-			NULL,
-			GetLastError(),
-			0,
-			(LPWSTR)&inter,
-			0,
-			NULL
-		);
-		return inter;
-	}
-	LPWSTR Unmanaged::GetFormattedError(DWORD errorCode)
-	{
-		LPWSTR inter = NULL;
-		FormatMessageW(
-			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-			NULL,
-			errorCode,
-			0,
-			(LPWSTR)&inter,
-			0,
-			NULL
-			);
-		return inter;
-	}
-
-	DWORD Unmanaged::GetResourceMessageTable(std::vector<Unmanaged::ResourceMessageTable>& ppvecmdo, LPTSTR libName)
-	{
-		DWORD result = ERROR_SUCCESS;
-		Unmanaged::ResourceMessageTable* psingle = NULL;
-
-		HMODULE hDll = LoadLibraryEx(libName, NULL, LOAD_LIBRARY_AS_DATAFILE);
-		if (NULL == hDll)
+		if (!::FormatMessageW(
+			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER
+			, NULL
+			, dwerrorcode
+			, 0
+			, (LPWSTR)&rlperrormess
+			, 0
+			, NULL
+		))
 			return GetLastError();
 
-		HRSRC resource = FindResource(hDll, MAKEINTRESOURCE(1), RT_MESSAGETABLE);
-		if (NULL == resource)
-			goto CLEANUP;
-
-		HGLOBAL load = LoadResource(hDll, resource);
-		if (NULL == load)
-			goto CLEANUP;
-
-		PVOID messageTable = LockResource(load);
-		DWORD blockNumber = ((PMESSAGE_RESOURCE_DATA)messageTable)->NumberOfBlocks;
-		PMESSAGE_RESOURCE_BLOCK messageBlock = ((PMESSAGE_RESOURCE_DATA)messageTable)->Blocks;
-
-		for (DWORD block = 0; block < blockNumber; block++)
-		{
-			DWORD lowId = messageBlock[block].LowId;
-			DWORD highId = messageBlock[block].HighId;
-			DWORD offset = 0;
-
-			for (DWORD id = lowId; id <= highId; id++)
-			{
-				psingle = (Unmanaged::ResourceMessageTable*)LocalAlloc(LMEM_ZEROINIT, sizeof(Unmanaged::ResourceMessageTable));
-				if (nullptr == psingle)
-					goto CLEANUP;
-
-				PMESSAGE_RESOURCE_ENTRY messageEntry =
-					(PMESSAGE_RESOURCE_ENTRY)((PBYTE)messageTable +
-						(DWORD)messageBlock[block].OffsetToEntries + offset);
-
-				psingle->Id = id;
-				psingle->Message = new WCHAR[150];
-				StringCchPrintfW(psingle->Message, 150, L"%s", messageEntry->Text);
-
-				ppvecmdo.push_back(*psingle);
-				if (NULL == LocalFree(psingle))
-					psingle = NULL;
-
-				offset += messageEntry->Length;
-			}
-		}
-
-	CLEANUP:
-
-		result = GetLastError();
-
-		if (NULL != psingle)
-			LocalFree(psingle);
-
-		if (NULL != hDll)
-			FreeLibrary(hDll);
-
-		return result;
+		return ERROR_SUCCESS;
 	}
 
-	DWORD Unmanaged::MapRpcEndpoints(std::vector<Unmanaged::RpcEndpoint>& ppOutVec)
+	// Get-LastWin32Error
+	DWORD Utilities::GetFormattedWin32Error(
+		LPWSTR& rlperrormess				// The output message string.
+	)
 	{
-		RPC_EP_INQ_HANDLE inqContext;
-		RPC_STATUS result = 0;
-		RPC_BINDING_HANDLE bindingHandle;
-		RPC_WSTR annotation;
-		RPC_WSTR stringBinding;
-		size_t sbLen;
-		size_t annLen;
+		if (!::FormatMessageW(
+			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER
+			, NULL
+			, GetLastError()
+			, 0
+			, (LPWSTR)&rlperrormess
+			, 0
+			, NULL
+		))
+			return GetLastError();
 
-		result = RpcMgmtEpEltInqBegin(NULL, RPC_C_EP_ALL_ELTS, 0, 0, 0, &inqContext);
-		if (result != RPC_S_OK) { return result; }
-
-		do
-		{
-			Unmanaged::RpcEndpoint inner;
-			result = RpcMgmtEpEltInqNextW(inqContext, NULL, &bindingHandle, NULL, &annotation);
-			if (result != 0 || result == RPC_X_NO_MORE_ENTRIES)
-				break;
-
-			result = RpcBindingToStringBindingW(bindingHandle, &stringBinding);
-			if (result != 0)
-				break;
-
-			sbLen = wcslen((const wchar_t*)stringBinding) + 1;
-			annLen = wcslen((const wchar_t*)annotation) + 1;
-
-			inner.BindingString = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * sbLen));
-			inner.Annotation = (LPWSTR)LocalAlloc(LPTR, (sizeof(wchar_t) * annLen));
-
-			wcscpy_s(inner.BindingString, sbLen, (const wchar_t*)stringBinding);
-			wcscpy_s(inner.Annotation, annLen, (const wchar_t*)annotation);
-
-			ppOutVec.push_back(inner);
-
-			RpcStringFree(&annotation);
-			RpcStringFree(&stringBinding);
-			RpcBindingFree(&bindingHandle);
-
-		} while (result != RPC_X_NO_MORE_ENTRIES);
-
-		result = RpcMgmtEpEltInqDone(&inqContext);
-		return result;
+		return ERROR_SUCCESS;
 	}
 
-	DWORD Unmanaged::SendClick()
+	// Send-Click
+	DWORD Utilities::SendClick()
 	{
 		DWORD result = ERROR_SUCCESS;
-		UINT sin = 0;
-		UINT tries = 0;
+		UINT usendin = 0;
+		UINT utries = 0;
+		POINT pointpos = { 0 };
+		LPINPUT pinput = new INPUT[2]{ 0 };
 
-		PPOINT pposition = (PPOINT)LocalAlloc(LMEM_ZEROINIT, sizeof(POINT));
-		ALLCHECK(pposition);
+		if (!::GetCursorPos(&pointpos))
+			return ::GetLastError();
 
-		LPINPUT pinput = (LPINPUT)LocalAlloc(LMEM_ZEROINIT, sizeof(INPUT) * 2);
-		ALLCHECK(pinput);
+		pinput[0].type, pinput[1].type = INPUT_MOUSE;
+		pinput[0].mi.dx, pinput[1].mi.dx = pointpos.x;
+		pinput[0].mi.dy, pinput[1].mi.dy = pointpos.y;
+		pinput[0].mi.mouseData, pinput[1].mi.mouseData = 0;
 
-		if (FALSE == (GetCursorPos(pposition)))
-		{
-			result = GetLastError();
-			goto CLEANUP;
-		}
-
-		pinput[0].type = INPUT_MOUSE;
-		pinput[0].mi.dx = pposition->x;
-		pinput[0].mi.dy = pposition->y;
-		pinput[0].mi.mouseData = 0;
 		pinput[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-
-		pinput[1].type = INPUT_MOUSE;
-		pinput[1].mi.dx = pposition->x;
-		pinput[1].mi.dy = pposition->y;
-		pinput[1].mi.mouseData = 0;
 		pinput[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
 
 		do
 		{
-			sin = SendInput(2, pinput, sizeof(INPUT));
-			if (sin != 0)
+			usendin = ::SendInput(2, pinput, sizeof(INPUT));
+			if (usendin != 0)
 				break;
 
-			Sleep(20);
+			::Sleep(20);
 
-		} while (sin == 0 && tries++ <3 );
+		} while (usendin == 0 && utries++ < 3);
 
-		if (sin == 0)
-			result = GetLastError();
+		if (usendin == 0)
+			result = ::GetLastError();
 
-	CLEANUP:
-		
-		if (nullptr != pposition)
-			LocalFree(pposition);
-		
-		if (nullptr != pinput)
-			LocalFree(pinput);
+		delete[] pinput;
 
 		return result;
+	}
+
+	// Get-ResourceMessageTable
+	DWORD Utilities::GetResourceMessageTable(
+		std::vector<Utilities::WU_RESOURCE_MESSAGE_TABLE>& rvecresmestb	// A vector of resource message table objects.
+		, LPWSTR& lplibname												// The resource path.
+	)
+	{
+		DWORD result = ERROR_SUCCESS;
+
+		HMODULE hmodule = ::LoadLibraryExW(lplibname, NULL, LOAD_LIBRARY_AS_DATAFILE);
+		if (NULL == hmodule)
+			return ::GetLastError();
+
+		HRSRC hresource = ::FindResourceW(hmodule, MAKEINTRESOURCE(1), RT_MESSAGETABLE);
+		if (NULL == hresource)
+			return ::GetLastError();
+
+		HGLOBAL hload = LoadResource(hmodule, hresource);
+		if (NULL == hload)
+			return ::GetLastError();
+
+		PVOID pmessagetable = LockResource(hload);
+		DWORD dwblocknumber = ((PMESSAGE_RESOURCE_DATA)pmessagetable)->NumberOfBlocks;
+		PMESSAGE_RESOURCE_BLOCK pmessblock = ((PMESSAGE_RESOURCE_DATA)pmessagetable)->Blocks;
+
+		for (DWORD block = 0; block < dwblocknumber; block++)
+		{
+			DWORD dwlowid = pmessblock[block].LowId;
+			DWORD dwhighid = pmessblock[block].HighId;
+			DWORD dwoffset = 0;
+
+			for (DWORD id = dwlowid; id <= dwhighid; id++)
+			{
+				WU_RESOURCE_MESSAGE_TABLE rmessingle;
+
+				PMESSAGE_RESOURCE_ENTRY pmessentry =
+					(PMESSAGE_RESOURCE_ENTRY)((PBYTE)pmessagetable +
+						(DWORD)pmessblock[block].OffsetToEntries + dwoffset);
+
+				rmessingle.Id = id;
+				PrintBufferW(rmessingle.Message, L"%s", pmessentry->Text);
+
+				rvecresmestb.push_back(rmessingle);
+				dwoffset += pmessentry->Length;
+			}
+		}
+
+		if (NULL != hmodule)
+			FreeLibrary(hmodule);
+
+		return result;
+	}
+
+	// Get-MsiProperties
+	DWORD Utilities::GetMsiProperties(
+		std::map<LPWSTR, LPWSTR>& rmapprop	// A map with the properties and values from the MSI database.
+		, LPWSTR& lpfilename				// The MSI file path.
+	)
+	{
+		DWORD result = ERROR_SUCCESS;
+		DWORD dwszbuffer = 0;
+		PMSIHANDLE pdatabase;
+		PMSIHANDLE pview;
+		PMSIHANDLE precord;
+
+		result = MsiOpenDatabaseW(lpfilename, L"MSIDBOPEN_READONLY", &pdatabase);
+		DWERRORCHECKV(result);
+
+		result = MsiDatabaseOpenViewW(pdatabase, L"Select Property, Value From Property", &pview);
+		DWERRORCHECKV(result);
+
+		result = MsiViewExecute(pview, NULL);
+		DWERRORCHECKV(result);
+
+		do
+		{
+			LPWSTR lproperty = { 0 };
+			LPWSTR lpvalue = { 0 };
+
+			result = MsiViewFetch(pview, &precord);
+			DWERRORCHECKV(result);
+
+			/*
+			* First column, property name.
+			* Calculating buffer size.
+			*/
+			result = MsiRecordGetStringW(precord, 1, NULL, &dwszbuffer);
+			DWERRORCHECKV(result);
+
+			// \0
+			dwszbuffer++;
+			lproperty = new WCHAR[dwszbuffer];
+			result = MsiRecordGetStringW(precord, 1, lproperty, &dwszbuffer);
+			DWERRORCHECKV(result);
+
+			// Second column, value.
+			dwszbuffer = 0;
+			result = MsiRecordGetStringW(precord, 2, NULL, &dwszbuffer);
+			DWERRORCHECKV(result);
+
+			dwszbuffer++;
+			lpvalue = new WCHAR[dwszbuffer];
+			result = MsiRecordGetStringW(precord, 2, lpvalue, &dwszbuffer);
+			DWERRORCHECKV(result);
+
+			rmapprop[lproperty] = lpvalue;
+
+		} while (precord != 0);
+
+		return result;
+	}
+
+	/*========================================
+	==		Utility function definition		==
+	==========================================*/
+
+	// Gets process image version information.
+	DWORD GetProccesVersionInfo(
+		LPWSTR& imagepath							// The process image file path.
+		,Utilities::VERSION_INFO_PROPERTY& propname	// The property name, or 'key' value.
+		,LPWSTR& value)								// The return value.
+	{
+		DWORD result = ERROR_SUCCESS;
+		WORD* langncodepage;
+		UINT len;
+		WCHAR* desc;
+		WCHAR text[256];
+
+		LPWSTR lppropname = { 0 };
+		switch (propname)
+		{
+		case Utilities::FileDescription:
+			lppropname = new WCHAR[16];
+			wcscpy_s(lppropname, 16, L"FileDescription");
+			break;
+		case Utilities::ProductName:
+			lppropname = new WCHAR[12];
+			wcscpy_s(lppropname, 12, L"ProductName");
+			break;
+		case Utilities::FileVersion:
+			lppropname = new WCHAR[12];
+			wcscpy_s(lppropname, 12, L"FileVersion");
+			break;
+		case Utilities::CompanyName:
+			lppropname = new WCHAR[12];
+			wcscpy_s(lppropname, 12, L"CompanyName");
+			break;
+		default:
+			break;
+		}
+
+		if (0 == lppropname)
+			return ::GetLastError();
+
+		size_t complen = 256 + wcslen(lppropname) + 2;
+
+		DWORD verinfosize = ::GetFileVersionInfoSizeW(imagepath, NULL);
+		LPVOID buffer = (LPVOID)::HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, verinfosize);
+		if (NULL == buffer)
+			return ERROR_NOT_ENOUGH_MEMORY;
+
+		if (!::GetFileVersionInfoW(imagepath, NULL, verinfosize, buffer))
+			return GetLastError();
+
+		if (!::VerQueryValueW(buffer, L"\\VarFileInfo\\Translation", (LPVOID*)&langncodepage, &len))
+			return GetLastError();
+
+		::StringCchPrintfW(text, complen, TEXT("\\StringFileInfo\\%04x%04x\\"), langncodepage[0], langncodepage[1]);
+
+		std::wstring subbuffer(text);
+		std::wstring propertyname(lppropname);
+		std::wstring resulttest = subbuffer + propertyname;
+
+		if (::VerQueryValueW(buffer, resulttest.c_str(), (LPVOID*)&desc, &len))
+		{
+			
+			size_t descsz = wcslen(desc) + 1;
+			if (descsz > 1 && !IsNullOrWhiteSpace(desc))
+			{
+				value = new WCHAR[descsz];
+				wcscpy_s(value, descsz, desc);
+			}
+			else
+				value = new WCHAR[1]{ 0 };
+		}
+		else
+			value = new WCHAR[1]{ 0 };
+
+		if (NULL != buffer)
+			::HeapFree(::GetProcessHeap(), NULL, buffer);
+
+		delete[] lppropname;
+
+		return result;
+	}
+
+	/*
+	* Used by the parameter -CloseHandle, from Get-ObjectHandle.
+	*/
+	DWORD CloseExtProcessHandle(
+		HANDLE& rhextprocess		// A valid handle to the external process.
+		, LPCWSTR& rlpcobjectname	// The object name, used on GetProcessObjectHandle.
+	)
+	{
+		DWORD result = ERROR_SUCCESS;
+		NTSTATUS ntcall = STATUS_SUCCESS;
+		HANDLE htarget = NULL;
+
+		LPCWSTR lpcpathnoroot = ::PathSkipRootW(rlpcobjectname);
+		if (NULL == lpcpathnoroot)
+			return ::GetLastError();
+
+		HMODULE hmodule = ::GetModuleHandleW(L"ntdll.dll");
+		if (INVALID_HANDLE_VALUE == hmodule || NULL == hmodule)
+			return ::GetLastError();
+
+		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)::GetProcAddress(hmodule, "NtQueryInformationProcess");
+
+		std::unique_ptr<BYTE[]> buffer;
+		ULONG szbuffer = (ULONG)sizeof(PROCESS_HANDLE_SNAPSHOT_INFORMATION);
+		ULONG szbuffneed = 0;
+		do
+		{
+			buffer = std::make_unique<BYTE[]>(szbuffer);
+			ntcall = NtQueryInformationProcess(rhextprocess, ProcessHandleInformation, buffer.get(), szbuffer, &szbuffneed);
+
+			if (STATUS_SUCCESS != ntcall && STATUS_INFO_LENGTH_MISMATCH != ntcall)
+				return ntcall;
+
+			if (STATUS_SUCCESS == ntcall)
+				break;
+
+			szbuffer = szbuffneed;
+
+		} while (ntcall == STATUS_INFO_LENGTH_MISMATCH);
+
+		PPROCESS_HANDLE_SNAPSHOT_INFORMATION phsnapinfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
+
+		for (ULONG i = 0; i < phsnapinfo->NumberOfHandles; i++)
+		{
+			POBJECT_NAME_INFORMATION pobjnameinfo = (POBJECT_NAME_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(OBJECT_NAME_INFORMATION));
+			if (NULL == pobjnameinfo)
+				return ERROR_NOT_ENOUGH_MEMORY;
+
+			if (!::DuplicateHandle(rhextprocess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &htarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
+				continue;
+
+			ntcall = NtQueryObjectWithTimeout(htarget, ObjectNameInformation, pobjnameinfo, 200);
+			if (STATUS_SUCCESS != ntcall)
+				return ntcall;
+
+			::CloseHandle(htarget);
+
+			if (pobjnameinfo->Name.Buffer && EndsWith(pobjnameinfo->Name.Buffer, lpcpathnoroot))
+			{
+				if (!::DuplicateHandle(rhextprocess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &htarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
+					result = GetLastError();
+
+				else
+				{
+					::CloseHandle(htarget);
+					break;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	BOOL EndsWith(PWSTR& inputstr, LPCWSTR& comparestr)
+	{
+		LPCWSTR pdest = wcsstr(inputstr, comparestr);
+		if (NULL == pdest)
+			return FALSE;
+		else
+			return TRUE;
+	}
+
+	// Write formatted output in a buffer. The memory allocation is what makes this function needed.
+	VOID PrintBufferW(LPWSTR& lpbuffer, WCHAR const* const format, ...)
+	{
+		va_list args;
+		int ilength;
+
+		va_start(args, format);
+		ilength = _vscwprintf(format, args) + 1;
+
+		lpbuffer = new WCHAR[ilength];
+		vswprintf_s(lpbuffer, ilength, format, args);
+	}
+
+	// Gets extented error information for Get-MsiProperties
+	DWORD Utilities::GetMsiExtendedError(LPWSTR& lperrormessage)
+	{
+		DWORD result = ERROR_SUCCESS;
+		DWORD dwszerrbuffer = 0;
+
+		PMSIHANDLE hlasterror = MsiGetLastErrorRecord();
+		if (NULL == hlasterror)
+			return GetLastError();
+
+		result = MsiFormatRecordW(NULL, hlasterror, NULL, &dwszerrbuffer);
+		if (ERROR_SUCCESS != result)
+			return result;
+
+		dwszerrbuffer++;
+		lperrormessage = new WCHAR[dwszerrbuffer];
+
+		result = MsiFormatRecordW(NULL, hlasterror, lperrormessage, &dwszerrbuffer);
+
+		return result;
+	}
+
+	// Checks if a C-style string is null or white space.
+	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr)
+	{
+		size_t strlen = wcslen(lpinputstr);
+		if (strlen > 0)
+		{
+			for (size_t i = 0; i < strlen; i++)
+			{
+				if (lpinputstr[i] != ' ')
+					return FALSE;
+			}
+		}
+		
+		return TRUE;
+	}
+
+	// Helper function to retrieve environment variables safely.
+	DWORD GetEnvVariableW(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue)
+	{
+		DWORD result = ERROR_SUCCESS;
+		size_t szrequiredstr = 0;
+
+		_wgetenv_s(&szrequiredstr, NULL, 0, rlpcvarname);
+		if (szrequiredstr == 0)
+			return ERROR_FILE_NOT_FOUND;
+
+		rlpvalue = new WCHAR[szrequiredstr]{ 0 };
+		
+		_wgetenv_s(&szrequiredstr, rlpvalue, szrequiredstr, rlpcvarname);
+
+		return result;
+	}
+
+	// Memory management class and helper functions
+	_WuMemoryManagement::_WuMemoryManagement()
+		: MemoryList(MakeVecPtr(PVOID)) { }
+
+	PVOID _WuMemoryManagement::Allocate(size_t size)
+	{
+		PVOID block = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
+		MemoryList->push_back(block);
+
+		return block;
+	}
+
+	VOID _WuMemoryManagement::Free(PVOID block)
+	{
+		if (IsRegistered(block))
+		{
+			if (MemoryList->size() > 0)
+			{
+				std::vector<PVOID>::iterator it;
+				for (it = MemoryList->begin(); it != MemoryList->end(); it++)
+				{
+					if (*it == block)
+					{
+						HeapFree(GetProcessHeap(), NULL, block);
+						MemoryList->erase(it);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	BOOL _WuMemoryManagement::IsRegistered(PVOID block)
+	{
+		if (NULL == block)
+			return FALSE;
+
+		for (PVOID regblock : *MemoryList)
+			if (regblock == block)
+				return TRUE;
+
+		return FALSE;
 	}
 }
