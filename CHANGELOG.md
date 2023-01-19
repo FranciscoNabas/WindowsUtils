@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
   
+## [1.5.0] - 2023-01-18
+
+### Changed
+- Structure:  
+  - Rewriting the functions, removing stupid mistakes from when I was beginning with MS C++.  
+  - LocalAlloc. LocalAlloc everywhere. Replacing with stack and HeapAlloc allocation.  
+    Funny story, in the beginning, I heard that the stack is faster than the heap, and for some reason I though LocalAlloc used the stack...  
+- Get-ObjectHandle:  
+  - Making getting process image version info more efficient.  
+  - Abstract processes like System, Secure System and Registry now point to ntoskrnl.exe, like on the Task Manager.  
+  - Column 'Name' added, 'Application' changed to 'Description', and property layout changed to mimic the Task Manager.  
+- Disconnect-Session
+  - Cannot use session ID 0 when disconnecting a session on a remote computer.  
+  
+### Added
+- Get-ObjectHandle:  
+  - Implement CloseHandle.  
+  - Implemented NtQuerySystemInformation with SystemProcessInformation to cover information missing from QueryFullProcessImageName.  
+  - New Switch Parameter 'Force' to be used with 'CloseHandle'. Avoids confirmation.  
+
+### Bugs
+- Get-ComputerSession  
+  - When ran on the local computer, IdleTime should be zero for the current session. It was returning a random filetime. Now if hsession = WTS_CURRENT_SERVER_HANDLE, and the user is the running the Cmdlet, it retunrns TimeSpan.Zero.  
+  - For system sessions, the logon time was filetime 0, which is 12/31/1600 10:00:00 PM. Now when LogonTime is filetime 0, it returns null.  
+  
+- Get-ObjectHandle  
+  - Removing the error handling caused the protected processes not to return.
+  - Using PROCESS_QUERY_LIMITED_INFORMATION to get version info, and image path from protected processes.
+  - Processes who image doesn't have a FileDescription, using the image base name instead.
+  - No more process missing main information, like Name and Description.
+
 ## [1.4.0] - 2022-10-12
   
 ### Bugs
