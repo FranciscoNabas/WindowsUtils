@@ -214,114 +214,114 @@ namespace WindowsUtils
         AsyncReturn = 32001
     }
 
-    internal class ProcessManager
-    {
-        internal string ComputerName { get; private set; }
-        internal int SessionId { get; private set; }
-        internal uint ProcessId { get; private set; }
-        internal string CommandLine { get; private set; }
-        internal bool HasExited { get; private set; }
-        internal OperationType Operation { get; }
-        internal int ProcessTtl { get; private set; }
+    //internal class ProcessManager
+    //{
+    //    internal string ComputerName { get; private set; }
+    //    internal int SessionId { get; private set; }
+    //    internal uint ProcessId { get; private set; }
+    //    internal string CommandLine { get; private set; }
+    //    internal bool HasExited { get; private set; }
+    //    internal OperationType Operation { get; }
+    //    internal int ProcessTtl { get; private set; }
 
-        internal static readonly string CurrentUser = WindowsIdentity.GetCurrent().Name;
-        private static RegistryKey? regapproot;
+    //    internal static readonly string CurrentUser = WindowsIdentity.GetCurrent().Name;
+    //    private static RegistryKey? regapproot;
 
-        internal enum OperationType
-        {
-            DisconnectSession
-        }
+    //    internal enum OperationType
+    //    {
+    //        DisconnectSession
+    //    }
 
-        private ProcessManager(string pcname, int sessionid, uint procid, string commandline, OperationType optype, int procttl)
-            => (ComputerName, SessionId, ProcessId, CommandLine, HasExited, Operation, ProcessTtl) = (pcname, sessionid, procid, commandline, false, optype, procttl);
+    //    private ProcessManager(string pcname, int sessionid, uint procid, string commandline, OperationType optype, int procttl)
+    //        => (ComputerName, SessionId, ProcessId, CommandLine, HasExited, Operation, ProcessTtl) = (pcname, sessionid, procid, commandline, false, optype, procttl);
 
-        internal static ProcessManager Create(string pcname, int sessionid, OperationType optype, string commandline, int procttl)
-        {
-            /*
-             * Checking if a process already exists for this session and PC.
-             */
-            regapproot ??= Registry.LocalMachine.OpenSubKey(
-                "SOFTWARE\\WindowsUtils\\ProcessManager"
-                , RegistryKeyPermissionCheck.ReadWriteSubTree
-                , RegistryRights.QueryValues | RegistryRights.CreateSubKey | RegistryRights.EnumerateSubKeys
-            );
-            if (regapproot is null)
-                throw new ArgumentNullException("Error loading module registry key: not found.");
+    //    internal static ProcessManager Create(string pcname, int sessionid, OperationType optype, string commandline, int procttl)
+    //    {
+    //        /*
+    //         * Checking if a process already exists for this session and PC.
+    //         */
+    //        regapproot ??= Registry.LocalMachine.OpenSubKey(
+    //            "SOFTWARE\\WindowsUtils\\ProcessManager"
+    //            , RegistryKeyPermissionCheck.ReadWriteSubTree
+    //            , RegistryRights.QueryValues | RegistryRights.CreateSubKey | RegistryRights.EnumerateSubKeys
+    //        );
+    //        if (regapproot is null)
+    //            throw new ArgumentNullException("Error loading module registry key: not found.");
 
-            object rgsearch = CheckOperationRegistry(pcname, sessionid, optype, ref regapproot);
-            if (rgsearch.ToString() != "False")
-                throw new InvalidOperationException((string)rgsearch);
+    //        object rgsearch = CheckOperationRegistry(pcname, sessionid, optype, ref regapproot);
+    //        if (rgsearch.ToString() != "False")
+    //            throw new InvalidOperationException((string)rgsearch);
 
-            /*
-             * Creating remote process.
-             */
-            ManagementScope scope = new($"\\\\{pcname}\\root\\cimv2");
-            scope.Connect();
+    //        /*
+    //         * Creating remote process.
+    //         */
+    //        ManagementScope scope = new($"\\\\{pcname}\\root\\cimv2");
+    //        scope.Connect();
 
-            using ManagementClass winprocess = new(scope, new ManagementPath("Win32_Process"), null);
-            using ManagementBaseObject inparam =  winprocess.GetMethodParameters("Create");
-            inparam.Properties["CommandLine"].Value = commandline;
+    //        using ManagementClass winprocess = new(scope, new ManagementPath("Win32_Process"), null);
+    //        using ManagementBaseObject inparam =  winprocess.GetMethodParameters("Create");
+    //        inparam.Properties["CommandLine"].Value = commandline;
 
-            using ManagementBaseObject result = winprocess.InvokeMethod("Create", inparam, null);
+    //        using ManagementBaseObject result = winprocess.InvokeMethod("Create", inparam, null);
 
-            if ((uint)result.Properties["ReturnValue"].Value != 0)
-                throw new SystemException($"Error creating remote process. Error code: {(long)result.Properties["ReturnValue"].Value}.");
+    //        if ((uint)result.Properties["ReturnValue"].Value != 0)
+    //            throw new SystemException($"Error creating remote process. Error code: {(long)result.Properties["ReturnValue"].Value}.");
 
-            /*
-             * Storing in the registry
-             */
-            uint _procid = (uint)result.Properties["ProcessId"].Value;
-            string entrykeyname = $"{sessionid}_{pcname}";
-            using RegistryKey newpmentry = regapproot.CreateSubKey(entrykeyname, true);
-            newpmentry.SetValue("CallerUserName", CurrentUser);
-            newpmentry.SetValue("OperationType", (uint)optype, RegistryValueKind.DWord);
-            newpmentry.SetValue("ProcessId", _procid, RegistryValueKind.DWord);
-            newpmentry.SetValue("CommandLine", commandline);
-            newpmentry.SetValue("InputDate", DateTime.Now.ToString());
+    //        /*
+    //         * Storing in the registry
+    //         */
+    //        uint _procid = (uint)result.Properties["ProcessId"].Value;
+    //        string entrykeyname = $"{sessionid}_{pcname}";
+    //        using RegistryKey newpmentry = regapproot.CreateSubKey(entrykeyname, true);
+    //        newpmentry.SetValue("CallerUserName", CurrentUser);
+    //        newpmentry.SetValue("OperationType", (uint)optype, RegistryValueKind.DWord);
+    //        newpmentry.SetValue("ProcessId", _procid, RegistryValueKind.DWord);
+    //        newpmentry.SetValue("CommandLine", commandline);
+    //        newpmentry.SetValue("InputDate", DateTime.Now.ToString());
 
-            /*
-             * Creating the registry cleanup task
-             */
-            byte[] scrbytes = Encoding.Unicode.GetBytes(string.Format(Properties.Resources.DisconnectWMessageCleanRegPS1, entrykeyname, _procid));
-            string encodedscript = Convert.ToBase64String(scrbytes);
-            string tstartboundary = DateTime.Now.AddMinutes(procttl).ToString("yyyy-MM-ddThh:mm:ss");
+    //        /*
+    //         * Creating the registry cleanup task
+    //         */
+    //        byte[] scrbytes = Encoding.Unicode.GetBytes(string.Format(Properties.Resources.DisconnectWMessageCleanRegPS1, entrykeyname, _procid));
+    //        string encodedscript = Convert.ToBase64String(scrbytes);
+    //        string tstartboundary = DateTime.Now.AddMinutes(procttl).ToString("yyyy-MM-ddThh:mm:ss");
 
-            string taskdefinition = string.Format(Properties.Resources.DisconnectWMessageCleanRegTask, tstartboundary, $"-ExecutionPolicy Bypass -EncodedCommand {encodedscript}");
+    //        string taskdefinition = string.Format(Properties.Resources.DisconnectWMessageCleanRegTask, tstartboundary, $"-ExecutionPolicy Bypass -EncodedCommand {encodedscript}");
 
-            ProcessManager newprocess = new(
-                pcname
-                ,sessionid
-                ,(uint)result.Properties["ProcessId"].Value
-                ,commandline
-                ,optype
-                ,procttl
-            );
+    //        ProcessManager newprocess = new(
+    //            pcname
+    //            ,sessionid
+    //            ,(uint)result.Properties["ProcessId"].Value
+    //            ,commandline
+    //            ,optype
+    //            ,procttl
+    //        );
 
-            return newprocess;
-        }
+    //        return newprocess;
+    //    }
 
-        private static object CheckOperationRegistry(string pcname, int sessionid, OperationType type, ref RegistryKey provider)
-        {
-            foreach (string key in provider.GetSubKeyNames())
-            {
-                if (key == $"{sessionid}_{pcname}")
-                {
-                    using RegistryKey? tempkey = provider.OpenSubKey(key);
-                    if (tempkey is not null)
-                    {
-                        object? optype = tempkey.GetValue("OperationType");
-                        if (optype is not null)
-                            if ((int)optype == (int)type)
-                            {
-                                object? caller = tempkey.GetValue("OperationType");
-                                if (caller is not null)
-                                    return caller.ToString();
-                            }
-                    }
-                }
-            }
+    //    private static object CheckOperationRegistry(string pcname, int sessionid, OperationType type, ref RegistryKey provider)
+    //    {
+    //        foreach (string key in provider.GetSubKeyNames())
+    //        {
+    //            if (key == $"{sessionid}_{pcname}")
+    //            {
+    //                using RegistryKey? tempkey = provider.OpenSubKey(key);
+    //                if (tempkey is not null)
+    //                {
+    //                    object? optype = tempkey.GetValue("OperationType");
+    //                    if (optype is not null)
+    //                        if ((int)optype == (int)type)
+    //                        {
+    //                            object? caller = tempkey.GetValue("OperationType");
+    //                            if (caller is not null)
+    //                                return caller.ToString();
+    //                        }
+    //                }
+    //            }
+    //        }
 
-            return false;
-        }
-    }
+    //        return false;
+    //    }
+    //}
 }
