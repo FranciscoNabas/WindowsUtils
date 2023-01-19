@@ -13,11 +13,11 @@ jobs:
     runs-on: windows-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v3.3.0
     - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v3.0.3
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 7.0.x
     - name: Build and Compress
       run: |
         .\Build.ps1 -psgsec "$env:PSGAL_APIKEY"
