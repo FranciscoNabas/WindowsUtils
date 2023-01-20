@@ -43,10 +43,7 @@
 
   <ItemGroup>
     <Reference Include="Core">
-      <HintPath>StaticDependencies\Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Management">
-      <HintPath>..\..\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Management\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Management.dll</HintPath>
+      <HintPath>StaticDependencies\bin\x64\Core.dll</HintPath>
     </Reference>
   </ItemGroup>
 

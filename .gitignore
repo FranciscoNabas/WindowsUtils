@@ -9,8 +9,10 @@
 # Built Visual Studio Code Extensions
 *.vsix
 
+# Release
+Release/*
+
 # bin
-bin
 bin/*
 
 # misc

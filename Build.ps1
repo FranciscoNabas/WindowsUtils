@@ -3,26 +3,23 @@ param (
     [string]$psgak
 )
 
-$releaseDir = '.\bin\WindowsUtils'
+$releaseDir = '.\Release\WindowsUtils'
 $copypath = @(
     '.\LICENSE'
     '.\ModuleInfo\WindowsUtils.psd1'
     '.\ModuleInfo\WindowsUtils.psm1'
     '.\ModuleInfo\WindowsUtils.Types.ps1xml'
-    '.\StaticDependencies\msvcp140.dll'
-    '.\StaticDependencies\vcruntime140.dll'
-    '.\StaticDependencies\vcruntime140_1.dll'
 )
 
 if ($Local) {
     Write-Host Building... -ForegroundColor DarkGreen
-    [void](. dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output bin\WindowsUtils --no-incremental)
+    [void](. dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output $releaseDir --no-incremental)
     Write-Host Generating help... -ForegroundColor DarkGreen
     [void](. 'C:\Repositories\NuGet\xmldoc2cmdletdoc\0.3.0\tools\XmlDoc2CmdletDoc.exe' "$releaseDir\WindowsUtils.dll")
 }
 else {
     Write-Host Building... -ForegroundColor DarkGreen
-    . dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output bin\WindowsUtils --no-incremental
+    . dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output $releaseDir --no-incremental
 }
 
 Write-Host 'Cleaning files...' -ForegroundColor DarkGreen
@@ -30,6 +27,9 @@ Write-Host 'Cleaning files...' -ForegroundColor DarkGreen
 
 Write-Host 'Copying files...' -ForegroundColor DarkGreen
 Copy-Item -Path $copypath -Destination $releaseDir -Force
+
+Write-Host 'Copying CRT libraries...' -ForegroundColor DarkGreen
+Copy-Item -Path '.\StaticDependencies\bin' -Destination $releaseDir -Recurse -Force -Exclude 'Core*' 
 
 if (!(Test-Path "$releaseDir\en-us")) { [void](mkdir "$releaseDir\en-us") }
 Move-Item "$releaseDir\WindowsUtils.dll-Help.xml" "$releaseDir\en-us\WindowsUtils.dll-Help.xml" -Force

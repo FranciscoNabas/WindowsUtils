@@ -3,7 +3,6 @@
 #pragma unmanaged
 #include "TerminalServices.h"
 #include "Utilities.h"
-#include "TaskScheduler.h"
 
 #pragma managed
 #include <vcclr.h>
@@ -233,7 +232,6 @@ namespace WindowsUtils::Core
 	public:
 		Utilities* utlptr;
 		TerminalServices* wtsptr;
-		TaskScheduler* tscptr;
 
 		// Invoke-RemoteMessage
 		array<MessageResponseBase^>^ InvokeRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait);

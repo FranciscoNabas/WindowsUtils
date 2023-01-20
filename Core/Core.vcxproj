@@ -85,7 +85,7 @@
     <OutDir>..\StaticDependencies\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\StaticDependencies\</OutDir>
+    <OutDir>..\StaticDependencies\bin\x64\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debugg|x64'">
     <OutDir>..\..\StaticDependencies\</OutDir>
@@ -124,6 +124,7 @@
       <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>Default</LanguageStandard_C>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Ole32.lib;Msi.lib;User32.lib;WtsApi32.lib;AdvApi32.lib;Shlwapi.lib;Version.lib</AdditionalDependencies>
@@ -151,7 +152,6 @@
     <ClInclude Include="NtUtilities.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="TaskScheduler.h" />
     <ClInclude Include="TerminalServices.h" />
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="Wrapper.h" />
@@ -165,7 +165,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debugg|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="TaskScheduler.cpp" />
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="TerminalServices.cpp" />
     <ClCompile Include="Wrapper.cpp" />

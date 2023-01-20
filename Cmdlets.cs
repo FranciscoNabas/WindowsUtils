@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Management.Automation;
 using WindowsUtils.Core;
+using System.Reflection;
 
 namespace WindowsUtils.Commands
 {
