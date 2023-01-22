@@ -256,12 +256,11 @@ namespace WindowsUtils::Core
 
 		// Get-MsiProperties
 		PSObject^ GetMsiProperties(String^ filepath);
-
-		/*
-		* Internal functions to manage the Windows Task Scheduler.
-		* TODO: Create return objects.
-		*/
-
+		
+		// Remove-Service
+		void RemoveService(String^ computername, String^ servicename, bool stopservice);
+		void RemoveService(String^ servicename, bool stopservice);
+		void RemoveService(String^ servicename);
 	};
 
 	/*=========================================

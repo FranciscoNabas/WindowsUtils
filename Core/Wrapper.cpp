@@ -253,6 +253,33 @@ namespace WindowsUtils::Core
 		return output;
 	}
 
+	// Remove-Service
+	void WrapperFunctions::RemoveService(String^ computername, String^ servicename, bool stopservice)
+	{
+		pin_ptr<const wchar_t> wcomputername = PtrToStringChars(computername);
+		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
+
+		DWORD result = utlptr->RemoveService((LPWSTR)wservicename, (LPWSTR)wcomputername, stopservice);
+		if (result != ERROR_SUCCESS)
+			throw gcnew SystemException(GetFormattedError(result));
+	}
+	void WrapperFunctions::RemoveService(String^ servicename, bool stopservice)
+	{
+		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
+
+		DWORD result = utlptr->RemoveService((LPWSTR)wservicename, NULL, stopservice);
+		if (result != ERROR_SUCCESS)
+			throw gcnew SystemException(GetFormattedError(result));
+	}
+	void WrapperFunctions::RemoveService(String^ servicename)
+	{
+		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
+
+		DWORD result = utlptr->RemoveService((LPWSTR)wservicename, NULL, FALSE);
+		if (result != ERROR_SUCCESS)
+			throw gcnew SystemException(GetFormattedError(result));
+	}
+
 	/*========================================
 	==		Utility function definition		==
 	==========================================*/

@@ -110,3 +110,6 @@ Class WindowsUtils.Core.WrapperFunctions: AutoLayout, AnsiClass, Class, Public, 
     SendClick(): PrivateScope, Public, HideBySig
     GetResourceMessageTable(String): PrivateScope, Public, HideBySig
     GetMsiProperties(String): PrivateScope, Public, HideBySig
+    RemoveService(String): PrivateScope, Public, HideBySig
+    RemoveService(String, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
+    RemoveService(String, String, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig

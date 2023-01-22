@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Utilities.h"
 #include <psapi.h>
+#include <new>
+#include <system_error>
 
 #pragma comment(lib, "Psapi")
 
@@ -346,6 +348,75 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
+	DWORD Utilities::RemoveService(
+		const LPWSTR& servicename		// The service name.
+		,const LPWSTR& computername		// Optional computer name.
+		,BOOL stopservice				// Stops the service, if it's running.
+	)
+	{
+		DWORD result = ERROR_SUCCESS;
+		SC_HANDLE hscmanager;
+		SC_HANDLE hservice;
+		LPSERVICE_STATUS lpservicestatus;
+		DWORD svcdesaccess;
+
+		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+
+		// Trying to give the least amont of privileges as possible, depending on the request.
+		if (stopservice)
+			svcdesaccess = DELETE | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS | SERVICE_STOP;
+		else
+			svcdesaccess = DELETE;
+
+		hscmanager = ::OpenSCManagerW(computername, SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
+		if (NULL == hscmanager)
+			return ::GetLastError();
+
+		hservice = ::OpenServiceW(hscmanager, servicename, svcdesaccess);
+		if (NULL == hservice)
+		{
+			result = ::GetLastError();
+			goto CLEANUP;
+		}
+
+		if (stopservice == TRUE)
+		{
+			lpservicestatus = (LPSERVICE_STATUS)MemoryManager.Allocate(sizeof(SERVICE_STATUS));
+			
+			if (!::QueryServiceStatus(hservice, lpservicestatus))
+			{
+				result = ::GetLastError();
+				goto CLEANUP;
+			}
+
+			if (lpservicestatus->dwCurrentState != SERVICE_STOPPED && lpservicestatus->dwCurrentState != SERVICE_STOP_PENDING)
+			{
+				result = StopDependentServices(hscmanager, hservice);
+				if (result != ERROR_SUCCESS)
+					goto CLEANUP;
+
+				if (!::ControlService(hservice, SERVICE_CONTROL_STOP, lpservicestatus))
+				{
+					result = ::GetLastError();
+					goto CLEANUP;
+				}
+			}
+		}
+
+		if (!::DeleteService(hservice))
+			result = ::GetLastError();
+
+	CLEANUP:
+
+		if (NULL != hscmanager)
+			::CloseServiceHandle(hscmanager);
+		if (NULL != hservice)
+			::CloseServiceHandle(hservice);
+		MemoryManager.Free(lpservicestatus);
+
+		return result;
+	}
+
 	/*========================================
 	==		Utility function definition		==
 	==========================================*/
@@ -580,47 +651,129 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	// Memory management class and helper functions
-	_WuMemoryManagement::_WuMemoryManagement()
-		: MemoryList(MakeVecPtr(PVOID)) { }
+	// Memory management helper functions
+	WuMemoryManagement& WuMemoryManagement::GetManager()
+	{
+		static WuMemoryManagement instance;
 
-	PVOID _WuMemoryManagement::Allocate(size_t size)
+		return instance;
+	}
+
+	PVOID WuMemoryManagement::Allocate(size_t size)
 	{
 		PVOID block = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
-		MemoryList->push_back(block);
+		if (NULL == block)
+			throw std::system_error(std::error_code(static_cast<int>(ERROR_NOT_ENOUGH_MEMORY), std::generic_category()));
+
+		MemoryList.push_back(block);
 
 		return block;
 	}
 
-	VOID _WuMemoryManagement::Free(PVOID block)
+	VOID WuMemoryManagement::Free(PVOID block)
 	{
 		if (IsRegistered(block))
 		{
-			if (MemoryList->size() > 0)
+			std::vector<PVOID>::iterator it;
+			for (it = MemoryList.begin(); it != MemoryList.end(); it++)
 			{
-				std::vector<PVOID>::iterator it;
-				for (it = MemoryList->begin(); it != MemoryList->end(); it++)
+				if (*it == block)
 				{
-					if (*it == block)
-					{
-						HeapFree(GetProcessHeap(), NULL, block);
-						MemoryList->erase(it);
-						break;
-					}
+					HeapFree(GetProcessHeap(), NULL, block);
+					MemoryList.erase(it);
+					break;
 				}
 			}
 		}
 	}
 
-	BOOL _WuMemoryManagement::IsRegistered(PVOID block)
+	BOOL WuMemoryManagement::IsRegistered(PVOID block)
 	{
 		if (NULL == block)
 			return FALSE;
 
-		for (PVOID regblock : *MemoryList)
+		for (PVOID regblock : MemoryList)
 			if (regblock == block)
 				return TRUE;
 
 		return FALSE;
+	}
+
+	// Queries and stops services dependent of a given service.
+	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice)
+	{
+		DWORD result = ERROR_SUCCESS;
+		DWORD bytesneeded;
+		DWORD svccount;
+		SERVICE_STATUS ssp;
+
+		ULONGLONG starttime = GetTickCount64();
+		DWORD timeout = 30000; // 30 seconds.
+
+		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+
+		// Determining buffer size
+		::EnumDependentServicesW(hservice, SERVICE_ACTIVE, NULL, 0, &bytesneeded, &svccount);
+
+		LPENUM_SERVICE_STATUS servicelist = (LPENUM_SERVICE_STATUS)MemoryManager.Allocate(bytesneeded);
+		__try
+		{
+			if (!::EnumDependentServicesW(hservice, SERVICE_ACTIVE, servicelist, bytesneeded, &bytesneeded, &svccount))
+			{
+				result = GetLastError();
+				__leave;
+			}
+
+			// Going through the service array and closing them.
+			for (DWORD i = 0; i < svccount; i++)
+			{
+				SC_HANDLE svccurrent = ::OpenServiceW(scm, servicelist[i].lpServiceName, SERVICE_STOP | SERVICE_QUERY_STATUS);
+				if (!svccurrent)
+				{
+					result = GetLastError();
+					__leave;
+				}
+
+				__try
+				{
+					if (!::ControlService(svccurrent, SERVICE_CONTROL_STOP, &ssp))
+					{
+						result = GetLastError();
+						__leave;
+					}
+
+					do
+					{
+						::Sleep(ssp.dwWaitHint);
+						if (!::QueryServiceStatus(svccurrent, &ssp))
+						{
+							result = GetLastError();
+							__leave;
+						}
+
+						if (ssp.dwCurrentState == SERVICE_STOPPED)
+							break;
+
+						if (GetTickCount64() - starttime > timeout)
+						{
+							result = ERROR_TIMEOUT;
+							__leave;
+						}
+
+					} while (ssp.dwCurrentState != SERVICE_STOPPED);
+				}
+				__finally
+				{
+					::CloseServiceHandle(svccurrent);
+				}
+
+			}
+		}
+		__finally
+		{
+			MemoryManager.Free(servicelist);
+		}
+
+		return result;
 	}
 }

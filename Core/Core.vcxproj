@@ -85,7 +85,7 @@
     <OutDir>..\StaticDependencies\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\StaticDependencies\bin\x64\</OutDir>
+    <OutDir>..\Release\WindowsUtils\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debugg|x64'">
     <OutDir>..\..\StaticDependencies\</OutDir>
@@ -130,6 +130,7 @@
       <AdditionalDependencies>Ole32.lib;Msi.lib;User32.lib;WtsApi32.lib;AdvApi32.lib;Shlwapi.lib;Version.lib</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
+      <AdditionalOptions>/NOENTRY msvcrt.lib /NODEFAULTLIB:nochkclr.obj /INCLUDE:_DllMainCRTStartup %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debugg|x64'">

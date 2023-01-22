@@ -549,7 +549,6 @@ namespace WindowsUtils.Commands
         /// </summary>
         [Parameter(ParameterSetName = "WithComputerName")]
         [Parameter(ParameterSetName = "NoComputerName")]
-        [ValidateNotNullOrEmpty()]
         public SwitchParameter Wait { get; set; }
 
         protected override void ProcessRecord()
@@ -591,6 +590,65 @@ namespace WindowsUtils.Commands
                         unWrapper.DisconnectSession(WtsSession.SessionHandle.ToIntPtr(), SessionId, Wait);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Deletes a service from the local or remote computer.</para>
+    /// <para type="description">This cmdlet removes (deletes) a specified service from the local or remote computer.</para>
+    /// <para type="description">If the service is running, and you don't use 'Stop', it will be marked to deletion.</para>
+    /// <para type="description">If the service have dependents, and 'Stop' is not used, it will be marked for deletion.</para>
+    /// <para type="description">If the service have dependents, and you use 'Stop', it will stop all dependent services.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Remove-Service -Name 'MyCoolService'</code>
+    ///     <para>Removes the service 'MyCoolService'.</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Remove-Service -Name 'MyCoolService' -Stop -Force</code>
+    ///     <para>Stops the service, and its dependents, and remove it. 'Force' skips confirmation.</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(
+        VerbsCommon.Remove, "Service",
+        SupportsShouldProcess = true,
+        ConfirmImpact = ConfirmImpact.High,
+        DefaultParameterSetName = "WithServiceName"
+    )]
+    public class RemoveServiceCommand : PSCmdlet
+    {
+        [Parameter(
+            Position = 0
+            ,Mandatory = true
+            ,ParameterSetName = "WithServiceName"
+        )]
+        [ValidateNotNullOrEmpty()]
+        public string Name { get; set; }
+
+        [Parameter()]
+        public SwitchParameter Stop { get; set; }
+
+        [Parameter()]
+        public SwitchParameter Force { get; set; }
+
+        protected override void ProcessRecord()
+        {
+            WrapperFunctions unwrapper = new();
+            if (!Force)
+            {
+                if (ShouldProcess(
+                   "Removing service " + Name + " from the local computer.",
+                   "Are you sure you want to remove the service " + Name + "?",
+                   "Remove Service"))
+                    unwrapper.RemoveService(Name, Stop);
+            }
+            else
+                unwrapper.RemoveService(Name, Stop);
         }
     }
 }

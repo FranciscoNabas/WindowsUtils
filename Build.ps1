@@ -23,7 +23,7 @@ else {
 }
 
 Write-Host 'Cleaning files...' -ForegroundColor DarkGreen
-'*.config', '*.pdb', '*.json', 'WindowsUtils.xml' | ForEach-Object { Remove-Item -Path "$releaseDir\*" -Filter $PSItem -Force }
+'*.config', '*.pdb', '*.json', 'WindowsUtils.xml', 'Core.exp', 'Core.lib', 'Core.dll.metagen' | ForEach-Object { Remove-Item -Path "$releaseDir\*" -Filter $PSItem -Force }
 
 Write-Host 'Copying files...' -ForegroundColor DarkGreen
 Copy-Item -Path $copypath -Destination $releaseDir -Force
