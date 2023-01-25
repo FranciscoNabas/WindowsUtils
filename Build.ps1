@@ -13,7 +13,7 @@ $copypath = @(
 
 if ($Local) {
     Write-Host Building... -ForegroundColor DarkGreen
-    [void](. dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output $releaseDir --no-incremental)
+    (. dotnet build WindowsUtils.csproj --arch x64 --configuration Release --output $releaseDir --no-incremental)
     Write-Host Generating help... -ForegroundColor DarkGreen
     [void](. 'C:\Repositories\NuGet\xmldoc2cmdletdoc\0.3.0\tools\XmlDoc2CmdletDoc.exe' "$releaseDir\WindowsUtils.dll")
 }

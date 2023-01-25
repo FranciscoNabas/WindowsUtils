@@ -259,8 +259,8 @@ namespace WindowsUtils::Core
 		
 		// Remove-Service
 		void RemoveService(String^ computername, String^ servicename, bool stopservice);
+		void RemoveService(IntPtr hservice, String^ computername, bool stopservice);
 		void RemoveService(String^ servicename, bool stopservice);
-		void RemoveService(String^ servicename);
 	};
 
 	/*=========================================

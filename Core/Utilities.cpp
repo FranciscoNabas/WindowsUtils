@@ -50,8 +50,8 @@ namespace WindowsUtils::Core
 
 				hprocess = OpenProcess(
 					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE
-					,FALSE
-					,(DWORD)pprocidufile->ProcessIdList[j]
+					, FALSE
+					, (DWORD)pprocidufile->ProcessIdList[j]
 				);
 				if (NULL != hprocess)
 				{
@@ -68,14 +68,14 @@ namespace WindowsUtils::Core
 							wcscpy_s(uphobj->ImagePath, MAX_PATH, uphobj->Name);
 							::PathStripPathW(uphobj->Name);
 						}
-						
+
 					}
 					else
 					{
 						wcscpy_s(uphobj->Name, MAX_PATH, uphobj->ImagePath);
 						::PathStripPathW(uphobj->Name);
 					}
-					
+
 					for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
 					{
 						LPWSTR lpinter = { 0 };
@@ -97,8 +97,8 @@ namespace WindowsUtils::Core
 					{
 						hprocess = OpenProcess(
 							PROCESS_QUERY_LIMITED_INFORMATION
-							,FALSE
-							,(DWORD)pprocidufile->ProcessIdList[j]
+							, FALSE
+							, (DWORD)pprocidufile->ProcessIdList[j]
 						);
 
 						DWORD szmaxpath = MAX_PATH;
@@ -108,7 +108,7 @@ namespace WindowsUtils::Core
 						{
 							wcscpy_s(uphobj->Name, MAX_PATH, uphobj->ImagePath);
 							::PathStripPathW(uphobj->Name);
-							
+
 							for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
 							{
 								LPWSTR lpinter;
@@ -123,7 +123,7 @@ namespace WindowsUtils::Core
 								wcscpy_s(uphobj->ImagePath, MAX_PATH, uphobj->Name);
 								::PathStripPathW(uphobj->Name);
 							}
-							
+
 							if (
 								wcscmp(uphobj->Name, L"System") == 0
 								|| wcscmp(uphobj->Name, L"Secure System") == 0
@@ -148,7 +148,7 @@ namespace WindowsUtils::Core
 								}
 							}
 						}
-					}	
+					}
 				}
 
 				rvecobjhandle.push_back(*uphobj);
@@ -350,8 +350,8 @@ namespace WindowsUtils::Core
 
 	DWORD Utilities::RemoveService(
 		const LPWSTR& servicename		// The service name.
-		,const LPWSTR& computername		// Optional computer name.
-		,BOOL stopservice				// Stops the service, if it's running.
+		, const LPWSTR& computername		// Optional computer name.
+		, BOOL stopservice				// Stops the service, if it's running.
 	)
 	{
 		DWORD result = ERROR_SUCCESS;
@@ -362,7 +362,7 @@ namespace WindowsUtils::Core
 
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 
-		// Trying to give the least amont of privileges as possible, depending on the request.
+		// Trying to give the least amount of privileges as possible, depending on the request.
 		if (stopservice)
 			svcdesaccess = DELETE | SERVICE_QUERY_STATUS | SERVICE_ENUMERATE_DEPENDENTS | SERVICE_STOP;
 		else
@@ -382,7 +382,7 @@ namespace WindowsUtils::Core
 		if (stopservice == TRUE)
 		{
 			lpservicestatus = (LPSERVICE_STATUS)MemoryManager.Allocate(sizeof(SERVICE_STATUS));
-			
+
 			if (!::QueryServiceStatus(hservice, lpservicestatus))
 			{
 				result = ::GetLastError();
@@ -391,7 +391,7 @@ namespace WindowsUtils::Core
 
 			if (lpservicestatus->dwCurrentState != SERVICE_STOPPED && lpservicestatus->dwCurrentState != SERVICE_STOP_PENDING)
 			{
-				result = StopDependentServices(hscmanager, hservice);
+				result = StopDependentServices(hscmanager, hservice, NULL);
 				if (result != ERROR_SUCCESS)
 					goto CLEANUP;
 
@@ -410,6 +410,50 @@ namespace WindowsUtils::Core
 
 		if (NULL != hscmanager)
 			::CloseServiceHandle(hscmanager);
+		if (NULL != hservice)
+			::CloseServiceHandle(hservice);
+		MemoryManager.Free(lpservicestatus);
+
+		return result;
+	}
+
+	DWORD Utilities::RemoveService(SC_HANDLE& hservice, const LPWSTR& computername, BOOL stopservice)
+	{
+		DWORD result = ERROR_SUCCESS;
+		LPSERVICE_STATUS lpservicestatus;
+		SC_HANDLE scm = NULL;
+
+		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+
+		if (stopservice == TRUE)
+		{
+			lpservicestatus = (LPSERVICE_STATUS)MemoryManager.Allocate(sizeof(SERVICE_STATUS));
+
+			if (!::QueryServiceStatus(hservice, lpservicestatus))
+			{
+				result = ::GetLastError();
+				goto CLEANUP;
+			}
+
+			if (lpservicestatus->dwCurrentState != SERVICE_STOPPED && lpservicestatus->dwCurrentState != SERVICE_STOP_PENDING)
+			{
+				result = StopDependentServices(scm, hservice, computername);
+				if (result != ERROR_SUCCESS)
+					goto CLEANUP;
+
+				if (!::ControlService(hservice, SERVICE_CONTROL_STOP, lpservicestatus))
+				{
+					result = ::GetLastError();
+					goto CLEANUP;
+				}
+			}
+		}
+
+		if (!::DeleteService(hservice))
+			result = ::GetLastError();
+
+	CLEANUP:
+
 		if (NULL != hservice)
 			::CloseServiceHandle(hservice);
 		MemoryManager.Free(lpservicestatus);
@@ -700,18 +744,29 @@ namespace WindowsUtils::Core
 	}
 
 	// Queries and stops services dependent of a given service.
-	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice)
+	DWORD StopDependentServices(
+		SC_HANDLE& scm					// Handle to the Service Control Manager. Used to open dependent services.
+		,SC_HANDLE& hservice			// Handle to the service we want to query dependence.
+		,const LPWSTR& computername		// Computer name. In cases where we inherit the service handle from the pipeline.
+	)
 	{
 		DWORD result = ERROR_SUCCESS;
 		DWORD bytesneeded;
 		DWORD svccount;
 		SERVICE_STATUS ssp;
+		BOOL localscm = FALSE;
 
 		ULONGLONG starttime = GetTickCount64();
 		DWORD timeout = 30000; // 30 seconds.
 
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 
+		if (NULL == scm)
+		{
+			scm = ::OpenSCManagerW(computername, SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
+			localscm = TRUE;
+		}
+		
 		// Determining buffer size
 		::EnumDependentServicesW(hservice, SERVICE_ACTIVE, NULL, 0, &bytesneeded, &svccount);
 
@@ -773,6 +828,9 @@ namespace WindowsUtils::Core
 		{
 			MemoryManager.Free(servicelist);
 		}
+
+		if (localscm)
+			::CloseServiceHandle(scm);
 
 		return result;
 	}

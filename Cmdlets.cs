@@ -1,7 +1,7 @@
 ﻿using System.Text;
+using System.ServiceProcess;
 using System.Management.Automation;
 using WindowsUtils.Core;
-using System.Reflection;
 
 namespace WindowsUtils.Commands
 {
@@ -623,12 +623,24 @@ namespace WindowsUtils.Commands
     public class RemoveServiceCommand : PSCmdlet
     {
         [Parameter(
+            Mandatory = true
+            ,ValueFromPipeline = true
+            ,ParameterSetName = "WithServiceController"
+        )]
+        public ServiceController InputObject { get; set; }
+
+        [Parameter(
             Position = 0
             ,Mandatory = true
+            ,ValueFromPipeline = false
             ,ParameterSetName = "WithServiceName"
         )]
         [ValidateNotNullOrEmpty()]
         public string Name { get; set; }
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        public string ComputerName { get; set; }
 
         [Parameter()]
         public SwitchParameter Stop { get; set; }
@@ -639,16 +651,61 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             WrapperFunctions unwrapper = new();
-            if (!Force)
+
+            if (ParameterSetName == "WithServiceController")
             {
-                if (ShouldProcess(
-                   "Removing service " + Name + " from the local computer.",
-                   "Are you sure you want to remove the service " + Name + "?",
-                   "Remove Service"))
-                    unwrapper.RemoveService(Name, Stop);
+                if (Force)
+                    unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                else
+                {
+                    if (InputObject.MachineName == ".")
+                    {
+                        if (ShouldProcess(
+                           $"Removing service {InputObject.ServiceName} from the local computer.",
+                           $"Are you sure you want to remove service {InputObject.ServiceName}?",
+                           "Removing Service"))
+                            unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                    }
+                    else
+                    {
+                        if (ShouldProcess(
+                           $"Removing service {InputObject.ServiceName} on computer {InputObject.MachineName}",
+                           $"Are you sure you want to remove service {InputObject.ServiceName} on {InputObject.MachineName}?",
+                           "Removing Service"))
+                            unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                    }
+                }
             }
             else
-                unwrapper.RemoveService(Name, Stop);
+            {
+                if (string.IsNullOrEmpty(ComputerName))
+                {
+                    if (Force)
+                        unwrapper.RemoveService(Name, Stop);
+                    else
+                    {
+                        if (ShouldProcess(
+                           $"Removing service {Name} from the local computer.",
+                           $"Are you sure you want to remove service {Name}?",
+                           "Removing Service"))
+                            unwrapper.RemoveService(Name, Stop);
+                    }
+                }
+                else
+                {
+                    if (Force)
+                        unwrapper.RemoveService(ComputerName, Name, Stop);
+                    else
+                    {
+                        if (ShouldProcess(
+                           $"Removing service {Name} on computer {ComputerName}",
+                           $"Are you sure you want to remove service {Name} on {ComputerName}?",
+                           "Removing Service"))
+                            unwrapper.RemoveService(ComputerName, Name, Stop);
+                    }
+
+                }
+            }
         }
     }
 }

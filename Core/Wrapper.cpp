@@ -271,11 +271,13 @@ namespace WindowsUtils::Core
 		if (result != ERROR_SUCCESS)
 			throw gcnew SystemException(GetFormattedError(result));
 	}
-	void WrapperFunctions::RemoveService(String^ servicename)
+	void WrapperFunctions::RemoveService(IntPtr hservice, String^ computername, bool stopservice)
 	{
-		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
+		pin_ptr<const wchar_t> wcomputername = PtrToStringChars(computername);
 
-		DWORD result = utlptr->RemoveService((LPWSTR)wservicename, NULL, FALSE);
+		HANDLE uhservice = static_cast<HANDLE>(hservice);
+		SC_HANDLE uschservice = static_cast<SC_HANDLE>(uhservice);
+		DWORD result = utlptr->RemoveService(uschservice, (LPWSTR)wcomputername, stopservice);
 		if (result != ERROR_SUCCESS)
 			throw gcnew SystemException(GetFormattedError(result));
 	}

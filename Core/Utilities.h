@@ -78,6 +78,7 @@ namespace WindowsUtils::Core
 
 		// Remove-Service
 		DWORD RemoveService(const LPWSTR& servicename, const LPWSTR& computername, BOOL stopservice);
+		DWORD RemoveService(SC_HANDLE& hservice, const LPWSTR& computername, BOOL stopservice);
 	};
 
 	/*
@@ -120,5 +121,5 @@ namespace WindowsUtils::Core
 	VOID PrintBufferW(LPWSTR& lpbuffer, WCHAR const* const format, ...);
 	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr);
 	DWORD GetEnvVariableW(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue);
-	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice);
+	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice, const LPWSTR& computername);
 }

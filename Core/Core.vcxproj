@@ -85,7 +85,7 @@
     <OutDir>..\StaticDependencies\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\Release\WindowsUtils\</OutDir>
+    <OutDir>..\StaticDependencies\bin\x64\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debugg|x64'">
     <OutDir>..\..\StaticDependencies\</OutDir>
@@ -177,12 +177,12 @@
     <Image Include="app.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Management.Automation">
-      <HintPath>..\..\..\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation\v4.0_3.0.0.0__31bf3856ad364e35\System.Management.Automation.dll</HintPath>
-    </Reference>
+    <None Include="SystemKnownInformation.mc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="SystemKnownInformation.mc" />
+    <Reference Include="System.Management.Automation">
+      <HintPath>..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WindowsPowerShell\3.0\System.Management.Automation.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
