@@ -624,8 +624,8 @@ namespace WindowsUtils.Commands
     {
         [Parameter(
             Mandatory = true
-            ,ValueFromPipeline = true
-            ,ParameterSetName = "WithServiceController"
+            , ValueFromPipeline = true
+            , ParameterSetName = "WithServiceController"
         )]
         public ServiceController InputObject { get; set; }
 

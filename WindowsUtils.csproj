@@ -21,15 +21,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Core\**" />
-    <Compile Remove="UtilitiesLibrary\**" />
-    <Compile Remove="Wrapper\**" />
-    <EmbeddedResource Remove="Core\**" />
-    <EmbeddedResource Remove="UtilitiesLibrary\**" />
-    <EmbeddedResource Remove="Wrapper\**" />
-    <None Remove="Core\**" />
-    <None Remove="UtilitiesLibrary\**" />
-    <None Remove="Wrapper\**" />
+    <Content Include="C:\Users\francisco.nabas\.nuget\packages\system.serviceprocess.servicecontroller\7.0.0\lib\netstandard2.0\System.ServiceProcess.ServiceController.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
