@@ -395,11 +395,9 @@ namespace WindowsUtils::Core
 				if (result != ERROR_SUCCESS)
 					goto CLEANUP;
 
-				if (!::ControlService(hservice, SERVICE_CONTROL_STOP, lpservicestatus))
-				{
-					result = ::GetLastError();
+				result = StopServiceWithTimeout(hservice, lpservicestatus);
+				if (result != ERROR_SUCCESS)
 					goto CLEANUP;
-				}
 			}
 		}
 
@@ -431,21 +429,21 @@ namespace WindowsUtils::Core
 
 			if (!::QueryServiceStatus(hservice, lpservicestatus))
 			{
-				result = ::GetLastError();
+				result = GetLastError();
 				goto CLEANUP;
 			}
 
 			if (lpservicestatus->dwCurrentState != SERVICE_STOPPED && lpservicestatus->dwCurrentState != SERVICE_STOP_PENDING)
 			{
+				DWORD waittime = 0;
+
 				result = StopDependentServices(scm, hservice, computername);
 				if (result != ERROR_SUCCESS)
 					goto CLEANUP;
 
-				if (!::ControlService(hservice, SERVICE_CONTROL_STOP, lpservicestatus))
-				{
-					result = ::GetLastError();
+				result = StopServiceWithTimeout(hservice, lpservicestatus);
+				if (result != ERROR_SUCCESS)
 					goto CLEANUP;
-				}
 			}
 		}
 
@@ -761,14 +759,18 @@ namespace WindowsUtils::Core
 
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 
+		/*
+		* Determining buffer size.
+		* If this call succeeds, there are no dependent services.
+		*/
+		if (::EnumDependentServicesW(hservice, SERVICE_ACTIVE, NULL, 0, &bytesneeded, &svccount))
+			return result;
+
 		if (NULL == scm)
 		{
 			scm = ::OpenSCManagerW(computername, SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
 			localscm = TRUE;
 		}
-		
-		// Determining buffer size
-		::EnumDependentServicesW(hservice, SERVICE_ACTIVE, NULL, 0, &bytesneeded, &svccount);
 
 		LPENUM_SERVICE_STATUS servicelist = (LPENUM_SERVICE_STATUS)MemoryManager.Allocate(bytesneeded);
 		__try
@@ -791,11 +793,14 @@ namespace WindowsUtils::Core
 
 				__try
 				{
-					if (!::ControlService(svccurrent, SERVICE_CONTROL_STOP, &ssp))
+					result = StopServiceWithTimeout(svccurrent, &ssp);
+					if (result == ERROR_SERVICE_NOT_ACTIVE)
 					{
-						result = GetLastError();
+						result = ERROR_SUCCESS;
 						__leave;
 					}
+					if (result != ERROR_SUCCESS)
+						__leave;
 
 					do
 					{
@@ -831,6 +836,41 @@ namespace WindowsUtils::Core
 
 		if (localscm)
 			::CloseServiceHandle(scm);
+
+		return result;
+	}
+
+	DWORD StopServiceWithTimeout(SC_HANDLE& hservice, LPSERVICE_STATUS lpsvcstatus)
+	{
+		DWORD result = ERROR_SUCCESS;
+		ULONGLONG starttime = GetTickCount64();
+		DWORD timeout = 3000;
+
+		do
+		{
+			if (!::ControlService(hservice, SERVICE_CONTROL_STOP, lpsvcstatus))
+			{
+				result = GetLastError();
+
+				/*
+				* ARGH! Check if the DARN thang is already stopped!
+				* That took me a while.
+				*/
+				if (result == ERROR_SERVICE_NOT_ACTIVE)
+					break;
+
+				if (result != ERROR_SERVICE_CANNOT_ACCEPT_CTRL)
+					return result;
+			}
+			else
+				break;
+
+			::Sleep(lpsvcstatus->dwWaitHint);
+
+			if (GetTickCount64() - starttime > timeout)
+				return ERROR_TIMEOUT;
+
+		} while (result == ERROR_SERVICE_CANNOT_ACCEPT_CTRL);
 
 		return result;
 	}

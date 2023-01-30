@@ -122,4 +122,5 @@ namespace WindowsUtils::Core
 	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr);
 	DWORD GetEnvVariableW(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue);
 	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice, const LPWSTR& computername);
+	DWORD StopServiceWithTimeout(SC_HANDLE& hservice, LPSERVICE_STATUS lpsvcstatus);
 }

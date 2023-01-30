@@ -38,7 +38,7 @@
 
   <ItemGroup>
     <Reference Include="Core">
-      <HintPath>StaticDependencies\bin\x64\Core.dll</HintPath>
+      <HintPath>Core\Release\x64\Core.dll</HintPath>
     </Reference>
   </ItemGroup>
 
