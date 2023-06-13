@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.ServiceProcess;
+﻿using System.ServiceProcess;
 using System.Management.Automation;
 using WindowsUtils.Core;
 
@@ -66,14 +65,14 @@ namespace WindowsUtils.Commands
             get
             {
                 if (true == Wait && _timeout == 0)
-                    throw new InvalidOperationException("'Timeout' cannot be zero when using 'Wait'.");
+                    throw new ArgumentException("'Timeout' cannot be zero when using 'Wait'.");
 
                 return _timeout;
             }
             set
             {
                 if (true == Wait && value == 0)
-                    throw new InvalidOperationException("'Timeout' cannot be zero when using 'Wait'.");
+                    throw new ArgumentException("'Timeout' cannot be zero when using 'Wait'.");
                 else
                     _timeout = value;
             }
@@ -107,8 +106,15 @@ namespace WindowsUtils.Commands
                         "Sending message to all sessions on the current computer."
                         ))
                     {
-                        MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
-                        result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                        try
+                        {
+                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
+                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                        }
+                        catch (Core.NativeException ex)
+                        {
+                            throw (NativeException)ex;
+                        }
                     }
                 }
                 else
@@ -121,19 +127,34 @@ namespace WindowsUtils.Commands
                         "Session '0' represent all sessions on the computer"
                         ))
                         {
-                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
-                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                            try
+                            {
+                                MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
+                                result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                            }
+                            catch (Core.NativeException ex)
+                            {
+                                throw (NativeException)ex;
+                            }
                         }
                     }
                     else
                     {
-                        MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativestyle, Timeout, Wait);
-                        result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                        try
+                        {
+                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativestyle, Timeout, Wait);
+                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                        }
+                        catch (Core.NativeException ex)
+                        {
+                            throw (NativeException)ex;
+                        }
                     }
                 }
             }
             else
             {
+                using WtsSession session = new(ComputerName);
                 if (SessionId is null)
                 {
                     if (ShouldProcess(
@@ -142,35 +163,48 @@ namespace WindowsUtils.Commands
                         "Sending message to all sessions on computer \" + ComputerName + \"."
                         ))
                     {
-                        WtsSession.StageComputerSession(ComputerName);
-                        if (WtsSession.SessionHandle is not null)
+                        try
                         {
-                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(WtsSession.SessionHandle.ToIntPtr(), null, Title, Message, nativestyle, Timeout, Wait);
+                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativestyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                        }
+                        catch (Core.NativeException ex)
+                        {
+                            throw (NativeException)ex;
                         }
                     }
                 }
                 else
                 {
-                    WtsSession.StageComputerSession(ComputerName);
-                    if (WtsSession.SessionHandle is not null)
+                    if (SessionId.Contains(0))
                     {
-                        if (SessionId.Contains(0))
+                        if (ShouldProcess(
+                        "",
+                        "Are you sure you want to send the message to all sessions on computer " + ComputerName + "?",
+                        "Session '0' represent all sessions on the computer"
+                        ))
                         {
-                            if (ShouldProcess(
-                            "",
-                            "Are you sure you want to send the message to all sessions on computer " + ComputerName + "?",
-                            "Session '0' represent all sessions on the computer"
-                            ))
+                            try
                             {
-                                MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(WtsSession.SessionHandle.ToIntPtr(), null, Title, Message, nativestyle, Timeout, Wait);
+                                MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativestyle, Timeout, Wait);
                                 result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                             }
+                            catch (Core.NativeException ex)
+                            {
+                                throw (NativeException)ex;
+                            }
                         }
-                        else
+                    }
+                    else
+                    {
+                        try
                         {
-                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(WtsSession.SessionHandle.ToIntPtr(), SessionId, Title, Message, nativestyle, Timeout, Wait);
+                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(session.SessionHandle.DangerousGetHandle(), SessionId, Title, Message, nativestyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
+                        }
+                        catch (Core.NativeException ex)
+                        {
+                            throw (NativeException)ex;
                         }
                     }
                 }
@@ -223,22 +257,24 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             WrapperFunctions unwrapper = new();
-
-            if (string.IsNullOrEmpty(ComputerName))
+            try
             {
-                ComputerSessionBase[] result = unwrapper.GetComputerSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
-                result.ToList().ForEach(x => WriteObject((ComputerSession)x));
-            }
-            else
-            {
-                WtsSession.StageComputerSession(ComputerName);
-                if (WtsSession.SessionHandle is not null)
+                if (string.IsNullOrEmpty(ComputerName))
                 {
-                    ComputerSessionBase[] result = unwrapper.GetComputerSession(ComputerName, WtsSession.SessionHandle.ToIntPtr(), ActiveOnly, IncludeSystemSession);
+                    ComputerSessionBase[] result = unwrapper.GetComputerSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
+                    result.ToList().ForEach(x => WriteObject((ComputerSession)x));
+                }
+                else
+                {
+                    using WtsSession session = new(ComputerName);
+                    ComputerSessionBase[] result = unwrapper.GetComputerSession(ComputerName, session.SessionHandle.DangerousGetHandle(), ActiveOnly, IncludeSystemSession);
                     result.ToList().ForEach(x => WriteObject((ComputerSession)x));
                 }
             }
-
+            catch (Core.NativeException ex)
+            {
+                throw (NativeException)ex;
+            }
         }
     }
 
@@ -252,7 +288,14 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             WrapperFunctions unwrapper = new();
-            unwrapper.SendClick();
+            try
+            {
+                unwrapper.SendClick();
+            }
+            catch (Core.NativeException ex)
+            {
+                throw (NativeException)ex;
+            }
         }
     }
 
@@ -275,8 +318,15 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             WrapperFunctions unWrapper = new();
-            ResourceMessageTableCore[] result = unWrapper.GetResourceMessageTable(Path);
-            result.ToList().ForEach(x => WriteObject((ResourceMessageTable)x));
+            try
+            {
+                ResourceMessageTableCore[] result = unWrapper.GetResourceMessageTable(Path);
+                result.ToList().ForEach(x => WriteObject((ResourceMessageTable)x));
+            }
+            catch (Core.NativeException ex)
+            {
+                throw (NativeException)ex;
+            }
         }
     }
 
@@ -310,7 +360,14 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             WrapperFunctions unWrapper = new();
-            WriteObject(unWrapper.GetFormattedError(ErrorCode));
+            try
+            {
+                WriteObject(unWrapper.GetFormattedError(ErrorCode));
+            }
+            catch (Core.NativeException ex)
+            {
+                throw (NativeException)ex;
+            }
         }
     }
 
@@ -324,7 +381,14 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             WrapperFunctions unWrapper = new();
-            WriteObject(unWrapper.GetLastWin32Error());
+            try
+            {
+                WriteObject(unWrapper.GetLastWin32Error());
+            }
+            catch (Core.NativeException ex)
+            {
+                throw (NativeException)ex;
+            }
         }
     }
 
@@ -408,7 +472,7 @@ namespace WindowsUtils.Commands
         protected override void BeginProcessing()
         {
             if (Force && !CloseHandle)
-                throw new InvalidOperationException("'Force' can only be used with 'CloseHandle'.");
+                throw new ArgumentException("'Force' can only be used with 'CloseHandle'.");
         }
         protected override void ProcessRecord()
         {
@@ -445,24 +509,38 @@ namespace WindowsUtils.Commands
             if (CloseHandle)
             {
                 if (Force || ShouldProcess(
-                        "",
-                        "Are you sure you want to close all handles for the input object(s)?",
-                        "ATTENTION! Closing handles can lead to system malfunction.\n"
-                        ))
+                    "",
+                    "Are you sure you want to close all handles for the input object(s)?",
+                    "ATTENTION! Closing handles can lead to system malfunction.\n"
+                    ))
                 {
-                    unWrapper.GetProcessObjectHandle(validPaths.ToArray(), true);
-                    ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
-                    if (result is not null)
+                    try
                     {
-                        WriteWarning("Failed to remove handles for the processes below.");
-                        result.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+                        unWrapper.GetProcessObjectHandle(validPaths.ToArray(), true);
+                        ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
+                        if (result is not null)
+                        {
+                            WriteWarning("Failed to remove handles for the processes below.");
+                            result.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+                        }
+                    }
+                    catch (Core.NativeException ex)
+                    {
+                        throw (NativeException)ex;
                     }
                 }
             }
             else
             {
-                ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
-                result?.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+                try
+                {
+                    ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
+                    result?.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+                }
+                catch (Core.NativeException ex)
+                {
+                    throw (NativeException)ex;
+                }
             }
         }
     }
@@ -485,7 +563,18 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             WrapperFunctions unWrapper = new();
-            WriteObject(unWrapper.GetMsiProperties(Path));
+            PSObject outObject = new();
+            try
+            {
+                foreach (KeyValuePair<string, string> item in unWrapper.GetMsiProperties(Path).OrderBy(x => x.Key))
+                    outObject.Members.Add(new PSNoteProperty(item.Key, item.Value));
+            }
+            catch (Core.NativeException ex)
+            {
+                throw (NativeException)ex;
+            }
+
+            WriteObject(outObject);
         }
     }
 
@@ -564,7 +653,14 @@ namespace WindowsUtils.Commands
                     "Are you sure you want to disconnect the current session on this computer?",
                     "Disconnect session"))
                     {
-                        unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
+                        try
+                        {
+                            unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
+                        }
+                        catch (Core.NativeException ex)
+                        {
+                            throw (NativeException)ex;
+                        }
                     }
                 }
                 else
@@ -574,20 +670,33 @@ namespace WindowsUtils.Commands
                    "Are you sure you want to disconnect sesion ID " + SessionId + " on the current computer?",
                    "Disconnect session"))
                     {
-                        unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
+                        try
+                        {
+                            unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
+                        }
+                        catch (Core.NativeException ex)
+                        {
+                            throw (NativeException)ex;
+                        }
                     }
                 }
             }
             else
             {
-                WtsSession.StageComputerSession(ComputerName);
+                using WtsSession session = new(ComputerName);
                 if (ShouldProcess(
                    "Disconnecting session ID " + SessionId + " from computer " + ComputerName + ".",
-                   "Are you sure you want to disconnect sesion ID " + SessionId + " on computer " + ComputerName + "?",
+                   "Are you sure you want to disconnect session ID " + SessionId + " on computer " + ComputerName + "?",
                    "Disconnect session"))
                 {
-                    if (WtsSession.SessionHandle is not null)
-                        unWrapper.DisconnectSession(WtsSession.SessionHandle.ToIntPtr(), SessionId, Wait);
+                    try
+                    {
+                        unWrapper.DisconnectSession(session.SessionHandle.DangerousGetHandle(), SessionId, Wait);
+                    }
+                    catch (Core.NativeException ex)
+                    {
+                        throw (NativeException)ex;
+                    }
                 }
             }
         }
@@ -635,9 +744,9 @@ namespace WindowsUtils.Commands
 
         [Parameter(
             Position = 0
-            ,Mandatory = true
-            ,ValueFromPipeline = false
-            ,ParameterSetName = "WithServiceName"
+            , Mandatory = true
+            , ValueFromPipeline = false
+            , ParameterSetName = "WithServiceName"
         )]
         [ValidateNotNullOrEmpty()]
         public string Name { get; set; }
@@ -660,7 +769,14 @@ namespace WindowsUtils.Commands
             {
                 WriteVerbose($"Using service controller for service {InputObject.ServiceName}. Unsafe handle: {InputObject.ServiceHandle.DangerousGetHandle()}");
                 if (Force)
-                    unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                    try
+                    {
+                        unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                    }
+                    catch (Core.NativeException ex)
+                    {
+                        throw (NativeException)ex;
+                    }
                 else
                 {
                     if (InputObject.MachineName == ".")
@@ -669,7 +785,14 @@ namespace WindowsUtils.Commands
                            $"Removing service {InputObject.ServiceName} from the local computer.",
                            $"Are you sure you want to remove service {InputObject.ServiceName}?",
                            "Removing Service"))
-                            unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                            try
+                            {
+                                unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                            }
+                            catch (Core.NativeException ex)
+                            {
+                                throw (NativeException)ex;
+                            }
                     }
                     else
                     {
@@ -677,7 +800,14 @@ namespace WindowsUtils.Commands
                            $"Removing service {InputObject.ServiceName} on computer {InputObject.MachineName}",
                            $"Are you sure you want to remove service {InputObject.ServiceName} on {InputObject.MachineName}?",
                            "Removing Service"))
-                            unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                            try
+                            {
+                                unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                            }
+                            catch (Core.NativeException ex)
+                            {
+                                throw (NativeException)ex;
+                            }
                     }
                 }
 
@@ -695,22 +825,42 @@ namespace WindowsUtils.Commands
                            $"Removing service {Name} from the local computer.",
                            $"Are you sure you want to remove service {Name}?",
                            "Removing Service"))
-                            unwrapper.RemoveService(Name, Stop);
+                            try
+                            {
+                                unwrapper.RemoveService(Name, Stop);
+                            }
+                            catch (Core.NativeException ex)
+                            {
+                                throw (NativeException)ex;
+                            }
                     }
                 }
                 else
                 {
                     if (Force)
-                        unwrapper.RemoveService(ComputerName, Name, Stop);
+                        try
+                        {
+                            unwrapper.RemoveService(Name, ComputerName, Stop);
+                        }
+                        catch (Core.NativeException ex)
+                        {
+                            throw (NativeException)ex;
+                        }
                     else
                     {
                         if (ShouldProcess(
                            $"Removing service {Name} on computer {ComputerName}",
                            $"Are you sure you want to remove service {Name} on {ComputerName}?",
                            "Removing Service"))
-                            unwrapper.RemoveService(ComputerName, Name, Stop);
+                            try
+                            {
+                                unwrapper.RemoveService(Name, ComputerName, Stop);
+                            }
+                            catch (Core.NativeException ex)
+                            {
+                                throw (NativeException)ex;
+                            }
                     }
-
                 }
             }
         }

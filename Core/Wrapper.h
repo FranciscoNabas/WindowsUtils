@@ -3,12 +3,13 @@
 #pragma unmanaged
 #include "TerminalServices.h"
 #include "Utilities.h"
+#include "Services.h"
 
 #pragma managed
 #include <vcclr.h>
 
 using namespace System;
-using namespace System::Management::Automation;
+using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
 
 namespace WindowsUtils::Core
@@ -210,7 +211,7 @@ namespace WindowsUtils::Core
 	{
 	public:
 		property Int64 Id { Int64 get() { return wrapper->Id; } }
-		property String^ Message { String^ get() { return gcnew String(wrapper->Message); } }
+		property String^ Message { String^ get() { return (gcnew String(wrapper->Message))->Trim(); } }
 
 		ResourceMessageTableCore();
 		ResourceMessageTableCore(Utilities::WU_RESOURCE_MESSAGE_TABLE);
@@ -232,6 +233,7 @@ namespace WindowsUtils::Core
 	public:
 		Utilities* utlptr;
 		TerminalServices* wtsptr;
+		Services* svcptr;
 
 		// Invoke-RemoteMessage
 		array<MessageResponseBase^>^ InvokeRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait);
@@ -255,15 +257,55 @@ namespace WindowsUtils::Core
 		array<ResourceMessageTableCore^>^ GetResourceMessageTable(String^ libpath);
 
 		// Get-MsiProperties
-		PSObject^ GetMsiProperties(String^ filepath);
+		Dictionary<String^, String^>^ GetMsiProperties(String^ filepath);
 		
 		// Remove-Service
-		void RemoveService(String^ computername, String^ servicename, bool stopservice);
+		void RemoveService(String^ servicename, String^ computerName, bool stopservice);
 		void RemoveService(IntPtr hservice, String^ computername, bool stopservice);
 		void RemoveService(String^ servicename, bool stopservice);
+
+		// Get-ServiceSecurity
+		array<Byte>^ GetServiceSecurityDescriptorBytes(String^ serviceName, String^ computerName);
+		array<Byte>^ GetServiceSecurityDescriptorBytes(String^ serviceName);
+		array<Byte>^ GetServiceSecurityDescriptorBytes(IntPtr hService);
 	};
 
 	/*=========================================
-	==	  Utility function identification	 ==
+	==		  Utility identification		 ==
 	===========================================*/
+
+	public ref class NativeException : public Exception
+	{
+	public:
+
+		property int NativeErrorCode {
+			int get() {
+				return _nativeErrorCode;
+			}
+		}
+
+		NativeException() : Exception() { }
+
+		NativeException(int nativeErrorCode)
+			: Exception(wrapper->GetFormattedError(nativeErrorCode)) {
+
+			_nativeErrorCode = nativeErrorCode;
+		}
+
+		NativeException(int nativeErrorCode, String^ message)
+			: Exception(message) {
+
+			_nativeErrorCode = nativeErrorCode;
+		}
+
+		NativeException(int nativeErrorCode, String^ message, Exception^ innerException)
+			: Exception(message, innerException) {
+
+			_nativeErrorCode = nativeErrorCode;
+		}
+
+	private:
+		int _nativeErrorCode;
+		WrapperFunctions^ wrapper = gcnew WrapperFunctions();
+	};
 }

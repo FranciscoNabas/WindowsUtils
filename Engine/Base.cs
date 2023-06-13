@@ -2,33 +2,35 @@ using System.Runtime.InteropServices;
 using System.Runtime.ConstrainedExecution;
 using Microsoft.Win32.SafeHandles;
 
-namespace WindowsUtils
+namespace WindowsUtils.Interop
 {
-    public class SystemSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public class SafeSystemHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        override public bool IsInvalid { get; }
-        public SystemSafeHandle() : base(true) { }
+        public SafeSystemHandle() : base(true) { }
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         override protected bool ReleaseHandle()
         {
             if (!IsInvalid && !IsClosed)
             {
-                return Interop.CloseHandle(handle);
+                return NativeFunctions.CloseHandle(handle);
             }
             return true;
         }
-
-        public IntPtr ToIntPtr() { return handle; }
     }
 
-    internal class Interop
+    public class SafeServiceHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        public SafeServiceHandle() : base(true) { }
+
+        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+        override protected bool ReleaseHandle() => NativeFunctions.CloseServiceHandle(handle);
+    }
+
+    internal partial class NativeFunctions
     {
         [DllImport("kernel32", SetLastError = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal extern static bool CloseHandle(IntPtr handle);
-
-        [DllImport("Wtsapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal extern static SystemSafeHandle WTSOpenServerW(string pServerName);
     }
 }

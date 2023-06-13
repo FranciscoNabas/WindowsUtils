@@ -9,9 +9,6 @@
 #define DWERRORCHECKV(result) if (ERROR_SUCCESS != result) { return result; }
 #define DWERRORCHECKF(result) if (ERROR_SUCCESS != result) { return GetLastError(); }
 
-#define SharedVecPtr(T) std::shared_ptr<std::vector<T>>
-#define MakeVecPtr(T) std::make_shared<std::vector<T>>()
-
 namespace WindowsUtils::Core
 {
 	extern "C" public class __declspec(dllexport) Utilities
@@ -75,10 +72,6 @@ namespace WindowsUtils::Core
 
 		// Send-Click
 		DWORD SendClick();
-
-		// Remove-Service
-		DWORD RemoveService(const LPWSTR& servicename, const LPWSTR& computername, BOOL stopservice);
-		DWORD RemoveService(SC_HANDLE& hservice, const LPWSTR& computername, BOOL stopservice);
 	};
 
 	/*
@@ -121,6 +114,5 @@ namespace WindowsUtils::Core
 	VOID PrintBufferW(LPWSTR& lpbuffer, WCHAR const* const format, ...);
 	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr);
 	DWORD GetEnvVariableW(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue);
-	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice, const LPWSTR& computername);
-	DWORD StopServiceWithTimeout(SC_HANDLE& hservice, LPSERVICE_STATUS lpsvcstatus);
+	
 }

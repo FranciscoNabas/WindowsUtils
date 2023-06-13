@@ -1,4 +1,7 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using WindowsUtils.Commands;
 using WindowsUtils.Core;
 
@@ -75,7 +78,7 @@ namespace WindowsUtils
 
         public static uint MbOptionsResolver(string[] input)
         {
-            InvokeRemoteMessageCommand pshook = new InvokeRemoteMessageCommand();
+            InvokeRemoteMessageCommand pshook = new();
             List<string> processed = new();
             MessageBoxOption[] allNames = GetAvailableOptions();
             uint output = 0;
@@ -100,12 +103,37 @@ namespace WindowsUtils
         }
     }
 
-    internal class Utilites
+    internal class Utilities
     {
-        internal static string GetLastWin32Error()
-        {
-            WrapperFunctions unwrapper = new();
-            return unwrapper.GetLastWin32Error();
-        }
+        private static readonly WrapperFunctions unWrapper = new();
+
+        internal static string GetLastWin32Error() => unWrapper.GetLastWin32Error();
+        internal static string GetLastWin32Error(int errorCode) => unWrapper.GetFormattedError(errorCode);
+    }
+
+    [Serializable()]
+    public partial class NativeException : Exception
+    {
+        private readonly int _native_error_number;
+
+        public int NativeErrorNumber => _native_error_number; 
+
+        protected NativeException() : base() { }
+
+        protected NativeException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+
+        public NativeException(int error_number)
+            : base(Utilities.GetLastWin32Error(error_number)) => _native_error_number = error_number;
+
+        public NativeException(int error_number, string message) :
+            base(message) => _native_error_number = error_number;
+
+        public NativeException(int error_number, string message, Exception inner_exception) :
+            base(message, inner_exception) => _native_error_number = error_number;
+
+        private NativeException(Core.NativeException ex)
+            : base(Utilities.GetLastWin32Error(ex.NativeErrorCode), ex.InnerException) => _native_error_number = ex.NativeErrorCode;
+
+        public static explicit operator NativeException(Core.NativeException ex) => new(ex);
     }
 }

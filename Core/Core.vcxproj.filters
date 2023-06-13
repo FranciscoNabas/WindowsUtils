@@ -36,6 +36,9 @@
     <ClInclude Include="TerminalServices.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Services.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Wrapper.cpp">
@@ -54,6 +57,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="NtUtilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Services.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
