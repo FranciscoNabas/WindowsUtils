@@ -28,7 +28,6 @@ namespace WindowsUtils.Engine
         Interrogate = 0x0080,
         UserDefinedControl = 0x0100,
         AllAccess = 0xF01FF,
-        AccessSystemSecurity = 0x01000000,
         Delete = 0x10000,
         ReadControl = 0x20000,
         WriteDac = 0x40000,
@@ -64,7 +63,7 @@ namespace WindowsUtils.Engine
                 throw (NativeException)ex;
             }
 
-            return new ServiceSecurity(securityDescriptorBytes);
+            return new ServiceSecurity(securityDescriptorBytes, serviceName);
         }
     }
 }

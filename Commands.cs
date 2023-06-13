@@ -865,4 +865,23 @@ namespace WindowsUtils.Commands
             }
         }
     }
+
+    [Cmdlet(
+        VerbsCommon.Get, "ServiceSecurity",
+        DefaultParameterSetName = "WithServiceName"
+    )]
+    public class GetServiceSecurityCommand : Cmdlet
+    {
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "WithServiceName",
+            ValueFromPipelineByPropertyName = true
+        )]
+        public string Name { get; set; }
+
+        protected override void ProcessRecord()
+        {
+            WriteObject(Engine.ServiceController.GetServiceObjectSecurity(Name));
+        }
+    }
 }
