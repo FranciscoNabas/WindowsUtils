@@ -53,17 +53,32 @@ namespace WindowsUtils.Engine
 
         public static ServiceSecurity GetServiceObjectSecurity(string serviceName, bool getAudit)
         {
-            string securityDescriptorBytes;
+            string sddl;
             try
             {
-                securityDescriptorBytes = _unwrapper.GetServiceSecurityDescriptorString(serviceName, getAudit);
+                sddl = _unwrapper.GetServiceSecurityDescriptorString(serviceName, getAudit);
             }
             catch (Core.NativeException ex)
             {
                 throw (NativeException)ex;
             }
 
-            return new ServiceSecurity(securityDescriptorBytes, serviceName);
+            return new ServiceSecurity(sddl, serviceName);
+        }
+
+        public static ServiceSecurity GetServiceObjectSecurity(System.ServiceProcess.ServiceController service, bool getAudit)
+        {
+            string sddl;
+            try
+            {
+                sddl = _unwrapper.GetServiceSecurityDescriptorString(service.ServiceHandle.DangerousGetHandle(), getAudit);
+            }
+            catch (Core.NativeException ex)
+            {
+                throw (NativeException)ex;
+            }
+
+            return new ServiceSecurity(sddl, service.ServiceName);
         }
     }
 }

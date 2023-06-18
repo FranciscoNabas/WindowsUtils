@@ -357,6 +357,8 @@ namespace WindowsUtils::Core
 
 		LPWSTR sddl;
 		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
+
+		return gcnew String(sddl);
 	}
 
 	/*========================================

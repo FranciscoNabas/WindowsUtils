@@ -497,10 +497,16 @@ namespace WindowsUtils.Commands
             }
         }
 
+        /// <summary>
+        /// <para type="description">Closes all handles to the object(s).</para>
+        /// </summary>
         [Parameter(HelpMessage = "Closes all handles to the object(s) returned.")]
         public SwitchParameter CloseHandle { get; set; }
 
-        [Parameter(HelpMessage = "Skips confirmation for the 'CloseHandle' parameter.")]
+        /// <summary>
+        /// <para type="description">Suppresses confirmation for 'CloseHandle'.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "Suppresses confirmation for 'CloseHandle'.")]
         public SwitchParameter Force { get; set; }
 
         protected override void BeginProcessing()
@@ -784,14 +790,20 @@ namespace WindowsUtils.Commands
     )]
     public class RemoveServiceCommand : PSCmdlet
     {
+        /// <summary>
+        /// <para type="description">The service controller input object.</para>
+        /// </summary>
         [Parameter(
             Mandatory = true,
             ValueFromPipeline = true,
             ParameterSetName = "WithServiceController",
-            HelpMessage = "The 'ServiceController' object."
+            HelpMessage = "The service controller input object."
         )]
         public System.ServiceProcess.ServiceController InputObject { get; set; }
 
+        /// <summary>
+        /// <para type="description">The service name.</para>
+        /// </summary>
         [Parameter(
             Position = 0,
             Mandatory = true,
@@ -802,14 +814,23 @@ namespace WindowsUtils.Commands
         [ValidateNotNullOrEmpty]
         public string Name { get; set; }
 
-        [Parameter(HelpMessage = "The computer name to remove the service from.s")]
+        /// <summary>
+        /// <para type="description">The computer name to remove the service from.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "The computer name to remove the service from.")]
         [ValidateNotNullOrEmpty]
         public string ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Stops the service and any dependents.</para>
+        /// </summary>
         [Parameter(HelpMessage = "Stops the service and any dependents.")]
         public SwitchParameter Stop { get; set; }
 
-        [Parameter(HelpMessage = "Skips confirmation.")]
+        /// <summary>
+        /// <para type="description">Suppresses confirmation.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "Suppresses confirmation.")]
         public SwitchParameter Force { get; set; }
 
         protected override void ProcessRecord()
@@ -940,23 +961,48 @@ namespace WindowsUtils.Commands
         VerbsCommon.Get, "ServiceSecurity",
         DefaultParameterSetName = "WithServiceName"
     )]
-    public class GetServiceSecurityCommand : Cmdlet
+    public class GetServiceSecurityCommand : PSCmdlet
     {
+        /// <summary>
+        /// <para type="description">The service name.</para>
+        /// </summary>
         [Parameter(
             Mandatory = true,
             Position = 0,
             ParameterSetName = "WithServiceName",
-            ValueFromPipelineByPropertyName = true
+            HelpMessage = "The service name."
         )]
         [ValidateNotNullOrEmpty]
         public string Name { get; set; }
 
-        [Parameter(HelpMessage = "Retrieves, additionally, the SACL.")]
+        /// <summary>
+        /// <para type="description">The service controller input object.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ParameterSetName = "WithServiceController",
+            ValueFromPipeline = true,
+            HelpMessage = "The service controller input object."
+        )]
+        public System.ServiceProcess.ServiceController InputObject { get; set; }
+
+        /// <summary>
+        /// <para type="description">Includes SACL to the result.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "Includes SACL to the result.")]
         public SwitchParameter Audit { get; set; }
 
         protected override void ProcessRecord()
         {
-            WriteObject(ServiceController.GetServiceObjectSecurity(Name, Audit));
+            if (ParameterSetName == "WithServiceName")
+                WriteObject(ServiceController.GetServiceObjectSecurity(Name, Audit));
+            else
+                // We can't use given handle because we need to use extra privileges to access SACL.
+                if (Audit)
+                    WriteObject(ServiceController.GetServiceObjectSecurity(InputObject.ServiceName, Audit));
+                else
+                    WriteObject(ServiceController.GetServiceObjectSecurity(InputObject, Audit));
         }
     }
 }

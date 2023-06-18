@@ -16,7 +16,7 @@
           "System.Security.Principal.Windows": "5.0.0",
           "System.ServiceProcess.ServiceController": "7.0.0",
           "XmlDoc2CmdletDoc": "0.3.0",
-          "Core": "1.0.8567.38913"
+          "Core": "1.0.8569.29854"
         },
         "runtime": {
           "WindowsUtils.dll": {}
@@ -129,10 +129,10 @@
         }
       },
       "XmlDoc2CmdletDoc/0.3.0": {},
-      "Core/1.0.8567.38913": {
+      "Core/1.0.8569.29854": {
         "runtime": {
           "Core.dll": {
-            "assemblyVersion": "1.0.8567.38913",
+            "assemblyVersion": "1.0.8569.29854",
             "fileVersion": "0.0.0.0"
           }
         }
@@ -236,7 +236,7 @@
       "path": "xmldoc2cmdletdoc/0.3.0",
       "hashPath": "xmldoc2cmdletdoc.0.3.0.nupkg.sha512"
     },
-    "Core/1.0.8567.38913": {
+    "Core/1.0.8569.29854": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""

@@ -2,6 +2,8 @@
 .vs/*
 .vscode/
 .vscode/*
+Properties/
+Properties/*
 
 # Local History for Visual Studio Code
 .history/
@@ -23,6 +25,12 @@ Release/*
 Debug/**
 */x64/**
 x64/**
+
+# Package
+packages/
+packages/*
+Core/packages/
+Core/packages/*
 
 # lab
 InteropTesting.cs

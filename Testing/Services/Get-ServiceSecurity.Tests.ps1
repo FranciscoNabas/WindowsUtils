@@ -103,8 +103,7 @@ Describe "Get-ServiceSecurity" {
         $service_security.Owner | Should -EQ $raw_sec_desc.Owner.Translate([System.Security.Principal.NTAccount]).ToString()
 
         # Testing Access.
-        $service_security.Access | Should -BeOfType ([WindowsUtils.AccessControl.ServiceAccessRule[]])
-        $service_security.Access.Count | Should -ExpectedValue 4
+        $service_security.Access.Count | Should -EQ 4
         foreach ($access_rule in $service_security.Access) {
             switch ($access_rule.IdentityReference.ToString()) {
                 'NT AUTHORITY\INTERACTIVE' {

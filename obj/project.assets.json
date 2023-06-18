@@ -174,7 +174,7 @@
           }
         }
       },
-      "System.ServiceProcess.ServiceController/7.0.0": {
+      "System.ServiceProcess.ServiceController/7.0.1": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.EventLog": "7.0.0"
@@ -350,7 +350,7 @@
           "runtimes/win/lib/netstandard1.3/System.Security.Principal.Windows.dll": {}
         }
       },
-      "System.ServiceProcess.ServiceController/7.0.0": {
+      "System.ServiceProcess.ServiceController/7.0.1": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.EventLog": "7.0.0"
@@ -819,10 +819,10 @@
         "version.txt"
       ]
     },
-    "System.ServiceProcess.ServiceController/7.0.0": {
-      "sha512": "7W5e7z2LSsxEvnix0F4pQuo22l46vx69+VHZyN9vtMFTtB2kWInimBmhbFXKIv1hK2O2D4hGnBn4bAZGzse8PQ==",
+    "System.ServiceProcess.ServiceController/7.0.1": {
+      "sha512": "rPfXTJzYU46AmWYXRATQzQQ01hICrkl3GuUHgpAr9mnUwAVSsga5x3mBxanFPlJBV9ilzqMXbQyDLJQAbyTnSw==",
       "type": "package",
-      "path": "system.serviceprocess.servicecontroller/7.0.0",
+      "path": "system.serviceprocess.servicecontroller/7.0.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -845,7 +845,7 @@
         "runtimes/win/lib/net6.0/System.ServiceProcess.ServiceController.xml",
         "runtimes/win/lib/net7.0/System.ServiceProcess.ServiceController.dll",
         "runtimes/win/lib/net7.0/System.ServiceProcess.ServiceController.xml",
-        "system.serviceprocess.servicecontroller.7.0.0.nupkg.sha512",
+        "system.serviceprocess.servicecontroller.7.0.1.nupkg.sha512",
         "system.serviceprocess.servicecontroller.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -876,8 +876,7 @@
       "NETStandard.Library >= 2.0.3",
       "PowerShellStandard.Library >= 5.1.1",
       "System.Security.AccessControl >= 6.0.0",
-      "System.Security.Principal.Windows >= 5.0.0",
-      "System.ServiceProcess.ServiceController >= 7.0.0",
+      "System.ServiceProcess.ServiceController >= 7.0.1",
       "XmlDoc2CmdletDoc >= 0.3.0"
     ]
   },
@@ -945,13 +944,9 @@
             "target": "Package",
             "version": "[6.0.0, )"
           },
-          "System.Security.Principal.Windows": {
-            "target": "Package",
-            "version": "[5.0.0, )"
-          },
           "System.ServiceProcess.ServiceController": {
             "target": "Package",
-            "version": "[7.0.0, )"
+            "version": "[7.0.1, )"
           },
           "XmlDoc2CmdletDoc": {
             "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",

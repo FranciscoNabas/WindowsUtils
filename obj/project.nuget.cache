@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "l2WOFKsx21wKcoludXbErYC7H2GXJR52nxX9pj37pJ0H9JyxlWPEJyQSuQuAOW4YA7KfmvEbcSN7PokUbEylnw==",
+  "dgSpecHash": "LqlbLDdRbxxH45SlL1ChU0VI61buNeEldicXrQMAqVd6bsBDoR4Ov1rLVqMC4fLeNmQeHvt9ZrMhY58bp2BGdQ==",
   "success": true,
   "projectFilePath": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
   "expectedPackageFiles": [
@@ -15,7 +15,7 @@
     "C:\\Users\\Frank\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\4.5.3\\system.runtime.compilerservices.unsafe.4.5.3.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\system.security.accesscontrol\\6.0.0\\system.security.accesscontrol.6.0.0.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\system.security.principal.windows\\5.0.0\\system.security.principal.windows.5.0.0.nupkg.sha512",
-    "C:\\Users\\Frank\\.nuget\\packages\\system.serviceprocess.servicecontroller\\7.0.0\\system.serviceprocess.servicecontroller.7.0.0.nupkg.sha512",
+    "C:\\Users\\Frank\\.nuget\\packages\\system.serviceprocess.servicecontroller\\7.0.1\\system.serviceprocess.servicecontroller.7.0.1.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\xmldoc2cmdletdoc\\0.3.0\\xmldoc2cmdletdoc.0.3.0.nupkg.sha512"
   ],
   "logs": []
