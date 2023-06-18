@@ -51,12 +51,12 @@ namespace WindowsUtils.Engine
     {
         private static readonly WrapperFunctions _unwrapper = new();
 
-        public static ServiceSecurity GetServiceObjectSecurity(string serviceName)
+        public static ServiceSecurity GetServiceObjectSecurity(string serviceName, bool getAudit)
         {
-            byte[] securityDescriptorBytes;
+            string securityDescriptorBytes;
             try
             {
-                securityDescriptorBytes = _unwrapper.GetServiceSecurityDescriptorBytes(serviceName);
+                securityDescriptorBytes = _unwrapper.GetServiceSecurityDescriptorString(serviceName, getAudit);
             }
             catch (Core.NativeException ex)
             {

@@ -1,182 +1,101 @@
-using System.Security;
 using System.Security.Principal;
 using System.Security.AccessControl;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 using WindowsUtils.Engine;
-
-namespace WindowsUtils.Interop
-{
-    #region Enumerations
-    internal enum PRIVILEGE_ATTRIBUTE : uint
-    {
-        SE_PRIVILEGE_NONE = 0x00000000,
-        SE_PRIVILEGE_ENABLED_BY_DEFAULT = 0x00000001,
-        SE_PRIVILEGE_ENABLED = 0x00000002,
-        SE_PRIVILEGE_REMOVED = 0X00000004,
-        SE_PRIVILEGE_USED_FOR_ACCESS = 0x80000000,
-        SE_PRIVILEGE_VALID_ATTRIBUTES = SE_PRIVILEGE_ENABLED_BY_DEFAULT |
-                                        SE_PRIVILEGE_ENABLED |
-                                        SE_PRIVILEGE_REMOVED |
-                                        SE_PRIVILEGE_USED_FOR_ACCESS
-    }
-
-    internal enum TOKEN_ACCESS_RIGHT : uint
-    {
-        TOKEN_ASSIGN_PRIMARY = 0x0001,
-        TOKEN_DUPLICATE = 0x0002,
-        TOKEN_IMPERSONATE = 0x0004,
-        TOKEN_QUERY = 0x0008,
-        TOKEN_QUERY_SOURCE = 0x0010,
-        TOKEN_ADJUST_PRIVILEGES = 0x0020,
-        TOKEN_ADJUST_GROUPS = 0x0040,
-        TOKEN_ADJUST_DEFAULT = 0x0080,
-        TOKEN_ADJUST_SESSIONID = 0x0100,
-        TOKEN_ALL_ACCESS_P = 0x000F0000 |
-                             TOKEN_ASSIGN_PRIMARY |
-                             TOKEN_DUPLICATE |
-                             TOKEN_IMPERSONATE |
-                             TOKEN_QUERY |
-                             TOKEN_QUERY_SOURCE |
-                             TOKEN_ADJUST_PRIVILEGES |
-                             TOKEN_ADJUST_GROUPS |
-                             TOKEN_ADJUST_DEFAULT,
-
-        TOKEN_ALL_ACCESS = TOKEN_ALL_ACCESS_P | TOKEN_ADJUST_SESSIONID,
-        TOKEN_READ = 0x00020000 | TOKEN_QUERY,
-        TOKEN_WRITE = 0x00020000 |
-                      TOKEN_ADJUST_PRIVILEGES |
-                      TOKEN_ADJUST_GROUPS |
-                      TOKEN_ADJUST_DEFAULT,
-
-        TOKEN_EXECUTE = 0x00020000,
-        TOKEN_TRUST_CONSTRAINT_MASK = 0x00020000 |
-                                      TOKEN_QUERY |
-                                      TOKEN_QUERY_SOURCE,
-
-        TOKEN_TRUST_ALLOWED_MASK = TOKEN_TRUST_CONSTRAINT_MASK |
-                                   TOKEN_DUPLICATE |
-                                   TOKEN_IMPERSONATE,
-
-        TOKEN_ACCESS_PSEUDO_HANDLE_WIN8 = TOKEN_QUERY | TOKEN_QUERY_SOURCE,
-        TOKEN_ACCESS_PSEUDO_HANDLE = TOKEN_ACCESS_PSEUDO_HANDLE_WIN8
-    }
-
-    internal enum SECURITY_IMPERSONATION_LEVEL : uint
-    {
-        SecurityAnonymous,
-        SecurityIdentification,
-        SecurityImpersonation,
-        SecurityDelegation
-    }
-
-    internal enum TOKEN_TYPE : uint
-    {
-        TokenPrimary = 1,
-        TokenImpersonation
-    }
-    #endregion
-
-    #region Structures
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct LUID
-    {
-        internal uint LowPart;
-        internal long HighPart;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct LUID_AND_ATTRIBUTES
-    {
-        internal LUID Luid;
-        internal PRIVILEGE_ATTRIBUTE Attributes;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct TOKEN_PRIVILEGE
-    {
-        internal uint PrivilegeCount;
-        internal LUID_AND_ATTRIBUTES Privilege;
-    }
-    #endregion
-
-    internal partial class NativeFunctions
-    {
-        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "LookupPrivilegeValueW")]
-        [SecurityCritical]
-        internal static extern bool LookupPrivilegeValue(
-            string lpSystemName,
-            string lpName,
-            ref LUID lpLuid
-        );
-
-        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "LookupPrivilegeValueW")]
-        [SecurityCritical]
-        internal static extern bool LookupPrivilegeValue(
-            IntPtr lpSystemName,
-            string lpName,
-            ref LUID lpLuid
-        );
-
-        [DllImport("Advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        [SecurityCritical]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool AdjustTokenPrivileges(
-            [In] SafeAccessTokenHandle TokenHandle,
-            [In] bool DisableAllPrivileges,
-            [In] ref TOKEN_PRIVILEGE NewState,
-            [In] uint BufferLength,
-            [In][Out] ref TOKEN_PRIVILEGE PreviousState,
-            [In][Out] ref uint ReturnLength
-        );
-
-        [DllImport("Advapi32.dll", SetLastError = true)]
-        [SecurityCritical]
-        internal static extern bool OpenProcessToken(
-            SafeSystemHandle ProcessHandle,
-            TOKEN_ACCESS_RIGHT DesiredAccess,
-            out SafeAccessTokenHandle pHandle
-        );
-
-        [DllImport("Advapi32.dll", SetLastError = true)]
-        [SecurityCritical]
-        internal static extern int OpenThreadToken(
-            SafeSystemHandle ThreadHandle,
-            TOKEN_ACCESS_RIGHT DesiredAccess,
-            bool OpenAsSelf,
-            out SafeAccessTokenHandle pHandle
-        );
-
-        [DllImport("Advapi32.dll", SetLastError = true)]
-        [SecurityCritical]
-        internal static extern bool DuplicateTokenEx(
-            SafeAccessTokenHandle hExistingToken,
-            TOKEN_ACCESS_RIGHT dwDesiredAccess,
-            IntPtr lpTokenAttributes,
-            SECURITY_IMPERSONATION_LEVEL ImpersonationLevel,
-            TOKEN_TYPE TokenType,
-            ref SafeAccessTokenHandle phNewHandle
-        );
-
-        [DllImport("Advapi32.dll", SetLastError = true)]
-        [SecurityCritical]
-        internal static extern int SetThreadToken(
-            SafeSystemHandle hThread,
-            SafeAccessTokenHandle Token
-        );
-
-        [DllImport("Advapi32.dll", SetLastError = true)]
-        [SecurityCritical]
-        internal static extern bool RevertToSelf();
-    }
-}
 
 namespace WindowsUtils.AccessControl
 {
-    public sealed class ServiceSecurity : ObjectSecurity
+    public abstract class WindowsUtilsObjectSecurity
     {
-        private readonly RawSecurityDescriptor _rawSecDescriptor;
-        private readonly CommonSecurityDescriptor _securityDescriptor;
+        private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.SupportsRecursion);
+
+        internal readonly RawSecurityDescriptor _rawSecDescriptor;
+        internal readonly CommonSecurityDescriptor _securityDescriptor;
+        private readonly string _sddl;
+        private readonly string? _owner;
+        private readonly string? _group;
+
+        private bool _saclModified;
+	    private bool _daclModified;
+
+        protected bool IsDS => _securityDescriptor.IsDS;
+        protected bool IsContainer => _securityDescriptor.IsContainer;
+
+        public string? Owner { get { return _owner; } }
+        public string? Group { get { return _group; } }
+        public string Sddl { get { return _sddl; } }
+
+        protected bool AuditRulesModified
+        {
+            get
+            {
+                if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
+                    throw new InvalidOperationException("Must lock for read or write.");
+                
+                return _saclModified;
+            }
+            set
+            {
+                if (!_lock.IsWriteLockHeld)
+                    throw new InvalidOperationException("Must lock for write.");
+                
+                _saclModified = value;
+            }
+        }
+
+        protected bool AccessRulesModified
+	{
+		get
+		{
+			if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
+                throw new InvalidOperationException("Must lock for read or write.");
+
+			return _daclModified;
+		}
+		set
+		{
+			if (!_lock.IsWriteLockHeld)
+                throw new InvalidOperationException("Must lock for write.");
+            
+			_daclModified = value;
+		}
+	}
+
+        public virtual Type? AccessRightType { get; }
+        public virtual Type? AccessRuleType { get; }
+        public virtual Type? AuditRuleType { get; }
+
+        internal WindowsUtilsObjectSecurity(string sddl)
+        {
+            _sddl = sddl;
+            _rawSecDescriptor = new RawSecurityDescriptor(sddl);
+            _securityDescriptor = new(false, false, _rawSecDescriptor);
+            _owner = _securityDescriptor.Owner?.Translate(typeof(NTAccount)).ToString();
+            _group = _securityDescriptor.Group?.Translate(typeof(NTAccount)).ToString();
+        }
+
+        internal WindowsUtilsObjectSecurity(RawSecurityDescriptor rawSecDescriptor)
+        {
+            _rawSecDescriptor = rawSecDescriptor;
+            _sddl = rawSecDescriptor.GetSddlForm(AccessControlSections.All);
+            _securityDescriptor = new(false, false, rawSecDescriptor);
+        }
+
+        public abstract AccessRule AccessRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type);
+        public abstract AuditRule AuditRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AuditFlags flags);
+
+        protected abstract bool ModifyAudit(AccessControlModification modification, AuditRule rule, out bool modified);
+        protected abstract bool ModifyAccess(AccessControlModification modification, AccessRule rule, out bool modified);
+
+        protected void ReadLock() => _lock.EnterReadLock();
+        protected void ReadUnlock() => _lock.ExitReadLock();
+        protected void WriteLock() => _lock.EnterWriteLock();
+        protected void WriteUnlock() => _lock.ExitWriteLock();
+    }
+
+    public sealed class ServiceSecurity : WindowsUtilsObjectSecurity
+    {
+        private ServiceAccessRule[] _access;
+        private ServiceAuditRule[] _audit;
         private readonly string _name;
 
         public string Name { get { return _name; } }
@@ -186,10 +105,10 @@ namespace WindowsUtils.AccessControl
             {
                 bool first = true;
                 string output = string.Empty;
-                if (Access is null)
+                if (_access is null)
                     return string.Empty;
-                
-                foreach (ServiceAccessRule ace in Access)
+
+                foreach (ServiceAccessRule ace in _access)
                 {
                     if (first)
                         first = false;
@@ -210,10 +129,10 @@ namespace WindowsUtils.AccessControl
             {
                 bool first = true;
                 string output = string.Empty;
-                if (Access is null)
+                if (_audit is null)
                     return string.Empty;
-                
-                foreach (ServiceAuditRule ace in Access)
+
+                foreach (ServiceAuditRule ace in _audit)
                 {
                     if (first)
                         first = false;
@@ -228,26 +147,38 @@ namespace WindowsUtils.AccessControl
                 return output;
             }
         }
-        public string Sddl => GetSecurityDescriptorSddlForm(AccessControlSections.All);
-        public AuthorizationRuleCollection Access => GetAccessRules(true, true, typeof(NTAccount));
+        public ServiceAccessRule[] Access { get { return _access; } }
+        public ServiceAuditRule[] Audit { get { return _audit; } }
 
         public override Type AccessRightType => typeof(ServiceRights);
         public override Type AccessRuleType => typeof(ServiceAccessRule);
         public override Type AuditRuleType => typeof(ServiceAuditRule);
-        
-        internal ServiceSecurity(byte[] descriptorBytes, string name)
-            : base(new(false, false, new RawSecurityDescriptor(descriptorBytes, 0)))
+
+        internal ServiceSecurity(string sddl, string name)
+            : base(sddl)
         {
             _name = name;
-            _rawSecDescriptor = new RawSecurityDescriptor(descriptorBytes, 0);
-            _securityDescriptor = new(false, false, _rawSecDescriptor);
+
+            AuthorizationRuleCollection _accTemp = GetAccessRules(true, true, typeof(NTAccount));
+            _access = new ServiceAccessRule[_accTemp.Count];
+            _accTemp.CopyTo(_access, 0);
+
+            AuthorizationRuleCollection _audTemp = GetAuditRules(true, true, typeof(NTAccount));
+            _audit = new ServiceAuditRule[_audTemp.Count];
+            _audTemp.CopyTo(_audit, 0);
         }
         internal ServiceSecurity(RawSecurityDescriptor rawSecDescriptor, string name)
-            : base(new(false, false, rawSecDescriptor))
+            : base(rawSecDescriptor)
         {
             _name = name;
-            _rawSecDescriptor = rawSecDescriptor;
-            _securityDescriptor = new(false, false, rawSecDescriptor);
+
+            AuthorizationRuleCollection _accTemp = GetAccessRules(true, true, typeof(NTAccount));
+            _access = new ServiceAccessRule[_accTemp.Count];
+            _accTemp.CopyTo(_access, 0);
+
+            AuthorizationRuleCollection _audTemp = GetAuditRules(true, true, typeof(NTAccount));
+            _audit = new ServiceAuditRule[_audTemp.Count];
+            _audTemp.CopyTo(_audit, 0);
         }
 
         public sealed override AccessRule AccessRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type)
@@ -257,10 +188,6 @@ namespace WindowsUtils.AccessControl
 
         public void AddAccessRule(ServiceAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -273,10 +200,6 @@ namespace WindowsUtils.AccessControl
         }
         public void SetAccessRule(ServiceAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -289,10 +212,6 @@ namespace WindowsUtils.AccessControl
         }
         public void ResetAccessRule(ServiceAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -305,10 +224,6 @@ namespace WindowsUtils.AccessControl
         }
         public bool RemoveAccessRule(ServiceAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -325,10 +240,6 @@ namespace WindowsUtils.AccessControl
         }
         public void RemoveAccessRuleAll(ServiceAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -344,10 +255,6 @@ namespace WindowsUtils.AccessControl
         }
         public void RemoveAccessRuleSpecific(ServiceAccessRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -363,10 +270,6 @@ namespace WindowsUtils.AccessControl
         }
         public void AddAuditRule(ServiceAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -379,10 +282,6 @@ namespace WindowsUtils.AccessControl
         }
         public void SetAuditRule(ServiceAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -395,15 +294,10 @@ namespace WindowsUtils.AccessControl
         }
         public bool RemoveAuditRule(ServiceAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
-                bool modified;
-                return ModifyAudit(AccessControlModification.Remove, rule, out modified);
+                return ModifyAudit(AccessControlModification.Remove, rule, out bool modified);
             }
             finally
             {
@@ -412,10 +306,6 @@ namespace WindowsUtils.AccessControl
         }
         public void RemoveAuditRuleAll(ServiceAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -428,10 +318,6 @@ namespace WindowsUtils.AccessControl
         }
         public void RemoveAuditRuleSpecific(ServiceAuditRule rule)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -449,10 +335,6 @@ namespace WindowsUtils.AccessControl
         protected override bool ModifyAccess(AccessControlModification modification, AccessRule rule, out bool modified) => ModifyAccess(modification, (ServiceAccessRule)rule, out modified);
         private bool ModifyAudit(AccessControlModification modification, ServiceAuditRule rule, out bool modified)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -498,6 +380,12 @@ namespace WindowsUtils.AccessControl
                     }
                 modified = flag;
                 AuditRulesModified |= modified;
+                if (AuditRulesModified)
+                {
+                    AuthorizationRuleCollection _audTemp = GetAuditRules(true, true, typeof(NTAccount));
+                    _audit = new ServiceAuditRule[_audTemp.Count];
+                    _audTemp.CopyTo(_audit, 0);
+                }
                 return flag;
             }
             finally
@@ -507,10 +395,6 @@ namespace WindowsUtils.AccessControl
         }
         private bool ModifyAccess(AccessControlModification modification, ServiceAccessRule rule, out bool modified)
         {
-            if (rule == null)
-            {
-                throw new ArgumentNullException("rule");
-            }
             WriteLock();
             try
             {
@@ -596,6 +480,12 @@ namespace WindowsUtils.AccessControl
                     }
                 modified = flag;
                 AccessRulesModified |= modified;
+                if (AccessRulesModified)
+                {
+                    AuthorizationRuleCollection _accTemp = GetAccessRules(true, true, typeof(NTAccount));
+                    _access = new ServiceAccessRule[_accTemp.Count];
+                    _accTemp.CopyTo(_access, 0);
+                }
                 return flag;
             }
             finally
@@ -614,17 +504,17 @@ namespace WindowsUtils.AccessControl
                 {
                     throw new ArgumentException("Invalid target type.");
                 }
-                RawAcl? commonAcl = null;
+                CommonAcl? commonAcl = null;
                 if (access)
                 {
                     if ((_securityDescriptor.ControlFlags & ControlFlags.DiscretionaryAclPresent) != 0)
                     {
-                        commonAcl = _rawSecDescriptor.DiscretionaryAcl;
+                        commonAcl = _securityDescriptor.DiscretionaryAcl;
                     }
                 }
                 else if ((_securityDescriptor.ControlFlags & ControlFlags.SystemAclPresent) != 0)
                 {
-                    commonAcl = _rawSecDescriptor.SystemAcl;
+                    commonAcl = _securityDescriptor.SystemAcl;
                 }
                 if (commonAcl == null)
                 {
@@ -633,37 +523,42 @@ namespace WindowsUtils.AccessControl
                 IdentityReferenceCollection? identityReferenceCollection = null;
                 if (targetType != typeof(SecurityIdentifier))
                 {
-                    IdentityReferenceCollection identityReferenceCollection2 = new IdentityReferenceCollection(commonAcl.Count);
-                    for (int i = 0; i < commonAcl.Count; i++)
+                    if (commonAcl is not null)
                     {
-                        CommonAce? commonAce = commonAcl[i] as CommonAce;
-                        if (commonAce is not null)
-                            if (AceNeedsTranslation(commonAce, access, includeExplicit, includeInherited))
-                            {
-                                identityReferenceCollection2.Add(commonAce.SecurityIdentifier);
-                            }
-                    }
-                    identityReferenceCollection = identityReferenceCollection2.Translate(targetType);
-                }
-                int num = 0;
-                for (int j = 0; j < commonAcl.Count; j++)
-                {
-                    CommonAce? commonAce2 = commonAcl[j] as CommonAce;
-                    if (commonAce2 is not null)
-                        if (AceNeedsTranslation(commonAce2, access, includeExplicit, includeInherited))
+                        IdentityReferenceCollection identityReferenceCollection2 = new(commonAcl.Count);
+                        for (int i = 0; i < commonAcl.Count; i++)
                         {
-                            IdentityReference? identityReference = (targetType == typeof(SecurityIdentifier)) ? commonAce2.SecurityIdentifier : identityReferenceCollection?[num++];
-                            if (identityReference is not null)
-                                if (access)
+                            CommonAce? commonAce = commonAcl[i] as CommonAce;
+                            if (commonAce is not null)
+                                if (AceNeedsTranslation(commonAce, access, includeExplicit, includeInherited))
                                 {
-                                    authorizationRuleCollection.AddRule(AccessRuleFactory(type: (commonAce2.AceQualifier != 0) ? AccessControlType.Deny : AccessControlType.Allow, identityReference: identityReference, accessMask: commonAce2.AccessMask, isInherited: commonAce2.IsInherited, inheritanceFlags: commonAce2.InheritanceFlags, propagationFlags: commonAce2.PropagationFlags));
-                                }
-                                else
-                                {
-                                    authorizationRuleCollection.AddRule(AuditRuleFactory(identityReference, commonAce2.AccessMask, commonAce2.IsInherited, commonAce2.InheritanceFlags, commonAce2.PropagationFlags, commonAce2.AuditFlags));
+                                    identityReferenceCollection2.Add(commonAce.SecurityIdentifier);
                                 }
                         }
+                        identityReferenceCollection = identityReferenceCollection2.Translate(targetType);
+                    }
+
                 }
+                int num = 0;
+                if (commonAcl is not null)
+                    for (int j = 0; j < commonAcl.Count; j++)
+                    {
+                        CommonAce? commonAce2 = commonAcl[j] as CommonAce;
+                        if (commonAce2 is not null)
+                            if (AceNeedsTranslation(commonAce2, access, includeExplicit, includeInherited))
+                            {
+                                IdentityReference? identityReference = (targetType == typeof(SecurityIdentifier)) ? commonAce2.SecurityIdentifier : identityReferenceCollection?[num++];
+                                if (identityReference is not null)
+                                    if (access)
+                                    {
+                                        authorizationRuleCollection.AddRule(AccessRuleFactory(type: (commonAce2.AceQualifier != 0) ? AccessControlType.Deny : AccessControlType.Allow, identityReference: identityReference, accessMask: commonAce2.AccessMask, isInherited: commonAce2.IsInherited, inheritanceFlags: commonAce2.InheritanceFlags, propagationFlags: commonAce2.PropagationFlags));
+                                    }
+                                    else
+                                    {
+                                        authorizationRuleCollection.AddRule(AuditRuleFactory(identityReference, commonAce2.AccessMask, commonAce2.IsInherited, commonAce2.InheritanceFlags, commonAce2.PropagationFlags, commonAce2.AuditFlags));
+                                    }
+                            }
+                    }
                 return authorizationRuleCollection;
             }
             finally
@@ -685,7 +580,7 @@ namespace WindowsUtils.AccessControl
             }
             return false;
         }
-        private bool AceNeedsTranslation(CommonAce ace, bool isAccessAce, bool includeExplicit, bool includeInherited)
+        private bool AceNeedsTranslation([NotNullWhen(true)] CommonAce ace, bool isAccessAce, bool includeExplicit, bool includeInherited)
         {
             if (ace == null)
             {
@@ -708,7 +603,7 @@ namespace WindowsUtils.AccessControl
             }
             return false;
         }
-    
+
         internal static int AccessMaskFromRights(ServiceRights serviceRights)
         {
             if (serviceRights < 0 || serviceRights > ServiceRights.AllAccess)
@@ -718,10 +613,10 @@ namespace WindowsUtils.AccessControl
         }
     }
 
-    public sealed class ServiceAccessRule : AccessRule
+    public sealed class ServiceAccessRule : AccessRule, IEquatable<ServiceAccessRule>
     {
         new internal int AccessMask => base.AccessMask;
-        public ServiceRights ServiceRights  => (ServiceRights)base.AccessMask;
+        public ServiceRights ServiceRights => (ServiceRights)base.AccessMask;
 
         public ServiceAccessRule(string identity, ServiceRights serviceRights, AccessControlType type)
             : this(new NTAccount(identity), ServiceSecurity.AccessMaskFromRights(serviceRights), isInherited: false, InheritanceFlags.None, PropagationFlags.None, type) { }
@@ -733,9 +628,27 @@ namespace WindowsUtils.AccessControl
             : this(identity, ServiceSecurity.AccessMaskFromRights(serviceRights), isInherited, inheritanceFlags, propagationFlags, type) { }
         internal ServiceAccessRule(IdentityReference identity, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type)
             : base(identity, accessMask, isInherited, inheritanceFlags, propagationFlags, type) { }
+
+        public override bool Equals(object other) => Equals((ServiceAccessRule)other);
+        public override int GetHashCode() => base.GetHashCode();
+        public bool Equals(ServiceAccessRule other)
+        {
+            if (other.IdentityReference.ToString() == IdentityReference.ToString() &&
+                other.ServiceRights == ServiceRights &&
+                other.IsInherited == IsInherited &&
+                other.InheritanceFlags == InheritanceFlags &&
+                other.PropagationFlags == PropagationFlags &&
+                other.AccessControlType == AccessControlType)
+                return true;
+
+            return false;
+        }
+
+        public static bool operator ==(ServiceAccessRule left, ServiceAccessRule right) => left.Equals(right);
+        public static bool operator !=(ServiceAccessRule left, ServiceAccessRule right) => !left.Equals(right);
     }
 
-    public sealed class ServiceAuditRule : AuditRule
+    public sealed class ServiceAuditRule : AuditRule, IEquatable<ServiceAuditRule>
     {
         new internal int AccessMask => base.AccessMask;
         public ServiceRights ServiceRights => (ServiceRights)base.AccessMask;
@@ -750,5 +663,23 @@ namespace WindowsUtils.AccessControl
             : this(identity, ServiceSecurity.AccessMaskFromRights(serviceRights), isInherited, inheritanceFlags, propagationFlags, flags) { }
         internal ServiceAuditRule(IdentityReference identity, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AuditFlags flags)
             : base(identity, accessMask, isInherited, inheritanceFlags, propagationFlags, flags) { }
+
+        public override bool Equals(object other) => Equals((ServiceAuditRule)other);
+        public override int GetHashCode() => base.GetHashCode();
+        public bool Equals(ServiceAuditRule other)
+        {
+            if (other.IdentityReference.ToString() == IdentityReference.ToString() &&
+                other.ServiceRights == ServiceRights &&
+                other.IsInherited == IsInherited &&
+                other.InheritanceFlags == InheritanceFlags &&
+                other.PropagationFlags == PropagationFlags &&
+                other.AuditFlags == AuditFlags)
+                return true;
+
+            return false;
+        }
+
+        public static bool operator ==(ServiceAuditRule left, ServiceAuditRule right) => left.Equals(right);
+        public static bool operator !=(ServiceAuditRule left, ServiceAuditRule right) => !left.Equals(right);
     }
 }

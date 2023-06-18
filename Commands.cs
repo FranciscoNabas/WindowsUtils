@@ -1,7 +1,8 @@
-﻿using System.ServiceProcess;
-using System.Management.Automation;
+﻿using System.Management.Automation;
 using WindowsUtils.Core;
+using WindowsUtils.Engine;
 
+#pragma warning disable CS8618
 namespace WindowsUtils.Commands
 {
     /// <summary>
@@ -21,36 +22,44 @@ namespace WindowsUtils.Commands
         /// <summary>
         /// <para type="description">The message box title.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0)]
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            HelpMessage = "The message box title."
+        )]
         [ValidateNotNullOrEmpty]
         public string Title { get; set; }
 
         /// <summary>
         /// <para type="description">The message text.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 1)]
+        [Parameter(
+            Mandatory = true,
+            Position = 1,
+            HelpMessage = "The message text."
+        )]
         [ValidateNotNullOrEmpty]
         public string Message { get; set; }
 
         /// <summary>
-        /// <para type="description">The computer name to send the nessage.</para>
+        /// <para type="description">The computer name to send the message.</para>
         /// <para type="description">If not specified, sends the message to the local host.</para>
         /// </summary>
-        [Parameter()]
+        [Parameter(HelpMessage = "The computer name to send the message.")]
         public string ComputerName { get; set; }
 
         /// <summary>
         /// <para type="description">The session(s) to receive the message.</para>
         /// <para type="description">If not specified, sends the message to all sessions.</para>
         /// </summary>
-        [Parameter()]
+        [Parameter(HelpMessage = "The session(s) to receive the message.")]
         public int[] SessionId { get; set; }
 
         /// <summary>
         /// <para type="description">A list of MessageBox style enum objects.</para>
-        /// <para type="description">To obtaing a list of available options, call 'Get-RemoteMessageOptions', or see definition for the MessageBox function.</para>
+        /// <para type="description">To obtaining a list of available options, call 'Get-RemoteMessageOptions', or see definition for the MessageBox function.</para>
         /// </summary>
-        [Parameter()]
+        [Parameter(HelpMessage = "A list of MessageBox styles.")]
         [ValidateNotNullOrEmpty]
         public string[] Style { get; set; } = { "MB_OK" };
 
@@ -58,8 +67,15 @@ namespace WindowsUtils.Commands
         /// <para type="description">The timeout, in seconds, to wait for a response.</para>
         /// <para type="description">If the timeout expires, the cmdlet returns 'Timeout'. The message is not closed.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "WithWait")]
-        [Parameter(ParameterSetName = "NoWait")]
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "WithWait",
+            HelpMessage = "The timeout, in seconds, to wait for a response."
+        )]
+        [Parameter(
+            ParameterSetName = "NoWait",
+            HelpMessage = "The timeout, in seconds, to wait for a response."
+        )]
         public int Timeout
         {
             get
@@ -82,7 +98,9 @@ namespace WindowsUtils.Commands
         /// <para type="description">If called, waits for the user response in the specified 'Timeout'.</para>
         /// <para type="description">If not, the Cmdlet returns 'AsyncReturn'.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "WithWait")]
+        [Parameter(
+            ParameterSetName = "WithWait",
+            HelpMessage = "If called, waits for the user response in the specified timeout.")]
         public SwitchParameter Wait { get; set; } = false;
 
         protected override void ProcessRecord()
@@ -237,21 +255,24 @@ namespace WindowsUtils.Commands
         /// <para type="description">The computer name.</para>
         /// <para type="description">If no computer name is informed, it returns sessions on the current computer.</para>
         /// </summary>
-        [Parameter(Position = 0)]
+        [Parameter(
+            Position = 0,
+            HelpMessage = "The computer name."
+        )]
         [ValidateNotNullOrEmpty]
         public string ComputerName { get; set; }
 
         /// <summary>
         /// <para type="description">When called, this Cmdlet returns only active sessions.</para>
         /// </summary>
-        [Parameter()]
+        [Parameter(HelpMessage = "Returns only active sessions.")]
         public SwitchParameter ActiveOnly { get; set; } = false;
 
         /// <summary>
         /// <para type="description">When called, this Cmdlet includes sessions without an user name assigned.</para>
         /// <para type="description">Sessions without user name are marked as 'System'.</para>
         /// </summary>
-        [Parameter()]
+        [Parameter(HelpMessage = "Includes sessions without an user assigned.")]
         public SwitchParameter IncludeSystemSession { get; set; } = false;
 
         protected override void ProcessRecord()
@@ -311,8 +332,13 @@ namespace WindowsUtils.Commands
         /// <summary>
         /// <para type="description">The path to the file containing the message table.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ValueFromPipelineByPropertyName = true,
+            HelpMessage = "The path to the file containing the messages.")]
         [ValidateNotNullOrEmpty]
+        [ValidateFileExists]
         public string Path { get; set; }
 
         protected override void ProcessRecord()
@@ -335,26 +361,32 @@ namespace WindowsUtils.Commands
     /// <para type="description">This Cmdlet uses FormatMessage to return the message text for a given 'Win32' system error.</para>
     /// <example>
     ///     <para></para>
-    ///     <code>Get-FormattedMessage -ErrorCode 5</code>
+    ///     <code>Get-ErrorString -ErrorCode 5</code>
     ///     <para>Returning the message for a given error code.</para>
     ///     <para></para>
     ///     <para></para>
     /// </example>
     /// <example>
     ///     <para></para>
-    ///     <code>[System.Runtime.InteropServices.Marshal]::GetLastWin32Error() | Get-FormattedError</code>
+    ///     <code>[System.Runtime.InteropServices.Marshal]::GetLastWin32Error() | Get-ErrorString</code>
     ///     <para>Calling GetLastWin32Error and providing it to the Cmdlet to get the message string.</para>
     ///     <para></para>
     ///     <para></para>
     /// </example>
     /// </summary>
-    [Cmdlet(VerbsCommon.Get, "FormattedError")]
-    public class GetFormattedErrorCommand : Cmdlet
+    [Cmdlet(VerbsCommon.Get, "ErrorString")]
+    public class GetErrorStringCommand : Cmdlet
     {
         /// <summary>
         /// <para type="description">The error code.</para>
+        /// <para type="description">This value will be passed to the 'FormatMessage' function, with the system message parameter..</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ValueFromPipeline = true,
+            HelpMessage = "The Win32 error code."
+        )]
         public int ErrorCode { get; set; }
 
         protected override void ProcessRecord()
@@ -426,16 +458,17 @@ namespace WindowsUtils.Commands
         private bool _shouldExpandWildcards = true;
 
         /// <summary>
-        /// <para type="description">The file system object path.</para>
+        /// <para type="description">The object path.</para>
         /// </summary>
         [Parameter(
             Position = 0,
             ValueFromPipeline = true,
             ValueFromPipelineByPropertyName = true,
-            ParameterSetName = "byPath"
+            ParameterSetName = "byPath",
+            HelpMessage = "The object(s) path."
         )]
         [ValidateNotNullOrEmpty]
-        [SupportsWildcards()]
+        [SupportsWildcards]
         public string[] Path
         {
             get { return _path; }
@@ -449,7 +482,8 @@ namespace WindowsUtils.Commands
             Mandatory = true,
             ValueFromPipeline = false,
             ValueFromPipelineByPropertyName = true,
-            ParameterSetName = "byLiteral"
+            ParameterSetName = "byLiteral",
+            HelpMessage = "The object(s) literal path."
         )]
         [Alias("PSPath")]
         [ValidateNotNullOrEmpty]
@@ -463,10 +497,10 @@ namespace WindowsUtils.Commands
             }
         }
 
-        [Parameter()]
+        [Parameter(HelpMessage = "Closes all handles to the object(s) returned.")]
         public SwitchParameter CloseHandle { get; set; }
 
-        [Parameter()]
+        [Parameter(HelpMessage = "Skips confirmation for the 'CloseHandle' parameter.")]
         public SwitchParameter Force { get; set; }
 
         protected override void BeginProcessing()
@@ -556,8 +590,14 @@ namespace WindowsUtils.Commands
         /// <summary>
         /// <para type="description">The MSI file path.</para>
         /// </summary>
-        [Parameter(Mandatory = true, Position = 0, ValueFromPipeline = true)]
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ValueFromPipelineByPropertyName = true,
+            HelpMessage = "The MSI file path."
+        )]
         [ValidateNotNullOrEmpty]
+        [ValidateFileExists]
         public string Path { get; set; }
 
         protected override void ProcessRecord()
@@ -613,9 +653,10 @@ namespace WindowsUtils.Commands
         [Parameter(
             Mandatory = true,
             ParameterSetName = "WithComputerName",
-            ValueFromPipelineByPropertyName = true
+            ValueFromPipelineByPropertyName = true,
+            HelpMessage = "The computer name to disconnect the session."
         )]
-        [ValidateNotNullOrEmpty()]
+        [ValidateNotNullOrEmpty]
         public string ComputerName { get; set; }
 
         /// <summary>
@@ -624,20 +665,28 @@ namespace WindowsUtils.Commands
         [Parameter(
             Mandatory = true,
             ParameterSetName = "WithComputerName",
-            ValueFromPipelineByPropertyName = true
+            ValueFromPipelineByPropertyName = true,
+            HelpMessage = "The session ID to disconnect."
         )]
         [Parameter(
             Mandatory = false,
             ParameterSetName = "NoComputerName",
-            ValueFromPipelineByPropertyName = true
+            ValueFromPipelineByPropertyName = true,
+            HelpMessage = "The session ID to disconnect."
         )]
         public uint SessionId { get; set; }
 
         /// <summary>
         /// <para type="description">If called, the Cmdlet waits the logoff process to finish before returning.</para>
         /// </summary>
-        [Parameter(ParameterSetName = "WithComputerName")]
-        [Parameter(ParameterSetName = "NoComputerName")]
+        [Parameter(
+            ParameterSetName = "WithComputerName",
+            HelpMessage = "Waits for the logon process to finish."
+        )]
+        [Parameter(
+            ParameterSetName = "NoComputerName",
+            HelpMessage = "Waits for the logon process to finish."
+        )]
         public SwitchParameter Wait { get; set; }
 
         protected override void ProcessRecord()
@@ -736,29 +785,31 @@ namespace WindowsUtils.Commands
     public class RemoveServiceCommand : PSCmdlet
     {
         [Parameter(
-            Mandatory = true
-            , ValueFromPipeline = true
-            , ParameterSetName = "WithServiceController"
+            Mandatory = true,
+            ValueFromPipeline = true,
+            ParameterSetName = "WithServiceController",
+            HelpMessage = "The 'ServiceController' object."
         )]
-        public ServiceController InputObject { get; set; }
+        public System.ServiceProcess.ServiceController InputObject { get; set; }
 
         [Parameter(
-            Position = 0
-            , Mandatory = true
-            , ValueFromPipeline = false
-            , ParameterSetName = "WithServiceName"
+            Position = 0,
+            Mandatory = true,
+            ValueFromPipeline = false,
+            ParameterSetName = "WithServiceName",
+            HelpMessage = "The service name."
         )]
-        [ValidateNotNullOrEmpty()]
+        [ValidateNotNullOrEmpty]
         public string Name { get; set; }
 
-        [Parameter()]
-        [ValidateNotNullOrEmpty()]
+        [Parameter(HelpMessage = "The computer name to remove the service from.s")]
+        [ValidateNotNullOrEmpty]
         public string ComputerName { get; set; }
 
-        [Parameter()]
+        [Parameter(HelpMessage = "Stops the service and any dependents.")]
         public SwitchParameter Stop { get; set; }
 
-        [Parameter()]
+        [Parameter(HelpMessage = "Skips confirmation.")]
         public SwitchParameter Force { get; set; }
 
         protected override void ProcessRecord()
@@ -866,6 +917,25 @@ namespace WindowsUtils.Commands
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Gets the service security attributes.</para>
+    /// <para type="description">This cmdlet retrieves the service security attributes.</para>
+    /// <para type="description">The attributes retrieved are Owner, Group, DACL, and SACL, if used with the 'Audit' parameter.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>RGet-ServiceSecurity -Name 'MyCoolService'</code>
+    ///     <para>Gets the security attributes from the service 'MyCoolService'.</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-ServiceSecurity -Name 'MyCoolService' -Audit -Force</code>
+    ///     <para>Gets the security attributes from the service 'MyCoolService', including System Access Control List (SACL).</para>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
     [Cmdlet(
         VerbsCommon.Get, "ServiceSecurity",
         DefaultParameterSetName = "WithServiceName"
@@ -874,14 +944,19 @@ namespace WindowsUtils.Commands
     {
         [Parameter(
             Mandatory = true,
+            Position = 0,
             ParameterSetName = "WithServiceName",
             ValueFromPipelineByPropertyName = true
         )]
+        [ValidateNotNullOrEmpty]
         public string Name { get; set; }
+
+        [Parameter(HelpMessage = "Retrieves, additionally, the SACL.")]
+        public SwitchParameter Audit { get; set; }
 
         protected override void ProcessRecord()
         {
-            WriteObject(Engine.ServiceController.GetServiceObjectSecurity(Name));
+            WriteObject(ServiceController.GetServiceObjectSecurity(Name, Audit));
         }
     }
 }

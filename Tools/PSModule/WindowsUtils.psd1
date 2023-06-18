@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = 'WindowsUtils.psm1'
+RootModule = 'WindowsUtils.dll'
 
 # Version number of this module.
 ModuleVersion = '1.5.1'
@@ -54,7 +54,7 @@ Description = 'This module contain tools to facilitate the administration of Win
 # RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
+RequiredAssemblies = @('WindowsUtils.dll', 'Core.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -63,25 +63,36 @@ Description = 'This module contain tools to facilitate the administration of Win
 TypesToProcess = @('WindowsUtils.Types.ps1xml')
 
 # Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @('WindowsUtils.Format.ps1xml')
+FormatsToProcess = @('WindowsUtils.Format.ps1xml')
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('WindowsUtils.dll')
+# NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-ComputerSession', 'Get-ObjectHandle', 'Get-FormattedError', 
-               'Get-LastWin32Error', 'Get-LastWinSockError', 'Get-MsiProperties', 
-               'Get-RemoteMessageOptions', 'Get-ResourceMessageTable', 
-               'Invoke-RemoteMessage', 'Send-Click', 'Disconnect-Session'
+# FunctionsToExport = 
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = '*'
+CmdletsToExport = @(
+    'Get-ComputerSession',
+    'Get-ObjectHandle',
+    'Get-FormattedError', 
+    'Get-LastWin32Error',
+    'Get-LastWinSockError',
+    'Get-MsiProperties',
+    'Get-RemoteMessageOptions',
+    'Get-ResourceMessageTable', 
+    'Invoke-RemoteMessage',
+    'Send-Click',
+    'Disconnect-Session',
+    'Remove-Service',
+    'Get-ServiceSecurity'    
+)
 
 # Variables to export from this module
-VariablesToExport = '*'
+# VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = '*'
+AliasesToExport = @('gethandle', 'disconnect')
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

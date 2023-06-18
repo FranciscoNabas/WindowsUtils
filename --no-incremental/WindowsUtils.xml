@@ -1,0 +1,381 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>WindowsUtils</name>
+    </assembly>
+    <members>
+        <member name="T:WindowsUtils.Commands.InvokeRemoteMessageCommand">
+             <summary>
+             <para type="synopsis">Sends a message to sessions on local or remote computers.</para>
+             <para type="description">The Invoke-RemoteMessage cmdlet sends a MessageBox-Style message to sessions on local or remote computers.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.InvokeRemoteMessageCommand.Title">
+            <summary>
+            <para type="description">The message box title.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.InvokeRemoteMessageCommand.Message">
+            <summary>
+            <para type="description">The message text.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.InvokeRemoteMessageCommand.ComputerName">
+            <summary>
+            <para type="description">The computer name to send the message.</para>
+            <para type="description">If not specified, sends the message to the local host.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.InvokeRemoteMessageCommand.SessionId">
+            <summary>
+            <para type="description">The session(s) to receive the message.</para>
+            <para type="description">If not specified, sends the message to all sessions.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.InvokeRemoteMessageCommand.Style">
+            <summary>
+            <para type="description">A list of MessageBox style enum objects.</para>
+            <para type="description">To obtaining a list of available options, call 'Get-RemoteMessageOptions', or see definition for the MessageBox function.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.InvokeRemoteMessageCommand.Timeout">
+            <summary>
+            <para type="description">The timeout, in seconds, to wait for a response.</para>
+            <para type="description">If the timeout expires, the cmdlet returns 'Timeout'. The message is not closed.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.InvokeRemoteMessageCommand.Wait">
+            <summary>
+            <para type="description">If called, waits for the user response in the specified 'Timeout'.</para>
+            <para type="description">If not, the Cmdlet returns 'AsyncReturn'.</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.GetRemoteMessageOptionsCommand">
+            <summary>
+            <para type="synopsis">Retrieves the options to be used with Invoke-RemoteMessage.</para>
+            <para type="description">This Cmdlet returns a list of options available to be used with the parameter 'Style', from Invoke-RemoteMessage.</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.GetComputerSessionCommand">
+            <summary>
+            <para type="synopsis">Returns the user sessions on the local or remote computer.</para>
+            <para type="description">This Cmdlet returns the sessions on the local or remote computer.</para>
+            <para type="description">By default, only brings sessions that has an user name assigned.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.GetComputerSessionCommand.ComputerName">
+            <summary>
+            <para type="description">The computer name.</para>
+            <para type="description">If no computer name is informed, it returns sessions on the current computer.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.GetComputerSessionCommand.ActiveOnly">
+            <summary>
+            <para type="description">When called, this Cmdlet returns only active sessions.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.GetComputerSessionCommand.IncludeSystemSession">
+            <summary>
+            <para type="description">When called, this Cmdlet includes sessions without an user name assigned.</para>
+            <para type="description">Sessions without user name are marked as 'System'.</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.SendClickCommand">
+            <summary>
+            <para type="synopsis">Sends a click.</para>
+            <para type="description">When called, this cmdlet sends a click on the current desktop.</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.GetResourceMessageTableCommand">
+            <summary>
+            <para type="synopsis">Returns the message table stored in a file.</para>
+            <para type="description">This Cmdlet lists all messages, and their index from a resource message table.</para>
+            <para type="description">These message tables are stored into files, like DLL or EXE.</para>
+            <para type="description">I.E.: on kernel32.dll are stored the Win32 system error messages.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.GetResourceMessageTableCommand.Path">
+            <summary>
+            <para type="description">The path to the file containing the message table.</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.GetErrorStringCommand">
+            <summary>
+            <para type="synopsis">Returns the error message for a system error code.</para>
+            <para type="description">This Cmdlet uses FormatMessage to return the message text for a given 'Win32' system error.</para>
+            <example>
+                <para></para>
+                <code>Get-ErrorString -ErrorCode 5</code>
+                <para>Returning the message for a given error code.</para>
+                <para></para>
+                <para></para>
+            </example>
+            <example>
+                <para></para>
+                <code>[System.Runtime.InteropServices.Marshal]::GetLastWin32Error() | Get-ErrorString</code>
+                <para>Calling GetLastWin32Error and providing it to the Cmdlet to get the message string.</para>
+                <para></para>
+                <para></para>
+            </example>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.GetErrorStringCommand.ErrorCode">
+            <summary>
+            <para type="description">The error code.</para>
+            <para type="description">This value will be passed to the 'FormatMessage' function, with the system message parameter..</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.GetLastWin32ErrorCommand">
+            <summary>
+            <para type="synopsis">Returns the last 'Win32' system error message.</para>
+            <para type="description">This Cmdlet gets the last error thrown by the system, and returns the message string.</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.GetObjectHandleCommand">
+            <summary>
+            <para type="synopsis">Returns all processes that have a handle to a file or directory.</para>
+            <para type="description">This Cmdlet return all processes that have a handle to a file or directory.</para>
+            <para type="description">This is particularly useful when a process is preventing a file from being read, modified or deleted.</para>
+            <para type="description">Although working in a different way, this Cmdlet was designed to mimic handle.exe, from Sysinternals suite.</para>
+            <example>
+                <para></para>
+                <code>Get-ObjectHandle -Path "$env:windir\System32\kernel32.dll", "$env:windir\System32\ntdll.dll"</code>
+                <para>Returning processes that have open handles to a list of files.</para>
+                <para></para>
+                <para></para>
+            </example>
+            <example>
+                <para></para>
+                <code>Get-ObjectHandle $env:TEMP\*.tmp</code>
+                <para>Listing all .tmp files on the temp folder, and listing the processes with open handles to those files.</para>
+                <para>The Cmdlet lists the processes related to the files queried to make it easier identify processes when querying a list of files.</para>
+                <para></para>
+                <para></para>
+            </example>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.GetObjectHandleCommand.Path">
+            <summary>
+            <para type="description">The object path.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.GetObjectHandleCommand.LiteralPath">
+            <summary>
+            <para Type="description">Provider-aware file system object path.</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.GetMsiPropertiesCommand">
+            <summary>
+            <para type="synopsis">Returns the installer properties from a MSI file.</para>
+            <para type="description">This Cmdlet returns the installer properties from the installer database.</para>
+            <para type="description">Besides standard information, like Product Code, it brings vendor-specific information.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.GetMsiPropertiesCommand.Path">
+            <summary>
+            <para type="description">The MSI file path.</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.DisconnectSessionCommand">
+            <summary>
+            <para type="synopsis">Logs off an interactive session on the local or remote computer.</para>
+            <para type="description">This Cmdlet disconnects, or logs off, an interactive session on the local or remote computer.</para>
+            <para type="description">You can retrieve the SessionId with Get-ComputerSession, and use this Cmdled to logoff users.</para>
+            <example>
+                <para></para>
+                <code>Disconnect-Session -SessionId 3</code>
+                <para>Disconnects a session with a given session id.</para>
+                <para></para>
+                <para></para>
+            </example>
+            <example>
+                <para></para>
+                <code>Get-ComputerSession -ComputerName 'MYAWESOMEPC.contoso.com' | Where-Object { $PSItem.UserName -eq 'CONTOSO\user.name' } | Disconnect-Session -ComputerName 'MYAWESOMEPC.contoso.com' -SessionId $PSItem.SessionId </code>
+                <para>Gets the session from a specific user on a remote computer, and loggs it off.</para>
+                <para></para>
+                <para></para>
+            </example>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.DisconnectSessionCommand.ComputerName">
+            <summary>
+            <para type="description">The computer name to disconnect a session.</para>
+            <para type="description">If not informed, it disconnects the session from the local computer.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.DisconnectSessionCommand.SessionId">
+            <summary>
+            <para type="description">The session id to disconnect.</para>
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Commands.DisconnectSessionCommand.Wait">
+            <summary>
+            <para type="description">If called, the Cmdlet waits the logoff process to finish before returning.</para>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.RemoveServiceCommand">
+            <summary>
+            <para type="synopsis">Deletes a service from the local or remote computer.</para>
+            <para type="description">This cmdlet removes (deletes) a specified service from the local or remote computer.</para>
+            <para type="description">If the service is running, and you don't use 'Stop', it will be marked to deletion.</para>
+            <para type="description">If the service have dependents, and 'Stop' is not used, it will be marked for deletion.</para>
+            <para type="description">If the service have dependents, and you use 'Stop', it will stop all dependent services.</para>
+            <para type="description"></para>
+            <para type="description">Attention!</para>
+            <para type="description">The act of deleting a service is ultimately marking it for deletion.</para>
+            <para type="description">A service is only permanently deleted when it's stopped and there are no more open handles to it.</para>
+            <example>
+                <para></para>
+                <code>Remove-Service -Name 'MyCoolService'</code>
+                <para>Removes the service 'MyCoolService'.</para>
+                <para></para>
+                <para></para>
+            </example>
+            <example>
+                <para></para>
+                <code>Remove-Service -Name 'MyCoolService' -Stop -Force</code>
+                <para>Stops the service, and its dependents, and remove it. 'Force' skips confirmation.</para>
+                <para></para>
+                <para></para>
+            </example>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Commands.GetServiceSecurityCommand">
+            <summary>
+            <para type="synopsis">Gets the service security attributes.</para>
+            <para type="description">This cmdlet retrieves the service security attributes.</para>
+            <para type="description">The attributes retrieved are Owner, Group, DACL, and SACL, if used with the 'Audit' parameter.</para>
+            <example>
+                <para></para>
+                <code>RGet-ServiceSecurity -Name 'MyCoolService'</code>
+                <para>Gets the security attributes from the service 'MyCoolService'.</para>
+                <para></para>
+                <para></para>
+            </example>
+            <example>
+                <para></para>
+                <code>Get-ServiceSecurity -Name 'MyCoolService' -Audit -Force</code>
+                <para>Gets the security attributes from the service 'MyCoolService', including System Access Control List (SACL).</para>
+                <para></para>
+                <para></para>
+            </example>
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.ComputerSession">
+            <summary>
+            Object used on WTS Cmdlets
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.ResourceMessageTable">
+            <summary>
+            Object from Get-ResourceMessageTable
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.ObjectHandle">
+            <summary>
+            Object from Get-ObjectHandle
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.MessageResponse">
+            <summary>
+            Object from Invoke-RemoteMessage
+            </summary>
+        </member>
+        <member name="T:WindowsUtils.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Properties.Resources.DisconnectWMessageCleanRegPS1">
+            <summary>
+              Looks up a localized string similar to .
+            </summary>
+        </member>
+        <member name="P:WindowsUtils.Properties.Resources.DisconnectWMessageCleanRegTask">
+             <summary>
+               Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-16&quot;?&gt;
+            &lt;Task version=&quot;1.2&quot; xmlns=&quot;http://schemas.microsoft.com/windows/2004/02/mit/task&quot;&gt;
+                &lt;RegistrationInfo /&gt;
+                &lt;Principals&gt;
+                    &lt;Principal&gt;
+                        &lt;UserId&gt;S-1-5-18&lt;/UserId&gt;
+                        &lt;RunLevel&gt;HighestAvailable&lt;/RunLevel&gt;
+                    &lt;/Principal&gt;
+                &lt;/Principals&gt;
+                &lt;Settings&gt;
+                    &lt;AllowStartOnDemand&gt;false&lt;/AllowStartOnDemand&gt;
+                    &lt;DisallowStartIfOnBatteries&gt;false&lt;/DisallowStartIfOnBatteries&gt;
+                    &lt;StopIfGoingOnBatteries&gt;true&lt;/StopIfGoi [rest of string was truncated]&quot;;.
+             </summary>
+        </member>
+        <member name="P:WindowsUtils.Properties.Resources.DisconnectWMessagePwshP1">
+             <summary>
+               Looks up a localized string similar to Set-ExecutionPolicy Unrestricted -Scope &apos;Process&apos;
+            Add-Type -MemberDefinition @&apos;
+            [DllImport(&quot;Wtsapi32.dll&quot;, CharSet = CharSet.Unicode, SetLastError = true)]
+            public static extern bool WTSSendMessageW(
+                IntPtr hserver
+                ,uint sessionid
+                ,string title
+                ,uint titlelength
+                ,string message
+                ,uint messagelength
+                ,uint style
+                ,uint timeout
+                ,out uint response
+                ,bool wait
+            );
+            [DllImport(&quot;Wtsapi32.dll&quot;, CharSet = CharSet.Unicode, SetLastError = true)]
+            public static extern bo [rest of string was truncated]&quot;;.
+             </summary>
+        </member>
+        <member name="P:WindowsUtils.Properties.Resources.DisconnectWMessagePwshP2">
+             <summary>
+               Looks up a localized string similar to $errorcanceledbyuser = 1223
+            $start = Get-Date
+            [System.UInt32]$response = 0
+            if ($allowcancel) {
+                [CiscoWonders.Interop]::WTSSendMessageW(0, $sessionid, &apos;Disconnecting session.&apos;, 44, $Message, $Message.Length * 2, 4145, ([System.Int32]$Timeout * 60), [ref]$response, $true)
+                switch ($response.Response) {
+                    1 {
+                        $elapsed = [math]::Ceiling(((Get-Date) - $start).TotalSeconds)
+                        $remaining = [math]::Ceiling(([System.Int32]$Timeout * 60) - $elapsed)
+            
+                        Start-Slee [rest of string was truncated]&quot;;.
+             </summary>
+        </member>
+        <member name="M:WindowsUtilsTestService.Program.Main">
+            <summary>
+            The main entry point for the application.
+            </summary>
+        </member>
+        <member name="F:WindowsUtilsTestService.WindowsUtilsTestService.components">
+            <summary> 
+            Required designer variable.
+            </summary>
+        </member>
+        <member name="M:WindowsUtilsTestService.WindowsUtilsTestService.Dispose(System.Boolean)">
+            <summary>
+            Clean up any resources being used.
+            </summary>
+            <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        </member>
+        <member name="M:WindowsUtilsTestService.WindowsUtilsTestService.InitializeComponent">
+            <summary> 
+            Required method for Designer support - do not modify 
+            the contents of this method with the code editor.
+            </summary>
+        </member>
+    </members>
+</doc>

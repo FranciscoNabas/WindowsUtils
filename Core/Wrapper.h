@@ -4,6 +4,7 @@
 #include "TerminalServices.h"
 #include "Utilities.h"
 #include "Services.h"
+#include "AccessControl.h"
 
 #pragma managed
 #include <vcclr.h>
@@ -224,6 +225,26 @@ namespace WindowsUtils::Core
 		Utilities::PWU_RESOURCE_MESSAGE_TABLE wrapper;
 	};
 
+	// TEST ONLY
+	public ref class TokenPrivilege
+	{
+	public:
+		property String^ PrivilegeName { String^ get() { return _privName; } }
+		property Int32 Attributes { Int32 get() { return _attr; } }
+
+		TokenPrivilege(String^ privilege, Int32 attr)
+			: _privName(privilege), _attr(attr) { }
+		~TokenPrivilege() { }
+		
+	protected:
+		!TokenPrivilege() { }
+
+	private:
+		String^ _privName;
+		Int32 _attr;
+	};
+	// END TEST
+
 	/*=========================================
 	==	  Wrapper function identification	 ==
 	===========================================*/
@@ -234,6 +255,7 @@ namespace WindowsUtils::Core
 		Utilities* utlptr;
 		TerminalServices* wtsptr;
 		Services* svcptr;
+		AccessControl* acptr;
 
 		// Invoke-RemoteMessage
 		array<MessageResponseBase^>^ InvokeRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait);
@@ -265,9 +287,9 @@ namespace WindowsUtils::Core
 		void RemoveService(String^ servicename, bool stopservice);
 
 		// Get-ServiceSecurity
-		array<Byte>^ GetServiceSecurityDescriptorBytes(String^ serviceName, String^ computerName);
-		array<Byte>^ GetServiceSecurityDescriptorBytes(String^ serviceName);
-		array<Byte>^ GetServiceSecurityDescriptorBytes(IntPtr hService);
+		String^ GetServiceSecurityDescriptorString(String^ serviceName, String^ computerName, bool audit);
+		String^ GetServiceSecurityDescriptorString(String^ serviceName, bool audit);
+		String^ GetServiceSecurityDescriptorString(IntPtr hService, bool audit);
 	};
 
 	/*=========================================

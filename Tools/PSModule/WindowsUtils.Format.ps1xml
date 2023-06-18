@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Configuration>
+    <ViewDefinitions>
+        <View>
+            <Name>WindowsUtils.AccessControl.ServiceSecurity</Name>
+            <ViewSelectedBy>
+                <TypeName>WindowsUtils.AccessControl.ServiceSecurity</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>Access</Label>
+                    </TableColumnHeader>
+                 </TableHeaders>
+                 <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>Name</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Owner</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>AccessToString</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                 </TableRowEntries>
+            </TableControl>
+        </View>
+    </ViewDefinitions>
+</Configuration>

@@ -882,7 +882,8 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\francisco.nabas\\.nuget\\packages\\": {}
+    "C:\\Users\\Frank\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.4.1",
@@ -890,18 +891,24 @@
       "projectUniqueName": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
       "projectName": "WindowsUtils",
       "projectPath": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
-      "packagesPath": "C:\\Users\\francisco.nabas\\.nuget\\packages\\",
+      "packagesPath": "C:\\Users\\Frank\\.nuget\\packages\\",
       "outputPath": "C:\\Repositories\\WindowsUtils\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\francisco.nabas\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "C:\\Users\\Frank\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\nuget.config"
       ],
       "originalTargetFrameworks": [
         "netstandard2.0"
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Repositories\\NuGet": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {

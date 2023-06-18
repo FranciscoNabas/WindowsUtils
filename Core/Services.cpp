@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Services.h"
 #include "Utilities.h"
+#include "AccessControl.h"
 
 namespace WindowsUtils::Core
 {
@@ -115,19 +116,41 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD Services::GetServiceSecurity(const LPWSTR& serviceName, const LPWSTR& computerName, PSECURITY_DESCRIPTOR& pSvcSecurity, LPDWORD pdwSize)
+	DWORD Services::GetServiceSecurity(
+		const LPWSTR& serviceName,
+		const LPWSTR& computerName,
+		PSECURITY_DESCRIPTOR& pSvcSecurity,
+		LPDWORD pdwSize,
+		BOOL bAudit
+	)
 	{
 		DWORD result = ERROR_SUCCESS;
 		SharedVecPtr(SC_HANDLE) sc_handles = MakeVecPtr(SC_HANDLE);
-
+		SharedVecPtr(LPCWSTR) privilegeList = MakeVecPtr(LPCWSTR);
+		AccessControl* accptr;
+		
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+		
+		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+		DWORD dwServiceAccess = READ_CONTROL;
+		if (bAudit)
+		{
+			secInfo |= SACL_SECURITY_INFORMATION;
+			privilegeList->push_back(SE_SECURITY_NAME);
+			
+			result = accptr->AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_ENABLED);
+			if (result != ERROR_SUCCESS)
+				return result;
 
-		SC_HANDLE hScm = ::OpenSCManager(computerName, L"ServicesActive", SC_MANAGER_CONNECT);
+			dwServiceAccess |= ACCESS_SYSTEM_SECURITY;
+		}
+
+		SC_HANDLE hScm = ::OpenSCManager(computerName, SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
 		if (hScm == NULL)
 			return ::GetLastError();
 		sc_handles->push_back(hScm);
 
-		SC_HANDLE hService = ::OpenService(hScm, serviceName, READ_CONTROL);
+		SC_HANDLE hService = ::OpenServiceW(hScm, serviceName, dwServiceAccess);
 		if (hService == NULL)
 		{
 			result = ::GetLastError();
@@ -135,48 +158,54 @@ namespace WindowsUtils::Core
 		}
 		sc_handles->push_back(hService);
 
-		if (!::QueryServiceObjectSecurity(hService, DACL_SECURITY_INFORMATION, NULL, 0, pdwSize))
-		{
-			result = ::GetLastError();
-			if (result != ERROR_INSUFFICIENT_BUFFER)
-				goto CLEANUP;
-			else
-				result = ERROR_SUCCESS;
-		}
-
-		pSvcSecurity = (PSECURITY_DESCRIPTOR)MemoryManager.Allocate(*pdwSize);
-		if (!::QueryServiceObjectSecurity(hService, DACL_SECURITY_INFORMATION, pSvcSecurity, *pdwSize, pdwSize))
-		{
-			result = ::GetLastError();
+		result = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &pSvcSecurity);
+		if (result != ERROR_SUCCESS)
 			goto CLEANUP;
-		}
 
 	CLEANUP:
+		if (bAudit)
+			accptr->AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_DISABLED);
+
 		for (SC_HANDLE handle : *sc_handles)
 			::CloseServiceHandle(handle);
 
 		return result;
 	}
 
-	DWORD Services::GetServiceSecurity(SC_HANDLE& hService, PSECURITY_DESCRIPTOR& pSvcSecurity, LPDWORD pdwSize)
+	DWORD Services::GetServiceSecurity(
+		SC_HANDLE& hService,
+		PSECURITY_DESCRIPTOR& pSvcSecurity,
+		LPDWORD pdwSize,
+		BOOL bAudit
+	)
 	{
 		DWORD result = ERROR_SUCCESS;
 		DWORD bytesNeeded = 0;
+		SharedVecPtr(LPCWSTR) privilegeList = MakeVecPtr(LPCWSTR);
+		AccessControl* accptr;
 
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 
-		if (!::QueryServiceObjectSecurity(hService, DACL_SECURITY_INFORMATION, NULL, 0, &bytesNeeded))
+		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+		DWORD dwServiceAccess = READ_CONTROL;
+		if (bAudit)
 		{
-			result = ::GetLastError();
-			if (result != ERROR_INSUFFICIENT_BUFFER)
+			secInfo |= SACL_SECURITY_INFORMATION;
+			privilegeList->push_back(SE_SECURITY_NAME);
+			
+			result = accptr->AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_ENABLED);
+			if (result != ERROR_SUCCESS)
 				return result;
-			else
-				result = ERROR_SUCCESS;
+
+			dwServiceAccess |= ACCESS_SYSTEM_SECURITY;
 		}
 
-		pSvcSecurity = (PSECURITY_DESCRIPTOR)MemoryManager.Allocate(bytesNeeded);
-		if (!::QueryServiceObjectSecurity(hService, DACL_SECURITY_INFORMATION, pSvcSecurity, bytesNeeded, &bytesNeeded))
-			return ::GetLastError();
+		result = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &pSvcSecurity);
+		if (result != ERROR_SUCCESS)
+			return result;
+
+		if (bAudit)
+			result = accptr->AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_DISABLED);
 
 		return result;
 	}

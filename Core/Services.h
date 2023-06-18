@@ -16,8 +16,8 @@ namespace WindowsUtils::Core
 		DWORD RemoveService(SC_HANDLE& hservice, const LPWSTR& computername, BOOL stopservice);
 
 		// Get-ServiceSecurity
-		DWORD GetServiceSecurity(const LPWSTR& serviceName, const LPWSTR& computerName, PSECURITY_DESCRIPTOR& pSvcSecurity, LPDWORD pdwSize);
-		DWORD GetServiceSecurity(SC_HANDLE& serviceName, PSECURITY_DESCRIPTOR& pSvcSecurity, LPDWORD pdwSize);
+		DWORD GetServiceSecurity(const LPWSTR& serviceName, const LPWSTR& computerName, PSECURITY_DESCRIPTOR& pSvcSecurity, LPDWORD pdwSize, BOOL bAudit = FALSE);
+		DWORD GetServiceSecurity(SC_HANDLE& serviceName, PSECURITY_DESCRIPTOR& pSvcSecurity, LPDWORD pdwSize, BOOL bAudit = FALSE);
 	};
 
 	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice, const LPWSTR& computername);

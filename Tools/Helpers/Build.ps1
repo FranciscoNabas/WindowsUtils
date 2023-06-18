@@ -9,6 +9,7 @@ $copypath = @(
     '.\Tools\PSModule\WindowsUtils.psd1'
     '.\Tools\PSModule\WindowsUtils.psm1'
     '.\Tools\PSModule\WindowsUtils.Types.ps1xml'
+    '.\Tools\PSModule\WindowsUtils.Format.ps1xml'
 )
 
 if ($Local) {

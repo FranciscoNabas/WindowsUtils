@@ -284,54 +284,79 @@ namespace WindowsUtils::Core
 			throw gcnew NativeException(result);
 	}
 
-	array<Byte>^ WrapperFunctions::GetServiceSecurityDescriptorBytes(String^ serviceName, String^ computerName)
+	String^ WrapperFunctions::GetServiceSecurityDescriptorString(String^ serviceName, String^ computerName, bool audit)
 	{
+		DWORD result = ERROR_SUCCESS;
 		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
 		pin_ptr<const wchar_t> wComputerName = PtrToStringChars(computerName);
 
+		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+		if (audit)
+			secInfo |= SACL_SECURITY_INFORMATION;
+
 		PSECURITY_DESCRIPTOR svcSecurity;
 		DWORD size = 0;
-		DWORD result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, svcSecurity, &size);
+		if (audit)
+			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, svcSecurity, &size, TRUE);
+		else
+			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, svcSecurity, &size);
+
 		if (result != ERROR_SUCCESS)
 			throw gcnew NativeException(result);
 
-		array<Byte>^ output = gcnew array<Byte>(size);
-		Marshal::Copy((IntPtr)svcSecurity, output, 0, size);
+		LPWSTR sddl;
+		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
 
-		return output;
+		return gcnew String(sddl);
 	}
 
-	array<Byte>^ WrapperFunctions::GetServiceSecurityDescriptorBytes(String^ serviceName)
+	String^ WrapperFunctions::GetServiceSecurityDescriptorString(String^ serviceName, bool audit)
 	{
+		DWORD result = ERROR_SUCCESS;
 		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
+		
+		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+		if (audit)
+			secInfo |= SACL_SECURITY_INFORMATION;
 
 		PSECURITY_DESCRIPTOR svcSecurity;
 		DWORD size = 0;
-		DWORD result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, L".", svcSecurity, &size);
+		if (audit)
+			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, L".", svcSecurity, &size, TRUE);
+		else
+			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, L".", svcSecurity, &size);
+
 		if (result != ERROR_SUCCESS)
 			throw gcnew NativeException(result);
 
-		array<Byte>^ output = gcnew array<Byte>(size);
-		Marshal::Copy((IntPtr)svcSecurity, output, 0, size);
-
-		return output;
+		LPWSTR sddl;
+		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
+		
+		return gcnew String(sddl);
 	}
 
-	array<Byte>^ WrapperFunctions::GetServiceSecurityDescriptorBytes(IntPtr hService)
+	String^ WrapperFunctions::GetServiceSecurityDescriptorString(IntPtr hService, bool audit)
 	{
+		DWORD result = ERROR_SUCCESS;
 		HANDLE phService = static_cast<HANDLE>(hService);
 		SC_HANDLE whService = static_cast<SC_HANDLE>(phService);
 
+		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+		if (audit)
+			secInfo |= SACL_SECURITY_INFORMATION;
+
 		PSECURITY_DESCRIPTOR svcSecurity;
 		DWORD size = 0;
-		DWORD result = svcptr->GetServiceSecurity(whService, svcSecurity, &size);
+		if (audit)
+			result = svcptr->GetServiceSecurity(whService, svcSecurity, &size, TRUE);
+		else
+			result = svcptr->GetServiceSecurity(whService, svcSecurity, &size);
+
 		if (result != ERROR_SUCCESS)
 			throw gcnew NativeException(result);
 
-		array<Byte>^ output = gcnew array<Byte>(size);
-		Marshal::Copy((IntPtr)svcSecurity, output, 0, size);
-
-		return output;
+		LPWSTR sddl;
+		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
 	}
 
 	/*========================================

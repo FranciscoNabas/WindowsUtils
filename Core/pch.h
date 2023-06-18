@@ -33,5 +33,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <AclAPI.h>
+#include <sddl.h>
 
 #endif //PCH_H

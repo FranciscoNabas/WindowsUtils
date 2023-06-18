@@ -8,10 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 - WtsSession:
   - From a static class to an IDisposable class. Not only safer, but allows us to manage multiple sessions with multiple servers at the same time.
+- `Get-FormattedError` renamed to `Get-ErrorString`.
 
 ### Added
 - `Remove-Service` Cmdlet.
 - `NativeException` exception on both core, and main libraries to wrap Win32 errors.
+- Added help message on all parameters.
+- Added the `ValidateFileExists` attribute to validate if single files exists.
 
 ### Bugs
 - Get-ResourceMessageTable:
