@@ -1,4 +1,7 @@
 ﻿using System.Management.Automation;
+using System.Security.AccessControl;
+using System.Security.Principal;
+using WindowsUtils.AccessControl;
 using WindowsUtils.Core;
 using WindowsUtils.Engine;
 
@@ -364,13 +367,11 @@ namespace WindowsUtils.Commands
     ///     <code>Get-ErrorString -ErrorCode 5</code>
     ///     <para>Returning the message for a given error code.</para>
     ///     <para></para>
-    ///     <para></para>
     /// </example>
     /// <example>
     ///     <para></para>
     ///     <code>[System.Runtime.InteropServices.Marshal]::GetLastWin32Error() | Get-ErrorString</code>
     ///     <para>Calling GetLastWin32Error and providing it to the Cmdlet to get the message string.</para>
-    ///     <para></para>
     ///     <para></para>
     /// </example>
     /// </summary>
@@ -434,14 +435,12 @@ namespace WindowsUtils.Commands
     ///     <code>Get-ObjectHandle -Path "$env:windir\System32\kernel32.dll", "$env:windir\System32\ntdll.dll"</code>
     ///     <para>Returning processes that have open handles to a list of files.</para>
     ///     <para></para>
-    ///     <para></para>
     /// </example>
     /// <example>
     ///     <para></para>
     ///     <code>Get-ObjectHandle $env:TEMP\*.tmp</code>
     ///     <para>Listing all .tmp files on the temp folder, and listing the processes with open handles to those files.</para>
     ///     <para>The Cmdlet lists the processes related to the files queried to make it easier identify processes when querying a list of files.</para>
-    ///     <para></para>
     ///     <para></para>
     /// </example>
     /// </summary>
@@ -633,13 +632,11 @@ namespace WindowsUtils.Commands
     ///     <code>Disconnect-Session -SessionId 3</code>
     ///     <para>Disconnects a session with a given session id.</para>
     ///     <para></para>
-    ///     <para></para>
     /// </example>
     /// <example>
     ///     <para></para>
     ///     <code>Get-ComputerSession -ComputerName 'MYAWESOMEPC.contoso.com' | Where-Object { $PSItem.UserName -eq 'CONTOSO\user.name' } | Disconnect-Session -ComputerName 'MYAWESOMEPC.contoso.com' -SessionId $PSItem.SessionId </code>
     ///     <para>Gets the session from a specific user on a remote computer, and loggs it off.</para>
-    ///     <para></para>
     ///     <para></para>
     /// </example>
     /// </summary>
@@ -772,13 +769,11 @@ namespace WindowsUtils.Commands
     ///     <code>Remove-Service -Name 'MyCoolService'</code>
     ///     <para>Removes the service 'MyCoolService'.</para>
     ///     <para></para>
-    ///     <para></para>
     /// </example>
     /// <example>
     ///     <para></para>
     ///     <code>Remove-Service -Name 'MyCoolService' -Stop -Force</code>
     ///     <para>Stops the service, and its dependents, and remove it. 'Force' skips confirmation.</para>
-    ///     <para></para>
     ///     <para></para>
     /// </example>
     /// </summary>
@@ -944,16 +939,21 @@ namespace WindowsUtils.Commands
     /// <para type="description">The attributes retrieved are Owner, Group, DACL, and SACL, if used with the 'Audit' parameter.</para>
     /// <example>
     ///     <para></para>
-    ///     <code>RGet-ServiceSecurity -Name 'MyCoolService'</code>
+    ///     <code>Get-ServiceSecurity -Name 'MyCoolService'</code>
     ///     <para>Gets the security attributes from the service 'MyCoolService'.</para>
-    ///     <para></para>
     ///     <para></para>
     /// </example>
     /// <example>
     ///     <para></para>
-    ///     <code>Get-ServiceSecurity -Name 'MyCoolService' -Audit -Force</code>
+    ///     <code>Get-ServiceSecurity -Name 'MyCoolService' -Audit</code>
     ///     <para>Gets the security attributes from the service 'MyCoolService', including System Access Control List (SACL).</para>
     ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-Service -Name 'MyCoolService' | Get-ServiceSecurity</code>
+    ///     <code>$service = Get-Service -Name 'MyCoolService'; Get-ServiceSecurity -InputObject $service</code>
+    ///     <para>Gets the security attributes from the service 'MyCoolService', from 'Get-Service'.</para>
     ///     <para></para>
     /// </example>
     /// </summary>
@@ -1004,5 +1004,237 @@ namespace WindowsUtils.Commands
                 else
                     WriteObject(ServiceController.GetServiceObjectSecurity(InputObject, Audit));
         }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Creates a new service access rule object.</para>
+    /// <para type="description">This cmdlet creates a new service access rule object to modify service security attributes.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>New-ServiceAccessRule -Identity 'DOMAIN\YourUser' -Rights 'AllAccess' -Type 'Allow'</code>
+    ///     <para>Creates a new service access rule with all access allowed for user 'DOMAIN\YourUser'.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>              $serviceAccessRuleSplat = @{
+    ///    Identity = [System.Security.Principal.NTAccount]'DOMAIN\YourUser
+    ///    Rights = [WindowsUtils.Engine.ServiceRights]::GenericRead -bor [WindowsUtils.Engine.ServiceRights]::EnumerateDependents
+    ///    Type = [System.Security.AccessControl.AccessControlType]::Deny
+    ///    InheritanceFlags = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit
+    ///    PropagationFlags = [System.Security.AccessControl.PropagationFlags]::InheritOnly
+    ///    Inherited = $true
+    ///}
+    ///New-ServiceAccessRule @serviceAccessRuleSplat</code>
+    ///     <para>Creates a new service access rule with the defined parameters.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(VerbsCommon.New, "ServiceAccessRule")]
+    public class NewServiceAccessRuleCommand : PSCmdlet
+    {
+        private string _identityAsString;
+        private IdentityReference _identityAsIdReference;
+        private bool _isString;
+        private ServiceRights _rights;
+        private InheritanceFlags _inheritance;
+        private PropagationFlags _propagation;
+
+        /// <summary>
+        /// <para type="description">The identity to be associated to the new access rule.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            HelpMessage = "The identity to be associated to the new access rule."
+        )]
+        public object Identity
+        {
+            get
+            {
+                if (_isString)
+                    return _identityAsString;
+                
+                return _identityAsIdReference;
+            }
+            set
+            {
+                if (value is string _valueStr)
+                {
+                    _identityAsString = _valueStr;
+                    _isString = true;
+                    _identityAsIdReference = new NTAccount(_valueStr);
+                }
+                else if (value is IdentityReference _valueIdRf)
+                    _identityAsIdReference = _valueIdRf;
+                else
+                    throw new ArgumentException("Wrong identity type. Accepted types are 'System.String' and 'System.Security.Principal.IdentityReference'.");
+            }
+        }
+
+        /// <summary>
+        /// <para type="description">A bitwise OR flag of one or more service rights.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            HelpMessage = "A bitwise OR flag of one or more service rights."
+        )]
+        public ServiceRights Rights
+        {
+            get { return _rights; }
+            set { _rights = value; }
+        }
+
+        /// <summary>
+        /// <para type="description">The type of the new access rule.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            HelpMessage = "The type of the new access rule."
+        )]
+        public AccessControlType Type { get; set; }
+
+        /// <summary>
+        /// <para type="description">The inheritance flags to be associated with the new access rule.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "The inheritance flags to be associated with the new access rule.")]
+        public InheritanceFlags InheritanceFlags
+        {
+            get { return _inheritance; }
+            set { _inheritance = value; }
+        }
+
+        /// <summary>
+        /// <para type="description">The propagation flags to be associated with the new access rule.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "The propagation flags to be associated with the new access rule.")]
+        public PropagationFlags PropagationFlags
+        {
+            get { return _propagation; }
+            set { _propagation = value; }
+        }
+
+        /// <summary>
+        /// <para type="description">Called if the new access rule is inherited.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "Called if the new access rule is inherited.")]
+        public SwitchParameter Inherited { get; set; }
+
+        protected override void ProcessRecord() => WriteObject(new ServiceAccessRule(_identityAsIdReference, _rights, Inherited, _inheritance, _propagation, Type));
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Creates a new service audit rule object.</para>
+    /// <para type="description">This cmdlet creates a new service audit rule object to modify service security attributes.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>New-ServiceAuditRule -Identity 'DOMAIN\YourUser' -Rights 'AllAccess' -Flags 'Failure'</code>
+    ///     <para>Creates a new service audit rule for all access and failure for 'DOMAIN\YourUser'.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>              $serviceAuditRuleSplat = @{
+    ///    Identity = [System.Security.Principal.NTAccount]'DOMAIN\YourUser
+    ///    Rights = [WindowsUtils.Engine.ServiceRights]::GenericRead -bor [WindowsUtils.Engine.ServiceRights]::EnumerateDependents
+    ///    Flags = [System.Security.AccessControl.AuditFlags]::Success
+    ///    InheritanceFlags = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit
+    ///    PropagationFlags = [System.Security.AccessControl.PropagationFlags]::InheritOnly
+    ///    Inherited = $true
+    ///}
+    ///New-ServiceAuditRule @serviceAuditRuleSplat</code>
+    ///     <para>Creates a new service audit rule with the defined parameters.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(VerbsCommon.New, "ServiceAuditRule")]
+    public class NewServiceSecurityCommand : PSCmdlet
+    {
+        private string _identityAsString;
+        private IdentityReference _identityAsIdReference;
+        private bool _isString;
+        private ServiceRights _rights;
+        private InheritanceFlags _inheritance;
+        private PropagationFlags _propagation;
+
+        /// <summary>
+        /// <para type="description">The identity to be associated to the new audit rule.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            HelpMessage = "The identity to be associated to the new audit rule."
+        )]
+        public object Identity
+        {
+            get
+            {
+                if (_isString)
+                    return _identityAsString;
+                
+                return _identityAsIdReference;
+            }
+            set
+            {
+                if (value is string _valueStr)
+                {
+                    _identityAsString = _valueStr;
+                    _isString = true;
+                    _identityAsIdReference = new NTAccount(_valueStr);
+                }
+                else if (value is IdentityReference _valueIdRf)
+                    _identityAsIdReference = _valueIdRf;
+                else
+                    throw new ArgumentException("Wrong identity type. Accepted types are 'System.String' and 'System.Security.Principal.IdentityReference'.");
+            }
+        }
+
+        /// <summary>
+        /// <para type="description">A bitwise OR flag of one or more service rights.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            HelpMessage = "A bitwise OR flag of one or more service rights."
+        )]
+        public ServiceRights Rights
+        {
+            get { return _rights; }
+            set { _rights = value; }
+        }
+
+        /// <summary>
+        /// <para type="description">The type of the new audit rule.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            HelpMessage = "The type of the new audit rule."
+        )]
+        public AuditFlags Flags { get; set; }
+
+        /// <summary>
+        /// <para type="description">The inheritance flags to be associated with the new audit rule.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "The inheritance flags to be associated with the new audit rule.")]
+        public InheritanceFlags InheritanceFlags
+        {
+            get { return _inheritance; }
+            set { _inheritance = value; }
+        }
+
+        /// <summary>
+        /// <para type="description">The propagation flags to be associated with the new audit rule.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "The propagation flags to be associated with the new audit rule.")]
+        public PropagationFlags PropagationFlags
+        {
+            get { return _propagation; }
+            set { _propagation = value; }
+        }
+
+        /// <summary>
+        /// <para type="description">Called if the new audit rule is inherited.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "Called if the new audit rule is inherited.")]
+        public SwitchParameter Inherited { get; set; }
+
+        protected override void ProcessRecord() => WriteObject(new ServiceAuditRule(_identityAsIdReference, _rights, Inherited, _inheritance, _propagation, Flags));
     }
 }
