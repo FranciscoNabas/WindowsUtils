@@ -127,7 +127,6 @@ namespace WindowsUtils::Core
 		DWORD result = ERROR_SUCCESS;
 		SharedVecPtr(SC_HANDLE) sc_handles = MakeVecPtr(SC_HANDLE);
 		SharedVecPtr(LPCWSTR) privilegeList = MakeVecPtr(LPCWSTR);
-		AccessControl* accptr;
 		
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 		
@@ -138,7 +137,7 @@ namespace WindowsUtils::Core
 			secInfo |= SACL_SECURITY_INFORMATION;
 			privilegeList->push_back(SE_SECURITY_NAME);
 			
-			result = accptr->AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_ENABLED);
+			result = AccessControl::AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_ENABLED);
 			if (result != ERROR_SUCCESS)
 				return result;
 
@@ -164,7 +163,7 @@ namespace WindowsUtils::Core
 
 	CLEANUP:
 		if (bAudit)
-			accptr->AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_DISABLED);
+			AccessControl::AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_DISABLED);
 
 		for (SC_HANDLE handle : *sc_handles)
 			::CloseServiceHandle(handle);
@@ -182,7 +181,6 @@ namespace WindowsUtils::Core
 		DWORD result = ERROR_SUCCESS;
 		DWORD bytesNeeded = 0;
 		SharedVecPtr(LPCWSTR) privilegeList = MakeVecPtr(LPCWSTR);
-		AccessControl* accptr;
 
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 
@@ -193,7 +191,7 @@ namespace WindowsUtils::Core
 			secInfo |= SACL_SECURITY_INFORMATION;
 			privilegeList->push_back(SE_SECURITY_NAME);
 			
-			result = accptr->AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_ENABLED);
+			result = AccessControl::AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_ENABLED);
 			if (result != ERROR_SUCCESS)
 				return result;
 
@@ -205,7 +203,65 @@ namespace WindowsUtils::Core
 			return result;
 
 		if (bAudit)
-			result = accptr->AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_DISABLED);
+			result = AccessControl::AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_DISABLED);
+
+		return result;
+	}
+
+	DWORD Services::SetServiceSecurity(
+		const LPWSTR& lpszServiceName,		// The service name.
+		const LPWSTR& lpszComputerName,		// The computer name where to set the service security.
+		const LPWSTR& lpszSddl,				// The SDDL representation of the security descriptor to set.
+		BOOL bChangeAudit,					// TRUE to change SACL.
+		BOOL bChangeOwner					// TRUE to change the owner.
+	)
+	{
+		DWORD result = ERROR_SUCCESS;
+		DWORD dwSzSecDesc;
+		PSECURITY_DESCRIPTOR pSecDesc;
+		SharedVecPtr(LPCWSTR) privilegeList = MakeVecPtr(LPCWSTR);
+		SharedVecPtr(SC_HANDLE) scHandles = MakeVecPtr(SC_HANDLE);
+
+		if (!ConvertStringSecurityDescriptorToSecurityDescriptor(lpszSddl, SDDL_REVISION_1, &pSecDesc, &dwSzSecDesc))
+			return GetLastError();
+
+		DWORD dwSvcAccess = WRITE_DAC | WRITE_OWNER;
+		DWORD dwSecInfo = DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION;
+		if (bChangeOwner)
+		{
+			privilegeList->push_back(SE_TAKE_OWNERSHIP_NAME);
+			dwSecInfo |= OWNER_SECURITY_INFORMATION;
+		}
+		if (bChangeAudit)
+		{
+			privilegeList->push_back(SE_SECURITY_NAME);
+			dwSvcAccess |= ACCESS_SYSTEM_SECURITY;
+			dwSecInfo |= SACL_SECURITY_INFORMATION;
+		}
+		AccessControl::AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_ENABLED);
+
+		SC_HANDLE hScm = OpenSCManager(lpszComputerName, SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
+		if (hScm == NULL)
+		{
+			result = GetLastError();
+			goto CLEANUP;
+		}
+		scHandles->push_back(hScm);
+
+		SC_HANDLE hService = OpenService(hScm, lpszServiceName, dwSvcAccess);
+		if (hService == NULL)
+		{
+			result = GetLastError();
+			goto CLEANUP;
+		}
+
+		if (!SetServiceObjectSecurity(hService, dwSecInfo, pSecDesc))
+			result = GetLastError();
+
+	CLEANUP:
+		AccessControl::AdjustCurrentTokenPrivilege(privilegeList, SE_PRIVILEGE_DISABLED);
+		for (SC_HANDLE hScObject : *scHandles)
+			CloseServiceHandle(hScObject);
 
 		return result;
 	}

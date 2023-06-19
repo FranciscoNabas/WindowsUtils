@@ -1,6 +1,7 @@
 using System.Security.Principal;
 using System.Security.AccessControl;
 using WindowsUtils.Engine;
+using System.Data.SqlTypes;
 
 namespace WindowsUtils.AccessControl
 {
@@ -8,57 +9,158 @@ namespace WindowsUtils.AccessControl
     {
         private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.SupportsRecursion);
 
-        internal readonly RawSecurityDescriptor _rawSecDescriptor;
-        internal readonly CommonSecurityDescriptor _securityDescriptor;
-        private readonly string _sddl;
-        private readonly string? _owner;
-        private readonly string? _group;
+        protected RawSecurityDescriptor _rawSecDescriptor;
+        protected CommonSecurityDescriptor _securityDescriptor;
 
+        private bool _ownerModified;
+        private bool _groupModified;
         private bool _saclModified;
-	    private bool _daclModified;
+        private bool _daclModified;
 
-        protected bool IsDS => _securityDescriptor.IsDS;
-        protected bool IsContainer => _securityDescriptor.IsContainer;
-
-        public string? Owner { get { return _owner; } }
-        public string? Group { get { return _group; } }
-        public string Sddl { get { return _sddl; } }
-
+        protected CommonSecurityDescriptor SecurityDescriptor => _securityDescriptor;
+        protected bool OwnerModified
+        {
+            get
+            {
+                if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
+                {
+                    throw new InvalidOperationException("Must lock for read or write.");
+                }
+                return _ownerModified;
+            }
+            set
+            {
+                if (!_lock.IsWriteLockHeld)
+                {
+                    throw new InvalidOperationException("Must lock for write.");
+                }
+                _ownerModified = value;
+            }
+        }
+        protected bool GroupModified
+        {
+            get
+            {
+                if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
+                {
+                    throw new InvalidOperationException("Must lock for read or write.");
+                }
+                return _groupModified;
+            }
+            set
+            {
+                if (!_lock.IsWriteLockHeld)
+                {
+                    throw new InvalidOperationException("Must lock for write.");
+                }
+                _groupModified = value;
+            }
+        }
         protected bool AuditRulesModified
         {
             get
             {
                 if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
+                {
                     throw new InvalidOperationException("Must lock for read or write.");
-                
+                }
                 return _saclModified;
             }
             set
             {
                 if (!_lock.IsWriteLockHeld)
+                {
                     throw new InvalidOperationException("Must lock for write.");
-                
+                }
                 _saclModified = value;
             }
         }
-
         protected bool AccessRulesModified
-	{
-		get
-		{
-			if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
-                throw new InvalidOperationException("Must lock for read or write.");
+        {
+            get
+            {
+                if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
+                {
+                    throw new InvalidOperationException("Must lock for read or write.");
+                }
+                return _daclModified;
+            }
+            set
+            {
+                if (!_lock.IsWriteLockHeld)
+                {
+                    throw new InvalidOperationException("Must lock for write.");
+                }
+                _daclModified = value;
+            }
+        }
+        protected bool IsDS => _securityDescriptor.IsDS;
+        protected bool IsContainer => _securityDescriptor.IsContainer;
 
-			return _daclModified;
-		}
-		set
-		{
-			if (!_lock.IsWriteLockHeld)
-                throw new InvalidOperationException("Must lock for write.");
-            
-			_daclModified = value;
-		}
-	}
+        public string? Owner => GetOwner(typeof(NTAccount))?.ToString();
+        public string? Group => GetGroup(typeof(NTAccount))?.ToString();
+        public string Sddl => _securityDescriptor.GetSddlForm(AccessControlSections.All);
+
+        public bool AreAccessRulesProtected
+        {
+            get
+            {
+                ReadLock();
+                try
+                {
+                    return (_securityDescriptor.ControlFlags & ControlFlags.DiscretionaryAclProtected) != 0;
+                }
+                finally
+                {
+                    ReadUnlock();
+                }
+            }
+        }
+        public bool AreAuditRulesProtected
+        {
+            get
+            {
+                ReadLock();
+                try
+                {
+                    return (_securityDescriptor.ControlFlags & ControlFlags.SystemAclProtected) != 0;
+                }
+                finally
+                {
+                    ReadUnlock();
+                }
+            }
+        }
+        public bool AreAccessRulesCanonical
+        {
+            get
+            {
+                ReadLock();
+                try
+                {
+                    return _securityDescriptor.IsDiscretionaryAclCanonical;
+                }
+                finally
+                {
+                    ReadUnlock();
+                }
+            }
+        }
+        public bool AreAuditRulesCanonical
+        {
+            get
+            {
+                ReadLock();
+                try
+                {
+                    return _securityDescriptor.IsSystemAclCanonical;
+                }
+                finally
+                {
+                    ReadUnlock();
+                }
+            }
+        }
 
         public virtual Type? AccessRightType { get; }
         public virtual Type? AccessRuleType { get; }
@@ -66,18 +168,68 @@ namespace WindowsUtils.AccessControl
 
         internal WindowsUtilsObjectSecurity(string sddl)
         {
-            _sddl = sddl;
             _rawSecDescriptor = new RawSecurityDescriptor(sddl);
             _securityDescriptor = new(false, false, _rawSecDescriptor);
-            _owner = _securityDescriptor.Owner?.Translate(typeof(NTAccount)).ToString();
-            _group = _securityDescriptor.Group?.Translate(typeof(NTAccount)).ToString();
         }
-
         internal WindowsUtilsObjectSecurity(RawSecurityDescriptor rawSecDescriptor)
         {
             _rawSecDescriptor = rawSecDescriptor;
-            _sddl = rawSecDescriptor.GetSddlForm(AccessControlSections.All);
             _securityDescriptor = new(false, false, rawSecDescriptor);
+        }
+
+        private void UpdateWithNewSecurityDescriptor(RawSecurityDescriptor newOne, AccessControlSections includeSections)
+        {
+            byte[] sdBytes = new byte[_securityDescriptor.BinaryLength];
+            _securityDescriptor.GetBinaryForm(sdBytes, 0);
+            _rawSecDescriptor = new(sdBytes, 0);
+
+            if ((includeSections & AccessControlSections.Owner) != 0)
+            {
+                if (_rawSecDescriptor.Owner != newOne.Owner)
+                {
+                    _ownerModified = true;
+                    _rawSecDescriptor.Owner = newOne.Owner;
+                }
+            }
+            if ((includeSections & AccessControlSections.Group) != 0)
+            {
+                if (_rawSecDescriptor.Group != newOne.Group)
+                {
+                    _groupModified = true;
+                    _rawSecDescriptor.Group = newOne.Group;
+                }
+            }
+            if ((includeSections & AccessControlSections.Audit) != 0)
+            {
+                _saclModified = true;
+                if (newOne.SystemAcl != null)
+                {
+                    _rawSecDescriptor.SystemAcl = newOne.SystemAcl;
+                }
+                else
+                {
+                    _rawSecDescriptor.SystemAcl = null;
+                }
+
+                _rawSecDescriptor.SetFlags(newOne.ControlFlags & (ControlFlags.SystemAclPresent | ControlFlags.SystemAclAutoInherited | ControlFlags.SystemAclProtected) | (_rawSecDescriptor.ControlFlags & ~(ControlFlags.SystemAclPresent | ControlFlags.SystemAclAutoInherited | ControlFlags.SystemAclProtected)));
+            }
+            if ((includeSections & AccessControlSections.Access) != 0)
+            {
+                _daclModified = true;
+                if (newOne.DiscretionaryAcl != null)
+                {
+                    _rawSecDescriptor.DiscretionaryAcl = newOne.DiscretionaryAcl;
+                }
+                else
+                {
+                    _rawSecDescriptor.DiscretionaryAcl = null;
+                }
+                ControlFlags newFlags = (newOne.ControlFlags | _securityDescriptor.ControlFlags & ControlFlags.DiscretionaryAclPresent) & (ControlFlags.DiscretionaryAclPresent | ControlFlags.DiscretionaryAclAutoInherited | ControlFlags.DiscretionaryAclProtected);
+                ControlFlags flagsToUpdate = _rawSecDescriptor.ControlFlags & ~(ControlFlags.DiscretionaryAclPresent | ControlFlags.DiscretionaryAclAutoInherited | ControlFlags.DiscretionaryAclProtected);
+                _rawSecDescriptor.SetFlags(newFlags | flagsToUpdate);
+            }
+
+            _securityDescriptor = new(false, false, _rawSecDescriptor);
         }
 
         public abstract AccessRule AccessRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type);
@@ -90,6 +242,188 @@ namespace WindowsUtils.AccessControl
         protected void ReadUnlock() => _lock.ExitReadLock();
         protected void WriteLock() => _lock.EnterWriteLock();
         protected void WriteUnlock() => _lock.ExitWriteLock();
+
+        public IdentityReference? GetOwner(Type targetType)
+        {
+            ReadLock();
+            try
+            {
+                if (_securityDescriptor.Owner == null)
+                {
+                    return null;
+                }
+                return _securityDescriptor.Owner!.Translate(targetType);
+            }
+            finally
+            {
+                ReadUnlock();
+            }
+        }
+        public void SetOwner(IdentityReference owner)
+        {
+            WriteLock();
+            try
+            {
+                _securityDescriptor.Owner = owner.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
+                _ownerModified = true;
+            }
+            finally
+            {
+                WriteUnlock();
+            }
+        }
+        public IdentityReference? GetGroup(Type targetType)
+        {
+            ReadLock();
+            try
+            {
+                if (_securityDescriptor.Group == null)
+                {
+                    return null;
+                }
+                return _securityDescriptor.Group!.Translate(targetType);
+            }
+            finally
+            {
+                ReadUnlock();
+            }
+        }
+        public void SetGroup(IdentityReference identity)
+        {
+            WriteLock();
+            try
+            {
+                _securityDescriptor.Group = identity.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
+                _groupModified = true;
+            }
+            finally
+            {
+                WriteUnlock();
+            }
+        }
+
+        public virtual void PurgeAccessRules(IdentityReference identity)
+        {
+            WriteLock();
+            try
+            {
+                _securityDescriptor.PurgeAccessControl((SecurityIdentifier)identity.Translate(typeof(SecurityIdentifier)));
+                _daclModified = true;
+            }
+            finally
+            {
+                WriteUnlock();
+            }
+        }
+        public virtual void PurgeAuditRules(IdentityReference identity)
+        {
+            WriteLock();
+            try
+            {
+                _securityDescriptor.PurgeAudit((SecurityIdentifier)identity.Translate(typeof(SecurityIdentifier)));
+                _saclModified = true;
+            }
+            finally
+            {
+                WriteUnlock();
+            }
+        }
+        public void SetAccessRuleProtection(bool isProtected, bool preserveInheritance)
+        {
+            WriteLock();
+            try
+            {
+                _securityDescriptor.SetDiscretionaryAclProtection(isProtected, preserveInheritance);
+                _daclModified = true;
+            }
+            finally
+            {
+                WriteUnlock();
+            }
+        }
+        public void SetAuditRuleProtection(bool isProtected, bool preserveInheritance)
+        {
+            WriteLock();
+            try
+            {
+                _securityDescriptor.SetSystemAclProtection(isProtected, preserveInheritance);
+                _saclModified = true;
+            }
+            finally
+            {
+                WriteUnlock();
+            }
+        }
+        public static bool IsSddlConversionSupported()
+        {
+            return true;
+        }
+        public string GetSecurityDescriptorSddlForm(AccessControlSections includeSections)
+        {
+            ReadLock();
+            try
+            {
+                return _securityDescriptor.GetSddlForm(includeSections);
+            }
+            finally
+            {
+                ReadUnlock();
+            }
+        }
+        public void SetSecurityDescriptorSddlForm(string sddlForm)
+        {
+            SetSecurityDescriptorSddlForm(sddlForm, AccessControlSections.All);
+        }
+        public void SetSecurityDescriptorSddlForm(string sddlForm, AccessControlSections includeSections)
+        {
+            if ((includeSections & AccessControlSections.All) == 0)
+            {
+                throw new ArgumentException("Input at least one access control section.");
+            }
+            WriteLock();
+            try
+            {
+                UpdateWithNewSecurityDescriptor(new RawSecurityDescriptor(sddlForm), includeSections);
+            }
+            finally
+            {
+                WriteUnlock();
+            }
+        }
+        public byte[] GetSecurityDescriptorBinaryForm()
+        {
+            ReadLock();
+            try
+            {
+                byte[] array = new byte[_securityDescriptor.BinaryLength];
+                _securityDescriptor.GetBinaryForm(array, 0);
+                return array;
+            }
+            finally
+            {
+                ReadUnlock();
+            }
+        }
+        public void SetSecurityDescriptorBinaryForm(byte[] binaryForm)
+        {
+            SetSecurityDescriptorBinaryForm(binaryForm, AccessControlSections.All);
+        }
+        public void SetSecurityDescriptorBinaryForm(byte[] binaryForm, AccessControlSections includeSections)
+        {
+            if ((includeSections & AccessControlSections.All) == 0)
+            {
+                throw new ArgumentException("Input at least one access control section.");
+            }
+            WriteLock();
+            try
+            {
+                UpdateWithNewSecurityDescriptor(new RawSecurityDescriptor(binaryForm, 0), includeSections);
+            }
+            finally
+            {
+                WriteUnlock();
+            }
+        }
     }
 
     public sealed class ServiceSecurity : WindowsUtilsObjectSecurity
@@ -149,6 +483,8 @@ namespace WindowsUtils.AccessControl
         }
         public ServiceAccessRule[] Access { get { return _access; } }
         public ServiceAuditRule[] Audit { get { return _audit; } }
+
+        new internal bool OwnerModified => base.OwnerModified;
 
         public override Type AccessRightType => typeof(ServiceRights);
         public override Type AccessRuleType => typeof(ServiceAccessRule);
@@ -328,8 +664,81 @@ namespace WindowsUtils.AccessControl
                 WriteUnlock();
             }
         }
+
         public AuthorizationRuleCollection GetAccessRules(bool includeExplicit, bool includeInherited, Type type) => GetRules(access: true, includeExplicit, includeInherited, type);
         public AuthorizationRuleCollection GetAuditRules(bool includeExplicit, bool includeInherited, Type type) => GetRules(access: false, includeExplicit, includeInherited, type);
+        private AuthorizationRuleCollection GetRules(bool access, bool includeExplicit, bool includeInherited, Type targetType)
+        {
+            ReadLock();
+            try
+            {
+                AuthorizationRuleCollection authorizationRuleCollection = new();
+                if (!IsValidTargetTypeStatic(targetType))
+                {
+                    throw new ArgumentException("Invalid target type.");
+                }
+                CommonAcl? commonAcl = null;
+                if (access)
+                {
+                    if ((_securityDescriptor.ControlFlags & ControlFlags.DiscretionaryAclPresent) != 0)
+                    {
+                        commonAcl = _securityDescriptor.DiscretionaryAcl;
+                    }
+                }
+                else if ((_securityDescriptor.ControlFlags & ControlFlags.SystemAclPresent) != 0)
+                {
+                    commonAcl = _securityDescriptor.SystemAcl;
+                }
+                if (commonAcl == null)
+                {
+                    return authorizationRuleCollection;
+                }
+                IdentityReferenceCollection? identityReferenceCollection = null;
+                if (targetType != typeof(SecurityIdentifier))
+                {
+                    if (commonAcl is not null)
+                    {
+                        IdentityReferenceCollection identityReferenceCollection2 = new(commonAcl.Count);
+                        for (int i = 0; i < commonAcl.Count; i++)
+                        {
+                            CommonAce? commonAce = commonAcl[i] as CommonAce;
+                            if (commonAce is not null)
+                                if (AceNeedsTranslation(commonAce, access, includeExplicit, includeInherited))
+                                {
+                                    identityReferenceCollection2.Add(commonAce.SecurityIdentifier);
+                                }
+                        }
+                        identityReferenceCollection = identityReferenceCollection2.Translate(targetType);
+                    }
+
+                }
+                int num = 0;
+                if (commonAcl is not null)
+                    for (int j = 0; j < commonAcl.Count; j++)
+                    {
+                        CommonAce? commonAce2 = commonAcl[j] as CommonAce;
+                        if (commonAce2 is not null)
+                            if (AceNeedsTranslation(commonAce2, access, includeExplicit, includeInherited))
+                            {
+                                IdentityReference? identityReference = (targetType == typeof(SecurityIdentifier)) ? commonAce2.SecurityIdentifier : identityReferenceCollection?[num++];
+                                if (identityReference is not null)
+                                    if (access)
+                                    {
+                                        authorizationRuleCollection.AddRule(AccessRuleFactory(type: (commonAce2.AceQualifier != 0) ? AccessControlType.Deny : AccessControlType.Allow, identityReference: identityReference, accessMask: commonAce2.AccessMask, isInherited: commonAce2.IsInherited, inheritanceFlags: commonAce2.InheritanceFlags, propagationFlags: commonAce2.PropagationFlags));
+                                    }
+                                    else
+                                    {
+                                        authorizationRuleCollection.AddRule(AuditRuleFactory(identityReference, commonAce2.AccessMask, commonAce2.IsInherited, commonAce2.InheritanceFlags, commonAce2.PropagationFlags, commonAce2.AuditFlags));
+                                    }
+                            }
+                    }
+                return authorizationRuleCollection;
+            }
+            finally
+            {
+                ReadUnlock();
+            }
+        }
 
         protected override bool ModifyAudit(AccessControlModification modification, AuditRule rule, out bool modified) => ModifyAudit(modification, (ServiceAuditRule)rule, out modified);
         protected override bool ModifyAccess(AccessControlModification modification, AccessRule rule, out bool modified) => ModifyAccess(modification, (ServiceAccessRule)rule, out modified);
@@ -494,80 +903,24 @@ namespace WindowsUtils.AccessControl
             }
         }
 
-        private AuthorizationRuleCollection GetRules(bool access, bool includeExplicit, bool includeInherited, Type targetType)
+        internal void AddControlFlags(ControlFlags flags)
         {
-            ReadLock();
-            try
-            {
-                AuthorizationRuleCollection authorizationRuleCollection = new();
-                if (!IsValidTargetTypeStatic(targetType))
-                {
-                    throw new ArgumentException("Invalid target type.");
-                }
-                CommonAcl? commonAcl = null;
-                if (access)
-                {
-                    if ((_securityDescriptor.ControlFlags & ControlFlags.DiscretionaryAclPresent) != 0)
-                    {
-                        commonAcl = _securityDescriptor.DiscretionaryAcl;
-                    }
-                }
-                else if ((_securityDescriptor.ControlFlags & ControlFlags.SystemAclPresent) != 0)
-                {
-                    commonAcl = _securityDescriptor.SystemAcl;
-                }
-                if (commonAcl == null)
-                {
-                    return authorizationRuleCollection;
-                }
-                IdentityReferenceCollection? identityReferenceCollection = null;
-                if (targetType != typeof(SecurityIdentifier))
-                {
-                    if (commonAcl is not null)
-                    {
-                        IdentityReferenceCollection identityReferenceCollection2 = new(commonAcl.Count);
-                        for (int i = 0; i < commonAcl.Count; i++)
-                        {
-                            CommonAce? commonAce = commonAcl[i] as CommonAce;
-                            if (commonAce is not null)
-                                if (AceNeedsTranslation(commonAce, access, includeExplicit, includeInherited))
-                                {
-                                    identityReferenceCollection2.Add(commonAce.SecurityIdentifier);
-                                }
-                        }
-                        identityReferenceCollection = identityReferenceCollection2.Translate(targetType);
-                    }
+            /*
+            * The CommonSecurityDescriptor.AddControlFlags() is internal.
+            * Backing up our class on a RawSecurityDescriptor would be the right thing to do,
+            * but that would involve changing the whole implementation.
+            * So we change the CommonSecurityDescriptor raw sd by recreating everything.
+            */
+            byte[] binarySd = new byte[_securityDescriptor.BinaryLength];
+            _securityDescriptor.GetBinaryForm(binarySd, 0);
+            _rawSecDescriptor = new(binarySd, 0);
 
-                }
-                int num = 0;
-                if (commonAcl is not null)
-                    for (int j = 0; j < commonAcl.Count; j++)
-                    {
-                        CommonAce? commonAce2 = commonAcl[j] as CommonAce;
-                        if (commonAce2 is not null)
-                            if (AceNeedsTranslation(commonAce2, access, includeExplicit, includeInherited))
-                            {
-                                IdentityReference? identityReference = (targetType == typeof(SecurityIdentifier)) ? commonAce2.SecurityIdentifier : identityReferenceCollection?[num++];
-                                if (identityReference is not null)
-                                    if (access)
-                                    {
-                                        authorizationRuleCollection.AddRule(AccessRuleFactory(type: (commonAce2.AceQualifier != 0) ? AccessControlType.Deny : AccessControlType.Allow, identityReference: identityReference, accessMask: commonAce2.AccessMask, isInherited: commonAce2.IsInherited, inheritanceFlags: commonAce2.InheritanceFlags, propagationFlags: commonAce2.PropagationFlags));
-                                    }
-                                    else
-                                    {
-                                        authorizationRuleCollection.AddRule(AuditRuleFactory(identityReference, commonAce2.AccessMask, commonAce2.IsInherited, commonAce2.InheritanceFlags, commonAce2.PropagationFlags, commonAce2.AuditFlags));
-                                    }
-                            }
-                    }
-                return authorizationRuleCollection;
-            }
-            finally
-            {
-                ReadUnlock();
-            }
+            // Setting the flags.
+            _rawSecDescriptor.SetFlags(_rawSecDescriptor.ControlFlags | flags);
+
+            // Recreating the common sd.
+            _securityDescriptor = new(false, false, _rawSecDescriptor);
         }
-
-        internal void AddControlFlags(ControlFlags flags) => _rawSecDescriptor.SetFlags(_rawSecDescriptor.ControlFlags | flags);
         internal static bool IsValidTargetTypeStatic(Type targetType)
         {
             if (targetType == typeof(NTAccount))

@@ -290,6 +290,10 @@ namespace WindowsUtils::Core
 		String^ GetServiceSecurityDescriptorString(String^ serviceName, String^ computerName, bool audit);
 		String^ GetServiceSecurityDescriptorString(String^ serviceName, bool audit);
 		String^ GetServiceSecurityDescriptorString(IntPtr hService, bool audit);
+
+		// Set-ServiceSecurity
+		void SetServiceSecurity(String^ serviceName, String^ computerName, String^ sddl, bool audit, bool changeOwner);
+		void SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner);
 	};
 
 	/*=========================================

@@ -74,9 +74,8 @@
     CmdletsToExport = @(
         'Get-ComputerSession',
         'Get-ObjectHandle',
-        'Get-FormattedError', 
+        'Get-ErrorString', 
         'Get-LastWin32Error',
-        'Get-LastWinSockError',
         'Get-MsiProperties',
         'Get-RemoteMessageOptions',
         'Get-ResourceMessageTable', 
@@ -86,7 +85,8 @@
         'Remove-Service',
         'Get-ServiceSecurity',
         'New-ServiceAccessRule',
-        'New-ServiceAuditRule'
+        'New-ServiceAuditRule',
+        'Set-ServiceSecurity'
     )
 
     # Variables to export from this module

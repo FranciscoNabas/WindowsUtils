@@ -13,7 +13,7 @@ namespace WindowsUtils::Core
     {
     public:
 
-        DWORD GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES& lpTokenPrivileges);
-        DWORD AdjustCurrentTokenPrivilege(SharedVecPtr(LPCWSTR)& spvlpPrivilegeNameList, const DWORD& dwAttributes);
+        DWORD static GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES& lpTokenPrivileges);
+        DWORD static AdjustCurrentTokenPrivilege(SharedVecPtr(LPCWSTR)& spvlpPrivilegeNameList, const DWORD& dwAttributes);
     };
 }

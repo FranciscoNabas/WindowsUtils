@@ -284,6 +284,7 @@ namespace WindowsUtils::Core
 			throw gcnew NativeException(result);
 	}
 
+	// Get-ServiceSecurity
 	String^ WrapperFunctions::GetServiceSecurityDescriptorString(String^ serviceName, String^ computerName, bool audit)
 	{
 		DWORD result = ERROR_SUCCESS;
@@ -359,6 +360,28 @@ namespace WindowsUtils::Core
 		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
 
 		return gcnew String(sddl);
+	}
+
+	// Set-ServiceSecurity
+	void WrapperFunctions::SetServiceSecurity(String^ serviceName, String^ computerName, String^ sddl, bool audit, bool changeOwner)
+	{
+		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
+		pin_ptr<const wchar_t> wComputerName = PtrToStringChars(computerName);
+		pin_ptr<const wchar_t> wSddl = PtrToStringChars(sddl);
+
+		DWORD result = svcptr->SetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, (LPWSTR)wSddl, audit, changeOwner);
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
+	}
+
+	void WrapperFunctions::SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner)
+	{
+		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
+		pin_ptr<const wchar_t> wSddl = PtrToStringChars(sddl);
+
+		DWORD result = svcptr->SetServiceSecurity((LPWSTR)wServiceName, L".", (LPWSTR)wSddl, audit, changeOwner);
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	/*========================================

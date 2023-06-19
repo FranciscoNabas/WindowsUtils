@@ -780,7 +780,7 @@ namespace WindowsUtils.Commands
     [Cmdlet(
         VerbsCommon.Remove, "Service",
         SupportsShouldProcess = true,
-        ConfirmImpact = ConfirmImpact.High,
+        ConfirmImpact = ConfirmImpact.Medium,
         DefaultParameterSetName = "WithServiceName"
     )]
     public class RemoveServiceCommand : PSCmdlet
@@ -1236,5 +1236,133 @@ namespace WindowsUtils.Commands
         public SwitchParameter Inherited { get; set; }
 
         protected override void ProcessRecord() => WriteObject(new ServiceAuditRule(_identityAsIdReference, _rights, Inherited, _inheritance, _propagation, Flags));
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Set the service object security.</para>
+    /// <para type="description">This cmdlet sets the service object security. You first retrieve the service security calling 'Get-ServiceSecurity', modifies the ACL, and pass it as input object to this cmdlet.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code></code>
+    ///     <para></para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(
+        VerbsCommon.Set, "ServiceSecurity",
+        SupportsShouldProcess = true,
+        ConfirmImpact = ConfirmImpact.Medium,
+        DefaultParameterSetName = "ByNameAndSecurityObject"
+    )]
+    public class SetServiceSecurityCommand : PSCmdlet
+    {
+        private bool _isSddl = false;
+        private bool _isName = false;
+
+        /// <summary>
+        /// <para type="description">The service name.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ParameterSetName = "ByNameAndSecurityObject",
+            ValueFromPipelineByPropertyName = true,
+            HelpMessage = "The service name."
+        )]
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ParameterSetName = "ByNameAndSddl",
+            ValueFromPipelineByPropertyName = true,
+            HelpMessage = "The service name."
+        )]
+        [ValidateNotNullOrEmpty]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">The service controller object.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ParameterSetName = "ByInputObjectAndSecurityObject",
+            ValueFromPipeline = true,
+            HelpMessage = "The service controller object."
+        )]
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ParameterSetName = "ByInputObjectAndSddl",
+            ValueFromPipeline = true,
+            HelpMessage = "The service controller object."
+        )]
+        public System.ServiceProcess.ServiceController InputObject { get; set; }
+
+        /// <summary>
+        /// <para type="description">The service security object to set.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "ByNameAndSecurityObject", HelpMessage = "The service security object to set.")]
+        [Parameter(Mandatory = true, ParameterSetName = "ByInputObjectAndSecurityObject", HelpMessage = "The service security object to set.")]
+        [Alias("AclObject")]
+        public ServiceSecurity SecurityObject { get; set; }
+
+        /// <summary>
+        /// <para type="description">The service security object to set.</para>
+        /// </summary>
+        [Parameter(Mandatory = true, ParameterSetName = "ByNameAndSddl", HelpMessage = "The service security object to set.")]
+        [Parameter(Mandatory = true, ParameterSetName = "ByInputObjectAndSddl", HelpMessage = "The service security object to set.")]
+        public string Sddl { get; set; }
+
+        [Parameter(Mandatory = true, ParameterSetName = "ByNameAndSddl", HelpMessage = "The service security object to set.")]
+        [Parameter(Mandatory = true, ParameterSetName = "ByInputObjectAndSddl", HelpMessage = "The service security object to set.")]
+        public SwitchParameter SetSacl { get; set; }
+
+        protected override void BeginProcessing()
+        {
+            if (ParameterSetName == "ByNameAndSddl" || ParameterSetName == "ByInputObjectAndSddl")
+            {
+                try
+                {
+                    new RawSecurityDescriptor(Sddl);
+                }
+                catch (Exception ex)
+                {
+                    throw new ArgumentException(ex.InnerException.Message);
+                }
+                _isSddl = true;
+            }
+
+            if (ParameterSetName == "ByNameAndSecurityObject" || ParameterSetName == "ByNameAndSddl")
+                _isName = true;
+        }
+
+        protected override void ProcessRecord()
+        {
+            WrapperFunctions unWrapper = new();
+            if (_isName)
+            {
+                if (_isSddl)
+                {
+                    ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, false), Name);
+                    current.SetSecurityDescriptorSddlForm(Sddl);
+
+                    unWrapper.SetServiceSecurity(Name, Sddl, SetSacl, current.OwnerModified);
+                }
+                else
+                    unWrapper.SetServiceSecurity(Name, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
+            }
+            else
+            {
+                if (_isSddl)
+                {
+                    ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, false), Name);
+                    current.SetSecurityDescriptorSddlForm(Sddl);
+
+                    unWrapper.SetServiceSecurity(InputObject.ServiceName, Sddl, SetSacl, current.OwnerModified);
+                }
+                else
+                    unWrapper.SetServiceSecurity(InputObject.ServiceName, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
+            }
+        }
     }
 }
