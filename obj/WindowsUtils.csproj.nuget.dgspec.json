@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj": {}
+    "c:\\Users\\francisco.nabas\\OneDrive\\Repositories\\WindowsUtils\\WindowsUtils.csproj": {}
   },
   "projects": {
-    "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj": {
-      "version": "1.6.0",
+    "c:\\Users\\francisco.nabas\\OneDrive\\Repositories\\WindowsUtils\\WindowsUtils.csproj": {
+      "version": "1.6.1",
       "restore": {
-        "projectUniqueName": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
+        "projectUniqueName": "c:\\Users\\francisco.nabas\\OneDrive\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
         "projectName": "WindowsUtils",
-        "projectPath": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
+        "projectPath": "c:\\Users\\francisco.nabas\\OneDrive\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
         "packagesPath": "C:\\Users\\francisco.nabas\\.nuget\\packages\\",
-        "outputPath": "C:\\Repositories\\WindowsUtils\\obj\\",
+        "outputPath": "c:\\Users\\francisco.nabas\\OneDrive\\Repositories\\WindowsUtils\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\francisco.nabas\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -81,11 +81,6 @@
           "assetTargetFallback": true,
           "warn": true,
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.304\\RuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
         }
       }
     }
