@@ -15,7 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `Get-ServiceSecurity` Cmdlet.
 - `New-ServiceAccessRule` Cmdlet.
 - `New-ServiceAuditRule` Cmdlet.
+- `Set-ServiceSecurity` Cmdlet.
 - `NativeException` exception on both core, and main libraries to wrap Win32 errors.
+- Implemented `WindowsUtils.AccessControl.WindowsUtilsObjectSecurity` for current and future object ACL abstraction.
+- Implemented `WindowsUtils.AccessControl.ServiceSecurity` to manage Windows service security.
 - Added help message on all parameters.
 - Added the `ValidateFileExists` attribute to validate if single files exists.
 - Added `Format.ps1xml` for the new type `WindowsUtils.AccessControl.ServiceSecurity`.
