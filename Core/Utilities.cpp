@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Utilities.h"
 #include <psapi.h>
+#include <new>
+#include <system_error>
 
 #pragma comment(lib, "Psapi")
 
@@ -48,8 +50,8 @@ namespace WindowsUtils::Core
 
 				hprocess = OpenProcess(
 					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE
-					,FALSE
-					,(DWORD)pprocidufile->ProcessIdList[j]
+					, FALSE
+					, (DWORD)pprocidufile->ProcessIdList[j]
 				);
 				if (NULL != hprocess)
 				{
@@ -66,14 +68,14 @@ namespace WindowsUtils::Core
 							wcscpy_s(uphobj->ImagePath, MAX_PATH, uphobj->Name);
 							::PathStripPathW(uphobj->Name);
 						}
-						
+
 					}
 					else
 					{
 						wcscpy_s(uphobj->Name, MAX_PATH, uphobj->ImagePath);
 						::PathStripPathW(uphobj->Name);
 					}
-					
+
 					for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
 					{
 						LPWSTR lpinter = { 0 };
@@ -95,8 +97,8 @@ namespace WindowsUtils::Core
 					{
 						hprocess = OpenProcess(
 							PROCESS_QUERY_LIMITED_INFORMATION
-							,FALSE
-							,(DWORD)pprocidufile->ProcessIdList[j]
+							, FALSE
+							, (DWORD)pprocidufile->ProcessIdList[j]
 						);
 
 						DWORD szmaxpath = MAX_PATH;
@@ -106,7 +108,7 @@ namespace WindowsUtils::Core
 						{
 							wcscpy_s(uphobj->Name, MAX_PATH, uphobj->ImagePath);
 							::PathStripPathW(uphobj->Name);
-							
+
 							for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
 							{
 								LPWSTR lpinter;
@@ -121,7 +123,7 @@ namespace WindowsUtils::Core
 								wcscpy_s(uphobj->ImagePath, MAX_PATH, uphobj->Name);
 								::PathStripPathW(uphobj->Name);
 							}
-							
+
 							if (
 								wcscmp(uphobj->Name, L"System") == 0
 								|| wcscmp(uphobj->Name, L"Secure System") == 0
@@ -146,7 +148,7 @@ namespace WindowsUtils::Core
 								}
 							}
 						}
-					}	
+					}
 				}
 
 				rvecobjhandle.push_back(*uphobj);
@@ -274,7 +276,7 @@ namespace WindowsUtils::Core
 						(DWORD)pmessblock[block].OffsetToEntries + dwoffset);
 
 				rmessingle.Id = id;
-				PrintBufferW(rmessingle.Message, L"%s", pmessentry->Text);
+				PrintBufferW(rmessingle.Message, L"%S", pmessentry->Text);
 
 				rvecresmestb.push_back(rmessingle);
 				dwoffset += pmessentry->Length;
@@ -346,6 +348,7 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
+	
 	/*========================================
 	==		Utility function definition		==
 	==========================================*/
@@ -580,44 +583,48 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	// Memory management class and helper functions
-	_WuMemoryManagement::_WuMemoryManagement()
-		: MemoryList(MakeVecPtr(PVOID)) { }
+	// Memory management helper functions
+	WuMemoryManagement& WuMemoryManagement::GetManager()
+	{
+		static WuMemoryManagement instance;
 
-	PVOID _WuMemoryManagement::Allocate(size_t size)
+		return instance;
+	}
+
+	PVOID WuMemoryManagement::Allocate(size_t size)
 	{
 		PVOID block = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
-		MemoryList->push_back(block);
+		if (NULL == block)
+			throw std::system_error(std::error_code(static_cast<int>(ERROR_NOT_ENOUGH_MEMORY), std::generic_category()));
+
+		MemoryList.push_back(block);
 
 		return block;
 	}
 
-	VOID _WuMemoryManagement::Free(PVOID block)
+	VOID WuMemoryManagement::Free(PVOID block)
 	{
 		if (IsRegistered(block))
 		{
-			if (MemoryList->size() > 0)
+			std::vector<PVOID>::iterator it;
+			for (it = MemoryList.begin(); it != MemoryList.end(); it++)
 			{
-				std::vector<PVOID>::iterator it;
-				for (it = MemoryList->begin(); it != MemoryList->end(); it++)
+				if (*it == block)
 				{
-					if (*it == block)
-					{
-						HeapFree(GetProcessHeap(), NULL, block);
-						MemoryList->erase(it);
-						break;
-					}
+					HeapFree(GetProcessHeap(), NULL, block);
+					MemoryList.erase(it);
+					break;
 				}
 			}
 		}
 	}
 
-	BOOL _WuMemoryManagement::IsRegistered(PVOID block)
+	BOOL WuMemoryManagement::IsRegistered(PVOID block)
 	{
 		if (NULL == block)
 			return FALSE;
 
-		for (PVOID regblock : *MemoryList)
+		for (PVOID regblock : MemoryList)
 			if (regblock == block)
 				return TRUE;
 

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj": {}
+    "c:\\Users\\Frank\\OneDrive\\Repositories\\WindowsUtils\\WindowsUtils.csproj": {}
   },
   "projects": {
-    "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj": {
+    "c:\\Users\\Frank\\OneDrive\\Repositories\\WindowsUtils\\WindowsUtils.csproj": {
       "version": "1.4.1",
       "restore": {
-        "projectUniqueName": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
+        "projectUniqueName": "c:\\Users\\Frank\\OneDrive\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
         "projectName": "WindowsUtils",
-        "projectPath": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
+        "projectPath": "c:\\Users\\Frank\\OneDrive\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
         "packagesPath": "C:\\Users\\Frank\\.nuget\\packages\\",
-        "outputPath": "C:\\Repositories\\WindowsUtils\\obj\\",
+        "outputPath": "c:\\Users\\Frank\\OneDrive\\Repositories\\WindowsUtils\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -19,13 +19,15 @@
         "configFilePaths": [
           "C:\\Users\\Frank\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\nuget.config"
         ],
         "originalTargetFrameworks": [
           "netstandard2.0"
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Repositories\\NuGet": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -58,6 +60,14 @@
               "target": "Package",
               "version": "[5.1.1, )"
             },
+            "System.Security.AccessControl": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "System.ServiceProcess.ServiceController": {
+              "target": "Package",
+              "version": "[7.0.1, )"
+            },
             "XmlDoc2CmdletDoc": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
@@ -76,12 +86,7 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.100\\RuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.302\\RuntimeIdentifierGraph.json"
         }
       }
     }

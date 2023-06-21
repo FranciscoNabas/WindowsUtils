@@ -2,6 +2,8 @@
 .vs/*
 .vscode/
 .vscode/*
+Properties/
+Properties/*
 
 # Local History for Visual Studio Code
 .history/
@@ -24,8 +26,15 @@ Debug/**
 */x64/**
 x64/**
 
+# Package
+packages/
+packages/*
+Core/packages/
+Core/packages/*
+
 # lab
 InteropTesting.cs
 /changelogtracking.md
 /testcases.md
 /BuildDebug.ps1
+/Tools/Helpers/changelogtracking.md

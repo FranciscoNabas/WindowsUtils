@@ -93,7 +93,7 @@ namespace WindowsUtils::Core
 		}
 
 		if (ERROR_SUCCESS != dwresult)
-			throw gcnew SystemException(GetFormattedError(dwresult));
+			throw gcnew NativeException(dwresult);
 
 		array<MessageResponseBase^>^ output = gcnew array<MessageResponseBase^>((int)presult->size());
 
@@ -110,7 +110,7 @@ namespace WindowsUtils::Core
 		SharedVecPtr(TerminalServices::WU_COMPUTER_SESSION) result = MakeVecPtr(TerminalServices::WU_COMPUTER_SESSION);
 		DWORD opresult = wtsptr->GetEnumeratedSession(*result, (HANDLE)session, onlyactive, includesystemsession);
 		if (opresult != ERROR_SUCCESS)
-			throw gcnew SystemException(GetFormattedError(opresult));
+			throw gcnew NativeException(opresult);
 
 		array<ComputerSessionBase^>^ output = gcnew array<ComputerSessionBase^>((int)result->size());
 
@@ -134,7 +134,7 @@ namespace WindowsUtils::Core
 		{
 			result = wtsptr->DisconnectSession((HANDLE)session, (DWORD)sessionid, wait);
 			if (result != ERROR_SUCCESS)
-				throw gcnew SystemException(GetFormattedError(result));
+				throw gcnew NativeException(result);
 		}
 	}
 
@@ -144,7 +144,7 @@ namespace WindowsUtils::Core
 		std::shared_ptr<LPWSTR> errormess = std::make_shared<LPWSTR>();
 		DWORD result = utlptr->GetFormattedError((DWORD)errorcode, *errormess);
 		if (ERROR_SUCCESS != result)
-			throw gcnew SystemException(result.ToString());
+			throw gcnew NativeException(result, String::Format("'GetFormattedError' failed with {0}", result));
 
 		return gcnew String(*errormess);
 	}
@@ -154,7 +154,7 @@ namespace WindowsUtils::Core
 		std::shared_ptr<LPWSTR> errormess = std::make_shared<LPWSTR>();
 		DWORD result = utlptr->GetFormattedWin32Error(*errormess);
 		if (ERROR_SUCCESS != result)
-			throw gcnew SystemException(GetFormattedError(result));
+			throw gcnew NativeException(result);
 
 		return gcnew String(*errormess);
 	}
@@ -174,7 +174,7 @@ namespace WindowsUtils::Core
 
 		UINT result = utlptr->GetProcessObjectHandle(*ppOutput, *reslist, closeHandle);
 		if (result != ERROR_SUCCESS)
-			throw gcnew SystemException(GetFormattedError(result));
+			throw gcnew NativeException(result);
 
 		if (ppOutput->size() == 0)
 			return nullptr;
@@ -191,7 +191,7 @@ namespace WindowsUtils::Core
 	{
 		DWORD result = utlptr->SendClick();
 		if (ERROR_SUCCESS != result)
-			throw gcnew SystemException(GetFormattedError(result));
+			throw gcnew NativeException(result);
 	}
 
 	// Get-ResourceMessageTable
@@ -209,12 +209,12 @@ namespace WindowsUtils::Core
 				PathStripPathW((LPWSTR)wlibpath);
 				String^ errormsg = gcnew String(wlibpath);
 				wlibpath = nullptr;
-				throw gcnew SystemException(errormsg + " is not a valid Win32 application.");
+				throw gcnew NativeException(result, errormsg + " is not a valid Win32 application.");
 			}
 			else
 			{
 				wlibpath = nullptr;
-				throw gcnew SystemException(GetFormattedError(result));
+				throw gcnew NativeException(result);
 			}
 		}
 
@@ -227,9 +227,9 @@ namespace WindowsUtils::Core
 	}
 
 	// Get-MsiProperties
-	PSObject^ WrapperFunctions::GetMsiProperties(String^ filepath)
+	Dictionary<String^, String^>^ WrapperFunctions::GetMsiProperties(String^ filepath)
 	{
-		PSObject^ output = gcnew PSObject();
+		Dictionary<String^, String^>^ output = gcnew Dictionary<String^, String^>();
 		auto ppresult = std::make_shared<std::map<LPWSTR, LPWSTR>>();
 		pin_ptr<const wchar_t> wfilename = PtrToStringChars(filepath);
 
@@ -241,20 +241,150 @@ namespace WindowsUtils::Core
 			LPWSTR pextmsierr;
 			DWORD inResu = utlptr->GetMsiExtendedError(pextmsierr);
 			if (ERROR_SUCCESS == inResu)
-				throw gcnew SystemException(gcnew String(pextmsierr));
+				throw gcnew NativeException(result, GetFormattedError(result), gcnew SystemException(gcnew String(pextmsierr)));
 			else
-				throw gcnew SystemException(GetFormattedError(result));
+				throw gcnew NativeException(result);
 		}
 
 		std::map<LPWSTR, LPWSTR>::iterator itr;
 		for (itr = ppresult->begin(); itr != ppresult->end(); itr++)
-			output->Members->Add(gcnew PSNoteProperty(gcnew String(itr->first), gcnew String(itr->second)));
+			output->Add(gcnew String(itr->first), gcnew String(itr->second));
 
 		return output;
+	}
+
+	// Remove-Service
+	void WrapperFunctions::RemoveService(String^ servicename, String^ computername, bool stopservice)
+	{
+		pin_ptr<const wchar_t> wcomputername = PtrToStringChars(computername);
+		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
+
+		DWORD result = svcptr->RemoveService((LPWSTR)wservicename, (LPWSTR)wcomputername, stopservice);
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
+	}
+	void WrapperFunctions::RemoveService(String^ servicename, bool stopservice)
+	{
+		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
+
+		DWORD result = svcptr->RemoveService((LPWSTR)wservicename, NULL, stopservice);
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
+	}
+
+	void WrapperFunctions::RemoveService(IntPtr hservice, String^ computername, bool stopservice)
+	{
+		pin_ptr<const wchar_t> wcomputername = PtrToStringChars(computername);
+
+		HANDLE uhservice = static_cast<HANDLE>(hservice);
+		SC_HANDLE uschservice = static_cast<SC_HANDLE>(uhservice);
+		DWORD result = svcptr->RemoveService(uschservice, (LPWSTR)wcomputername, stopservice);
+
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
+	}
+
+	// Get-ServiceSecurity
+	String^ WrapperFunctions::GetServiceSecurityDescriptorString(String^ serviceName, String^ computerName, bool audit)
+	{
+		DWORD result = ERROR_SUCCESS;
+		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
+		pin_ptr<const wchar_t> wComputerName = PtrToStringChars(computerName);
+
+		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+		if (audit)
+			secInfo |= SACL_SECURITY_INFORMATION;
+
+		PSECURITY_DESCRIPTOR svcSecurity;
+		DWORD size = 0;
+		if (audit)
+			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, svcSecurity, &size, TRUE);
+		else
+			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, svcSecurity, &size);
+
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
+
+		LPWSTR sddl;
+		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
+
+		return gcnew String(sddl);
+	}
+
+	String^ WrapperFunctions::GetServiceSecurityDescriptorString(String^ serviceName, bool audit)
+	{
+		DWORD result = ERROR_SUCCESS;
+		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
+		
+		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+		if (audit)
+			secInfo |= SACL_SECURITY_INFORMATION;
+
+		PSECURITY_DESCRIPTOR svcSecurity;
+		DWORD size = 0;
+		if (audit)
+			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, L".", svcSecurity, &size, TRUE);
+		else
+			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, L".", svcSecurity, &size);
+
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
+
+		LPWSTR sddl;
+		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
+		
+		return gcnew String(sddl);
+	}
+
+	String^ WrapperFunctions::GetServiceSecurityDescriptorString(IntPtr hService, bool audit)
+	{
+		DWORD result = ERROR_SUCCESS;
+		HANDLE phService = static_cast<HANDLE>(hService);
+		SC_HANDLE whService = static_cast<SC_HANDLE>(phService);
+
+		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+		if (audit)
+			secInfo |= SACL_SECURITY_INFORMATION;
+
+		PSECURITY_DESCRIPTOR svcSecurity;
+		DWORD size = 0;
+		if (audit)
+			result = svcptr->GetServiceSecurity(whService, svcSecurity, &size, TRUE);
+		else
+			result = svcptr->GetServiceSecurity(whService, svcSecurity, &size);
+
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
+
+		LPWSTR sddl;
+		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
+
+		return gcnew String(sddl);
+	}
+
+	// Set-ServiceSecurity
+	void WrapperFunctions::SetServiceSecurity(String^ serviceName, String^ computerName, String^ sddl, bool audit, bool changeOwner)
+	{
+		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
+		pin_ptr<const wchar_t> wComputerName = PtrToStringChars(computerName);
+		pin_ptr<const wchar_t> wSddl = PtrToStringChars(sddl);
+
+		DWORD result = svcptr->SetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, (LPWSTR)wSddl, audit, changeOwner);
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
+	}
+
+	void WrapperFunctions::SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner)
+	{
+		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
+		pin_ptr<const wchar_t> wSddl = PtrToStringChars(sddl);
+
+		DWORD result = svcptr->SetServiceSecurity((LPWSTR)wServiceName, L".", (LPWSTR)wSddl, audit, changeOwner);
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	/*========================================
 	==		Utility function definition		==
 	==========================================*/
-	
 }

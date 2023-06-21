@@ -9,9 +9,6 @@
 #define DWERRORCHECKV(result) if (ERROR_SUCCESS != result) { return result; }
 #define DWERRORCHECKF(result) if (ERROR_SUCCESS != result) { return GetLastError(); }
 
-#define SharedVecPtr(T) std::shared_ptr<std::vector<T>>
-#define MakeVecPtr(T) std::make_shared<std::vector<T>>()
-
 namespace WindowsUtils::Core
 {
 	extern "C" public class __declspec(dllexport) Utilities
@@ -89,25 +86,26 @@ namespace WindowsUtils::Core
 	}LOAD_MODULE_ERROR_INFO, * PLOAD_MODULE_ERROR_INFO;
 
 	/*
-	* Memory management class.
-	* Ok. I'm not a good C++ programmer, yet, and the fact that I'm not sure if memory is being deallocated properly freaks me out.
-	* I tried this in a couple of ways, but helper functions seems to be the easiest to implement without too much overhead.
-	* The initial idea was to overload the 'new' operator, but then I couldn't create objects with new inside the class.
-	* For now, I'm proud of myself. Until I learn a little more and cringeness assumes.
+	* Memory management class using the singleton design pattern.
+	* Reference: https://stackoverflow.com/questions/1008019/c-singleton-design-pattern
 	*/
 
-	class _WuMemoryManagement
+	class WuMemoryManagement
 	{
 	public:
-		_WuMemoryManagement();
-
+		static WuMemoryManagement& GetManager();
 		PVOID Allocate(size_t size);
 		VOID Free(PVOID block);
 
 	private:
 		BOOL IsRegistered(PVOID block);
-		SharedVecPtr(PVOID) MemoryList;
+		std::vector<PVOID> MemoryList;
 
+		WuMemoryManagement() { }
+
+	public:
+		WuMemoryManagement(WuMemoryManagement const&) = delete;
+		void operator=(WuMemoryManagement const&) = delete;
 	};
 
 	DWORD GetProccesVersionInfo(LPWSTR& imagepath, Utilities::VERSION_INFO_PROPERTY& propname, LPWSTR& value);
@@ -116,5 +114,5 @@ namespace WindowsUtils::Core
 	VOID PrintBufferW(LPWSTR& lpbuffer, WCHAR const* const format, ...);
 	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr);
 	DWORD GetEnvVariableW(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue);
-		
+	
 }

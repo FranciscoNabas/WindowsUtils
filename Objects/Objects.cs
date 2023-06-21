@@ -1,8 +1,5 @@
-using System.Security.Principal;
-using System.Security.AccessControl;
-using Microsoft.Win32;
 using WindowsUtils.Core;
-using System.Text;
+using System.Runtime.InteropServices;
 
 namespace WindowsUtils
 {
@@ -73,7 +70,7 @@ namespace WindowsUtils
     }
 
     /// <summary>
-    /// Oject from Invoke-RemoteMessage
+    /// Object from Invoke-RemoteMessage
     /// </summary>
     public class MessageResponse
     {
@@ -86,36 +83,24 @@ namespace WindowsUtils
         private readonly MessageResponseBase wrapper;
     }
 
-    public static class WtsSession
+    internal sealed class WtsSession : IDisposable
     {
-        public static string? ComputerName { get; set; }
-        public static SystemSafeHandle? SessionHandle { get; set; }
-
-        public static void StageComputerSession(string computerName)
+        internal string ComputerName { get; set; }
+        internal Interop.SafeSystemHandle SessionHandle { get; set; }
+        
+        internal WtsSession(string computerName)
         {
-            if (SessionHandle == null || string.IsNullOrEmpty(ComputerName))
-            {
-                //TODO: Error handling.
-                SessionHandle = Interop.WTSOpenServerW(computerName);
-                if (SessionHandle is null)
-                    throw new SystemException(Utilites.GetLastWin32Error());
+            SessionHandle = Interop.NativeFunctions.WTSOpenServer(computerName);
+            if (SessionHandle is null || SessionHandle.IsInvalid || SessionHandle.IsClosed)
+                throw new NativeException(Marshal.GetLastWin32Error());
 
-                ComputerName = computerName;
-            }
-            else
-            {
-                if (ComputerName != computerName)
-                {
-                    if (!SessionHandle.IsInvalid && !SessionHandle.IsClosed)
-                        Interop.CloseHandle(SessionHandle.ToIntPtr());
-
-                    SessionHandle = Interop.WTSOpenServerW(computerName);
-                    if (SessionHandle is null)
-                        throw new SystemException(Utilites.GetLastWin32Error());
-
-                    ComputerName = computerName;
-                }
-            }
+            ComputerName = computerName;
+        }
+        
+        public void Dispose()
+        {
+            SessionHandle.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
     

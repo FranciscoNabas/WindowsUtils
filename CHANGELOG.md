@@ -3,7 +3,33 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
   
-## [1.5.0] - 2023-01-18
+## [1.6.0]
+
+### Changed
+- WtsSession:
+  - From a static class to an IDisposable class. Not only safer, but allows us to manage multiple sessions with multiple servers at the same time.
+- `Get-FormattedError` renamed to `Get-ErrorString`.
+
+### Added
+- `Remove-Service` Cmdlet.
+- `Get-ServiceSecurity` Cmdlet.
+- `New-ServiceAccessRule` Cmdlet.
+- `New-ServiceAuditRule` Cmdlet.
+- `Set-ServiceSecurity` Cmdlet.
+- `NativeException` exception on both core, and main libraries to wrap Win32 errors.
+- Implemented `WindowsUtils.AccessControl.WindowsUtilsObjectSecurity` for current and future object ACL abstraction.
+- Implemented `WindowsUtils.AccessControl.ServiceSecurity` to manage Windows service security.
+- Added help message on all parameters.
+- Added the `ValidateFileExists` attribute to validate if single files exists.
+- Added `Format.ps1xml` for the new type `WindowsUtils.AccessControl.ServiceSecurity`.
+- Added type support on `Types.ps1xml` for `WindowsUtils.AccessControl.ServiceSecurity`.
+
+### Bugs
+- Get-ResourceMessageTable:
+  - "s" was being used as a format specifier, which was breaking the message strings. Replaced with "S".  
+  - Trimmed output string on `Message` to remove the extra line feed.
+
+## [1.5.1] - 2023-01-18
 
 ### Changed
 - Structure:  

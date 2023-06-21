@@ -14,27 +14,26 @@
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <DocumentationFile>bin\WindowsUtils\WindowsUtils.xml</DocumentationFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <NoWarn>CS1591</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Optimize>False</Optimize>
+    <Optimize>True</Optimize>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Core\**" />
-    <Compile Remove="UtilitiesLibrary\**" />
-    <Compile Remove="Wrapper\**" />
-    <EmbeddedResource Remove="Core\**" />
-    <EmbeddedResource Remove="UtilitiesLibrary\**" />
-    <EmbeddedResource Remove="Wrapper\**" />
-    <None Remove="Core\**" />
-    <None Remove="UtilitiesLibrary\**" />
-    <None Remove="Wrapper\**" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
+    <PackageReference Include="System.Security.AccessControl" Version="6.0.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="7.0.1" />
     <PackageReference Include="XmlDoc2CmdletDoc" Version="0.3.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -43,7 +42,7 @@
 
   <ItemGroup>
     <Reference Include="Core">
-      <HintPath>StaticDependencies\bin\x64\Core.dll</HintPath>
+      <HintPath>\Core\Release\x64\Core.dll</HintPath>
     </Reference>
   </ItemGroup>
 

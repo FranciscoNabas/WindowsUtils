@@ -1,19 +1,21 @@
 {
   "version": 2,
-  "dgSpecHash": "TM4d6qLoAr3vs2kLcrfkW+2OKqdkvPj5EaW4MPBc0pzm1Q223JU1OPY2BPj6WnEktqzVzu5jIVrIJVuuYOxxWg==",
+  "dgSpecHash": "GzOcRdnnCAwfQAl9CluxIp9xZ4wD7rzuNbhCU/h1QpnukByOPseNI4SeymLfqBU5czShzUK9S+drDu6x0uFYcQ==",
   "success": true,
-  "projectFilePath": "C:\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
+  "projectFilePath": "c:\\Users\\Frank\\OneDrive\\Repositories\\WindowsUtils\\WindowsUtils.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Frank\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\microsoft.win32.registry\\5.0.0\\microsoft.win32.registry.5.0.0.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\powershellstandard.library\\5.1.1\\powershellstandard.library.5.1.1.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\system.buffers\\4.5.1\\system.buffers.4.5.1.nupkg.sha512",
+    "C:\\Users\\Frank\\.nuget\\packages\\system.diagnostics.eventlog\\7.0.0\\system.diagnostics.eventlog.7.0.0.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\system.memory\\4.5.4\\system.memory.4.5.4.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\system.numerics.vectors\\4.4.0\\system.numerics.vectors.4.4.0.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\4.5.3\\system.runtime.compilerservices.unsafe.4.5.3.nupkg.sha512",
-    "C:\\Users\\Frank\\.nuget\\packages\\system.security.accesscontrol\\5.0.0\\system.security.accesscontrol.5.0.0.nupkg.sha512",
+    "C:\\Users\\Frank\\.nuget\\packages\\system.security.accesscontrol\\6.0.0\\system.security.accesscontrol.6.0.0.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\system.security.principal.windows\\5.0.0\\system.security.principal.windows.5.0.0.nupkg.sha512",
+    "C:\\Users\\Frank\\.nuget\\packages\\system.serviceprocess.servicecontroller\\7.0.1\\system.serviceprocess.servicecontroller.7.0.1.nupkg.sha512",
     "C:\\Users\\Frank\\.nuget\\packages\\xmldoc2cmdletdoc\\0.3.0\\xmldoc2cmdletdoc.0.3.0.nupkg.sha512"
   ],
   "logs": []

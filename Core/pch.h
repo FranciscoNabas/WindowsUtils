@@ -10,6 +10,9 @@
 
 #define _WIN32_WINNT 0x0600
 
+#define SharedVecPtr(T) std::shared_ptr<std::vector<T>>
+#define MakeVecPtr(T) std::make_shared<std::vector<T>>()
+
 // To avoid warning C4005. This definition is done via compiler command line.
 #undef __CLR_VER
 
@@ -30,5 +33,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <AclAPI.h>
+#include <sddl.h>
 
 #endif //PCH_H
