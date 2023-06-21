@@ -1000,9 +1000,9 @@ namespace WindowsUtils.Commands
             else
                 // We can't use given handle because we need to use extra privileges to access SACL.
                 if (Audit)
-                    WriteObject(ServiceController.GetServiceObjectSecurity(InputObject.ServiceName, Audit));
-                else
-                    WriteObject(ServiceController.GetServiceObjectSecurity(InputObject, Audit));
+                WriteObject(ServiceController.GetServiceObjectSecurity(InputObject.ServiceName, Audit));
+            else
+                WriteObject(ServiceController.GetServiceObjectSecurity(InputObject, Audit));
         }
     }
 
@@ -1053,7 +1053,7 @@ namespace WindowsUtils.Commands
             {
                 if (_isString)
                     return _identityAsString;
-                
+
                 return _identityAsIdReference;
             }
             set
@@ -1169,7 +1169,7 @@ namespace WindowsUtils.Commands
             {
                 if (_isString)
                     return _identityAsString;
-                
+
                 return _identityAsIdReference;
             }
             set
@@ -1243,9 +1243,22 @@ namespace WindowsUtils.Commands
     /// <para type="description">This cmdlet sets the service object security. You first retrieve the service security calling 'Get-ServiceSecurity', modifies the ACL, and pass it as input object to this cmdlet.</para>
     /// <example>
     ///     <para></para>
-    ///     <code></code>
+    ///     <code>              $serviceSecurity = Get-ServiceSecurity -Name 'MyCoolService'
+    ///$serviceSecurity.SetOwner([System.Security.Principal.NTAccount]'User')
+    ///$serviceSecurity.AddAccessRule((New-ServiceAccessRule -Identity 'User' -Rights 'AllAccess' -Type 'Allow'))
+    ///
+    ///Set-ServiceSecurity -Name 'MyCoolService' -SecurityObject $serviceSecurity</code>
+    ///     <para>Changes the owner, adds an access rule, and sets the service security attributes.</para>
     ///     <para></para>
-    ///     <para></para>
+    /// </example>
+    /// <example>
+    /// <para></para>
+    /// <code>              $serviceSecurity = Get-ServiceSecurity -Name 'MyCoolService' -Audit
+    ///$serviceSecurity.AddAuditRule((New-ServiceAuditRule -Identity 'User' -Rights 'AllAccess' -Flags 'Success'))
+    ///
+    ///Set-ServiceSecurity -Name 'MyCoolService' -AclObject $serviceSecurity</code>
+    ///     <para>Changes the service audit rules.</para>
+    /// <para></para>
     /// </example>
     /// </summary>
     [Cmdlet(
@@ -1299,6 +1312,12 @@ namespace WindowsUtils.Commands
         public System.ServiceProcess.ServiceController InputObject { get; set; }
 
         /// <summary>
+        /// <para type="description">The computer name. If empty, looks for the service in the current machine.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "The computer name. If empty, looks for the service in the current machine.")]
+        public string ComputerName { get; set; }
+
+        /// <summary>
         /// <para type="description">The service security object to set.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "ByNameAndSecurityObject", HelpMessage = "The service security object to set.")]
@@ -1309,12 +1328,20 @@ namespace WindowsUtils.Commands
         /// <summary>
         /// <para type="description">The service security object to set.</para>
         /// </summary>
-        [Parameter(Mandatory = true, ParameterSetName = "ByNameAndSddl", HelpMessage = "The service security object to set.")]
-        [Parameter(Mandatory = true, ParameterSetName = "ByInputObjectAndSddl", HelpMessage = "The service security object to set.")]
+        [Parameter(Mandatory = true, ParameterSetName = "ByNameAndSddl", HelpMessage = "The SDDL string representing the security object.")]
+        [Parameter(Mandatory = true, ParameterSetName = "ByInputObjectAndSddl", HelpMessage = "The SDDL string representing the security object.")]
         public string Sddl { get; set; }
 
-        [Parameter(Mandatory = true, ParameterSetName = "ByNameAndSddl", HelpMessage = "The service security object to set.")]
-        [Parameter(Mandatory = true, ParameterSetName = "ByInputObjectAndSddl", HelpMessage = "The service security object to set.")]
+        /// <summary>
+        /// <para type="description">True to modify audit rules (SACL).</para>
+        /// <para type="description">Attention! If this parameter is called, and the security object,</para>
+        /// <para type="description">or SDDL audit rules are empty it will erase the service's audit rules.</para>
+        /// </summary>
+        [Parameter(HelpMessage = @"
+            True to modify audit rules (SACL).
+            Attention! If this parameter is called, and the security object,
+            or SDDL audit rules are empty it will erase the service's audit rules."
+        )]
         public SwitchParameter SetSacl { get; set; }
 
         protected override void BeginProcessing()
@@ -1341,27 +1368,93 @@ namespace WindowsUtils.Commands
             WrapperFunctions unWrapper = new();
             if (_isName)
             {
-                if (_isSddl)
+                if (string.IsNullOrEmpty(ComputerName))
                 {
-                    ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, false), Name);
-                    current.SetSecurityDescriptorSddlForm(Sddl);
+                    if (_isSddl)
+                    {
+                        ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                        current.SetSecurityDescriptorSddlForm(Sddl);
 
-                    unWrapper.SetServiceSecurity(Name, Sddl, SetSacl, current.OwnerModified);
+                        if (ShouldProcess(
+                        $"Setting security on service {Name} on the local computer.",
+                        $"Are you sure you want to set security for service {Name} on the local computer?",
+                        "Setting Service Security"))
+                            unWrapper.SetServiceSecurity(Name, Sddl, SetSacl, current.OwnerModified);
+                    }
+                    else
+                    {
+                        if (ShouldProcess(
+                        $"Setting security on service {Name} on the local computer.",
+                        $"Are you sure you want to set security for service {Name} on the local computer?",
+                        "Setting Service Security"))
+                            unWrapper.SetServiceSecurity(Name, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
+                    }
                 }
                 else
-                    unWrapper.SetServiceSecurity(Name, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
+                {
+                    if (_isSddl)
+                    {
+                        ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, ComputerName, SetSacl), Name);
+                        current.SetSecurityDescriptorSddlForm(Sddl);
+
+                        if (ShouldProcess(
+                        $"Setting security on service {Name} on {ComputerName}.",
+                        $"Are you sure you want to set security for service {Name} on {ComputerName}?",
+                        "Setting Service Security"))
+                            unWrapper.SetServiceSecurity(Name, ComputerName, Sddl, SetSacl, current.OwnerModified);
+                    }
+                    else
+                    {
+                        if (ShouldProcess(
+                        $"Setting security on service {Name} on {ComputerName}.",
+                        $"Are you sure you want to set security for service {Name} on {ComputerName}?",
+                        "Setting Service Security"))
+                            unWrapper.SetServiceSecurity(Name, ComputerName, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
+                    }
+                }
             }
             else
             {
-                if (_isSddl)
+                if (string.IsNullOrEmpty(ComputerName))
                 {
-                    ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, false), Name);
-                    current.SetSecurityDescriptorSddlForm(Sddl);
+                    if (_isSddl)
+                    {
+                        ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                        current.SetSecurityDescriptorSddlForm(Sddl);
 
-                    unWrapper.SetServiceSecurity(InputObject.ServiceName, Sddl, SetSacl, current.OwnerModified);
+                        if (ShouldProcess(
+                        $"Setting security on service {InputObject.ServiceName} on the current computer.",
+                        $"Are you sure you want to set security for service {InputObject.ServiceName} on the current computer?",
+                        "Setting Service Security"))
+                            unWrapper.SetServiceSecurity(InputObject.ServiceName, Sddl, SetSacl, current.OwnerModified);
+                    }
+                    else
+                        if (ShouldProcess(
+                        $"Setting security on service {InputObject.ServiceName} on the current computer.",
+                        $"Are you sure you want to set security for service {InputObject.ServiceName} on the current computer?",
+                        "Setting Service Security"))
+                            unWrapper.SetServiceSecurity(InputObject.ServiceName, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
                 }
                 else
-                    unWrapper.SetServiceSecurity(InputObject.ServiceName, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
+                {
+                    if (_isSddl)
+                    {
+                        ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                        current.SetSecurityDescriptorSddlForm(Sddl);
+
+                        if (ShouldProcess(
+                        $"Setting security on service {InputObject.ServiceName} on {ComputerName}.",
+                        $"Are you sure you want to set security for service {InputObject.ServiceName} on {ComputerName}?",
+                        "Setting Service Security"))
+                            unWrapper.SetServiceSecurity(InputObject.ServiceName, Sddl, SetSacl, current.OwnerModified);
+                    }
+                    else
+                        if (ShouldProcess(
+                        $"Setting security on service {InputObject.ServiceName} on {ComputerName}.",
+                        $"Are you sure you want to set security for service {InputObject.ServiceName} on {ComputerName}?",
+                        "Setting Service Security"))
+                            unWrapper.SetServiceSecurity(InputObject.ServiceName, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
+                }
             }
         }
     }

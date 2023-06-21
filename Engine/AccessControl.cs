@@ -20,79 +20,23 @@ namespace WindowsUtils.AccessControl
         protected CommonSecurityDescriptor SecurityDescriptor => _securityDescriptor;
         protected bool OwnerModified
         {
-            get
-            {
-                if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
-                {
-                    throw new InvalidOperationException("Must lock for read or write.");
-                }
-                return _ownerModified;
-            }
-            set
-            {
-                if (!_lock.IsWriteLockHeld)
-                {
-                    throw new InvalidOperationException("Must lock for write.");
-                }
-                _ownerModified = value;
-            }
+            get { return _ownerModified; }
+            set { _ownerModified = value; }
         }
         protected bool GroupModified
         {
-            get
-            {
-                if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
-                {
-                    throw new InvalidOperationException("Must lock for read or write.");
-                }
-                return _groupModified;
-            }
-            set
-            {
-                if (!_lock.IsWriteLockHeld)
-                {
-                    throw new InvalidOperationException("Must lock for write.");
-                }
-                _groupModified = value;
-            }
+            get { return _groupModified; }
+            set { _groupModified = value; }
         }
         protected bool AuditRulesModified
         {
-            get
-            {
-                if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
-                {
-                    throw new InvalidOperationException("Must lock for read or write.");
-                }
-                return _saclModified;
-            }
-            set
-            {
-                if (!_lock.IsWriteLockHeld)
-                {
-                    throw new InvalidOperationException("Must lock for write.");
-                }
-                _saclModified = value;
-            }
+            get { return _saclModified; }
+            set { _saclModified = value; }
         }
         protected bool AccessRulesModified
         {
-            get
-            {
-                if (!_lock.IsReadLockHeld && !_lock.IsWriteLockHeld)
-                {
-                    throw new InvalidOperationException("Must lock for read or write.");
-                }
-                return _daclModified;
-            }
-            set
-            {
-                if (!_lock.IsWriteLockHeld)
-                {
-                    throw new InvalidOperationException("Must lock for write.");
-                }
-                _daclModified = value;
-            }
+            get { return _daclModified; }
+            set { _daclModified = value; }
         }
         protected bool IsDS => _securityDescriptor.IsDS;
         protected bool IsContainer => _securityDescriptor.IsContainer;

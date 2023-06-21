@@ -254,6 +254,7 @@ namespace WindowsUtils::Core
 			result = GetLastError();
 			goto CLEANUP;
 		}
+		scHandles->push_back(hService);
 
 		if (!SetServiceObjectSecurity(hService, dwSecInfo, pSecDesc))
 			result = GetLastError();
