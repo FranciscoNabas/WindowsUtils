@@ -20,7 +20,7 @@ jobs:
         dotnet-version: 7.0.x
     - name: Build and Compress
       run: |
-        .\Build.ps1 -psgsec "$env:PSGAL_APIKEY"
+        .\Tools\Helpers\Build.ps1 -psgsec "$env:PSGAL_APIKEY"
     - name: Automatic Releases
       uses: marvinpinto/action-automatic-releases@v1.2.1
       with:
