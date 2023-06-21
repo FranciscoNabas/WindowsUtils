@@ -30,8 +30,7 @@ Write-Host 'Copying files...' -ForegroundColor DarkGreen
 Copy-Item -Path $copypath -Destination $releaseDir -Force
 
 Write-Host 'Copying CRT libraries...' -ForegroundColor DarkGreen
-if (!(Test-Path "$releaseDir\bin")) { [void](mkdir "$releaseDir\bin") }
-Copy-Item -Path '.\Tools\Libraries\win-x64\*' -Destination "$releaseDir\bin" -Recurse -Force
+Copy-Item -Path '.\Tools\Libraries\win-x64\msvcp140.dll', '.\Tools\Libraries\win-x64\vcruntime140.dll', '.\Tools\Libraries\win-x64\vcruntime140_1.dll' -Destination $releaseDir -Recurse -Force
 
 if (!(Test-Path "$releaseDir\en-us")) { [void](mkdir "$releaseDir\en-us") }
 Move-Item "$releaseDir\WindowsUtils.dll-Help.xml" "$releaseDir\en-us\WindowsUtils.dll-Help.xml" -Force

@@ -131,7 +131,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Ole32.lib;Msi.lib;User32.lib;WtsApi32.lib;AdvApi32.lib;Shlwapi.lib;Version.lib</AdditionalDependencies>
+      <AdditionalDependencies>efswrt.lib;Ole32.lib;Msi.lib;User32.lib;WtsApi32.lib;AdvApi32.lib;Shlwapi.lib;Version.lib</AdditionalDependencies>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
       <AdditionalOptions>/NOENTRY msvcrt.lib /NODEFAULTLIB:nochkclr.obj /INCLUDE:_DllMainCRTStartup %(AdditionalOptions)</AdditionalOptions>
@@ -190,11 +190,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="SystemKnownInformation.mc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Management.Automation">
-      <HintPath>..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WindowsPowerShell\3.0\System.Management.Automation.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
