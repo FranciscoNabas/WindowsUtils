@@ -1,25 +1,138 @@
+using System.Reflection;
+using System.Runtime.Serialization;
+using WindowsUtils.Commands;
 using WindowsUtils.Core;
-using System.Runtime.InteropServices;
 
 namespace WindowsUtils
 {
-    /// <summary>
-    /// Object used on WTS Cmdlets
-    /// </summary>
-    public class ComputerSession
+    public abstract class Enumeration : IComparable
     {
-        public int SessionId => wrapper.SessionId;
-        public string UserName => wrapper.UserName;
-        public string SessionName => wrapper.SessionName;
-        public TimeSpan IdleTime => wrapper.IdleTime;
-        public DateTime LogonTime => (DateTime)wrapper.LogonTime;
-        public SessionState SessionState => (SessionState)wrapper.SessionState;
-        public string ComputerName => wrapper.ComputerName;
+        internal string Name { get; set; }
+        internal uint Id { get; set; }
+        protected Enumeration(uint id, string name) => (Id, Name) = (id, name);
         
-        public static explicit operator ComputerSession(ComputerSessionBase csbase) => new(csbase);
-        public ComputerSession(ComputerSessionBase csbase) => wrapper = csbase;
+        public override string ToString() => Name;
+        
+        internal static IEnumerable<T> GetAll<T>() where T: Enumeration =>
+            typeof(T).GetFields(BindingFlags.Public |
+                                BindingFlags.Static |
+                                BindingFlags.DeclaredOnly)
+                     .Select(f => f.GetValue(null))
+                     .Cast<T>();
+        
+        public static T GetById<T>(uint id) where T : Enumeration =>
+            GetAll<T>().First(f => f.Id == id);
+            
+        public override bool Equals(object? obj)
+        {
+            if (obj is not Enumeration otherValue)
+            {
+                return false;
+            }
 
-        private readonly ComputerSessionBase wrapper;
+            var typeMatches = GetType().Equals(obj.GetType());
+            var valueMatches = Id.Equals(otherValue.Id);
+
+            return typeMatches && valueMatches;
+        }
+
+        public override int GetHashCode()
+        {
+            return (Name, Id).GetHashCode();
+        }
+
+        public int CompareTo(object? other)
+        {
+            if (other == null) { return 0; }
+            else { return Id.CompareTo(((Enumeration)other).Id); }
+        }
+    }
+
+    public abstract class MessageBoxOption : Enumeration
+    {
+        public new string Name { get; set; }
+        public uint Value { get; set; }
+        public Type Type { get; set; }
+        public MessageBoxOption(uint value, string name, Type type)
+            : base(value, name)
+        {
+            Name = name;
+            Value = value;
+            Type = type;
+        }
+
+        public static MessageBoxOption[] GetAvailableOptions()
+        {
+            MessageBoxOption[] output = new MessageBoxOption[23];
+            int arrindex = 0;
+            GetAll<MessageBoxButton>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
+            GetAll<MessageBoxDefaultButton>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
+            GetAll<MessageBoxIcon>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
+            GetAll<MessageBoxModal>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
+            GetAll<MessageBoxType>().Select(it => (MessageBoxOption)it).ToList().ForEach(f => output[arrindex++] = (f));
+
+            return output;
+        }
+
+        public static uint MbOptionsResolver(string[] input)
+        {
+            InvokeRemoteMessageCommand pshook = new();
+            List<string> processed = new();
+            MessageBoxOption[] allNames = GetAvailableOptions();
+            uint output = 0;
+
+            foreach (string item in input)
+            {
+                MessageBoxOption current = allNames.Where(p => p.Name == item).FirstOrDefault();
+
+                if (current is not null)
+                {
+                    if (processed.Contains(item)) { pshook.WriteWarning("Duplicate item " + item + ". Ignoring."); }
+                    else
+                    {
+                        output |= current.Value;
+                        processed.Add(item);
+                    }
+                }
+                else { throw new ArgumentOutOfRangeException("invalid type '" + item + "'."); }
+            }
+
+            return output;
+        }
+    }
+
+    internal class Utilities
+    {
+        private static readonly WrapperFunctions unWrapper = new();
+
+        internal static string GetLastWin32Error() => unWrapper.GetLastWin32Error();
+        internal static string GetLastWin32Error(int errorCode) => unWrapper.GetFormattedError(errorCode);
+    }
+
+    [Serializable()]
+    public partial class NativeException : Exception
+    {
+        private readonly int _native_error_number;
+
+        public int NativeErrorNumber => _native_error_number; 
+
+        protected NativeException() : base() { }
+
+        protected NativeException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+
+        public NativeException(int error_number)
+            : base(Utilities.GetLastWin32Error(error_number)) => _native_error_number = error_number;
+
+        public NativeException(int error_number, string message) :
+            base(message) => _native_error_number = error_number;
+
+        public NativeException(int error_number, string message, Exception inner_exception) :
+            base(message, inner_exception) => _native_error_number = error_number;
+
+        private NativeException(Core.NativeException ex)
+            : base(Utilities.GetLastWin32Error(ex.NativeErrorCode), ex.InnerException) => _native_error_number = ex.NativeErrorCode;
+
+        public static explicit operator NativeException(Core.NativeException ex) => new(ex);
     }
 
     /// <summary>
@@ -82,46 +195,6 @@ namespace WindowsUtils
 
         private readonly MessageResponseBase wrapper;
     }
-
-    internal sealed class WtsSession : IDisposable
-    {
-        internal string ComputerName { get; set; }
-        internal Interop.SafeSystemHandle SessionHandle { get; set; }
-        
-        internal WtsSession(string computerName)
-        {
-            SessionHandle = Interop.NativeFunctions.WTSOpenServer(computerName);
-            if (SessionHandle is null || SessionHandle.IsInvalid || SessionHandle.IsClosed)
-                throw new NativeException(Marshal.GetLastWin32Error());
-
-            ComputerName = computerName;
-        }
-        
-        public void Dispose()
-        {
-            SessionHandle.Dispose();
-            GC.SuppressFinalize(this);
-        }
-    }
-    
-    public class SessionState : Enumeration
-    {
-        public static SessionState Active = new(0, "Active");
-        public static SessionState Connected = new(1, "Connected");
-        public static SessionState ConnectQuery = new(2, "ConnectQuery");
-        public static SessionState Shadow = new(3, "Shadow");
-        public static SessionState Disconnected = new(4, "Disconnected");
-        public static SessionState Idle = new(5, "Idle");
-        public static SessionState Listen = new(6, "Listen");
-        public static SessionState Reset = new(7, "Reset");
-        public static SessionState Down = new(8, "Down");
-        public static SessionState Init = new(9, "Init");
-        
-        public static implicit operator uint(SessionState s) => s.Id;
-        public static explicit operator SessionState(uint id) => new SessionState(id);
-        SessionState(uint id, string name) : base(id, name) { }
-        SessionState(uint id) : base(id, GetById<SessionState>(id).ToString()) { }
-    }
     public class AppType : Enumeration
     {
         public static AppType UnknownApp = new(0, "UnknownApp");
@@ -133,7 +206,6 @@ namespace WindowsUtils
         public static AppType Critical = new(1000, "Critical");
         AppType(uint id, string name) : base(id, name) { }
     }
-
     public class MessageBoxButton : MessageBoxOption
     {
         public static MessageBoxButton MB_ABORTRETRYIGNORE = new(0x00000002, "MB_ABORTRETRYIGNORE");
@@ -197,5 +269,4 @@ namespace WindowsUtils
         TimeOut = 32000,
         AsyncReturn = 32001
     }
-    
 }

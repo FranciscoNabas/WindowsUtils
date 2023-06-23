@@ -1,9 +1,13 @@
-﻿using System.Management.Automation;
-using System.Security.AccessControl;
+﻿using System.ServiceProcess;
 using System.Security.Principal;
-using WindowsUtils.AccessControl;
+using System.Management.Automation;
+using System.Security.AccessControl;
 using WindowsUtils.Core;
-using WindowsUtils.Engine;
+using WindowsUtils.Services;
+using WindowsUtils.Attributes;
+using WindowsUtils.AccessControl;
+using WindowsUtils.TerminalServices;
+using WindowsUtils.ArgumentCompletion;
 
 #pragma warning disable CS8618
 namespace WindowsUtils.Commands
@@ -794,7 +798,7 @@ namespace WindowsUtils.Commands
             ParameterSetName = "WithServiceController",
             HelpMessage = "The service controller input object."
         )]
-        public System.ServiceProcess.ServiceController InputObject { get; set; }
+        public ServiceController InputObject { get; set; }
 
         /// <summary>
         /// <para type="description">The service name.</para>
@@ -807,6 +811,7 @@ namespace WindowsUtils.Commands
             HelpMessage = "The service name."
         )]
         [ValidateNotNullOrEmpty]
+        [ArgumentCompleter(typeof(ServiceNameCompleter))]
         public string Name { get; set; }
 
         /// <summary>
@@ -961,19 +966,32 @@ namespace WindowsUtils.Commands
         VerbsCommon.Get, "ServiceSecurity",
         DefaultParameterSetName = "WithServiceName"
     )]
-    public class GetServiceSecurityCommand : PSCmdlet
+    public class GetServiceSecurityCommand : ServiceCommandBase
     {
         /// <summary>
-        /// <para type="description">The service name.</para>
+        /// <para type="description">The service(s) name.</para>
         /// </summary>
         [Parameter(
             Mandatory = true,
             Position = 0,
             ParameterSetName = "WithServiceName",
-            HelpMessage = "The service name."
+            HelpMessage = "The service(s) name."
         )]
         [ValidateNotNullOrEmpty]
-        public string Name { get; set; }
+        [ArgumentCompleter(typeof(ServiceNameCompleter))]
+        public string[] Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">The service(s) display name.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "WithDisplayName",
+            HelpMessage = "The service(s) display name."
+        )]
+        [ValidateNotNullOrEmpty]
+        [ArgumentCompleter(typeof(ServiceDisplayNameCompleter))]
+        public string[] DisplayName { get; set; }
 
         /// <summary>
         /// <para type="description">The service controller input object.</para>
@@ -985,7 +1003,7 @@ namespace WindowsUtils.Commands
             ValueFromPipeline = true,
             HelpMessage = "The service controller input object."
         )]
-        public System.ServiceProcess.ServiceController InputObject { get; set; }
+        public ServiceController InputObject { get; set; }
 
         /// <summary>
         /// <para type="description">Includes SACL to the result.</para>
@@ -995,14 +1013,29 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            if (ParameterSetName == "WithServiceName")
-                WriteObject(ServiceController.GetServiceObjectSecurity(Name, Audit));
-            else
-                // We can't use given handle because we need to use extra privileges to access SACL.
-                if (Audit)
-                WriteObject(ServiceController.GetServiceObjectSecurity(InputObject.ServiceName, Audit));
-            else
-                WriteObject(ServiceController.GetServiceObjectSecurity(InputObject, Audit));
+            List<string> serviceNameList;
+            switch (ParameterSetName)
+            {
+                case "WithServiceName":
+                    serviceNameList = GetMatchingServicesNameByName(Name);
+                    foreach (string serviceName in serviceNameList)
+                        WriteObject(GetServiceObjectSecurity(serviceName, Audit));
+                    break;
+
+                case "WithServiceController":
+                    // We can't use given handle because we need to use extra privileges to access SACL.
+                    if (Audit)
+                        WriteObject(GetServiceObjectSecurity(InputObject.ServiceName, Audit));
+                    else
+                        WriteObject(GetServiceObjectSecurity(InputObject, Audit));
+                    break;
+
+                case "WithDisplayName":
+                    serviceNameList = GetMatchingServicesNameByDisplayName(DisplayName);
+                    foreach (string serviceName in serviceNameList)
+                        WriteObject(GetServiceObjectSecurity(serviceName, Audit));
+                    break;
+            }
         }
     }
 
@@ -1269,8 +1302,9 @@ namespace WindowsUtils.Commands
     )]
     public class SetServiceSecurityCommand : PSCmdlet
     {
-        private bool _isSddl = false;
-        private bool _isName = false;
+        private string _serviceFinalName;
+        private ServiceSecurity _finalSecurityObject;
+        private WrapperFunctions _unwrapper = new();
 
         /// <summary>
         /// <para type="description">The service name.</para>
@@ -1290,7 +1324,25 @@ namespace WindowsUtils.Commands
             HelpMessage = "The service name."
         )]
         [ValidateNotNullOrEmpty]
+        [ArgumentCompleter(typeof(ServiceNameCompleter))]
         public string Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">The service display name.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "ByDisplayNameAndSecurityObject",
+            HelpMessage = "The service display name."
+        )]
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "ByDisplayNameAndSddl",
+            HelpMessage = "The service display name."
+        )]
+        [ValidateNotNullOrEmpty]
+        [ArgumentCompleter(typeof(ServiceDisplayNameCompleter))]
+        public string DisplayName { get; set; }
 
         /// <summary>
         /// <para type="description">The service controller object.</para>
@@ -1309,7 +1361,7 @@ namespace WindowsUtils.Commands
             ValueFromPipeline = true,
             HelpMessage = "The service controller object."
         )]
-        public System.ServiceProcess.ServiceController InputObject { get; set; }
+        public ServiceController InputObject { get; set; }
 
         /// <summary>
         /// <para type="description">The computer name. If empty, looks for the service in the current machine.</para>
@@ -1321,6 +1373,7 @@ namespace WindowsUtils.Commands
         /// <para type="description">The service security object to set.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "ByNameAndSecurityObject", HelpMessage = "The service security object to set.")]
+        [Parameter(Mandatory = true, ParameterSetName = "ByDisplayNameAndSecurityObject", HelpMessage = "The service security object to set.")]
         [Parameter(Mandatory = true, ParameterSetName = "ByInputObjectAndSecurityObject", HelpMessage = "The service security object to set.")]
         [Alias("AclObject")]
         public ServiceSecurity SecurityObject { get; set; }
@@ -1329,6 +1382,7 @@ namespace WindowsUtils.Commands
         /// <para type="description">The service security object to set.</para>
         /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "ByNameAndSddl", HelpMessage = "The SDDL string representing the security object.")]
+        [Parameter(Mandatory = true, ParameterSetName = "ByDisplayNameAndSddl", HelpMessage = "The SDDL string representing the security object.")]
         [Parameter(Mandatory = true, ParameterSetName = "ByInputObjectAndSddl", HelpMessage = "The SDDL string representing the security object.")]
         public string Sddl { get; set; }
 
@@ -1346,7 +1400,7 @@ namespace WindowsUtils.Commands
 
         protected override void BeginProcessing()
         {
-            if (ParameterSetName == "ByNameAndSddl" || ParameterSetName == "ByInputObjectAndSddl")
+            if (ParameterSetName == "ByNameAndSddl" || ParameterSetName == "ByInputObjectAndSddl" || ParameterSetName == "ByDisplayNameAndSddl")
             {
                 try
                 {
@@ -1356,105 +1410,82 @@ namespace WindowsUtils.Commands
                 {
                     throw new ArgumentException(ex.InnerException.Message);
                 }
-                _isSddl = true;
             }
-
-            if (ParameterSetName == "ByNameAndSecurityObject" || ParameterSetName == "ByNameAndSddl")
-                _isName = true;
         }
 
         protected override void ProcessRecord()
         {
-            WrapperFunctions unWrapper = new();
-            if (_isName)
+            switch (ParameterSetName)
             {
-                if (string.IsNullOrEmpty(ComputerName))
-                {
-                    if (_isSddl)
-                    {
-                        ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
-                        current.SetSecurityDescriptorSddlForm(Sddl);
+                case "ByNameAndSecurityObject":
+                    _serviceFinalName = Name;
+                    _finalSecurityObject = SecurityObject;
+                    break;
 
-                        if (ShouldProcess(
-                        $"Setting security on service {Name} on the local computer.",
-                        $"Are you sure you want to set security for service {Name} on the local computer?",
-                        "Setting Service Security"))
-                            unWrapper.SetServiceSecurity(Name, Sddl, SetSacl, current.OwnerModified);
-                    }
-                    else
-                    {
-                        if (ShouldProcess(
-                        $"Setting security on service {Name} on the local computer.",
-                        $"Are you sure you want to set security for service {Name} on the local computer?",
-                        "Setting Service Security"))
-                            unWrapper.SetServiceSecurity(Name, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
-                    }
-                }
-                else
-                {
-                    if (_isSddl)
-                    {
-                        ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, ComputerName, SetSacl), Name);
-                        current.SetSecurityDescriptorSddlForm(Sddl);
+                case "ByDisplayNameAndSecurityObject":
+                    string? serviceName = ServiceController.GetServices().Where(s => s.DisplayName == DisplayName).FirstOrDefault().ServiceName
+                        ?? throw new ItemNotFoundException($"No service with display name '{DisplayName}' found.");
 
-                        if (ShouldProcess(
-                        $"Setting security on service {Name} on {ComputerName}.",
-                        $"Are you sure you want to set security for service {Name} on {ComputerName}?",
-                        "Setting Service Security"))
-                            unWrapper.SetServiceSecurity(Name, ComputerName, Sddl, SetSacl, current.OwnerModified);
-                    }
-                    else
-                    {
-                        if (ShouldProcess(
-                        $"Setting security on service {Name} on {ComputerName}.",
-                        $"Are you sure you want to set security for service {Name} on {ComputerName}?",
-                        "Setting Service Security"))
-                            unWrapper.SetServiceSecurity(Name, ComputerName, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
-                    }
-                }
+                    _serviceFinalName = serviceName;
+                    _finalSecurityObject = SecurityObject;
+                    break;
+
+                case "ByInputObjectAndSecurityObject":
+                    if (InputObject.ServiceHandle is null)
+                        throw new ArgumentException("Invalid input object.");
+
+                    if (InputObject.ServiceHandle.IsClosed || InputObject.ServiceHandle.IsInvalid)
+                        throw new ArgumentException("Invalid input object service handle.");
+
+                    _serviceFinalName = InputObject.ServiceName;
+                    _finalSecurityObject = SecurityObject;
+                    break;
+
+                case "ByNameAndSddl":
+                    _finalSecurityObject = new(_unwrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                    _finalSecurityObject.SetSecurityDescriptorSddlForm(Sddl);
+                    _serviceFinalName = Name;
+                    break;
+
+                case "ByDisplayNameAndSddl":
+                    serviceName = ServiceController.GetServices().Where(s => s.DisplayName == DisplayName).FirstOrDefault().ServiceName
+                        ?? throw new ItemNotFoundException($"No service with display name '{DisplayName}' found.");
+
+                    _serviceFinalName = serviceName;
+                    _finalSecurityObject = new(_unwrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                    _finalSecurityObject.SetSecurityDescriptorSddlForm(Sddl);
+                    break;
+
+                case "ByInputObjectAndSddl":
+                    if (InputObject.ServiceHandle is null)
+                        throw new ArgumentException("Invalid input object.");
+
+                    if (InputObject.ServiceHandle.IsClosed || InputObject.ServiceHandle.IsInvalid)
+                        throw new ArgumentException("Invalid input object service handle.");
+
+                    _serviceFinalName = InputObject.ServiceName;
+                    _finalSecurityObject = new(_unwrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                    _finalSecurityObject.SetSecurityDescriptorSddlForm(Sddl);
+                    break;
+            }
+
+            if (string.IsNullOrEmpty(ComputerName))
+            {
+                if (ShouldProcess(
+                    $"Setting security on service {Name} on the local computer.",
+                    $"Are you sure you want to set security for service {Name} on the local computer?",
+                    "Setting Service Security"
+                ))
+                    _unwrapper.SetServiceSecurity(_serviceFinalName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
             }
             else
             {
-                if (string.IsNullOrEmpty(ComputerName))
-                {
-                    if (_isSddl)
-                    {
-                        ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
-                        current.SetSecurityDescriptorSddlForm(Sddl);
-
-                        if (ShouldProcess(
-                        $"Setting security on service {InputObject.ServiceName} on the current computer.",
-                        $"Are you sure you want to set security for service {InputObject.ServiceName} on the current computer?",
-                        "Setting Service Security"))
-                            unWrapper.SetServiceSecurity(InputObject.ServiceName, Sddl, SetSacl, current.OwnerModified);
-                    }
-                    else
-                        if (ShouldProcess(
-                        $"Setting security on service {InputObject.ServiceName} on the current computer.",
-                        $"Are you sure you want to set security for service {InputObject.ServiceName} on the current computer?",
-                        "Setting Service Security"))
-                            unWrapper.SetServiceSecurity(InputObject.ServiceName, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
-                }
-                else
-                {
-                    if (_isSddl)
-                    {
-                        ServiceSecurity current = new(unWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
-                        current.SetSecurityDescriptorSddlForm(Sddl);
-
-                        if (ShouldProcess(
-                        $"Setting security on service {InputObject.ServiceName} on {ComputerName}.",
-                        $"Are you sure you want to set security for service {InputObject.ServiceName} on {ComputerName}?",
-                        "Setting Service Security"))
-                            unWrapper.SetServiceSecurity(InputObject.ServiceName, Sddl, SetSacl, current.OwnerModified);
-                    }
-                    else
-                        if (ShouldProcess(
-                        $"Setting security on service {InputObject.ServiceName} on {ComputerName}.",
-                        $"Are you sure you want to set security for service {InputObject.ServiceName} on {ComputerName}?",
-                        "Setting Service Security"))
-                            unWrapper.SetServiceSecurity(InputObject.ServiceName, SecurityObject.Sddl, SetSacl, SecurityObject.OwnerModified);
-                }
+                if (ShouldProcess(
+                    $"Setting security on service {Name} on {ComputerName}.",
+                    $"Are you sure you want to set security for service {Name} on {ComputerName}?",
+                    "Setting Service Security"
+                ))
+                    _unwrapper.SetServiceSecurity(_serviceFinalName, ComputerName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
             }
         }
     }

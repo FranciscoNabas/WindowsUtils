@@ -12,7 +12,7 @@ namespace WindowsUtils.Interop
     }
 }
 
-namespace WindowsUtils.Engine
+namespace WindowsUtils.ProcessAndThread
 {
     public class Process
     {

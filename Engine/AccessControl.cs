@@ -1,7 +1,7 @@
 using System.Security.Principal;
 using System.Security.AccessControl;
-using WindowsUtils.Engine;
-using System.Data.SqlTypes;
+using WindowsUtils.Services;
+using WindowsUtils.Attributes;
 
 namespace WindowsUtils.AccessControl
 {

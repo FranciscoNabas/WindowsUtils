@@ -1,6 +1,6 @@
 ﻿using System.Management.Automation;
 
-namespace WindowsUtils.Engine;
+namespace WindowsUtils.Attributes;
 
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 public sealed class ValidateFileExistsAttribute : ValidateArgumentsAttribute
