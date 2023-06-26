@@ -1,10 +1,11 @@
 ﻿#pragma once
-
 #pragma unmanaged
-#include "TerminalServices.h"
-#include "Utilities.h"
+
+#include "Registry.h"
 #include "Services.h"
+#include "Utilities.h"
 #include "AccessControl.h"
+#include "TerminalServices.h"
 
 #pragma managed
 #include <vcclr.h>
@@ -12,6 +13,7 @@
 using namespace System;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
+using namespace Microsoft::Win32;
 
 namespace WindowsUtils::Core
 {
@@ -249,13 +251,14 @@ namespace WindowsUtils::Core
 	==	  Wrapper function identification	 ==
 	===========================================*/
 
-	public ref class WrapperFunctions
+	public ref class Wrapper
 	{
 	public:
 		Utilities* utlptr;
 		TerminalServices* wtsptr;
 		Services* svcptr;
 		AccessControl* acptr;
+		Registry* regptr;
 
 		// Invoke-RemoteMessage
 		array<MessageResponseBase^>^ InvokeRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait);
@@ -294,13 +297,24 @@ namespace WindowsUtils::Core
 		// Set-ServiceSecurity
 		void SetServiceSecurity(String^ serviceName, String^ computerName, String^ sddl, bool audit, bool changeOwner);
 		void SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner);
+
+		// Registry operation
+		Object^ GetRegistryValue(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey, String^ valueName);
+		Object^ GetRegistryValue(String^ userName, String^ password, RegistryHive hive, String^ subKey, String^ valueName);
+		Object^ GetRegistryValue(String^ computerName, RegistryHive hive, String^ subKey, String^ valueName);
+		Object^ GetRegistryValue(RegistryHive hive, String^ subKey, String^ valueName);
+
+		array<String^>^ GetRegistrySubKeyNames(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey);
+		array<String^>^ GetRegistrySubKeyNames(String^ userName, String^ password, RegistryHive hive, String^ subKey);
+		array<String^>^ GetRegistrySubKeyNames(String^ computerName, RegistryHive hive, String^ subKey);
+		array<String^>^ GetRegistrySubKeyNames(RegistryHive hive, String^ subKey);
+
+		// Utilities
+		array<String^>^ GetStringArrayFromDoubleNullTermninatedCStyleArray(const LPWSTR& pvNativeArray, DWORD dwszBytes);
+		array<String^>^ GetStringArrayFromDoubleNullTermninatedCStyleArray(IntPtr nativeArray, DWORD dwszBytes);
 	};
 
-	/*=========================================
-	==		  Utility identification		 ==
-	===========================================*/
-
-	public ref class NativeException : public Exception
+	public ref class NativeExceptionBase : public Exception
 	{
 	public:
 
@@ -310,21 +324,21 @@ namespace WindowsUtils::Core
 			}
 		}
 
-		NativeException() : Exception() { }
+		NativeExceptionBase() : Exception() { }
 
-		NativeException(int nativeErrorCode)
+		NativeExceptionBase(int nativeErrorCode)
 			: Exception(wrapper->GetFormattedError(nativeErrorCode)) {
 
 			_nativeErrorCode = nativeErrorCode;
 		}
 
-		NativeException(int nativeErrorCode, String^ message)
+		NativeExceptionBase(int nativeErrorCode, String^ message)
 			: Exception(message) {
 
 			_nativeErrorCode = nativeErrorCode;
 		}
 
-		NativeException(int nativeErrorCode, String^ message, Exception^ innerException)
+		NativeExceptionBase(int nativeErrorCode, String^ message, Exception^ innerException)
 			: Exception(message, innerException) {
 
 			_nativeErrorCode = nativeErrorCode;
@@ -332,6 +346,6 @@ namespace WindowsUtils::Core
 
 	private:
 		int _nativeErrorCode;
-		WrapperFunctions^ wrapper = gcnew WrapperFunctions();
+		Wrapper^ wrapper = gcnew Wrapper();
 	};
 }

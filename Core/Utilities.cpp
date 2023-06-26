@@ -630,4 +630,10 @@ namespace WindowsUtils::Core
 
 		return FALSE;
 	}
+
+	WuMemoryManagement::~WuMemoryManagement()
+	{
+		for (PVOID block : MemoryList)
+			HeapFree(GetProcessHeap(), NULL, block);
+	}
 }

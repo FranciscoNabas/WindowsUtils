@@ -6,8 +6,6 @@
 
 #define LOCFREEWCHECK(mem) if (NULL != mem) { LocalFree(mem); }
 #define ALLCHECK(ptr) if (NULL == ptr) { return ERROR_NOT_ENOUGH_MEMORY; }
-#define DWERRORCHECKV(result) if (ERROR_SUCCESS != result) { return result; }
-#define DWERRORCHECKF(result) if (ERROR_SUCCESS != result) { return GetLastError(); }
 
 namespace WindowsUtils::Core
 {
@@ -102,6 +100,7 @@ namespace WindowsUtils::Core
 		std::vector<PVOID> MemoryList;
 
 		WuMemoryManagement() { }
+		~WuMemoryManagement();
 
 	public:
 		WuMemoryManagement(WuMemoryManagement const&) = delete;

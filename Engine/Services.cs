@@ -51,7 +51,7 @@ namespace WindowsUtils.Services
 
     public abstract class ServiceCommandBase : PSCmdlet
     {
-        private readonly WrapperFunctions _unwrapper = new();
+        private readonly Wrapper _unwrapper = new();
 
         internal ServiceSecurity GetServiceObjectSecurity(string serviceName, bool getAudit)
         {
@@ -60,7 +60,7 @@ namespace WindowsUtils.Services
             {
                 sddl = _unwrapper.GetServiceSecurityDescriptorString(serviceName, getAudit);
             }
-            catch (Core.NativeException ex)
+            catch (NativeExceptionBase ex)
             {
                 throw (NativeException)ex;
             }
@@ -75,7 +75,7 @@ namespace WindowsUtils.Services
             {
                 sddl = _unwrapper.GetServiceSecurityDescriptorString(service.ServiceHandle.DangerousGetHandle(), getAudit);
             }
-            catch (Core.NativeException ex)
+            catch (NativeExceptionBase ex)
             {
                 throw (NativeException)ex;
             }
