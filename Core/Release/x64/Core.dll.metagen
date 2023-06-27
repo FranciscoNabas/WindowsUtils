@@ -140,6 +140,10 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetRegistryValue(String, RegistryHive, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(String, String, RegistryHive, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(String, String, String, RegistryHive, String, String): PrivateScope, Public, HideBySig
+    GetRegistrySubKeyNames(RegistryHive, String): PrivateScope, Public, HideBySig
+    GetRegistrySubKeyNames(String, RegistryHive, String): PrivateScope, Public, HideBySig
+    GetRegistrySubKeyNames(String, String, RegistryHive, String): PrivateScope, Public, HideBySig
+    GetRegistrySubKeyNames(String, String, String, RegistryHive, String): PrivateScope, Public, HideBySig
     GetStringArrayFromDoubleNullTermninatedCStyleArray(IntPtr, UInt32 IsLong): PrivateScope, Public, HideBySig
     GetStringArrayFromDoubleNullTermninatedCStyleArray(Char** IsImplicitlyDereferenced, UInt32 IsLong): PrivateScope, Public, HideBySig
 Class WindowsUtils.Core.NativeExceptionBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit

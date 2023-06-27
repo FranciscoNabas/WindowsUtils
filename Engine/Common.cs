@@ -342,4 +342,17 @@ namespace WindowsUtils
             return infoList.ToArray();
         }
     }
+
+    public sealed class DotNetInstalledUpdateInfo
+    {
+        public string Version { get; }
+        public string[] InstalledUpdates { get; }
+        public string ComputerName { get; }
+
+        public DotNetInstalledUpdateInfo(string version, string[] installedUpdates)
+            => (ComputerName, Version, InstalledUpdates) = (Environment.MachineName, version, installedUpdates);
+
+        public DotNetInstalledUpdateInfo(string computerName, string version, string[] installedUpdates)
+            => (ComputerName, Version, InstalledUpdates) = (computerName, version, installedUpdates);
+    }
 }

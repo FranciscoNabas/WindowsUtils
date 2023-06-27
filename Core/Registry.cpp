@@ -46,7 +46,7 @@ namespace WindowsUtils::Core
     ) {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwSubkeyNameSz = MAX_KEY_LENGTH;
-        WCHAR szSubkeyName[MAX_KEY_LENGTH];
+        LPWSTR persName = NULL;
         HKEY hRegistry;
         HKEY hSubKey;
 
@@ -62,23 +62,27 @@ namespace WindowsUtils::Core
             return result;
         }
 
+        std::unique_ptr<BYTE[]> buffer;
         DWORD currentIndex = 0;
         do
         {
             dwSubkeyNameSz = MAX_KEY_LENGTH;
-            result = RegEnumKeyEx(hSubKey, currentIndex, szSubkeyName, &dwSubkeyNameSz, NULL, NULL, NULL, NULL);
+            buffer = std::make_unique<BYTE[]>(MAX_KEY_LENGTH);
+
+            result = RegEnumKeyEx(hSubKey, currentIndex, (LPWSTR)buffer.get(), &dwSubkeyNameSz, NULL, NULL, NULL, NULL);
             if (result != ERROR_SUCCESS && result != ERROR_NO_MORE_ITEMS)
             {
                 RegCloseKey(hSubKey);
                 RegCloseKey(hRegistry);
                 return result;
             }
+
             if (result == ERROR_NO_MORE_ITEMS)
                 break;
 
-            DWORD realNameSz = dwSubkeyNameSz + 1;
-            LPWSTR persName = (LPWSTR)MemoryManager.Allocate(realNameSz);
-            wcscpy_s(persName, realNameSz, szSubkeyName);
+            DWORD szChars = dwSubkeyNameSz + 1;
+            persName = (LPWSTR)MemoryManager.Allocate(szChars * 2);
+            wcscpy_s(persName, szChars, (LPWSTR)buffer.get());
             vecSubkeyNames.push_back(persName);
             currentIndex++;
 

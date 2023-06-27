@@ -270,6 +270,7 @@ namespace WindowsUtils::Core
 		wcomputername = nullptr;
 		wservicename = nullptr;
 	}
+	
 	void Wrapper::RemoveService(String^ servicename, bool stopservice)
 	{
 		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
@@ -647,7 +648,7 @@ namespace WindowsUtils::Core
 	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey)
 	{
 		LSTATUS result = ERROR_SUCCESS;
-		auto subkeyNameVec = MakeVecPtr(LPWSTR);
+		SharedVecPtr(LPWSTR) subkeyNameVec = MakeVecPtr(LPWSTR);
 		pin_ptr<const wchar_t> temp;
 		bool bIsPassword = FALSE;
 		bool bIsLogin = FALSE;
