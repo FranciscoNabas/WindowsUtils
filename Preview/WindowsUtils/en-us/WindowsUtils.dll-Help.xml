@@ -1,0 +1,2554 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<helpItems schema="maml" xmlns="http://msh">
+  <!-- Cmdlet: Send-Click -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Send-Click</command:name>
+      <command:verb>Send</command:verb>
+      <command:noun>Click</command:noun>
+      <maml:description>
+        <maml:para>Sends a click.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>When called, this cmdlet sends a click on the current desktop.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>Send-Click</maml:name>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters />
+    <command:inputTypes />
+    <command:returnValues />
+  </command:command>
+  <!-- Cmdlet: Get-ComputerSession -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Get-ComputerSession</command:name>
+      <command:verb>Get</command:verb>
+      <command:noun>ComputerSession</command:noun>
+      <maml:description>
+        <maml:para>Returns the user sessions on the local or remote computer.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This Cmdlet returns the sessions on the local or remote computer.</maml:para>
+      <maml:para>By default, only brings sessions that has an user name assigned.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>Get-ComputerSession</maml:name>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="0">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name.</maml:para>
+            <maml:para>If no computer name is informed, it returns sessions on the current computer.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ActiveOnly -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ActiveOnly</maml:name>
+          <maml:description>
+            <maml:para>When called, this Cmdlet returns only active sessions.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: IncludeSystemSession -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>IncludeSystemSession</maml:name>
+          <maml:description>
+            <maml:para>When called, this Cmdlet includes sessions without an user name assigned.</maml:para>
+            <maml:para>Sessions without user name are marked as 'System'.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: ComputerName -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="0">
+        <maml:name>ComputerName</maml:name>
+        <maml:description>
+          <maml:para>The computer name.</maml:para>
+          <maml:para>If no computer name is informed, it returns sessions on the current computer.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: ActiveOnly -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>ActiveOnly</maml:name>
+        <maml:description>
+          <maml:para>When called, this Cmdlet returns only active sessions.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+      <!-- Parameter: IncludeSystemSession -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>IncludeSystemSession</maml:name>
+        <maml:description>
+          <maml:para>When called, this Cmdlet includes sessions without an user name assigned.</maml:para>
+          <maml:para>Sessions without user name are marked as 'System'.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes />
+    <command:returnValues />
+  </command:command>
+  <!-- Cmdlet: Get-ErrorString -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Get-ErrorString</command:name>
+      <command:verb>Get</command:verb>
+      <command:noun>ErrorString</command:noun>
+      <maml:description>
+        <maml:para>Returns the error message for a system error code.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This Cmdlet uses FormatMessage to return the message text for a given 'Win32' system error.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>Get-ErrorString</maml:name>
+        <!-- Parameter: ErrorCode -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByValue)" position="0">
+          <maml:name>ErrorCode</maml:name>
+          <maml:description>
+            <maml:para>The error code.</maml:para>
+            <maml:para>This value will be passed to the 'FormatMessage' function, with the system message parameter..</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">int</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Int32</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>0</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: ErrorCode -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByValue)" position="0">
+        <maml:name>ErrorCode</maml:name>
+        <maml:description>
+          <maml:para>The error code.</maml:para>
+          <maml:para>This value will be passed to the 'FormatMessage' function, with the system message parameter..</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>0</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The error code.</maml:para>
+          <maml:para>This value will be passed to the 'FormatMessage' function, with the system message parameter..</maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues />
+    <command:examples>
+      <command:example>
+        <maml:title>----------  EXAMPLE 1  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Get-ErrorString -ErrorCode 5</dev:code>
+        <dev:remarks>
+          <maml:para>Returning the message for a given error code.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>----------  EXAMPLE 2  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>[System.Runtime.InteropServices.Marshal]::GetLastWin32Error() | Get-ErrorString</dev:code>
+        <dev:remarks>
+          <maml:para>Calling GetLastWin32Error and providing it to the Cmdlet to get the message string.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+  </command:command>
+  <!-- Cmdlet: Get-LastWin32Error -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Get-LastWin32Error</command:name>
+      <command:verb>Get</command:verb>
+      <command:noun>LastWin32Error</command:noun>
+      <maml:description>
+        <maml:para>Returns the last 'Win32' system error message.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This Cmdlet gets the last error thrown by the system, and returns the message string.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>Get-LastWin32Error</maml:name>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters />
+    <command:inputTypes />
+    <command:returnValues />
+  </command:command>
+  <!-- Cmdlet: Get-MsiProperties -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Get-MsiProperties</command:name>
+      <command:verb>Get</command:verb>
+      <command:noun>MsiProperties</command:noun>
+      <maml:description>
+        <maml:para>Returns the installer properties from a MSI file.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This Cmdlet returns the installer properties from the installer database.</maml:para>
+      <maml:para>Besides standard information, like Product Code, it brings vendor-specific information.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>Get-MsiProperties</maml:name>
+        <!-- Parameter: Path -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="0">
+          <maml:name>Path</maml:name>
+          <maml:description>
+            <maml:para>The MSI file path.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: Path -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="0">
+        <maml:name>Path</maml:name>
+        <maml:description>
+          <maml:para>The MSI file path.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The MSI file path.</maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues />
+  </command:command>
+  <!-- Cmdlet: Get-ObjectHandle -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Get-ObjectHandle</command:name>
+      <command:verb>Get</command:verb>
+      <command:noun>ObjectHandle</command:noun>
+      <maml:description>
+        <maml:para>Returns all processes that have a handle to a file or directory.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This Cmdlet return all processes that have a handle to a file or directory.</maml:para>
+      <maml:para>This is particularly useful when a process is preventing a file from being read, modified or deleted.</maml:para>
+      <maml:para>Although working in a different way, this Cmdlet was designed to mimic handle.exe, from Sysinternals suite.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: byPath -->
+      <command:syntaxItem>
+        <maml:name>Get-ObjectHandle</maml:name>
+        <!-- Parameter: Path -->
+        <command:parameter required="false" globbing="true" pipelineInput="true (ByValue, ByPropertyName)" position="0">
+          <maml:name>Path</maml:name>
+          <maml:description>
+            <maml:para>The object path.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String[]</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: CloseHandle -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>CloseHandle</maml:name>
+          <maml:description>
+            <maml:para>Closes all handles to the object(s).</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: Force -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Force</maml:name>
+          <maml:description>
+            <maml:para>Suppresses confirmation for 'CloseHandle'.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: byLiteral -->
+      <command:syntaxItem>
+        <maml:name>Get-ObjectHandle</maml:name>
+        <!-- Parameter: LiteralPath -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="named" aliases="PSPath">
+          <maml:name>LiteralPath</maml:name>
+          <command:parameterValue required="true">string[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String[]</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: CloseHandle -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>CloseHandle</maml:name>
+          <maml:description>
+            <maml:para>Closes all handles to the object(s).</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: Force -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Force</maml:name>
+          <maml:description>
+            <maml:para>Suppresses confirmation for 'CloseHandle'.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: Path -->
+      <command:parameter required="false" globbing="true" pipelineInput="true (ByValue, ByPropertyName)" position="0">
+        <maml:name>Path</maml:name>
+        <maml:description>
+          <maml:para>The object path.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: LiteralPath -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="named" aliases="PSPath">
+        <maml:name>LiteralPath</maml:name>
+        <command:parameterValue required="true">string[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="named" aliases="PSPath">
+        <maml:name>PSPath</maml:name>
+        <command:parameterValue required="true">string[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>This is an alias of the LiteralPath parameter.</maml:para>
+        </maml:description>
+      </command:parameter>
+      <!-- Parameter: CloseHandle -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>CloseHandle</maml:name>
+        <maml:description>
+          <maml:para>Closes all handles to the object(s).</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+      <!-- Parameter: Force -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Force</maml:name>
+        <maml:description>
+          <maml:para>Suppresses confirmation for 'CloseHandle'.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The object path.</maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues />
+    <command:examples>
+      <command:example>
+        <maml:title>----------  EXAMPLE 1  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Get-ObjectHandle -Path "$env:windir\System32\kernel32.dll", "$env:windir\System32\ntdll.dll"</dev:code>
+        <dev:remarks>
+          <maml:para>Returning processes that have open handles to a list of files.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>----------  EXAMPLE 2  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Get-ObjectHandle $env:TEMP\*.tmp</dev:code>
+        <dev:remarks>
+          <maml:para>Listing all .tmp files on the temp folder, and listing the processes with open handles to those files.</maml:para>
+          <maml:para>The Cmdlet lists the processes related to the files queried to make it easier identify processes when querying a list of files.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+  </command:command>
+  <!-- Cmdlet: Invoke-RemoteMessage -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Invoke-RemoteMessage</command:name>
+      <command:verb>Invoke</command:verb>
+      <command:noun>RemoteMessage</command:noun>
+      <maml:description>
+        <maml:para>Sends a message to sessions on local or remote computers.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>The Invoke-RemoteMessage cmdlet sends a MessageBox-Style message to sessions on local or remote computers.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: WithWait -->
+      <command:syntaxItem>
+        <maml:name>Invoke-RemoteMessage</maml:name>
+        <!-- Parameter: Title -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="0">
+          <maml:name>Title</maml:name>
+          <maml:description>
+            <maml:para>The message box title.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Message -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="1">
+          <maml:name>Message</maml:name>
+          <maml:description>
+            <maml:para>The message text.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Timeout -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Timeout</maml:name>
+          <maml:description>
+            <maml:para>The timeout, in seconds, to wait for a response.</maml:para>
+            <maml:para>If the timeout expires, the cmdlet returns 'Timeout'. The message is not closed.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">int</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Int32</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>0</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name to send the message.</maml:para>
+            <maml:para>If not specified, sends the message to the local host.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SessionId -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>SessionId</maml:name>
+          <maml:description>
+            <maml:para>The session(s) to receive the message.</maml:para>
+            <maml:para>If not specified, sends the message to all sessions.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">int[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Int32[]</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Style -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Style</maml:name>
+          <maml:description>
+            <maml:para>A list of MessageBox style enum objects.</maml:para>
+            <maml:para>To obtaining a list of available options, call 'Get-RemoteMessageOptions', or see definition for the MessageBox function.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String[]</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>MB_OK</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: Wait -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Wait</maml:name>
+          <maml:description>
+            <maml:para>If called, waits for the user response in the specified 'Timeout'.</maml:para>
+            <maml:para>If not, the Cmdlet returns 'AsyncReturn'.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: NoWait -->
+      <command:syntaxItem>
+        <maml:name>Invoke-RemoteMessage</maml:name>
+        <!-- Parameter: Title -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="0">
+          <maml:name>Title</maml:name>
+          <maml:description>
+            <maml:para>The message box title.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Message -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="1">
+          <maml:name>Message</maml:name>
+          <maml:description>
+            <maml:para>The message text.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name to send the message.</maml:para>
+            <maml:para>If not specified, sends the message to the local host.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SessionId -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>SessionId</maml:name>
+          <maml:description>
+            <maml:para>The session(s) to receive the message.</maml:para>
+            <maml:para>If not specified, sends the message to all sessions.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">int[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Int32[]</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Style -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Style</maml:name>
+          <maml:description>
+            <maml:para>A list of MessageBox style enum objects.</maml:para>
+            <maml:para>To obtaining a list of available options, call 'Get-RemoteMessageOptions', or see definition for the MessageBox function.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String[]</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>MB_OK</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: Timeout -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Timeout</maml:name>
+          <maml:description>
+            <maml:para>The timeout, in seconds, to wait for a response.</maml:para>
+            <maml:para>If the timeout expires, the cmdlet returns 'Timeout'. The message is not closed.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">int</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Int32</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>0</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: Title -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="0">
+        <maml:name>Title</maml:name>
+        <maml:description>
+          <maml:para>The message box title.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: Message -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="1">
+        <maml:name>Message</maml:name>
+        <maml:description>
+          <maml:para>The message text.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: ComputerName -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>ComputerName</maml:name>
+        <maml:description>
+          <maml:para>The computer name to send the message.</maml:para>
+          <maml:para>If not specified, sends the message to the local host.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: SessionId -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>SessionId</maml:name>
+        <maml:description>
+          <maml:para>The session(s) to receive the message.</maml:para>
+          <maml:para>If not specified, sends the message to all sessions.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32[]</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: Style -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Style</maml:name>
+        <maml:description>
+          <maml:para>A list of MessageBox style enum objects.</maml:para>
+          <maml:para>To obtaining a list of available options, call 'Get-RemoteMessageOptions', or see definition for the MessageBox function.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>MB_OK</dev:defaultValue>
+      </command:parameter>
+      <!-- Parameter: Timeout -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Timeout</maml:name>
+        <maml:description>
+          <maml:para>The timeout, in seconds, to wait for a response.</maml:para>
+          <maml:para>If the timeout expires, the cmdlet returns 'Timeout'. The message is not closed.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>0</dev:defaultValue>
+      </command:parameter>
+      <!-- Parameter: Wait -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Wait</maml:name>
+        <maml:description>
+          <maml:para>If called, waits for the user response in the specified 'Timeout'.</maml:para>
+          <maml:para>If not, the Cmdlet returns 'AsyncReturn'.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes />
+    <command:returnValues />
+  </command:command>
+  <!-- Cmdlet: Get-RemoteMessageOptions -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Get-RemoteMessageOptions</command:name>
+      <command:verb>Get</command:verb>
+      <command:noun>RemoteMessageOptions</command:noun>
+      <maml:description>
+        <maml:para>Retrieves the options to be used with Invoke-RemoteMessage.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This Cmdlet returns a list of options available to be used with the parameter 'Style', from Invoke-RemoteMessage.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>Get-RemoteMessageOptions</maml:name>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters />
+    <command:inputTypes />
+    <command:returnValues />
+  </command:command>
+  <!-- Cmdlet: Get-ResourceMessageTable -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Get-ResourceMessageTable</command:name>
+      <command:verb>Get</command:verb>
+      <command:noun>ResourceMessageTable</command:noun>
+      <maml:description>
+        <maml:para>Returns the message table stored in a file.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This Cmdlet lists all messages, and their index from a resource message table.</maml:para>
+      <maml:para>These message tables are stored into files, like DLL or EXE.</maml:para>
+      <maml:para>I.E.: on kernel32.dll are stored the Win32 system error messages.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>Get-ResourceMessageTable</maml:name>
+        <!-- Parameter: Path -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="0">
+          <maml:name>Path</maml:name>
+          <maml:description>
+            <maml:para>The path to the file containing the message table.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: Path -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="0">
+        <maml:name>Path</maml:name>
+        <maml:description>
+          <maml:para>The path to the file containing the message table.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The path to the file containing the message table.</maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues />
+  </command:command>
+  <!-- Cmdlet: Remove-Service -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Remove-Service</command:name>
+      <command:verb>Remove</command:verb>
+      <command:noun>Service</command:noun>
+      <maml:description>
+        <maml:para>Deletes a service from the local or remote computer.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This cmdlet removes (deletes) a specified service from the local or remote computer.</maml:para>
+      <maml:para>If the service is running, and you don't use 'Stop', it will be marked to deletion.</maml:para>
+      <maml:para>If the service have dependents, and 'Stop' is not used, it will be marked for deletion.</maml:para>
+      <maml:para>If the service have dependents, and you use 'Stop', it will stop all dependent services.</maml:para>
+      <maml:para></maml:para>
+      <maml:para>Attention!</maml:para>
+      <maml:para>The act of deleting a service is ultimately marking it for deletion.</maml:para>
+      <maml:para>A service is only permanently deleted when it's stopped and there are no more open handles to it.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: WithServiceController -->
+      <command:syntaxItem>
+        <maml:name>Remove-Service</maml:name>
+        <!-- Parameter: InputObject -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByValue)" position="named">
+          <maml:name>InputObject</maml:name>
+          <maml:description>
+            <maml:para>The service controller input object.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">ServiceController</command:parameterValue>
+          <dev:type>
+            <maml:name>System.ServiceProcess.ServiceController</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name to remove the service from.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Force -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Force</maml:name>
+          <maml:description>
+            <maml:para>Suppresses confirmation.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: Stop -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Stop</maml:name>
+          <maml:description>
+            <maml:para>Stops the service and any dependents.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: WithServiceName -->
+      <command:syntaxItem>
+        <maml:name>Remove-Service</maml:name>
+        <!-- Parameter: Name -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="0">
+          <maml:name>Name</maml:name>
+          <maml:description>
+            <maml:para>The service name.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name to remove the service from.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Force -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Force</maml:name>
+          <maml:description>
+            <maml:para>Suppresses confirmation.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: Stop -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Stop</maml:name>
+          <maml:description>
+            <maml:para>Stops the service and any dependents.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: InputObject -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByValue)" position="named">
+        <maml:name>InputObject</maml:name>
+        <maml:description>
+          <maml:para>The service controller input object.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">ServiceController</command:parameterValue>
+        <dev:type>
+          <maml:name>System.ServiceProcess.ServiceController</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: Name -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="0">
+        <maml:name>Name</maml:name>
+        <maml:description>
+          <maml:para>The service name.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: ComputerName -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>ComputerName</maml:name>
+        <maml:description>
+          <maml:para>The computer name to remove the service from.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: Stop -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Stop</maml:name>
+        <maml:description>
+          <maml:para>Stops the service and any dependents.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+      <!-- Parameter: Force -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Force</maml:name>
+        <maml:description>
+          <maml:para>Suppresses confirmation.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.ServiceProcess.ServiceController</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The service controller input object.</maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues />
+    <command:examples>
+      <command:example>
+        <maml:title>----------  EXAMPLE 1  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Remove-Service -Name 'MyCoolService'</dev:code>
+        <dev:remarks>
+          <maml:para>Removes the service 'MyCoolService'.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>----------  EXAMPLE 2  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Remove-Service -Name 'MyCoolService' -Stop -Force</dev:code>
+        <dev:remarks>
+          <maml:para>Stops the service, and its dependents, and remove it. 'Force' skips confirmation.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+  </command:command>
+  <!-- Cmdlet: New-ServiceAccessRule -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>New-ServiceAccessRule</command:name>
+      <command:verb>New</command:verb>
+      <command:noun>ServiceAccessRule</command:noun>
+      <maml:description>
+        <maml:para>Creates a new service access rule object.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This cmdlet creates a new service access rule object to modify service security attributes.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>New-ServiceAccessRule</maml:name>
+        <!-- Parameter: Identity -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Identity</maml:name>
+          <maml:description>
+            <maml:para>The identity to be associated to the new access rule.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">object</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Object</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Rights -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Rights</maml:name>
+          <maml:description>
+            <maml:para>A bitwise OR flag of one or more service rights.</maml:para>
+            <maml:para>Possible values: QueryConfig, ChangeConfig, QueryStatus, EnumerateDependents, Start, Stop, PauseContinue, Interrogate, UserDefinedControl, AllAccess, Delete, ReadControl, WriteDac, WriteOwner, GenericRead, GenericWrite, GenericExecute</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">ServiceRights</command:parameterValue>
+          <dev:type>
+            <maml:name>WindowsUtils.Services.ServiceRights</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>0</dev:defaultValue>
+          <command:parameterValueGroup>
+            <command:parameterValue required="false" variableLength="false">QueryConfig</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">ChangeConfig</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">QueryStatus</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">EnumerateDependents</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Start</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Stop</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">PauseContinue</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Interrogate</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">UserDefinedControl</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">AllAccess</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Delete</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">ReadControl</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">WriteDac</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">WriteOwner</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">GenericRead</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">GenericWrite</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">GenericExecute</command:parameterValue>
+          </command:parameterValueGroup>
+        </command:parameter>
+        <!-- Parameter: Type -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Type</maml:name>
+          <maml:description>
+            <maml:para>The type of the new access rule.</maml:para>
+            <maml:para>Possible values: Allow, Deny</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">AccessControlType</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Security.AccessControl.AccessControlType</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>Allow</dev:defaultValue>
+          <command:parameterValueGroup>
+            <command:parameterValue required="false" variableLength="false">Allow</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Deny</command:parameterValue>
+          </command:parameterValueGroup>
+        </command:parameter>
+        <!-- Parameter: InheritanceFlags -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>InheritanceFlags</maml:name>
+          <maml:description>
+            <maml:para>The inheritance flags to be associated with the new access rule.</maml:para>
+            <maml:para>Possible values: None, ContainerInherit, ObjectInherit</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">InheritanceFlags</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Security.AccessControl.InheritanceFlags</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>None</dev:defaultValue>
+          <command:parameterValueGroup>
+            <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">ContainerInherit</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">ObjectInherit</command:parameterValue>
+          </command:parameterValueGroup>
+        </command:parameter>
+        <!-- Parameter: Inherited -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Inherited</maml:name>
+          <maml:description>
+            <maml:para>Called if the new access rule is inherited.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: PropagationFlags -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>PropagationFlags</maml:name>
+          <maml:description>
+            <maml:para>The propagation flags to be associated with the new access rule.</maml:para>
+            <maml:para>Possible values: None, NoPropagateInherit, InheritOnly</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">PropagationFlags</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Security.AccessControl.PropagationFlags</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>None</dev:defaultValue>
+          <command:parameterValueGroup>
+            <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">NoPropagateInherit</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">InheritOnly</command:parameterValue>
+          </command:parameterValueGroup>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: Identity -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Identity</maml:name>
+        <maml:description>
+          <maml:para>The identity to be associated to the new access rule.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">object</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: Rights -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Rights</maml:name>
+        <maml:description>
+          <maml:para>A bitwise OR flag of one or more service rights.</maml:para>
+          <maml:para>Possible values: QueryConfig, ChangeConfig, QueryStatus, EnumerateDependents, Start, Stop, PauseContinue, Interrogate, UserDefinedControl, AllAccess, Delete, ReadControl, WriteDac, WriteOwner, GenericRead, GenericWrite, GenericExecute</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">ServiceRights</command:parameterValue>
+        <dev:type>
+          <maml:name>WindowsUtils.Services.ServiceRights</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>0</dev:defaultValue>
+        <command:parameterValueGroup>
+          <command:parameterValue required="false" variableLength="false">QueryConfig</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">ChangeConfig</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">QueryStatus</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">EnumerateDependents</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Start</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Stop</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">PauseContinue</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Interrogate</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">UserDefinedControl</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">AllAccess</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Delete</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">ReadControl</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">WriteDac</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">WriteOwner</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">GenericRead</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">GenericWrite</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">GenericExecute</command:parameterValue>
+        </command:parameterValueGroup>
+      </command:parameter>
+      <!-- Parameter: Type -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Type</maml:name>
+        <maml:description>
+          <maml:para>The type of the new access rule.</maml:para>
+          <maml:para>Possible values: Allow, Deny</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">AccessControlType</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Security.AccessControl.AccessControlType</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>Allow</dev:defaultValue>
+        <command:parameterValueGroup>
+          <command:parameterValue required="false" variableLength="false">Allow</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Deny</command:parameterValue>
+        </command:parameterValueGroup>
+      </command:parameter>
+      <!-- Parameter: InheritanceFlags -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>InheritanceFlags</maml:name>
+        <maml:description>
+          <maml:para>The inheritance flags to be associated with the new access rule.</maml:para>
+          <maml:para>Possible values: None, ContainerInherit, ObjectInherit</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">InheritanceFlags</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Security.AccessControl.InheritanceFlags</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+        <command:parameterValueGroup>
+          <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">ContainerInherit</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">ObjectInherit</command:parameterValue>
+        </command:parameterValueGroup>
+      </command:parameter>
+      <!-- Parameter: PropagationFlags -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>PropagationFlags</maml:name>
+        <maml:description>
+          <maml:para>The propagation flags to be associated with the new access rule.</maml:para>
+          <maml:para>Possible values: None, NoPropagateInherit, InheritOnly</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">PropagationFlags</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Security.AccessControl.PropagationFlags</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+        <command:parameterValueGroup>
+          <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">NoPropagateInherit</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">InheritOnly</command:parameterValue>
+        </command:parameterValueGroup>
+      </command:parameter>
+      <!-- Parameter: Inherited -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Inherited</maml:name>
+        <maml:description>
+          <maml:para>Called if the new access rule is inherited.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes />
+    <command:returnValues />
+    <command:examples>
+      <command:example>
+        <maml:title>----------  EXAMPLE 1  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>New-ServiceAccessRule -Identity 'DOMAIN\YourUser' -Rights 'AllAccess' -Type 'Allow'</dev:code>
+        <dev:remarks>
+          <maml:para>Creates a new service access rule with all access allowed for user 'DOMAIN\YourUser'.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>----------  EXAMPLE 2  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>  $serviceAccessRuleSplat = @{
+    Identity = [System.Security.Principal.NTAccount]'DOMAIN\YourUser
+    Rights = [WindowsUtils.Engine.ServiceRights]::GenericRead -bor [WindowsUtils.Engine.ServiceRights]::EnumerateDependents
+    Type = [System.Security.AccessControl.AccessControlType]::Deny
+    InheritanceFlags = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit
+    PropagationFlags = [System.Security.AccessControl.PropagationFlags]::InheritOnly
+    Inherited = $true
+}
+New-ServiceAccessRule @serviceAccessRuleSplat</dev:code>
+        <dev:remarks>
+          <maml:para>Creates a new service access rule with the defined parameters.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+  </command:command>
+  <!-- Cmdlet: New-ServiceAuditRule -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>New-ServiceAuditRule</command:name>
+      <command:verb>New</command:verb>
+      <command:noun>ServiceAuditRule</command:noun>
+      <maml:description>
+        <maml:para>Creates a new service audit rule object.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This cmdlet creates a new service audit rule object to modify service security attributes.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>New-ServiceAuditRule</maml:name>
+        <!-- Parameter: Flags -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Flags</maml:name>
+          <maml:description>
+            <maml:para>The type of the new audit rule.</maml:para>
+            <maml:para>Possible values: None, Success, Failure</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">AuditFlags</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Security.AccessControl.AuditFlags</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>None</dev:defaultValue>
+          <command:parameterValueGroup>
+            <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Success</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Failure</command:parameterValue>
+          </command:parameterValueGroup>
+        </command:parameter>
+        <!-- Parameter: Identity -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Identity</maml:name>
+          <maml:description>
+            <maml:para>The identity to be associated to the new audit rule.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">object</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Object</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Rights -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Rights</maml:name>
+          <maml:description>
+            <maml:para>A bitwise OR flag of one or more service rights.</maml:para>
+            <maml:para>Possible values: QueryConfig, ChangeConfig, QueryStatus, EnumerateDependents, Start, Stop, PauseContinue, Interrogate, UserDefinedControl, AllAccess, Delete, ReadControl, WriteDac, WriteOwner, GenericRead, GenericWrite, GenericExecute</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">ServiceRights</command:parameterValue>
+          <dev:type>
+            <maml:name>WindowsUtils.Services.ServiceRights</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>0</dev:defaultValue>
+          <command:parameterValueGroup>
+            <command:parameterValue required="false" variableLength="false">QueryConfig</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">ChangeConfig</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">QueryStatus</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">EnumerateDependents</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Start</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Stop</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">PauseContinue</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Interrogate</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">UserDefinedControl</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">AllAccess</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">Delete</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">ReadControl</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">WriteDac</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">WriteOwner</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">GenericRead</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">GenericWrite</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">GenericExecute</command:parameterValue>
+          </command:parameterValueGroup>
+        </command:parameter>
+        <!-- Parameter: InheritanceFlags -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>InheritanceFlags</maml:name>
+          <maml:description>
+            <maml:para>The inheritance flags to be associated with the new audit rule.</maml:para>
+            <maml:para>Possible values: None, ContainerInherit, ObjectInherit</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">InheritanceFlags</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Security.AccessControl.InheritanceFlags</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>None</dev:defaultValue>
+          <command:parameterValueGroup>
+            <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">ContainerInherit</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">ObjectInherit</command:parameterValue>
+          </command:parameterValueGroup>
+        </command:parameter>
+        <!-- Parameter: Inherited -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Inherited</maml:name>
+          <maml:description>
+            <maml:para>Called if the new audit rule is inherited.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: PropagationFlags -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>PropagationFlags</maml:name>
+          <maml:description>
+            <maml:para>The propagation flags to be associated with the new audit rule.</maml:para>
+            <maml:para>Possible values: None, NoPropagateInherit, InheritOnly</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">PropagationFlags</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Security.AccessControl.PropagationFlags</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>None</dev:defaultValue>
+          <command:parameterValueGroup>
+            <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">NoPropagateInherit</command:parameterValue>
+            <command:parameterValue required="false" variableLength="false">InheritOnly</command:parameterValue>
+          </command:parameterValueGroup>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: Identity -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Identity</maml:name>
+        <maml:description>
+          <maml:para>The identity to be associated to the new audit rule.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">object</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: Rights -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Rights</maml:name>
+        <maml:description>
+          <maml:para>A bitwise OR flag of one or more service rights.</maml:para>
+          <maml:para>Possible values: QueryConfig, ChangeConfig, QueryStatus, EnumerateDependents, Start, Stop, PauseContinue, Interrogate, UserDefinedControl, AllAccess, Delete, ReadControl, WriteDac, WriteOwner, GenericRead, GenericWrite, GenericExecute</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">ServiceRights</command:parameterValue>
+        <dev:type>
+          <maml:name>WindowsUtils.Services.ServiceRights</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>0</dev:defaultValue>
+        <command:parameterValueGroup>
+          <command:parameterValue required="false" variableLength="false">QueryConfig</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">ChangeConfig</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">QueryStatus</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">EnumerateDependents</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Start</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Stop</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">PauseContinue</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Interrogate</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">UserDefinedControl</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">AllAccess</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Delete</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">ReadControl</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">WriteDac</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">WriteOwner</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">GenericRead</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">GenericWrite</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">GenericExecute</command:parameterValue>
+        </command:parameterValueGroup>
+      </command:parameter>
+      <!-- Parameter: Flags -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Flags</maml:name>
+        <maml:description>
+          <maml:para>The type of the new audit rule.</maml:para>
+          <maml:para>Possible values: None, Success, Failure</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">AuditFlags</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Security.AccessControl.AuditFlags</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+        <command:parameterValueGroup>
+          <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Success</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">Failure</command:parameterValue>
+        </command:parameterValueGroup>
+      </command:parameter>
+      <!-- Parameter: InheritanceFlags -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>InheritanceFlags</maml:name>
+        <maml:description>
+          <maml:para>The inheritance flags to be associated with the new audit rule.</maml:para>
+          <maml:para>Possible values: None, ContainerInherit, ObjectInherit</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">InheritanceFlags</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Security.AccessControl.InheritanceFlags</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+        <command:parameterValueGroup>
+          <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">ContainerInherit</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">ObjectInherit</command:parameterValue>
+        </command:parameterValueGroup>
+      </command:parameter>
+      <!-- Parameter: PropagationFlags -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>PropagationFlags</maml:name>
+        <maml:description>
+          <maml:para>The propagation flags to be associated with the new audit rule.</maml:para>
+          <maml:para>Possible values: None, NoPropagateInherit, InheritOnly</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">PropagationFlags</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Security.AccessControl.PropagationFlags</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>None</dev:defaultValue>
+        <command:parameterValueGroup>
+          <command:parameterValue required="false" variableLength="false">None</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">NoPropagateInherit</command:parameterValue>
+          <command:parameterValue required="false" variableLength="false">InheritOnly</command:parameterValue>
+        </command:parameterValueGroup>
+      </command:parameter>
+      <!-- Parameter: Inherited -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Inherited</maml:name>
+        <maml:description>
+          <maml:para>Called if the new audit rule is inherited.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes />
+    <command:returnValues />
+    <command:examples>
+      <command:example>
+        <maml:title>----------  EXAMPLE 1  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>New-ServiceAuditRule -Identity 'DOMAIN\YourUser' -Rights 'AllAccess' -Flags 'Failure'</dev:code>
+        <dev:remarks>
+          <maml:para>Creates a new service audit rule for all access and failure for 'DOMAIN\YourUser'.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>----------  EXAMPLE 2  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>  $serviceAuditRuleSplat = @{
+    Identity = [System.Security.Principal.NTAccount]'DOMAIN\YourUser
+    Rights = [WindowsUtils.Engine.ServiceRights]::GenericRead -bor [WindowsUtils.Engine.ServiceRights]::EnumerateDependents
+    Flags = [System.Security.AccessControl.AuditFlags]::Success
+    InheritanceFlags = [System.Security.AccessControl.InheritanceFlags]::ContainerInherit
+    PropagationFlags = [System.Security.AccessControl.PropagationFlags]::InheritOnly
+    Inherited = $true
+}
+New-ServiceAuditRule @serviceAuditRuleSplat</dev:code>
+        <dev:remarks>
+          <maml:para>Creates a new service audit rule with the defined parameters.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+  </command:command>
+  <!-- Cmdlet: Get-ServiceSecurity -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Get-ServiceSecurity</command:name>
+      <command:verb>Get</command:verb>
+      <command:noun>ServiceSecurity</command:noun>
+      <maml:description>
+        <maml:para>Gets the service security attributes.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This cmdlet retrieves the service security attributes.</maml:para>
+      <maml:para>The attributes retrieved are Owner, Group, DACL, and SACL, if used with the 'Audit' parameter.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: WithServiceName -->
+      <command:syntaxItem>
+        <maml:name>Get-ServiceSecurity</maml:name>
+        <!-- Parameter: Name -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="0">
+          <maml:name>Name</maml:name>
+          <maml:description>
+            <maml:para>The service(s) name.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String[]</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Audit -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Audit</maml:name>
+          <maml:description>
+            <maml:para>Includes SACL to the result.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: WithDisplayName -->
+      <command:syntaxItem>
+        <maml:name>Get-ServiceSecurity</maml:name>
+        <!-- Parameter: DisplayName -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>DisplayName</maml:name>
+          <maml:description>
+            <maml:para>The service(s) display name.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String[]</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Audit -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Audit</maml:name>
+          <maml:description>
+            <maml:para>Includes SACL to the result.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: WithServiceController -->
+      <command:syntaxItem>
+        <maml:name>Get-ServiceSecurity</maml:name>
+        <!-- Parameter: InputObject -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByValue)" position="0">
+          <maml:name>InputObject</maml:name>
+          <maml:description>
+            <maml:para>The service controller input object.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">ServiceController</command:parameterValue>
+          <dev:type>
+            <maml:name>System.ServiceProcess.ServiceController</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Audit -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Audit</maml:name>
+          <maml:description>
+            <maml:para>Includes SACL to the result.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: Name -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="0">
+        <maml:name>Name</maml:name>
+        <maml:description>
+          <maml:para>The service(s) name.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: DisplayName -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>DisplayName</maml:name>
+        <maml:description>
+          <maml:para>The service(s) display name.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: InputObject -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByValue)" position="0">
+        <maml:name>InputObject</maml:name>
+        <maml:description>
+          <maml:para>The service controller input object.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">ServiceController</command:parameterValue>
+        <dev:type>
+          <maml:name>System.ServiceProcess.ServiceController</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: Audit -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Audit</maml:name>
+        <maml:description>
+          <maml:para>Includes SACL to the result.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.ServiceProcess.ServiceController</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The service controller input object.</maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues />
+    <command:examples>
+      <command:example>
+        <maml:title>----------  EXAMPLE 1  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Get-ServiceSecurity -Name 'MyCoolService'</dev:code>
+        <dev:remarks>
+          <maml:para>Gets the security attributes from the service 'MyCoolService'.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>----------  EXAMPLE 2  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Get-ServiceSecurity -Name 'MyCoolService' -Audit</dev:code>
+        <dev:remarks>
+          <maml:para>Gets the security attributes from the service 'MyCoolService', including System Access Control List (SACL).</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>----------  EXAMPLE 3  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Get-Service -Name 'MyCoolService' | Get-ServiceSecurity</dev:code>
+        <dev:remarks>
+          <maml:para>Gets the security attributes from the service 'MyCoolService', from 'Get-Service'.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+  </command:command>
+  <!-- Cmdlet: Set-ServiceSecurity -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Set-ServiceSecurity</command:name>
+      <command:verb>Set</command:verb>
+      <command:noun>ServiceSecurity</command:noun>
+      <maml:description>
+        <maml:para>Set the service object security.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This cmdlet sets the service object security. You first retrieve the service security calling 'Get-ServiceSecurity', modifies the ACL, and pass it as input object to this cmdlet.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: ByNameAndSecurityObject -->
+      <command:syntaxItem>
+        <maml:name>Set-ServiceSecurity</maml:name>
+        <!-- Parameter: Name -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="0">
+          <maml:name>Name</maml:name>
+          <maml:description>
+            <maml:para>The service name.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SecurityObject -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named" aliases="AclObject">
+          <maml:name>SecurityObject</maml:name>
+          <maml:description>
+            <maml:para>The service security object to set.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">ServiceSecurity</command:parameterValue>
+          <dev:type>
+            <maml:name>WindowsUtils.AccessControl.ServiceSecurity</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name. If empty, looks for the service in the current machine.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SetSacl -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>SetSacl</maml:name>
+          <maml:description>
+            <maml:para>True to modify audit rules (SACL).</maml:para>
+            <maml:para>Attention! If this parameter is called, and the security object,</maml:para>
+            <maml:para>or SDDL audit rules are empty it will erase the service's audit rules.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: ByNameAndSddl -->
+      <command:syntaxItem>
+        <maml:name>Set-ServiceSecurity</maml:name>
+        <!-- Parameter: Name -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="0">
+          <maml:name>Name</maml:name>
+          <maml:description>
+            <maml:para>The service name.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Sddl -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Sddl</maml:name>
+          <maml:description>
+            <maml:para>The service security object to set.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name. If empty, looks for the service in the current machine.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SetSacl -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>SetSacl</maml:name>
+          <maml:description>
+            <maml:para>True to modify audit rules (SACL).</maml:para>
+            <maml:para>Attention! If this parameter is called, and the security object,</maml:para>
+            <maml:para>or SDDL audit rules are empty it will erase the service's audit rules.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: ByDisplayNameAndSecurityObject -->
+      <command:syntaxItem>
+        <maml:name>Set-ServiceSecurity</maml:name>
+        <!-- Parameter: DisplayName -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>DisplayName</maml:name>
+          <maml:description>
+            <maml:para>The service display name.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SecurityObject -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named" aliases="AclObject">
+          <maml:name>SecurityObject</maml:name>
+          <maml:description>
+            <maml:para>The service security object to set.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">ServiceSecurity</command:parameterValue>
+          <dev:type>
+            <maml:name>WindowsUtils.AccessControl.ServiceSecurity</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name. If empty, looks for the service in the current machine.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SetSacl -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>SetSacl</maml:name>
+          <maml:description>
+            <maml:para>True to modify audit rules (SACL).</maml:para>
+            <maml:para>Attention! If this parameter is called, and the security object,</maml:para>
+            <maml:para>or SDDL audit rules are empty it will erase the service's audit rules.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: ByDisplayNameAndSddl -->
+      <command:syntaxItem>
+        <maml:name>Set-ServiceSecurity</maml:name>
+        <!-- Parameter: DisplayName -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>DisplayName</maml:name>
+          <maml:description>
+            <maml:para>The service display name.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Sddl -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Sddl</maml:name>
+          <maml:description>
+            <maml:para>The service security object to set.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name. If empty, looks for the service in the current machine.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SetSacl -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>SetSacl</maml:name>
+          <maml:description>
+            <maml:para>True to modify audit rules (SACL).</maml:para>
+            <maml:para>Attention! If this parameter is called, and the security object,</maml:para>
+            <maml:para>or SDDL audit rules are empty it will erase the service's audit rules.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: ByInputObjectAndSecurityObject -->
+      <command:syntaxItem>
+        <maml:name>Set-ServiceSecurity</maml:name>
+        <!-- Parameter: InputObject -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByValue)" position="0">
+          <maml:name>InputObject</maml:name>
+          <maml:description>
+            <maml:para>The service controller object.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">ServiceController</command:parameterValue>
+          <dev:type>
+            <maml:name>System.ServiceProcess.ServiceController</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SecurityObject -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named" aliases="AclObject">
+          <maml:name>SecurityObject</maml:name>
+          <maml:description>
+            <maml:para>The service security object to set.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">ServiceSecurity</command:parameterValue>
+          <dev:type>
+            <maml:name>WindowsUtils.AccessControl.ServiceSecurity</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name. If empty, looks for the service in the current machine.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SetSacl -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>SetSacl</maml:name>
+          <maml:description>
+            <maml:para>True to modify audit rules (SACL).</maml:para>
+            <maml:para>Attention! If this parameter is called, and the security object,</maml:para>
+            <maml:para>or SDDL audit rules are empty it will erase the service's audit rules.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: ByInputObjectAndSddl -->
+      <command:syntaxItem>
+        <maml:name>Set-ServiceSecurity</maml:name>
+        <!-- Parameter: InputObject -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByValue)" position="0">
+          <maml:name>InputObject</maml:name>
+          <maml:description>
+            <maml:para>The service controller object.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">ServiceController</command:parameterValue>
+          <dev:type>
+            <maml:name>System.ServiceProcess.ServiceController</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: Sddl -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Sddl</maml:name>
+          <maml:description>
+            <maml:para>The service security object to set.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name. If empty, looks for the service in the current machine.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SetSacl -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>SetSacl</maml:name>
+          <maml:description>
+            <maml:para>True to modify audit rules (SACL).</maml:para>
+            <maml:para>Attention! If this parameter is called, and the security object,</maml:para>
+            <maml:para>or SDDL audit rules are empty it will erase the service's audit rules.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: Name -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="0">
+        <maml:name>Name</maml:name>
+        <maml:description>
+          <maml:para>The service name.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: DisplayName -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>DisplayName</maml:name>
+        <maml:description>
+          <maml:para>The service display name.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: InputObject -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByValue)" position="0">
+        <maml:name>InputObject</maml:name>
+        <maml:description>
+          <maml:para>The service controller object.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">ServiceController</command:parameterValue>
+        <dev:type>
+          <maml:name>System.ServiceProcess.ServiceController</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: ComputerName -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>ComputerName</maml:name>
+        <maml:description>
+          <maml:para>The computer name. If empty, looks for the service in the current machine.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: SecurityObject -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named" aliases="AclObject">
+        <maml:name>SecurityObject</maml:name>
+        <maml:description>
+          <maml:para>The service security object to set.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">ServiceSecurity</command:parameterValue>
+        <dev:type>
+          <maml:name>WindowsUtils.AccessControl.ServiceSecurity</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named" aliases="AclObject">
+        <maml:name>AclObject</maml:name>
+        <maml:description>
+          <maml:para>The service security object to set.</maml:para>
+          <maml:para>This is an alias of the SecurityObject parameter.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">ServiceSecurity</command:parameterValue>
+        <dev:type>
+          <maml:name>WindowsUtils.AccessControl.ServiceSecurity</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: Sddl -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Sddl</maml:name>
+        <maml:description>
+          <maml:para>The service security object to set.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: SetSacl -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>SetSacl</maml:name>
+        <maml:description>
+          <maml:para>True to modify audit rules (SACL).</maml:para>
+          <maml:para>Attention! If this parameter is called, and the security object,</maml:para>
+          <maml:para>or SDDL audit rules are empty it will erase the service's audit rules.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The service name.</maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.ServiceProcess.ServiceController</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The service controller object.</maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues />
+    <command:examples>
+      <command:example>
+        <maml:title>----------  EXAMPLE 1  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>  $serviceSecurity = Get-ServiceSecurity -Name 'MyCoolService'
+$serviceSecurity.SetOwner([System.Security.Principal.NTAccount]'User')
+$serviceSecurity.AddAccessRule((New-ServiceAccessRule -Identity 'User' -Rights 'AllAccess' -Type 'Allow'))
+
+Set-ServiceSecurity -Name 'MyCoolService' -SecurityObject $serviceSecurity</dev:code>
+        <dev:remarks>
+          <maml:para>Changes the owner, adds an access rule, and sets the service security attributes.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>----------  EXAMPLE 2  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>  $serviceSecurity = Get-ServiceSecurity -Name 'MyCoolService' -Audit
+$serviceSecurity.AddAuditRule((New-ServiceAuditRule -Identity 'User' -Rights 'AllAccess' -Flags 'Success'))
+
+Set-ServiceSecurity -Name 'MyCoolService' -AclObject $serviceSecurity</dev:code>
+        <dev:remarks>
+          <maml:para>Changes the service audit rules.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+  </command:command>
+  <!-- Cmdlet: Disconnect-Session -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Disconnect-Session</command:name>
+      <command:verb>Disconnect</command:verb>
+      <command:noun>Session</command:noun>
+      <maml:description>
+        <maml:para>Logs off an interactive session on the local or remote computer.</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>This Cmdlet disconnects, or logs off, an interactive session on the local or remote computer.</maml:para>
+      <maml:para>You can retrieve the SessionId with Get-ComputerSession, and use this Cmdled to logoff users.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: WithComputerName -->
+      <command:syntaxItem>
+        <maml:name>Disconnect-Session</maml:name>
+        <!-- Parameter: ComputerName -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="named">
+          <maml:name>ComputerName</maml:name>
+          <maml:description>
+            <maml:para>The computer name to disconnect a session.</maml:para>
+            <maml:para>If not informed, it disconnects the session from the local computer.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: SessionId -->
+        <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="named">
+          <maml:name>SessionId</maml:name>
+          <maml:description>
+            <maml:para>The session id to disconnect.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">uint</command:parameterValue>
+          <dev:type>
+            <maml:name>System.UInt32</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>0</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: Wait -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Wait</maml:name>
+          <maml:description>
+            <maml:para>If called, the Cmdlet waits the logoff process to finish before returning.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+      <!-- Parameter set: NoComputerName -->
+      <command:syntaxItem>
+        <maml:name>Disconnect-Session</maml:name>
+        <!-- Parameter: SessionId -->
+        <command:parameter required="false" globbing="false" pipelineInput="true (ByPropertyName)" position="named">
+          <maml:name>SessionId</maml:name>
+          <maml:description>
+            <maml:para>The session id to disconnect.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">uint</command:parameterValue>
+          <dev:type>
+            <maml:name>System.UInt32</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>0</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: Wait -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>Wait</maml:name>
+          <maml:description>
+            <maml:para>If called, the Cmdlet waits the logoff process to finish before returning.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>False</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: ComputerName -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="named">
+        <maml:name>ComputerName</maml:name>
+        <maml:description>
+          <maml:para>The computer name to disconnect a session.</maml:para>
+          <maml:para>If not informed, it disconnects the session from the local computer.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: SessionId -->
+      <command:parameter required="true" globbing="false" pipelineInput="true (ByPropertyName)" position="named">
+        <maml:name>SessionId</maml:name>
+        <maml:description>
+          <maml:para>The session id to disconnect.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">uint</command:parameterValue>
+        <dev:type>
+          <maml:name>System.UInt32</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>0</dev:defaultValue>
+      </command:parameter>
+      <!-- Parameter: Wait -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>Wait</maml:name>
+        <maml:description>
+          <maml:para>If called, the Cmdlet waits the logoff process to finish before returning.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">SwitchParameter</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.SwitchParameter</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>False</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The computer name to disconnect a session.</maml:para>
+          <maml:para>If not informed, it disconnects the session from the local computer.</maml:para>
+        </maml:description>
+      </command:inputType>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.UInt32</maml:name>
+          <maml:uri />
+        </dev:type>
+        <maml:description>
+          <maml:para>The session id to disconnect.</maml:para>
+        </maml:description>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues />
+    <command:examples>
+      <command:example>
+        <maml:title>----------  EXAMPLE 1  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Disconnect-Session -SessionId 3</dev:code>
+        <dev:remarks>
+          <maml:para>Disconnects a session with a given session id.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title>----------  EXAMPLE 2  ----------</maml:title>
+        <maml:introduction>
+          <maml:para></maml:para>
+        </maml:introduction>
+        <dev:code>Get-ComputerSession -ComputerName 'MYAWESOMEPC.contoso.com' | Where-Object { $PSItem.UserName -eq 'CONTOSO\user.name' } | Disconnect-Session -ComputerName 'MYAWESOMEPC.contoso.com' -SessionId $PSItem.SessionId </dev:code>
+        <dev:remarks>
+          <maml:para>Gets the session from a specific user on a remote computer, and loggs it off.</maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+  </command:command>
+</helpItems>
