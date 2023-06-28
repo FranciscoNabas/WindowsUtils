@@ -455,90 +455,13 @@ namespace WindowsUtils::Core
 		DWORD dwValueType;
 		DWORD dwBytesReturned;
 		PVOID pvData;
-		HANDLE hToken;
-		BOOL bIsLogin = FALSE;
-		BOOL bIsPassword = FALSE;
 
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 		pin_ptr<const wchar_t> temp;
 
 		// Managing logon.
 		if (!String::IsNullOrEmpty(userName))
-		{
-			LPWSTR wDomain = NULL;
-			pin_ptr<const wchar_t> domain;
-			pin_ptr<const wchar_t> wUserName;
-
-			if (userName->Contains(L"\\"))
-			{
-				domain = PtrToStringChars(userName->Split('\\')[0]);
-				wUserName = PtrToStringChars(userName->Split('\\')[1]);
-
-				wDomain = (LPWSTR)domain;
-			}
-			else
-				wUserName = PtrToStringChars(userName);
-			
-			LPWSTR wPassword = NULL;
-			if (!String::IsNullOrEmpty(password))
-			{
-				bIsPassword = TRUE;
-				temp = PtrToStringChars(password);
-				wPassword = (LPWSTR)temp;
-			}
-
-			if (!LogonUser((LPWSTR)wUserName, wDomain, wPassword, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &hToken))
-			{
-				if (bIsPassword)
-				{
-					size_t sztpl = password->Length;
-					SecureZeroMemory(wPassword, sztpl * 2);
-					SecureZeroMemory((LPWSTR)temp, sztpl * 2);
-					password = nullptr;
-					GC::Collect();
-				}
-
-				temp = nullptr;
-				domain = nullptr;
-				wUserName = nullptr;
-				GC::Collect();
-				
-				throw gcnew NativeExceptionBase(GetLastError());
-			}
-
-			if (!ImpersonateLoggedOnUser(hToken))
-			{
-				if (bIsPassword)
-				{
-					size_t sztpl = password->Length;
-					SecureZeroMemory(wPassword, sztpl * 2);
-					SecureZeroMemory((LPWSTR)temp, sztpl * 2);
-					password = nullptr;
-				}
-
-				temp = nullptr;
-				domain = nullptr;
-				wUserName = nullptr;
-				CloseHandle(hToken);
-				GC::Collect();
-		
-				throw gcnew NativeExceptionBase(GetLastError());
-			}
-
-			if (bIsPassword)
-			{
-				size_t sztpl = password->Length;
-				SecureZeroMemory(wPassword, sztpl * 2);
-				SecureZeroMemory((LPWSTR)temp, sztpl * 2);
-				password = nullptr;
-			}
-
-			temp = nullptr;
-			domain = nullptr;
-			wUserName = nullptr;
-			bIsLogin = TRUE;
-			GC::Collect();
-		}
+			LogonAndImpersonateUser(userName, password);
 
 		LPWSTR wComputerName = NULL;
 		if (!String::IsNullOrEmpty(computerName))
@@ -553,9 +476,12 @@ namespace WindowsUtils::Core
 		LSTATUS result = regptr->GetRegistryKeyValue(wComputerName, (HKEY)hive, (LPWSTR)wSubKey, (LPWSTR)wValueName, dwValueType, pvData, dwBytesReturned);
 		if (result != ERROR_SUCCESS)
 		{
+			RevertToSelf();
+
 			temp = nullptr;
 			wSubKey = nullptr;
 			wValueName = nullptr;
+
 			throw gcnew NativeExceptionBase(result);
 		}
 
@@ -585,12 +511,18 @@ namespace WindowsUtils::Core
 				// Getting the necessary buffer.
 				DWORD bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, NULL, 0);
 				if (bytesNeeded == 0)
+				{
+					RevertToSelf();
 					throw gcnew NativeExceptionBase(GetLastError());
+				}
 				
 				LPWSTR buffer = (LPWSTR)MemoryManager.Allocate(bytesNeeded);
 				bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, buffer, bytesNeeded);
 				if (bytesNeeded == 0)
+				{
+					RevertToSelf();
 					throw gcnew NativeExceptionBase(GetLastError());
+				}
 				
 				output = gcnew String(buffer);
 				MemoryManager.Free(buffer);
@@ -617,15 +549,14 @@ namespace WindowsUtils::Core
 			break;
 		
 		default:
-			throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", dwValueType));
+			{
+				RevertToSelf();
+				throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", dwValueType));
+			}
 			break;
 		}
 
-		if (bIsLogin)
-		{
-			CloseHandle(hToken);
-			RevertToSelf();
-		}
+		RevertToSelf();
 
 		return output;
 	}
@@ -650,87 +581,10 @@ namespace WindowsUtils::Core
 		LSTATUS result = ERROR_SUCCESS;
 		SharedVecPtr(LPWSTR) subkeyNameVec = MakeVecPtr(LPWSTR);
 		pin_ptr<const wchar_t> temp;
-		bool bIsPassword = FALSE;
-		bool bIsLogin = FALSE;
-		HANDLE hToken;
 
 		// Managing logon.
 		if (!String::IsNullOrEmpty(userName))
-		{
-			LPWSTR wDomain = NULL;
-			pin_ptr<const wchar_t> domain;
-			pin_ptr<const wchar_t> wUserName;
-
-			if (userName->Contains(L"\\"))
-			{
-				domain = PtrToStringChars(userName->Split('\\')[0]);
-				wUserName = PtrToStringChars(userName->Split('\\')[1]);
-
-				wDomain = (LPWSTR)domain;
-			}
-			else
-				wUserName = PtrToStringChars(userName);
-
-			LPWSTR wPassword = NULL;
-			if (!String::IsNullOrEmpty(password))
-			{
-				bIsPassword = TRUE;
-				temp = PtrToStringChars(password);
-				wPassword = (LPWSTR)temp;
-			}
-
-			if (!LogonUser((LPWSTR)wUserName, wDomain, wPassword, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &hToken))
-			{
-				if (bIsPassword)
-				{
-					size_t sztpl = password->Length;
-					SecureZeroMemory(wPassword, sztpl * 2);
-					SecureZeroMemory((LPWSTR)temp, sztpl * 2);
-					password = nullptr;
-					GC::Collect();
-				}
-
-				temp = nullptr;
-				domain = nullptr;
-				wUserName = nullptr;
-				GC::Collect();
-
-				throw gcnew NativeExceptionBase(GetLastError());
-			}
-
-			if (!ImpersonateLoggedOnUser(hToken))
-			{
-				if (bIsPassword)
-				{
-					size_t sztpl = password->Length;
-					SecureZeroMemory(wPassword, sztpl * 2);
-					SecureZeroMemory((LPWSTR)temp, sztpl * 2);
-					password = nullptr;
-				}
-
-				temp = nullptr;
-				domain = nullptr;
-				wUserName = nullptr;
-				CloseHandle(hToken);
-				GC::Collect();
-
-				throw gcnew NativeExceptionBase(GetLastError());
-			}
-
-			if (bIsPassword)
-			{
-				size_t sztpl = password->Length;
-				SecureZeroMemory(wPassword, sztpl * 2);
-				SecureZeroMemory((LPWSTR)temp, sztpl * 2);
-				password = nullptr;
-			}
-
-			temp = nullptr;
-			domain = nullptr;
-			wUserName = nullptr;
-			bIsLogin = TRUE;
-			GC::Collect();
-		}
+			LogonAndImpersonateUser(userName, password);
 
 		LPWSTR wComputerName = NULL;
 		if (!String::IsNullOrEmpty(computerName))
@@ -742,11 +596,13 @@ namespace WindowsUtils::Core
 		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
 
 		result = regptr->GetRegistrySubkeyNames(wComputerName, (HKEY)hive, (LPWSTR)wSubKey, 0, *subkeyNameVec);
-
 		if (result != ERROR_SUCCESS)
 		{
+			RevertToSelf();
+
 			temp = nullptr;
 			wSubKey = nullptr;
+			
 			throw gcnew NativeExceptionBase(result);
 		}
 
@@ -757,9 +613,158 @@ namespace WindowsUtils::Core
 		for (LPWSTR singleName : *subkeyNameVec)
 			output->Add(gcnew String(singleName));
 
+		RevertToSelf();
+
 		return output->ToArray();
 	}
 
+	array<Object^>^ Wrapper::GetRegistryValueList(String^ userName, String^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
+	{
+		return Wrapper::GetRegistryValueList(L"", userName, password, hive, subKey, valueNameList);
+	}
+
+	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
+	{
+		return Wrapper::GetRegistryValueList(computerName, L"", L"", hive, subKey, valueNameList);
+	}
+
+	array<Object^>^ Wrapper::GetRegistryValueList(RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
+	{
+		return Wrapper::GetRegistryValueList(L"", L"", L"", hive, subKey, valueNameList);
+	}
+
+	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
+	{
+		LSTATUS nativeResult;
+		DWORD dwValCount = valueNameList->Length;
+		PVALENT pValList = new VALENT[valueNameList->Length];
+		pin_ptr<const wchar_t> temp;
+		LPWSTR lpDataBuffer;
+
+		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+
+		// Managing logon.
+		if (!String::IsNullOrEmpty(userName))
+			LogonAndImpersonateUser(userName, password);
+
+		LPWSTR wComputerName = NULL;
+		if (!String::IsNullOrEmpty(computerName))
+		{
+			temp = PtrToStringChars(computerName);
+			wComputerName = (LPWSTR)temp;
+		}
+
+		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
+
+		for (DWORD i = 0; i < dwValCount; i++)
+		{
+			pin_ptr<const wchar_t> wValueName = PtrToStringChars(valueNameList[i]);
+			size_t sizeValName = wcslen(wValueName) + 1;
+
+			pValList[i].ve_valuename = (LPWSTR)MemoryManager.Allocate(sizeValName * 2);
+			wcscpy_s(pValList[i].ve_valuename, sizeValName, wValueName);
+
+			wValueName = nullptr;
+		}
+
+		nativeResult = regptr->GetRegistryKeyValueList(wComputerName, (HKEY)hive, (LPWSTR)wSubKey, pValList, dwValCount, lpDataBuffer);
+		if (nativeResult != ERROR_SUCCESS)
+		{
+			RevertToSelf();
+
+			temp = nullptr;
+			wSubKey = nullptr;
+
+			throw gcnew NativeExceptionBase(nativeResult);
+		}
+
+		temp = nullptr;
+		wSubKey = nullptr;
+
+		array<Object^>^ output = gcnew array<Object^>(dwValCount);
+		for (DWORD i = 0; i < dwValCount; i++)
+		{
+			PVOID pvData = (PVOID)pValList[i].ve_valueptr;
+			switch (pValList[i].ve_type)
+			{
+			case REG_BINARY:
+			{
+				output[i] = gcnew array<byte>(pValList[i].ve_valuelen);
+				Marshal::Copy((IntPtr)pvData, (array<byte>^)output[i], 0, pValList[i].ve_valuelen);
+			}
+			break;
+
+			case REG_DWORD:
+			{
+				DWORD* dwData = static_cast<DWORD*>(pvData);
+				output[i] = gcnew Int32(*dwData);
+			}
+			break;
+
+			case REG_EXPAND_SZ:
+			{
+				// Getting the necessary buffer.
+				DWORD bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, NULL, 0);
+				if (bytesNeeded == 0)
+				{
+					RevertToSelf();
+					MemoryManager.Free(lpDataBuffer);
+
+					throw gcnew NativeExceptionBase(GetLastError());
+				}
+
+				LPWSTR buffer = (LPWSTR)MemoryManager.Allocate(bytesNeeded);
+				bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, buffer, bytesNeeded);
+				if (bytesNeeded == 0)
+				{
+					RevertToSelf();
+					MemoryManager.Free(lpDataBuffer);
+
+					throw gcnew NativeExceptionBase(GetLastError());
+				}
+
+				output[i] = gcnew String(buffer);
+				MemoryManager.Free(buffer);
+			}
+			break;
+
+			case REG_LINK:
+				output[i] = gcnew String((LPWSTR)pvData);
+				break;
+
+			case REG_MULTI_SZ:
+				output[i] = GetStringArrayFromDoubleNullTermninatedCStyleArray((LPWSTR)pvData, pValList[i].ve_valuelen);
+				break;
+
+			case REG_QWORD:
+			{
+				long long* qwData = static_cast<long long*>(pvData);
+				output[i] = gcnew Int64(*qwData);
+			}
+			break;
+
+			case REG_SZ:
+				output[i] = gcnew String((LPWSTR)pvData);
+				break;
+
+			default:
+				{
+					RevertToSelf();
+					MemoryManager.Free(lpDataBuffer);
+
+					throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", pValList[i].ve_type));
+				}
+				break;
+			}
+		}
+		
+		RevertToSelf();
+		MemoryManager.Free(lpDataBuffer);
+
+		return output;
+	}
+
+	// Utilities
 	array<String^>^ Wrapper::GetStringArrayFromDoubleNullTermninatedCStyleArray(const LPWSTR& pvNativeArray, DWORD dwszBytes)
 	{
 		List<String^>^ stringList = gcnew List<String^>();
@@ -800,5 +805,93 @@ namespace WindowsUtils::Core
 		}
 
 		return stringList->ToArray();
+	}
+
+	// Logs on the given user and impersonates it.
+	// You must call 'RevertToSelf()' to revert to the caller.
+	void Wrapper::LogonAndImpersonateUser(
+		String^ userName, // The user name. If the user belongs to a domain, enter the down-level logon name: 'DOMAIN\UserName'.
+		String^ password  // The user's password, if any.
+	) {
+		if (!String::IsNullOrEmpty(userName))
+		{
+			LPWSTR wDomain = NULL;
+			BOOL bIsPassword = FALSE;
+			pin_ptr<const wchar_t> domain;
+			pin_ptr<const wchar_t> wUserName;
+			pin_ptr<const wchar_t> wTemp;
+			HANDLE hToken;
+
+			if (userName->Contains(L"\\"))
+			{
+				domain = PtrToStringChars(userName->Split('\\')[0]);
+				wUserName = PtrToStringChars(userName->Split('\\')[1]);
+
+				wDomain = (LPWSTR)domain;
+			}
+			else
+				wUserName = PtrToStringChars(userName);
+
+			LPWSTR wPassword = NULL;
+			if (!String::IsNullOrEmpty(password))
+			{
+				bIsPassword = TRUE;
+				wTemp = PtrToStringChars(password);
+				wPassword = (LPWSTR)wTemp;
+			}
+
+			if (!LogonUser((LPWSTR)wUserName, wDomain, wPassword, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &hToken))
+			{
+				if (bIsPassword)
+				{
+					size_t sztpl = password->Length;
+					SecureZeroMemory(wPassword, sztpl * 2);
+					SecureZeroMemory((LPWSTR)wTemp, sztpl * 2);
+					password = nullptr;
+					GC::Collect();
+				}
+
+				wTemp = nullptr;
+				domain = nullptr;
+				wUserName = nullptr;
+				GC::Collect();
+
+				throw gcnew NativeExceptionBase(GetLastError());
+			}
+
+			if (!ImpersonateLoggedOnUser(hToken))
+			{
+				if (bIsPassword)
+				{
+					size_t sztpl = password->Length;
+					SecureZeroMemory(wPassword, sztpl * 2);
+					SecureZeroMemory((LPWSTR)wTemp, sztpl * 2);
+					password = nullptr;
+				}
+
+				wTemp = nullptr;
+				domain = nullptr;
+				wUserName = nullptr;
+				CloseHandle(hToken);
+				GC::Collect();
+
+				throw gcnew NativeExceptionBase(GetLastError());
+			}
+
+			if (bIsPassword)
+			{
+				size_t sztpl = password->Length;
+				SecureZeroMemory(wPassword, sztpl * 2);
+				SecureZeroMemory((LPWSTR)wTemp, sztpl * 2);
+				password = nullptr;
+			}
+
+			wTemp = nullptr;
+			domain = nullptr;
+			wUserName = nullptr;
+			CloseHandle(hToken);
+			
+			GC::Collect();
+		}
 	}
 }

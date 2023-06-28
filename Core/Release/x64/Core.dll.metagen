@@ -112,12 +112,6 @@ Class WindowsUtils.Core.TokenPrivilege: AutoLayout, AnsiClass, Class, Public, Be
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
 Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
-  Fields:
-    WindowsUtils.Core.Utilities* utlptr : Public
-    WindowsUtils.Core.TerminalServices* wtsptr : Public
-    WindowsUtils.Core.Services* svcptr : Public
-    WindowsUtils.Core.AccessControl* acptr : Public
-    WindowsUtils.Core.Registry* regptr : Public
   Methods:
     InvokeRemoteMessage(IntPtr, Int32[], String, String, UInt32, Int32, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     GetComputerSession(String, IntPtr, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
@@ -144,6 +138,10 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetRegistrySubKeyNames(String, RegistryHive, String): PrivateScope, Public, HideBySig
     GetRegistrySubKeyNames(String, String, RegistryHive, String): PrivateScope, Public, HideBySig
     GetRegistrySubKeyNames(String, String, String, RegistryHive, String): PrivateScope, Public, HideBySig
+    GetRegistryValueList(RegistryHive, String, String[]): PrivateScope, Public, HideBySig
+    GetRegistryValueList(String, RegistryHive, String, String[]): PrivateScope, Public, HideBySig
+    GetRegistryValueList(String, String, RegistryHive, String, String[]): PrivateScope, Public, HideBySig
+    GetRegistryValueList(String, String, String, RegistryHive, String, String[]): PrivateScope, Public, HideBySig
     GetStringArrayFromDoubleNullTermninatedCStyleArray(IntPtr, UInt32 IsLong): PrivateScope, Public, HideBySig
     GetStringArrayFromDoubleNullTermninatedCStyleArray(Char** IsImplicitlyDereferenced, UInt32 IsLong): PrivateScope, Public, HideBySig
 Class WindowsUtils.Core.NativeExceptionBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit

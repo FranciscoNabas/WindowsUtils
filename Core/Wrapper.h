@@ -254,12 +254,6 @@ namespace WindowsUtils::Core
 	public ref class Wrapper
 	{
 	public:
-		Utilities* utlptr;
-		TerminalServices* wtsptr;
-		Services* svcptr;
-		AccessControl* acptr;
-		Registry* regptr;
-
 		// Invoke-RemoteMessage
 		array<MessageResponseBase^>^ InvokeRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait);
 		// Get-ComputerSession
@@ -309,9 +303,23 @@ namespace WindowsUtils::Core
 		array<String^>^ GetRegistrySubKeyNames(String^ computerName, RegistryHive hive, String^ subKey);
 		array<String^>^ GetRegistrySubKeyNames(RegistryHive hive, String^ subKey);
 
+		array<Object^>^ GetRegistryValueList(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
+		array<Object^>^ GetRegistryValueList(String^ userName, String^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
+		array<Object^>^ GetRegistryValueList(String^ computerName, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
+		array<Object^>^ GetRegistryValueList(RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
+
 		// Utilities
 		array<String^>^ GetStringArrayFromDoubleNullTermninatedCStyleArray(const LPWSTR& pvNativeArray, DWORD dwszBytes);
 		array<String^>^ GetStringArrayFromDoubleNullTermninatedCStyleArray(IntPtr nativeArray, DWORD dwszBytes);
+
+	private:
+		Utilities* utlptr;
+		TerminalServices* wtsptr;
+		Services* svcptr;
+		AccessControl* acptr;
+		Registry* regptr;
+
+		static void LogonAndImpersonateUser(String^ userName, String^ password);
 	};
 
 	public ref class NativeExceptionBase : public Exception

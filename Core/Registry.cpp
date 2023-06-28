@@ -94,4 +94,51 @@ namespace WindowsUtils::Core
 
         return result;
     }
+
+    LSTATUS Registry::GetRegistryKeyValueList(
+        const LPWSTR& lpszComputerName,    // The computer name.
+        const HKEY& hRootKey,              // The hive.
+        const LPWSTR& lpszSubKey,          // The subkey path.
+        PVALENT pValArray,                 // An array of VALENT objects. The 've_valuename' of each object must contain the value name to retrieve the value.
+        DWORD dwValCount,                  // The number of VALENT objects in 'pValArray'.
+        LPWSTR& lpDataBuffer               // The buffer that receives the data.
+    ) {
+        LSTATUS result = ERROR_SUCCESS;
+        DWORD dwBuffSize = 0;
+        HKEY hRegistry;
+        HKEY hSubKey;
+
+        WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+
+        result = RegConnectRegistry(lpszComputerName, hRootKey, &hRegistry);
+        DWERRORCHECKV(result);
+
+        result = RegOpenKeyEx(hRegistry, lpszSubKey, KEY_QUERY_VALUE, KEY_READ, &hSubKey);
+        if (result != ERROR_SUCCESS)
+        {
+            RegCloseKey(hRegistry);
+            return result;
+        }
+
+        result = RegQueryMultipleValuesW(hSubKey, pValArray, dwValCount, NULL, &dwBuffSize);
+        if (result != ERROR_SUCCESS)
+        {
+            if (result != ERROR_MORE_DATA)
+            {
+                RegCloseKey(hRegistry);
+                return result;
+            }
+        }
+
+        lpDataBuffer = (LPWSTR)MemoryManager.Allocate(dwBuffSize);
+        result = RegQueryMultipleValues(hSubKey, pValArray, dwValCount, lpDataBuffer, &dwBuffSize);
+        
+        // We don't want to free the buffer because in every VALENT structure in the list,
+        // the 've_valueptr' points to the data in that buffer. The registry API is weird man.
+        // MemoryManager.Free(lpszBuffer);
+        
+        RegCloseKey(hRegistry);
+
+        return result;
+    }
 }

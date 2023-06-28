@@ -438,114 +438,126 @@ function Get-RemoteDotNetFFVersionInfo {
         [ref]$Wrapper
     )
 
-    $output = $null
+    $output = [PSCustomObject]@{
+        ComputerName = $ComputerName
+        Version = $null
+        Release = 0
+        Legacy = [System.Collections.Generic.List[string]]::new()
+    }
 
     # Attempting to get installed versions greater than 4.5.
     try {
         $getVerSplat = @{
             Wrapper = $Wrapper
             SubKey = 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full'
-            ValueName = 'Release'
+            ValueName = @('Release', 'Version')
         }
         if (![string]::IsNullOrEmpty($ComputerName)) { $getVerSplat.ComputerName = $ComputerName }
         if ($Credential) { $getVerSplat.Credential = $Credential }
 
-        $release = Get-RegistryValueWithWinrmFallback @getVerSplat
-
-        $getVerSplat.ValueName = 'Version'
-        try { $versionText = Get-RegistryValueWithWinrmFallback @getVerSplat }
-        catch { }
+        try {
+            $mainVersionInfo = Get-RegistryValueWithWinrmFallback @getVerSplat
+            $release = $mainVersionInfo[0]
+            $versionText = $mainVersionInfo[1]
+        }
+        catch {
+            $getVerSplat.ValueName = @('Release')
+            $mainVersionInfo = Get-RegistryValueWithWinrmFallback @getVerSplat
+            $release = $mainVersionInfo[0]
+        }
 
         if ([string]::IsNullOrEmpty($versionText)) {
             $ffVersionInfo = [WindowsUtils.DotNetVersionInfo]::GetInfoFromRelease($release)
-            $output = [PSCustomObject]@{
-                ComputerName = $ComputerName
-                Version = $ffVersionInfo.Version
-                Release = $release
-                Legacy = [System.Collections.Generic.List[string]]::new()
-            }
+            $output.Release = $release
+            $output.Version = $ffVersionInfo.Version
         }
         else {
-            $output = [PSCustomObject]@{
-                ComputerName = $ComputerName
-                Version = $versionText
-                Release = $release
-                Legacy = [System.Collections.Generic.List[string]]::new()
-            }
+            $output.Release = $release
+            $output.Version = $versionText
         }
     }
     catch {
-        if ($_.Exception.InnerException.NativeErrorCode -eq 2) {
-            $output = [PSCustomObject]@{
-                ComputerName = $ComputerName
-                Version = $null
-                Release = 0
-                Legacy = [System.Collections.Generic.List[string]]::new()
-            }
-        }
-        else {
+        if (!($_.Exception.InnerException.NativeErrorCode -eq 2)) {
             Write-Error -Exception $_.Exception
         }
     }
 
     #region Legacy versions
-    foreach ($oldVersion in @(
-        'v1.0'
-        'v1.1.4322'
-        'v2.0.50727'
-        'v3.0'
-        'v3.5'
-        'v4'
-    )) {
-        switch ($oldVersion) {
-            'v1.0' { $subKey = 'SOFTWARE\Microsoft\.NETFramework\Policy\v1.0\3705'; $valName = 'Install' }
-            'v3.0' { $subKey = 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v3.0\Setup'; $valName = 'InstallSuccess' }
-            Default { $subKey = "SOFTWARE\Microsoft\NET Framework Setup\NDP\$oldVersion"; $valName = 'Install' }
+    if ([string]::IsNullOrEmpty($ComputerName)) {
+        if ($Credential) {
+            $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistrySubKeyNames', [type[]]@([string], [string], [Microsoft.Win32.RegistryHive], [string]))
+            $params = @($Credential.UserName, $Credential.GetNetworkCredential().Password, [Microsoft.Win32.RegistryHive]::LocalMachine, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\')
         }
-
-        try {
-            if ($oldVersion -eq 'v4') {
-                foreach ($version in 'Client', 'Full') {
-                    $getVerSplat = @{
-                        Wrapper = $Wrapper
-                        SubKey = "SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\$version"
-                        ValueName = 'Install'
-                    }
-                    if (![string]::IsNullOrEmpty($ComputerName)) { $getVerSplat.ComputerName = $ComputerName }
-                    if ($Credential) { $getVerSplat.Credential = $Credential }
+        else {
+            $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistrySubKeyNames', [type[]]@([Microsoft.Win32.RegistryHive], [string]))
+            $params = @([Microsoft.Win32.RegistryHive]::LocalMachine, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\')
+        }
+    }
+    else {
+        if ($Credential) {
+            $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistrySubKeyNames', [type[]]@([string], [string], [string], [Microsoft.Win32.RegistryHive], [string]))
+            $params = @($ComputerName, $Credential.UserName, $Credential.GetNetworkCredential().Password, [Microsoft.Win32.RegistryHive]::LocalMachine, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\')
+        }
+        else {
+            $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistrySubKeyNames', [type[]]@([string], [Microsoft.Win32.RegistryHive], [string]))
+            $params = @($ComputerName, [Microsoft.Win32.RegistryHive]::LocalMachine, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\')
+        }
+    }
     
+    foreach ($subKey in $reflectedMethod.Invoke($Wrapper.Value, $params).Where({ $_ -ne 'CDF' -and $_ -ne 'v4.0' })) {
+        $getVerSplat = @{ Wrapper = $Wrapper }
+        if (![string]::IsNullOrEmpty($ComputerName)) { $getVerSplat.ComputerName = $ComputerName }
+        if ($Credential) { $getVerSplat.Credential = $Credential }
+        
+        switch ($subKey) {
+            'v3.0' {
+                $getVerSplat.SubKey = 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v3.0\Setup'
+                $getVerSplat.ValueName = @('InstallSuccess', 'Version')
+                $result = Get-RegistryValueWithWinrmFallback @getVerSplat
+                
+                if ($result[0] -eq 1) {
+                    if ([string]::IsNullOrEmpty($result[1])) {
+                        $output.Legacy.Add('v3.0')
+                    }
+                    else {
+                        $output.Legacy.Add($result[1])
+                    }
+                }
+            }
+            'v4' {
+                foreach ($versionProfile in @('Client', 'Full')) {
+                    $getVerSplat.SubKey = "SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\$versionProfile"
+                    $getVerSplat.ValueName = @('Install', 'Version')
                     $result = Get-RegistryValueWithWinrmFallback @getVerSplat
-                    if ([int]$result -eq 1) {
-                        $getVerSplat.ValueName = 'Version'
-                        $result = Get-RegistryValueWithWinrmFallback @getVerSplat
-                        if ([version]$result -lt [version]'4.5') {
-                            $output.Legacy.Add("$result-$version")
+                
+                    if ($result[0] -eq 1) {
+                        if ([string]::IsNullOrEmpty($result[1])) {
+                            $output.Legacy.Add("v4-$versionProfile")
+                        }
+                        else {
+                            if ([version]$result[1] -lt [version]'4.5') {
+                                $output.Legacy.Add("$($result[1])-$versionProfile")
+                            }
                         }
                     }
                 }
             }
-            else {
-                $getVerSplat = @{
-                    Wrapper = $Wrapper
-                    SubKey = $subKey
-                    ValueName = $valName
-                }
-                if (![string]::IsNullOrEmpty($ComputerName)) { $getVerSplat.ComputerName = $ComputerName }
-                if ($Credential) { $getVerSplat.Credential = $Credential }
-    
+            Default {
+                $getVerSplat.SubKey = "SOFTWARE\Microsoft\NET Framework Setup\NDP\$subKey"
+                $getVerSplat.ValueName = @('Install', 'Version')
                 $result = Get-RegistryValueWithWinrmFallback @getVerSplat
-                if ([int]$result -eq 1) {
-                    $getVerSplat.ValueName = 'Version'
-                    $result = Get-RegistryValueWithWinrmFallback @getVerSplat
-                    $output.Legacy.Add("$result")
+                
+                if ($result[0] -eq 1) {
+                    if ([string]::IsNullOrEmpty($result[1])) {
+                        $output.Legacy.Add($subKey)
+                    }
+                    else {
+                        $output.Legacy.Add($result[1])
+                    }
                 }
             }
         }
-        catch {
-            continue
-        }
     }
-
     #endregion
 
     return $output
@@ -559,7 +571,7 @@ function Get-RegistryValueWithWinrmFallback {
         [pscredential]$Credential,
         [ref]$Wrapper,
         [string]$SubKey,
-        [string]$ValueName,
+        [string[]]$ValueName,
         [Microsoft.Win32.RegistryHive]$Hive = 'LocalMachine'
     )
 
@@ -567,46 +579,29 @@ function Get-RegistryValueWithWinrmFallback {
         if ([string]::IsNullOrEmpty($ComputerName)) {
             if ($Credential) {
                 Write-Verbose 'Attempting using Remote Registry and credentials on local computer.'
-                $result = $Wrapper.Value.GetRegistryValue(
-                    $Credential.UserName,
-                    $Credential.GetNetworkCredential().Password,
-                    $Hive,
-                    $SubKey,
-                    $ValueName
-                )
+                $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistryValueList', [type[]]@([string], [string], [Microsoft.Win32.RegistryHive], [string], [string[]]))
+                $params = @($Credential.UserName, $Credential.GetNetworkCredential().Password, $Hive, $SubKey, $ValueName)
             }
             else {
                 Write-Verbose 'Attempting using Remote Registry without credentials on local computer.'
-                $result = $Wrapper.Value.GetRegistryValue(
-                    $Hive,
-                    $SubKey,
-                    $ValueName
-                )
+                $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistryValueList', [type[]]@([Microsoft.Win32.RegistryHive], [string], [string[]]))
+                $params = @($Hive, $SubKey, $ValueName)
             }
         }
         else {
             if ($Credential) {
                 Write-Verbose "Attempting using Remote Registry and credentials on '$ComputerName'."
-                $result = $Wrapper.Value.GetRegistryValue(
-                    $ComputerName,
-                    $Credential.UserName,
-                    $Credential.GetNetworkCredential().Password,
-                    $Hive,
-                    $SubKey,
-                    $ValueName
-                )
+                $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistryValueList', [type[]]@([string], [string], [string], [Microsoft.Win32.RegistryHive], [string], [string[]]))
+                $params = @($ComputerName, $Credential.UserName, $Credential.GetNetworkCredential().Password, $Hive, $SubKey, $ValueName)
             }
             else {
                 Write-Verbose Write-Verbose "Attempting using Remote Registry without credentials on '$ComputerName'."
-                $result = $Wrapper.Value.GetRegistryValue(
-                    $ComputerName,
-                    $Hive,
-                    $SubKey,
-                    $ValueName
-                )
+                $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistryValueList', [type[]]@([string], [Microsoft.Win32.RegistryHive], [string], [string[]]))
+                $params = @($ComputerName, $Hive, $SubKey, $ValueName)
             }
         }
 
+        $result = $reflectedMethod.Invoke($Wrapper.Value, $params)
         return $result
     }
     catch {
