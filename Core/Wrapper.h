@@ -11,9 +11,11 @@
 #include <vcclr.h>
 
 using namespace System;
+using namespace System::Security;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
 using namespace Microsoft::Win32;
+using namespace Microsoft::Win32::SafeHandles;
 
 namespace WindowsUtils::Core
 {
@@ -293,24 +295,28 @@ namespace WindowsUtils::Core
 		void SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner);
 
 		// Registry operation
-		Object^ GetRegistryValue(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey, String^ valueName);
-		Object^ GetRegistryValue(String^ userName, String^ password, RegistryHive hive, String^ subKey, String^ valueName);
+		Object^ GetRegistryValue(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName);
+		Object^ GetRegistryValue(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName);
 		Object^ GetRegistryValue(String^ computerName, RegistryHive hive, String^ subKey, String^ valueName);
 		Object^ GetRegistryValue(RegistryHive hive, String^ subKey, String^ valueName);
+		Object^ GetRegistryValue(SafeRegistryHandle^ hRegistry, String^ subKey, String^ valueName);
 
-		array<String^>^ GetRegistrySubKeyNames(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey);
-		array<String^>^ GetRegistrySubKeyNames(String^ userName, String^ password, RegistryHive hive, String^ subKey);
+		array<String^>^ GetRegistrySubKeyNames(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey);
+		array<String^>^ GetRegistrySubKeyNames(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey);
 		array<String^>^ GetRegistrySubKeyNames(String^ computerName, RegistryHive hive, String^ subKey);
 		array<String^>^ GetRegistrySubKeyNames(RegistryHive hive, String^ subKey);
+		array<String^>^ GetRegistrySubKeyNames(SafeRegistryHandle^ hRegistry, String^ subKey);
 
-		array<Object^>^ GetRegistryValueList(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
-		array<Object^>^ GetRegistryValueList(String^ userName, String^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
+		array<Object^>^ GetRegistryValueList(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
+		array<Object^>^ GetRegistryValueList(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
 		array<Object^>^ GetRegistryValueList(String^ computerName, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
 		array<Object^>^ GetRegistryValueList(RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
+		array<Object^>^ GetRegistryValueList(SafeRegistryHandle^ hRegistry, String^ subKey, array<String^>^ valueNameList);
 
 		// Utilities
 		array<String^>^ GetStringArrayFromDoubleNullTermninatedCStyleArray(const LPWSTR& pvNativeArray, DWORD dwszBytes);
 		array<String^>^ GetStringArrayFromDoubleNullTermninatedCStyleArray(IntPtr nativeArray, DWORD dwszBytes);
+		void LogonAndImpersonateUser(String^ userName, SecureString^ password);
 
 	private:
 		Utilities* utlptr;
@@ -319,7 +325,10 @@ namespace WindowsUtils::Core
 		AccessControl* acptr;
 		Registry* regptr;
 
-		static void LogonAndImpersonateUser(String^ userName, String^ password);
+		Object^ GetRegistryValue(String^ computerName, String^ userName, const LPWSTR& lpszPassword, RegistryHive hive, String^ subKey, String^ valueName);
+		array<Object^>^ GetRegistryValueList(String^ computerName, String^ userName, const LPWSTR& lpszPassword, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
+		array<String^>^ GetRegistrySubKeyNames(String^ computerName, String^ userName, const LPWSTR& lpszPassword, RegistryHive hive, String^ subKey);
+		void LogonAndImpersonateUser(String^ userName, const LPWSTR& lpszPassword);
 	};
 
 	public ref class NativeExceptionBase : public Exception

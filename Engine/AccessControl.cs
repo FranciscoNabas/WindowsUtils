@@ -2,6 +2,16 @@ using System.Security.Principal;
 using System.Security.AccessControl;
 using WindowsUtils.Services;
 using WindowsUtils.Attributes;
+using System.Runtime.InteropServices;
+
+namespace WindowsUtils.Interop
+{
+    internal partial class NativeFunctions
+    {
+        [DllImport("Advapi32.dll", SetLastError = true)]
+        internal static extern bool RevertToSelf();
+    }
+}
 
 namespace WindowsUtils.AccessControl
 {
