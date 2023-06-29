@@ -11,9 +11,6 @@ Properties/*
 # Built Visual Studio Code Extensions
 *.vsix
 
-# Release
-Release/*
-
 # bin
 bin/*
 
@@ -22,6 +19,8 @@ TestConsole/
 TestConsole/*
 Release/
 Release/*
+Preview/*
+Preview/
 Debug/**
 */x64/**
 x64/**
