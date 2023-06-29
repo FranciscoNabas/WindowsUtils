@@ -86,6 +86,7 @@ function Get-InstalledDotNetInformation {
         #region Initial setup
         [System.Collections.Generic.List[WindowsUtils.DotNetVersionInfo]]$remoteVersionInfo = @()
         [System.Management.Automation.Runspaces.PSSession]$psSession = $null
+        [System.Collections.Generic.List[WindowsUtils.Registry.RegistryManager]]$regHandleList = @()
         #endregion
     }
 
@@ -95,6 +96,7 @@ function Get-InstalledDotNetInformation {
                 if ($Edition -eq 'DotnetFramework' -or $Edition -eq 'All') {
                     if ($Credential) { $regManager = [WindowsUtils.Registry.RegistryManager]::new($computer, $Credential, [Microsoft.Win32.RegistryHive]::LocalMachine) }
                     else { $regManager = [WindowsUtils.Registry.RegistryManager]::new($computer, [Microsoft.Win32.RegistryHive]::LocalMachine) }
+                    [void]$regHandleList.Add($regManager)
                 }
                 
                 $mainSplat = @{
@@ -156,6 +158,7 @@ function Get-InstalledDotNetInformation {
             if ($Edition -eq 'DotnetFramework' -or $Edition -eq 'All') {
                 if ($Credential) { $regManager = [WindowsUtils.Registry.RegistryManager]::new($Credential, [Microsoft.Win32.RegistryHive]::LocalMachine) }
                 else { $regManager = [WindowsUtils.Registry.RegistryManager]::new([Microsoft.Win32.RegistryHive]::LocalMachine) }
+                [void]$regHandleList.Add($regManager)
             }
 
             $mainSplat = @{ Session = ([ref]$psSession) }
@@ -216,7 +219,7 @@ function Get-InstalledDotNetInformation {
                 foreach ($computer in $ComputerName) {
                     $mainSplat = @{
                         ComputerName = $computer
-                        RegistryManager = ([ref]$regManager)
+                        RegistryManager = ([ref]$regHandleList.Where({ $_.ComputerName -eq $computer }))
                         Session = ([ref]$psSession)
                     }
                     if ($Credential) { $mainSplat.Credential = $Credential }
@@ -238,18 +241,20 @@ function Get-InstalledDotNetInformation {
                 }
             }
 
-            $output = [PSCustomObject]@{
+            Write-Output [PSCustomObject]@{
                 VersionInfo = $remoteVersionInfo
                 InstalledUpdates = $patchInfo
             }
         }
         else {
-            $output = $remoteVersionInfo
+            Write-Output $remoteVersionInfo
         }
     }
 
     End {
-        return $output
+        foreach ($handle in $regHandleList) {
+            $handle.Dispose()
+        }
     }
 }
 

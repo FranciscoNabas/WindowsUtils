@@ -3,7 +3,6 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using WindowsUtils.Interop;
 using WindowsUtils.Core;
-using System.Security;
 using System.Management.Automation;
 
 namespace WindowsUtils.Interop
@@ -101,12 +100,12 @@ namespace WindowsUtils.Registry
         }
 
         public object GetRegistryValue(string subKey, string valueName)
-            => _unwrapper.GetRegistryValue(_hRegistry, subKey, valueName);
+            => _unwrapper.GetRegistryValue(_hRegistry.DangerousGetHandle(), subKey, valueName);
 
         public object[] GetRegistryValueList(string subKey, string[] valueNames)
-            => _unwrapper.GetRegistryValueList(_hRegistry, subKey, valueNames);
+            => _unwrapper.GetRegistryValueList(_hRegistry.DangerousGetHandle(), subKey, valueNames);
 
         public string[] GetRegistrySubKeyNames(string rootKey)
-            => _unwrapper.GetRegistrySubKeyNames(_hRegistry, rootKey);
+            => _unwrapper.GetRegistrySubKeyNames(_hRegistry.DangerousGetHandle(), rootKey);
     }
 }

@@ -15,7 +15,6 @@ using namespace System::Security;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
 using namespace Microsoft::Win32;
-using namespace Microsoft::Win32::SafeHandles;
 
 namespace WindowsUtils::Core
 {
@@ -299,19 +298,19 @@ namespace WindowsUtils::Core
 		Object^ GetRegistryValue(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName);
 		Object^ GetRegistryValue(String^ computerName, RegistryHive hive, String^ subKey, String^ valueName);
 		Object^ GetRegistryValue(RegistryHive hive, String^ subKey, String^ valueName);
-		Object^ GetRegistryValue(SafeRegistryHandle^ hRegistry, String^ subKey, String^ valueName);
+		Object^ GetRegistryValue(IntPtr hRegistry, String^ subKey, String^ valueName);
 
 		array<String^>^ GetRegistrySubKeyNames(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey);
 		array<String^>^ GetRegistrySubKeyNames(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey);
 		array<String^>^ GetRegistrySubKeyNames(String^ computerName, RegistryHive hive, String^ subKey);
 		array<String^>^ GetRegistrySubKeyNames(RegistryHive hive, String^ subKey);
-		array<String^>^ GetRegistrySubKeyNames(SafeRegistryHandle^ hRegistry, String^ subKey);
+		array<String^>^ GetRegistrySubKeyNames(IntPtr hRegistry, String^ subKey);
 
 		array<Object^>^ GetRegistryValueList(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
 		array<Object^>^ GetRegistryValueList(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
 		array<Object^>^ GetRegistryValueList(String^ computerName, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
 		array<Object^>^ GetRegistryValueList(RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
-		array<Object^>^ GetRegistryValueList(SafeRegistryHandle^ hRegistry, String^ subKey, array<String^>^ valueNameList);
+		array<Object^>^ GetRegistryValueList(IntPtr hRegistry, String^ subKey, array<String^>^ valueNameList);
 
 		// Utilities
 		array<String^>^ GetStringArrayFromDoubleNullTermninatedCStyleArray(const LPWSTR& pvNativeArray, DWORD dwszBytes);

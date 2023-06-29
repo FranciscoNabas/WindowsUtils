@@ -451,7 +451,7 @@ namespace WindowsUtils::Core
 		return GetRegistryValue(computerName, userName, wPass, hive, subKey, valueName);
 	}
 
-	Object^ Wrapper::GetRegistryValue(SafeRegistryHandle^ hRegistry, String^ subKey, String^ valueName)
+	Object^ Wrapper::GetRegistryValue(IntPtr hRegistry, String^ subKey, String^ valueName)
 	{
 		DWORD dwValueType;
 		DWORD dwBytesReturned;
@@ -462,7 +462,7 @@ namespace WindowsUtils::Core
 		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
 		pin_ptr<const wchar_t> wValueName = PtrToStringChars(valueName);
 
-		HKEY whReg = (HKEY)hRegistry->DangerousGetHandle().ToPointer();
+		HKEY whReg = (HKEY)hRegistry.ToPointer();
 		LSTATUS result = regptr->GetRegistryKeyValue(whReg, (LPWSTR)wSubKey, (LPWSTR)wValueName, dwValueType, pvData, dwBytesReturned);
 		if (result != ERROR_SUCCESS)
 		{
@@ -675,14 +675,14 @@ namespace WindowsUtils::Core
 		return GetRegistrySubKeyNames(computerName, userName, wPass, hive, subKey);
 	}
 
-	array<String^>^ Wrapper::GetRegistrySubKeyNames(SafeRegistryHandle^ hRegistry, String^ subKey)
+	array<String^>^ Wrapper::GetRegistrySubKeyNames(IntPtr hRegistry, String^ subKey)
 	{
 		LSTATUS result = ERROR_SUCCESS;
 		SharedVecPtr(LPWSTR) subkeyNameVec = MakeVecPtr(LPWSTR);
 
 		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
 
-		HKEY whReg = (HKEY)hRegistry->DangerousGetHandle().ToPointer();
+		HKEY whReg = (HKEY)hRegistry.ToPointer();
 		result = regptr->GetRegistrySubkeyNames(whReg, (LPWSTR)wSubKey, 0, *subkeyNameVec);
 		if (result != ERROR_SUCCESS)
 		{
@@ -765,7 +765,7 @@ namespace WindowsUtils::Core
 		return Wrapper::GetRegistryValueList(L"", L"", L"", hive, subKey, valueNameList);
 	}
 
-	array<Object^>^ Wrapper::GetRegistryValueList(SafeRegistryHandle^ hRegistry, String^ subKey, array<String^>^ valueNameList)
+	array<Object^>^ Wrapper::GetRegistryValueList(IntPtr hRegistry, String^ subKey, array<String^>^ valueNameList)
 	{
 		LSTATUS nativeResult;
 		DWORD dwValCount = valueNameList->Length;
@@ -787,7 +787,7 @@ namespace WindowsUtils::Core
 			wValueName = nullptr;
 		}
 		
-		HKEY whReg = (HKEY)hRegistry->DangerousGetHandle().ToPointer();
+		HKEY whReg = (HKEY)hRegistry.ToPointer();
 		nativeResult = regptr->GetRegistryKeyValueList(whReg, (LPWSTR)wSubKey, pValList, dwValCount, lpDataBuffer);
 		if (nativeResult != ERROR_SUCCESS)
 		{

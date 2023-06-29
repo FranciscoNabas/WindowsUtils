@@ -130,17 +130,17 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetServiceSecurityDescriptorString(String, String, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     SetServiceSecurity(String, String, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     SetServiceSecurity(String, String, String, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
-    GetRegistryValue(SafeRegistryHandle, String, String): PrivateScope, Public, HideBySig
+    GetRegistryValue(IntPtr, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(RegistryHive, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(String, RegistryHive, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(String, SecureString, RegistryHive, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(String, String, SecureString, RegistryHive, String, String): PrivateScope, Public, HideBySig
-    GetRegistrySubKeyNames(SafeRegistryHandle, String): PrivateScope, Public, HideBySig
+    GetRegistrySubKeyNames(IntPtr, String): PrivateScope, Public, HideBySig
     GetRegistrySubKeyNames(RegistryHive, String): PrivateScope, Public, HideBySig
     GetRegistrySubKeyNames(String, RegistryHive, String): PrivateScope, Public, HideBySig
     GetRegistrySubKeyNames(String, SecureString, RegistryHive, String): PrivateScope, Public, HideBySig
     GetRegistrySubKeyNames(String, String, SecureString, RegistryHive, String): PrivateScope, Public, HideBySig
-    GetRegistryValueList(SafeRegistryHandle, String, String[]): PrivateScope, Public, HideBySig
+    GetRegistryValueList(IntPtr, String, String[]): PrivateScope, Public, HideBySig
     GetRegistryValueList(RegistryHive, String, String[]): PrivateScope, Public, HideBySig
     GetRegistryValueList(String, RegistryHive, String, String[]): PrivateScope, Public, HideBySig
     GetRegistryValueList(String, SecureString, RegistryHive, String, String[]): PrivateScope, Public, HideBySig
