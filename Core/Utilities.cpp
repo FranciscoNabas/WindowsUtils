@@ -33,6 +33,8 @@ namespace WindowsUtils::Core
 
 			PFILE_PROCESS_IDS_USING_FILE_INFORMATION pprocidufile = NULL;
 			result = GetNtProcessUsingFile(rvecinputpath.at(i), pprocidufile);
+			if (result != ERROR_SUCCESS)
+				return result;
 
 			for (ULONG j = 0; j < pprocidufile->NumberOfProcessIdsInList; j++)
 			{
