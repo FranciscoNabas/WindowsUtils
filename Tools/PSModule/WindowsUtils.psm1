@@ -84,15 +84,25 @@ function Get-InstalledDotNetInformation {
         $ErrorActionPreference = 'Stop'
                 
         #region Initial setup
-        $unwrapper = [WindowsUtils.Core.Wrapper]::new()
         [System.Collections.Generic.List[WindowsUtils.DotNetVersionInfo]]$remoteVersionInfo = @()
+        [System.Management.Automation.Runspaces.PSSession]$psSession = $null
+        [System.Collections.Generic.List[WindowsUtils.Registry.RegistryManager]]$regHandleList = @()
         #endregion
     }
 
     Process {
         if ($ComputerName) {
             foreach ($computer in $ComputerName) {
-                $mainSplat = @{ ComputerName = $computer }
+                if ($Edition -eq 'DotnetFramework' -or $Edition -eq 'All') {
+                    if ($Credential) { $regManager = [WindowsUtils.Registry.RegistryManager]::new($computer, $Credential, [Microsoft.Win32.RegistryHive]::LocalMachine) }
+                    else { $regManager = [WindowsUtils.Registry.RegistryManager]::new($computer, [Microsoft.Win32.RegistryHive]::LocalMachine) }
+                    [void]$regHandleList.Add($regManager)
+                }
+                
+                $mainSplat = @{
+                    Session = ([ref]$psSession)
+                    ComputerName = $computer
+                }
                 if ($Credential) { $mainSplat.Credential = $Credential }
 
                 switch ($Edition) {
@@ -111,7 +121,7 @@ function Get-InstalledDotNetInformation {
                         }
                     }
                     'DotnetFramework' {
-                        $result = Get-RemoteDotNetFFVersionInfo @mainSplat -Wrapper ([ref]$unwrapper)
+                        $result = Get-RemoteDotNetFFVersionInfo @mainSplat -RegistryManager ([ref]$regManager)
                         if (![string]::IsNullOrEmpty($result.Version) -and $result.Release -ne 0) {
                             [void]$remoteVersionInfo.Add([WindowsUtils.DotNetVersionInfo]::new($result.Release, [version]$result.Version, 'FullFramework', $computer))
                         }
@@ -133,7 +143,7 @@ function Get-InstalledDotNetInformation {
                             }
                         }
 
-                        $resultFf = Get-RemoteDotNetFFVersionInfo @mainSplat -Wrapper ([ref]$unwrapper)
+                        $resultFf = Get-RemoteDotNetFFVersionInfo @mainSplat -RegistryManager ([ref]$regManager)
                         if (![string]::IsNullOrEmpty($resultFf.Version) -and $resultFf.Release -ne 0) {
                             [void]$remoteVersionInfo.Add([WindowsUtils.DotNetVersionInfo]::new($resultFf.Release, [version]$resultFf.Version, 'FullFramework', $computer))
                         }
@@ -145,7 +155,13 @@ function Get-InstalledDotNetInformation {
             }
         }
         else {
-            $mainSplat = @{ }
+            if ($Edition -eq 'DotnetFramework' -or $Edition -eq 'All') {
+                if ($Credential) { $regManager = [WindowsUtils.Registry.RegistryManager]::new($Credential, [Microsoft.Win32.RegistryHive]::LocalMachine) }
+                else { $regManager = [WindowsUtils.Registry.RegistryManager]::new([Microsoft.Win32.RegistryHive]::LocalMachine) }
+                [void]$regHandleList.Add($regManager)
+            }
+
+            $mainSplat = @{ Session = ([ref]$psSession) }
             if ($Credential) { $mainSplat.Credential = $Credential }
 
             switch ($Edition) {
@@ -164,7 +180,7 @@ function Get-InstalledDotNetInformation {
                     }
                 }
                 'DotnetFramework' {
-                    $result = Get-RemoteDotNetFFVersionInfo @mainSplat -Wrapper ([ref]$unwrapper)
+                    $result = Get-RemoteDotNetFFVersionInfo @mainSplat -RegistryManager ([ref]$regManager)
                     if (![string]::IsNullOrEmpty($result.Version) -and $result.Release -ne 0) {
                         [void]$remoteVersionInfo.Add([WindowsUtils.DotNetVersionInfo]::new($result.Release, [version]$result.Version, 'FullFramework'))
                     }
@@ -186,7 +202,7 @@ function Get-InstalledDotNetInformation {
                         }
                     }
 
-                    $resultFf = Get-RemoteDotNetFFVersionInfo @mainSplat -Wrapper ([ref]$unwrapper)
+                    $resultFf = Get-RemoteDotNetFFVersionInfo @mainSplat -RegistryManager ([ref]$regManager)
                     if (![string]::IsNullOrEmpty($resultFf.Version) -and $resultFf.Release -ne 0) {
                         [void]$remoteVersionInfo.Add([WindowsUtils.DotNetVersionInfo]::new($resultFf.Release, [version]$resultFf.Version, 'FullFramework'))
                     }
@@ -203,7 +219,8 @@ function Get-InstalledDotNetInformation {
                 foreach ($computer in $ComputerName) {
                     $mainSplat = @{
                         ComputerName = $computer
-                        Wrapper = ([ref]$unwrapper)
+                        RegistryManager = ([ref]$regHandleList.Where({ $_.ComputerName -eq $computer }))
+                        Session = ([ref]$psSession)
                     }
                     if ($Credential) { $mainSplat.Credential = $Credential }
                     
@@ -213,7 +230,10 @@ function Get-InstalledDotNetInformation {
                 }
             }
             else {
-                $mainSplat = @{ Wrapper = ([ref]$unwrapper) }
+                $mainSplat = @{
+                    RegistryManager = ([ref]$regManager)
+                    Session = ([ref]$psSession)
+                }
                 if ($Credential) { $mainSplat.Credential = $Credential }
                 
                 foreach ($info in (Get-DotNetInstalledPatches @mainSplat)) {
@@ -221,107 +241,38 @@ function Get-InstalledDotNetInformation {
                 }
             }
 
-            $output = [PSCustomObject]@{
+            Write-Output [PSCustomObject]@{
                 VersionInfo = $remoteVersionInfo
                 InstalledUpdates = $patchInfo
             }
         }
         else {
-            $output = $remoteVersionInfo
+            Write-Output $remoteVersionInfo
         }
     }
 
     End {
-        return $output
+        foreach ($handle in $regHandleList) {
+            $handle.Dispose()
+        }
     }
 }
 
 function Get-DotNetInstalledPatches {
 
     param(
+        [ref]$RegistryManager,
         [string]$ComputerName,
         [pscredential]$Credential,
-        [ref]$Wrapper
+        [ref]$Session
     )
 
     $fallback = $false
     [System.Collections.Generic.List[WindowsUtils.DotNetInstalledUpdateInfo]]$patchInfo = @()
     try {
-        if ($Credential) {
-            if ([string]::IsNullOrEmpty($ComputerName)) {
-                $result = $Wrapper.Value.GetRegistrySubKeyNames(
-                    $Credential.UserName,
-                    $Credential.GetNetworkCredential().Password,
-                    'LocalMachine',
-                    'SOFTWARE\WOW6432Node\Microsoft\Updates'
-                )
-
-                foreach ($mainVersion in $result.Where({ $_ -like  '*.NET Framework*'})) {
-                        $result = $Wrapper.Value.GetRegistrySubKeyNames(
-                        $Credential.UserName,
-                        $Credential.GetNetworkCredential().Password,
-                        'LocalMachine',
-                        "SOFTWARE\WOW6432Node\Microsoft\Updates\$mainVersion"
-                    )
-
-                    [void]$patchInfo.Add([WindowsUtils.DotNetInstalledUpdateInfo]::new($mainVersion, $result))
-                }
-            }
-            else {
-                $result = $Wrapper.Value.GetRegistrySubKeyNames(
-                    $ComputerName,
-                    $Credential.UserName,
-                    $Credential.GetNetworkCredential().Password,
-                    'LocalMachine',
-                    'SOFTWARE\WOW6432Node\Microsoft\Updates'
-                )
-
-                foreach ($mainVersion in $result.Where({ $_ -like  '*.NET Framework*'})) {
-                        $result = $Wrapper.Value.GetRegistrySubKeyNames(
-                        $ComputerName,
-                        $Credential.UserName,
-                        $Credential.GetNetworkCredential().Password,
-                        'LocalMachine',
-                        "SOFTWARE\WOW6432Node\Microsoft\Updates\$mainVersion"
-                    )
-
-                    [void]$patchInfo.Add([WindowsUtils.DotNetInstalledUpdateInfo]::new($ComputerName, $mainVersion, $result))
-                }
-            }
-        }
-        else {
-            if ([string]::IsNullOrEmpty($ComputerName)) {
-                $result = $Wrapper.Value.GetRegistrySubKeyNames(
-                    'LocalMachine',
-                    'SOFTWARE\WOW6432Node\Microsoft\Updates'
-                )
-
-                foreach ($mainVersion in $result.Where({ $_ -like  '*.NET Framework*'})) {
-                        $result = $Wrapper.Value.GetRegistrySubKeyNames(
-                        'LocalMachine',
-                        "SOFTWARE\WOW6432Node\Microsoft\Updates\$mainVersion"
-                    )
-
-                    [void]$patchInfo.Add([WindowsUtils.DotNetInstalledUpdateInfo]::new($mainVersion, $result))
-                }
-            }
-            else {
-                $result = $Wrapper.Value.GetRegistrySubKeyNames(
-                    $ComputerName,
-                    'LocalMachine',
-                    'SOFTWARE\WOW6432Node\Microsoft\Updates'
-                )
-
-                foreach ($mainVersion in $result.Where({ $_ -like  '*.NET Framework*'})) {
-                        $result = $Wrapper.Value.GetRegistrySubKeyNames(
-                        $ComputerName,
-                        'LocalMachine',
-                        "SOFTWARE\WOW6432Node\Microsoft\Updates\$mainVersion"
-                    )
-
-                    [void]$patchInfo.Add([WindowsUtils.DotNetInstalledUpdateInfo]::new($ComputerName, $mainVersion, $result))
-                }
-            }
+        foreach ($mainVersion in $RegistryManager.Value.GetRegistrySubKeyNames('SOFTWARE\WOW6432Node\Microsoft\Updates').Where({ $_ -like  '*.NET Framework*'})) {
+            $result = $RegistryManager.Value.GetRegistrySubKeyNames("SOFTWARE\WOW6432Node\Microsoft\Updates\$mainVersion")
+            [void]$patchInfo.Add([WindowsUtils.DotNetInstalledUpdateInfo]::new($mainVersion, $result))
         }
     }
     catch {
@@ -362,11 +313,17 @@ function Get-DotNetInstalledPatches {
             }
         }
         else {
-            $invCommSplat = @{ ComputerName = $ComputerName }
-            if ($Credential) { $invCommSplat.Credential = $Credential }
+            if (!$Session.Value.Runspace -or $Session.Value.Runspace.RunspaceStateInfo.State -ne 'Opened') {
+                if ($Session.Value.Runspace) { $Session.Value.Runspace.CloseAsync() }
+                
+                $remoteSessSplat = @{ ComputerName = $ComputerName }
+                if ($Credential) { $remoteSessSplat.Credential = $Credential }
+        
+                $Session.Value = New-PSSession @remoteSessSplat
+            }
 
             try {
-                $result = Invoke-Command @invCommSplat -ScriptBlock {
+                $result = Invoke-Command -Session $Session.Value -ScriptBlock {
                     $ErrorActionPreference = 'SilentlyContinue'
                 
                     foreach ($subkey in (Get-ChildItem -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Updates\' | Where-Object { $_.Name -like  '*.NET Framework*'})) {
@@ -394,11 +351,12 @@ function Get-RemoteDotNetCoreVersionInfo {
 
     param(
         [string]$ComputerName,
-        [pscredential]$Credential
+        [pscredential]$Credential,
+        [ref]$Session
     )
 
     $isError = $false
-    $invCommSplat = @{
+    $invCmdSplat = @{
         ScriptBlock = {
             $result = ''
             try {
@@ -424,18 +382,28 @@ function Get-RemoteDotNetCoreVersionInfo {
         }
     }
     
-    if ($ComputerName) { $invCommSplat.ComputerName = $ComputerName }
-    if ($Credential) { $invCommSplat.Credential = $Credential }
+    if (![string]::IsNullOrEmpty($ComputerName)) {
+        if (!$Session.Value.Runspace -or $Session.Value.Runspace.RunspaceStateInfo.State -ne 'Opened') {
+            if ($Session.Value.Runspace) { $Session.Value.Runspace.CloseAsync() }
+            
+            $remoteSessSplat = @{ ComputerName = $ComputerName }
+            if ($Credential) { $remoteSessSplat.Credential = $Credential }
+    
+            $Session.Value = New-PSSession @remoteSessSplat
+        }
+        $invCmdSplat.Session = $Session.Value
+    }
 
-    return Invoke-Command @invCommSplat
+    return Invoke-Command @invCmdSplat
 }
 
 function Get-RemoteDotNetFFVersionInfo {
     
     param(
+        [ref]$RegistryManager,
         [string]$ComputerName,
         [pscredential]$Credential,
-        [ref]$Wrapper
+        [ref]$Session
     )
 
     $output = [PSCustomObject]@{
@@ -448,12 +416,13 @@ function Get-RemoteDotNetFFVersionInfo {
     # Attempting to get installed versions greater than 4.5.
     try {
         $getVerSplat = @{
-            Wrapper = $Wrapper
+            RegistryManager = $RegistryManager
             SubKey = 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full'
             ValueName = @('Release', 'Version')
+            ComputerName = $ComputerName
+            Credential = $Credential
+            Session = $Session
         }
-        if (![string]::IsNullOrEmpty($ComputerName)) { $getVerSplat.ComputerName = $ComputerName }
-        if ($Credential) { $getVerSplat.Credential = $Credential }
 
         try {
             $mainVersionInfo = Get-RegistryValueWithWinrmFallback @getVerSplat
@@ -483,31 +452,11 @@ function Get-RemoteDotNetFFVersionInfo {
     }
 
     #region Legacy versions
-    if ([string]::IsNullOrEmpty($ComputerName)) {
-        if ($Credential) {
-            $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistrySubKeyNames', [type[]]@([string], [string], [Microsoft.Win32.RegistryHive], [string]))
-            $params = @($Credential.UserName, $Credential.GetNetworkCredential().Password, [Microsoft.Win32.RegistryHive]::LocalMachine, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\')
+    foreach ($subKey in $RegistryManager.Value.GetRegistrySubKeyNames('SOFTWARE\Microsoft\NET Framework Setup\NDP\').Where({ $_ -ne 'CDF' -and $_ -ne 'v4.0' })) {
+        $getVerSplat = @{
+            RegistryManager = $RegistryManager
+            Session = $Session
         }
-        else {
-            $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistrySubKeyNames', [type[]]@([Microsoft.Win32.RegistryHive], [string]))
-            $params = @([Microsoft.Win32.RegistryHive]::LocalMachine, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\')
-        }
-    }
-    else {
-        if ($Credential) {
-            $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistrySubKeyNames', [type[]]@([string], [string], [string], [Microsoft.Win32.RegistryHive], [string]))
-            $params = @($ComputerName, $Credential.UserName, $Credential.GetNetworkCredential().Password, [Microsoft.Win32.RegistryHive]::LocalMachine, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\')
-        }
-        else {
-            $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistrySubKeyNames', [type[]]@([string], [Microsoft.Win32.RegistryHive], [string]))
-            $params = @($ComputerName, [Microsoft.Win32.RegistryHive]::LocalMachine, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\')
-        }
-    }
-    
-    foreach ($subKey in $reflectedMethod.Invoke($Wrapper.Value, $params).Where({ $_ -ne 'CDF' -and $_ -ne 'v4.0' })) {
-        $getVerSplat = @{ Wrapper = $Wrapper }
-        if (![string]::IsNullOrEmpty($ComputerName)) { $getVerSplat.ComputerName = $ComputerName }
-        if ($Credential) { $getVerSplat.Credential = $Credential }
         
         switch ($subKey) {
             'v3.0' {
@@ -567,41 +516,16 @@ function Get-RegistryValueWithWinrmFallback {
 
     [CmdletBinding()]
     param(
-        [string]$ComputerName = '',
-        [pscredential]$Credential,
-        [ref]$Wrapper,
+        [ref]$RegistryManager,
         [string]$SubKey,
         [string[]]$ValueName,
-        [Microsoft.Win32.RegistryHive]$Hive = 'LocalMachine'
+        [string]$ComputerName,
+        [pscredential]$Credential,
+        [ref]$Session
     )
 
     try {
-        if ([string]::IsNullOrEmpty($ComputerName)) {
-            if ($Credential) {
-                Write-Verbose 'Attempting using Remote Registry and credentials on local computer.'
-                $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistryValueList', [type[]]@([string], [string], [Microsoft.Win32.RegistryHive], [string], [string[]]))
-                $params = @($Credential.UserName, $Credential.GetNetworkCredential().Password, $Hive, $SubKey, $ValueName)
-            }
-            else {
-                Write-Verbose 'Attempting using Remote Registry without credentials on local computer.'
-                $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistryValueList', [type[]]@([Microsoft.Win32.RegistryHive], [string], [string[]]))
-                $params = @($Hive, $SubKey, $ValueName)
-            }
-        }
-        else {
-            if ($Credential) {
-                Write-Verbose "Attempting using Remote Registry and credentials on '$ComputerName'."
-                $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistryValueList', [type[]]@([string], [string], [string], [Microsoft.Win32.RegistryHive], [string], [string[]]))
-                $params = @($ComputerName, $Credential.UserName, $Credential.GetNetworkCredential().Password, $Hive, $SubKey, $ValueName)
-            }
-            else {
-                Write-Verbose Write-Verbose "Attempting using Remote Registry without credentials on '$ComputerName'."
-                $reflectedMethod = [WindowsUtils.Core.Wrapper].GetMethod('GetRegistryValueList', [type[]]@([string], [Microsoft.Win32.RegistryHive], [string], [string[]]))
-                $params = @($ComputerName, $Hive, $SubKey, $ValueName)
-            }
-        }
-
-        $result = $reflectedMethod.Invoke($Wrapper.Value, $params)
+        $result = $RegistryManager.Value.GetRegistryValueList($SubKey, $ValueName)
         return $result
     }
     catch {
@@ -615,6 +539,7 @@ function Get-RegistryValueWithWinrmFallback {
     }
 
     if ($fallback) {
+        
         if ([string]::IsNullOrEmpty($ComputerName)) {
             $isNewDrive = $false
             try {
@@ -653,11 +578,17 @@ function Get-RegistryValueWithWinrmFallback {
         }
         else {
             try {
-                if ($Credential) { $remoteCmdSplat = @{ ComputerName = $ComputerName; Credential = $Credential } }
-                else { $remoteCmdSplat = @{ ComputerName = $ComputerName } }
+                if (!$Session.Value.Runspace -or $Session.Value.Runspace.RunspaceStateInfo.State -ne 'Opened') {
+                    if ($Session.Value.Runspace) { $Session.Value.Runspace.CloseAsync() }
+                    
+                    $remoteSessSplat = @{ ComputerName = $ComputerName }
+                    if ($Credential) { $remoteSessSplat.Credential = $Credential }
+
+                    $Session.Value = New-PSSession @remoteSessSplat
+                }
+
                 Write-Verbose "Attempting using WinRM on '$ComputerName'."
-    
-                $result = Invoke-Command @remoteCmdSplat -ScriptBlock {
+                $result = Invoke-Command -Session $Session.Value -ScriptBlock {
                     $isNewDrive = $false
                     try {
                         switch ($Using:Hive) {

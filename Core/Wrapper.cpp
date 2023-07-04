@@ -428,6 +428,7 @@ namespace WindowsUtils::Core
 		wSddl = nullptr;
 	}
 
+	// Registry operations
 	Object^ Wrapper::GetRegistryValue(RegistryHive hive, String^ subKey, String^ valueName)
 	{
 		return GetRegistryValue(L"", L"", L"", hive, subKey, valueName);
@@ -438,19 +439,110 @@ namespace WindowsUtils::Core
 		return GetRegistryValue(computerName, L"", L"", hive, subKey, valueName);
 	}
 
-	Object^ Wrapper::GetRegistryValue(String^ userName, String^ password, RegistryHive hive, String^ subKey, String^ valueName)
+	Object^ Wrapper::GetRegistryValue(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName)
 	{
-		return GetRegistryValue(L"", userName, password, hive, subKey, valueName);
+		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return GetRegistryValue(L"", userName, wPass, hive, subKey, valueName);
 	}
 
-	// Registry operations
+	Object^ Wrapper::GetRegistryValue(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName)
+	{
+		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return GetRegistryValue(computerName, userName, wPass, hive, subKey, valueName);
+	}
+
+	Object^ Wrapper::GetRegistryValue(IntPtr hRegistry, String^ subKey, String^ valueName)
+	{
+		DWORD dwValueType;
+		DWORD dwBytesReturned;
+		PVOID pvData;
+
+		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+
+		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
+		pin_ptr<const wchar_t> wValueName = PtrToStringChars(valueName);
+
+		HKEY whReg = (HKEY)hRegistry.ToPointer();
+		LSTATUS result = regptr->GetRegistryKeyValue(whReg, (LPWSTR)wSubKey, (LPWSTR)wValueName, dwValueType, pvData, dwBytesReturned);
+		if (result != ERROR_SUCCESS)
+		{
+			wSubKey = nullptr;
+			wValueName = nullptr;
+
+			throw gcnew NativeExceptionBase(result);
+		}
+
+		wSubKey = nullptr;
+		wValueName = nullptr;
+
+		Object^ output;
+		switch (dwValueType)
+		{
+		case REG_BINARY:
+		{
+			output = gcnew array<byte>(dwBytesReturned);
+			Marshal::Copy((IntPtr)pvData, (array<byte>^)output, 0, dwBytesReturned);
+		}
+		break;
+
+		case REG_DWORD:
+		{
+			DWORD* dwData = static_cast<DWORD*>(pvData);
+			output = gcnew Int32(*dwData);
+		}
+		break;
+
+		case REG_EXPAND_SZ:
+		{
+			// Getting the necessary buffer.
+			DWORD bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, NULL, 0);
+			if (bytesNeeded == 0)
+				throw gcnew NativeExceptionBase(GetLastError());
+
+			LPWSTR buffer = (LPWSTR)MemoryManager.Allocate(bytesNeeded);
+			bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, buffer, bytesNeeded);
+			if (bytesNeeded == 0)
+				throw gcnew NativeExceptionBase(GetLastError());
+
+			output = gcnew String(buffer);
+			MemoryManager.Free(buffer);
+		}
+		break;
+
+		case REG_LINK:
+			output = gcnew String((LPWSTR)pvData);
+			break;
+
+		case REG_MULTI_SZ:
+			output = GetStringArrayFromDoubleNullTermninatedCStyleArray((LPWSTR)pvData, dwBytesReturned);
+			break;
+
+		case REG_QWORD:
+		{
+			long long* qwData = static_cast<long long*>(pvData);
+			output = gcnew Int64(*qwData);
+		}
+		break;
+
+		case REG_SZ:
+			output = gcnew String((LPWSTR)pvData);
+			break;
+
+		default:
+			throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", dwValueType));
+			break;
+		}
+
+		return output;
+	}
+
 	Object^ Wrapper::GetRegistryValue(
-		String^ computerName, // The computer name. If the computer is remote, it needs Remote Registry enabled.
-		String^ userName,	  // User name to impersonate before connecting to the registry.
-		String^ password,	  // User password.
-		RegistryHive hive,	  // The root hive.
-		String^ subKey,		  // The subkey path.
-		String^ valueName	  // The value property name.
+		String^ computerName,	  // The computer name. If the computer is remote, it needs Remote Registry enabled.
+		String^ userName,		  // User name to impersonate before connecting to the registry.
+		const LPWSTR& password,	  // User password.
+		RegistryHive hive,		  // The root hive.
+		String^ subKey,			  // The subkey path.
+		String^ valueName		  // The value property name.
 	) {
 		DWORD dwValueType;
 		DWORD dwBytesReturned;
@@ -571,12 +663,45 @@ namespace WindowsUtils::Core
 		return GetRegistrySubKeyNames(computerName, L"", L"", hive, subKey);
 	}
 
-	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ userName, String^ password, RegistryHive hive, String^ subKey)
+	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey)
 	{
-		return GetRegistrySubKeyNames(L"", userName, password, hive, subKey);
+		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return GetRegistrySubKeyNames(L"", userName, wPass, hive, subKey);
 	}
 
-	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey)
+	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey)
+	{
+		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return GetRegistrySubKeyNames(computerName, userName, wPass, hive, subKey);
+	}
+
+	array<String^>^ Wrapper::GetRegistrySubKeyNames(IntPtr hRegistry, String^ subKey)
+	{
+		LSTATUS result = ERROR_SUCCESS;
+		SharedVecPtr(LPWSTR) subkeyNameVec = MakeVecPtr(LPWSTR);
+
+		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
+
+		HKEY whReg = (HKEY)hRegistry.ToPointer();
+		result = regptr->GetRegistrySubkeyNames(whReg, (LPWSTR)wSubKey, 0, *subkeyNameVec);
+		if (result != ERROR_SUCCESS)
+		{
+			wSubKey = nullptr;
+			throw gcnew NativeExceptionBase(result);
+		}
+
+		wSubKey = nullptr;
+
+		List<String^>^ output = gcnew List<String^>();
+		for (LPWSTR singleName : *subkeyNameVec)
+			output->Add(gcnew String(singleName));
+
+		RevertToSelf();
+
+		return output->ToArray();
+	}
+
+	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, const LPWSTR& password, RegistryHive hive, String^ subKey)
 	{
 		LSTATUS result = ERROR_SUCCESS;
 		SharedVecPtr(LPWSTR) subkeyNameVec = MakeVecPtr(LPWSTR);
@@ -618,9 +743,16 @@ namespace WindowsUtils::Core
 		return output->ToArray();
 	}
 
-	array<Object^>^ Wrapper::GetRegistryValueList(String^ userName, String^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
+	array<Object^>^ Wrapper::GetRegistryValueList(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		return Wrapper::GetRegistryValueList(L"", userName, password, hive, subKey, valueNameList);
+		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return Wrapper::GetRegistryValueList(L"", userName, wPass, hive, subKey, valueNameList);
+	}
+
+	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
+	{
+		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return Wrapper::GetRegistryValueList(computerName, userName, wPass, hive, subKey, valueNameList);
 	}
 
 	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
@@ -633,7 +765,115 @@ namespace WindowsUtils::Core
 		return Wrapper::GetRegistryValueList(L"", L"", L"", hive, subKey, valueNameList);
 	}
 
-	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, String^ userName, String^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
+	array<Object^>^ Wrapper::GetRegistryValueList(IntPtr hRegistry, String^ subKey, array<String^>^ valueNameList)
+	{
+		LSTATUS nativeResult;
+		DWORD dwValCount = valueNameList->Length;
+		PVALENT pValList = new VALENT[valueNameList->Length];
+		LPWSTR lpDataBuffer;
+
+		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+
+		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
+
+		for (DWORD i = 0; i < dwValCount; i++)
+		{
+			pin_ptr<const wchar_t> wValueName = PtrToStringChars(valueNameList[i]);
+			size_t sizeValName = wcslen(wValueName) + 1;
+
+			pValList[i].ve_valuename = (LPWSTR)MemoryManager.Allocate(sizeValName * 2);
+			wcscpy_s(pValList[i].ve_valuename, sizeValName, wValueName);
+
+			wValueName = nullptr;
+		}
+		
+		HKEY whReg = (HKEY)hRegistry.ToPointer();
+		nativeResult = regptr->GetRegistryKeyValueList(whReg, (LPWSTR)wSubKey, pValList, dwValCount, lpDataBuffer);
+		if (nativeResult != ERROR_SUCCESS)
+		{
+			wSubKey = nullptr;
+			throw gcnew NativeExceptionBase(nativeResult);
+		}
+
+		wSubKey = nullptr;
+
+		array<Object^>^ output = gcnew array<Object^>(dwValCount);
+		for (DWORD i = 0; i < dwValCount; i++)
+		{
+			PVOID pvData = (PVOID)pValList[i].ve_valueptr;
+			switch (pValList[i].ve_type)
+			{
+			case REG_BINARY:
+			{
+				output[i] = gcnew array<byte>(pValList[i].ve_valuelen);
+				Marshal::Copy((IntPtr)pvData, (array<byte>^)output[i], 0, pValList[i].ve_valuelen);
+			}
+			break;
+
+			case REG_DWORD:
+			{
+				DWORD* dwData = static_cast<DWORD*>(pvData);
+				output[i] = gcnew Int32(*dwData);
+			}
+			break;
+
+			case REG_EXPAND_SZ:
+			{
+				// Getting the necessary buffer.
+				DWORD bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, NULL, 0);
+				if (bytesNeeded == 0)
+				{
+					MemoryManager.Free(lpDataBuffer);
+					throw gcnew NativeExceptionBase(GetLastError());
+				}
+
+				LPWSTR buffer = (LPWSTR)MemoryManager.Allocate(bytesNeeded);
+				bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, buffer, bytesNeeded);
+				if (bytesNeeded == 0)
+				{
+					MemoryManager.Free(lpDataBuffer);
+					throw gcnew NativeExceptionBase(GetLastError());
+				}
+
+				output[i] = gcnew String(buffer);
+				MemoryManager.Free(buffer);
+			}
+			break;
+
+			case REG_LINK:
+				output[i] = gcnew String((LPWSTR)pvData);
+				break;
+
+			case REG_MULTI_SZ:
+				output[i] = GetStringArrayFromDoubleNullTermninatedCStyleArray((LPWSTR)pvData, pValList[i].ve_valuelen);
+				break;
+
+			case REG_QWORD:
+			{
+				long long* qwData = static_cast<long long*>(pvData);
+				output[i] = gcnew Int64(*qwData);
+			}
+			break;
+
+			case REG_SZ:
+				output[i] = gcnew String((LPWSTR)pvData);
+				break;
+
+			default:
+			{
+				MemoryManager.Free(lpDataBuffer);
+				throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", pValList[i].ve_type));
+			}
+			break;
+			}
+		}
+
+		MemoryManager.Free(lpDataBuffer);
+
+		return output;
+	}
+
+	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, String^ userName, const LPWSTR& password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
 		LSTATUS nativeResult;
 		DWORD dwValCount = valueNameList->Length;
@@ -807,19 +1047,23 @@ namespace WindowsUtils::Core
 		return stringList->ToArray();
 	}
 
+	void Wrapper::LogonAndImpersonateUser(String^ userName, SecureString^ password)
+	{
+		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		LogonAndImpersonateUser(userName, wPass);
+	}
+
 	// Logs on the given user and impersonates it.
 	// You must call 'RevertToSelf()' to revert to the caller.
 	void Wrapper::LogonAndImpersonateUser(
-		String^ userName, // The user name. If the user belongs to a domain, enter the down-level logon name: 'DOMAIN\UserName'.
-		String^ password  // The user's password, if any.
+		String^ userName,			 // The user name. If the user belongs to a domain, enter the down-level logon name: 'DOMAIN\UserName'.
+		const LPWSTR& lpszPassword	 // The user's password, if any.
 	) {
 		if (!String::IsNullOrEmpty(userName))
 		{
 			LPWSTR wDomain = NULL;
-			BOOL bIsPassword = FALSE;
 			pin_ptr<const wchar_t> domain;
 			pin_ptr<const wchar_t> wUserName;
-			pin_ptr<const wchar_t> wTemp;
 			HANDLE hToken;
 
 			if (userName->Contains(L"\\"))
@@ -832,66 +1076,46 @@ namespace WindowsUtils::Core
 			else
 				wUserName = PtrToStringChars(userName);
 
-			LPWSTR wPassword = NULL;
-			if (!String::IsNullOrEmpty(password))
+			if (!LogonUser((LPWSTR)wUserName, wDomain, lpszPassword, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &hToken))
 			{
-				bIsPassword = TRUE;
-				wTemp = PtrToStringChars(password);
-				wPassword = (LPWSTR)wTemp;
-			}
-
-			if (!LogonUser((LPWSTR)wUserName, wDomain, wPassword, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &hToken))
-			{
-				if (bIsPassword)
+				if (lpszPassword != NULL)
 				{
-					size_t sztpl = password->Length;
-					SecureZeroMemory(wPassword, sztpl * 2);
-					SecureZeroMemory((LPWSTR)wTemp, sztpl * 2);
-					password = nullptr;
-					GC::Collect();
+					size_t sztpl = wcslen(lpszPassword) + 1;
+					SecureZeroMemory(lpszPassword, sztpl * 2);
 				}
 
-				wTemp = nullptr;
 				domain = nullptr;
 				wUserName = nullptr;
-				GC::Collect();
 
 				throw gcnew NativeExceptionBase(GetLastError());
 			}
 
 			if (!ImpersonateLoggedOnUser(hToken))
 			{
-				if (bIsPassword)
+				if (lpszPassword != NULL)
 				{
-					size_t sztpl = password->Length;
-					SecureZeroMemory(wPassword, sztpl * 2);
-					SecureZeroMemory((LPWSTR)wTemp, sztpl * 2);
-					password = nullptr;
+					size_t sztpl = wcslen(lpszPassword) + 1;
+					SecureZeroMemory(lpszPassword, sztpl * 2);
 				}
 
-				wTemp = nullptr;
 				domain = nullptr;
 				wUserName = nullptr;
 				CloseHandle(hToken);
-				GC::Collect();
 
 				throw gcnew NativeExceptionBase(GetLastError());
 			}
 
-			if (bIsPassword)
+			// Zeroing the memory here instead of Marshal::ZeroFreeGlobalAllocUnicode
+			// So the plain text stays less time in memory.
+			if (lpszPassword != NULL)
 			{
-				size_t sztpl = password->Length;
-				SecureZeroMemory(wPassword, sztpl * 2);
-				SecureZeroMemory((LPWSTR)wTemp, sztpl * 2);
-				password = nullptr;
+				size_t sztpl = wcslen(lpszPassword) + 1;
+				SecureZeroMemory(lpszPassword, sztpl * 2);
 			}
 
-			wTemp = nullptr;
 			domain = nullptr;
 			wUserName = nullptr;
 			CloseHandle(hToken);
-			
-			GC::Collect();
 		}
 	}
 }

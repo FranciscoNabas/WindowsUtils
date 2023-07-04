@@ -2,7 +2,7 @@ name: .NET
 
 on:
   push:
-    branches: [ "preview" ]
+    branches: [ "preview-branch" ]
 
 env:
   PSGAL_APIKEY: ${{ secrets.PSGAL_APIKEY }}
