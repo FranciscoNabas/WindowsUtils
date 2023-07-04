@@ -112,7 +112,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrapperFunctions unwrapper = new();
+            Wrapper unwrapper = new();
             uint nativestyle = MessageBoxOption.MbOptionsResolver(Style);
 
             /*
@@ -136,7 +136,7 @@ namespace WindowsUtils.Commands
                             MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
-                        catch (Core.NativeException ex)
+                        catch (NativeExceptionBase ex)
                         {
                             throw (NativeException)ex;
                         }
@@ -157,7 +157,7 @@ namespace WindowsUtils.Commands
                                 MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
                                 result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                             }
-                            catch (Core.NativeException ex)
+                            catch (NativeExceptionBase ex)
                             {
                                 throw (NativeException)ex;
                             }
@@ -170,7 +170,7 @@ namespace WindowsUtils.Commands
                             MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativestyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
-                        catch (Core.NativeException ex)
+                        catch (NativeExceptionBase ex)
                         {
                             throw (NativeException)ex;
                         }
@@ -193,7 +193,7 @@ namespace WindowsUtils.Commands
                             MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativestyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
-                        catch (Core.NativeException ex)
+                        catch (NativeExceptionBase ex)
                         {
                             throw (NativeException)ex;
                         }
@@ -214,7 +214,7 @@ namespace WindowsUtils.Commands
                                 MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativestyle, Timeout, Wait);
                                 result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                             }
-                            catch (Core.NativeException ex)
+                            catch (NativeExceptionBase ex)
                             {
                                 throw (NativeException)ex;
                             }
@@ -227,7 +227,7 @@ namespace WindowsUtils.Commands
                             MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(session.SessionHandle.DangerousGetHandle(), SessionId, Title, Message, nativestyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
-                        catch (Core.NativeException ex)
+                        catch (NativeExceptionBase ex)
                         {
                             throw (NativeException)ex;
                         }
@@ -284,7 +284,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrapperFunctions unwrapper = new();
+            Wrapper unwrapper = new();
             try
             {
                 if (string.IsNullOrEmpty(ComputerName))
@@ -299,7 +299,7 @@ namespace WindowsUtils.Commands
                     result.ToList().ForEach(x => WriteObject((ComputerSession)x));
                 }
             }
-            catch (Core.NativeException ex)
+            catch (NativeExceptionBase ex)
             {
                 throw (NativeException)ex;
             }
@@ -315,12 +315,12 @@ namespace WindowsUtils.Commands
     {
         protected override void ProcessRecord()
         {
-            WrapperFunctions unwrapper = new();
+            Wrapper unwrapper = new();
             try
             {
                 unwrapper.SendClick();
             }
-            catch (Core.NativeException ex)
+            catch (NativeExceptionBase ex)
             {
                 throw (NativeException)ex;
             }
@@ -350,13 +350,13 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrapperFunctions unWrapper = new();
+            Wrapper unWrapper = new();
             try
             {
                 ResourceMessageTableCore[] result = unWrapper.GetResourceMessageTable(Path);
                 result.ToList().ForEach(x => WriteObject((ResourceMessageTable)x));
             }
-            catch (Core.NativeException ex)
+            catch (NativeExceptionBase ex)
             {
                 throw (NativeException)ex;
             }
@@ -396,12 +396,12 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrapperFunctions unWrapper = new();
+            Wrapper unWrapper = new();
             try
             {
                 WriteObject(unWrapper.GetFormattedError(ErrorCode));
             }
-            catch (Core.NativeException ex)
+            catch (NativeExceptionBase ex)
             {
                 throw (NativeException)ex;
             }
@@ -417,12 +417,12 @@ namespace WindowsUtils.Commands
     {
         protected override void ProcessRecord()
         {
-            WrapperFunctions unWrapper = new();
+            Wrapper unWrapper = new();
             try
             {
                 WriteObject(unWrapper.GetLastWin32Error());
             }
-            catch (Core.NativeException ex)
+            catch (NativeExceptionBase ex)
             {
                 throw (NativeException)ex;
             }
@@ -548,7 +548,7 @@ namespace WindowsUtils.Commands
             if (validPaths.Count == 0)
                 throw new ItemNotFoundException("No object found for the specified path(s).");
 
-            WrapperFunctions unWrapper = new();
+            Wrapper unWrapper = new();
             if (CloseHandle)
             {
                 if (Force || ShouldProcess(
@@ -567,7 +567,7 @@ namespace WindowsUtils.Commands
                             result.ToList().ForEach(x => WriteObject((ObjectHandle)x));
                         }
                     }
-                    catch (Core.NativeException ex)
+                    catch (NativeExceptionBase ex)
                     {
                         throw (NativeException)ex;
                     }
@@ -580,7 +580,7 @@ namespace WindowsUtils.Commands
                     ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
                     result?.ToList().ForEach(x => WriteObject((ObjectHandle)x));
                 }
-                catch (Core.NativeException ex)
+                catch (NativeExceptionBase ex)
                 {
                     throw (NativeException)ex;
                 }
@@ -611,14 +611,14 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrapperFunctions unWrapper = new();
+            Wrapper unWrapper = new();
             PSObject outObject = new();
             try
             {
                 foreach (KeyValuePair<string, string> item in unWrapper.GetMsiProperties(Path).OrderBy(x => x.Key))
                     outObject.Members.Add(new PSNoteProperty(item.Key, item.Value));
             }
-            catch (Core.NativeException ex)
+            catch (NativeExceptionBase ex)
             {
                 throw (NativeException)ex;
             }
@@ -698,7 +698,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrapperFunctions unWrapper = new();
+            Wrapper unWrapper = new();
 
             if (string.IsNullOrEmpty(ComputerName))
             {
@@ -713,7 +713,7 @@ namespace WindowsUtils.Commands
                         {
                             unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
                         }
-                        catch (Core.NativeException ex)
+                        catch (NativeExceptionBase ex)
                         {
                             throw (NativeException)ex;
                         }
@@ -730,7 +730,7 @@ namespace WindowsUtils.Commands
                         {
                             unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
                         }
-                        catch (Core.NativeException ex)
+                        catch (NativeExceptionBase ex)
                         {
                             throw (NativeException)ex;
                         }
@@ -749,7 +749,7 @@ namespace WindowsUtils.Commands
                     {
                         unWrapper.DisconnectSession(session.SessionHandle.DangerousGetHandle(), SessionId, Wait);
                     }
-                    catch (Core.NativeException ex)
+                    catch (NativeExceptionBase ex)
                     {
                         throw (NativeException)ex;
                     }
@@ -835,7 +835,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WrapperFunctions unwrapper = new();
+            Wrapper unwrapper = new();
 
             if (ParameterSetName == "WithServiceController")
             {
@@ -845,7 +845,7 @@ namespace WindowsUtils.Commands
                     {
                         unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
                     }
-                    catch (Core.NativeException ex)
+                    catch (NativeExceptionBase ex)
                     {
                         throw (NativeException)ex;
                     }
@@ -861,7 +861,7 @@ namespace WindowsUtils.Commands
                             {
                                 unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
                             }
-                            catch (Core.NativeException ex)
+                            catch (NativeExceptionBase ex)
                             {
                                 throw (NativeException)ex;
                             }
@@ -876,7 +876,7 @@ namespace WindowsUtils.Commands
                             {
                                 unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
                             }
-                            catch (Core.NativeException ex)
+                            catch (NativeExceptionBase ex)
                             {
                                 throw (NativeException)ex;
                             }
@@ -901,7 +901,7 @@ namespace WindowsUtils.Commands
                             {
                                 unwrapper.RemoveService(Name, Stop);
                             }
-                            catch (Core.NativeException ex)
+                            catch (NativeExceptionBase ex)
                             {
                                 throw (NativeException)ex;
                             }
@@ -914,7 +914,7 @@ namespace WindowsUtils.Commands
                         {
                             unwrapper.RemoveService(Name, ComputerName, Stop);
                         }
-                        catch (Core.NativeException ex)
+                        catch (NativeExceptionBase ex)
                         {
                             throw (NativeException)ex;
                         }
@@ -928,7 +928,7 @@ namespace WindowsUtils.Commands
                             {
                                 unwrapper.RemoveService(Name, ComputerName, Stop);
                             }
-                            catch (Core.NativeException ex)
+                            catch (NativeExceptionBase ex)
                             {
                                 throw (NativeException)ex;
                             }
@@ -1304,7 +1304,7 @@ namespace WindowsUtils.Commands
     {
         private string _serviceFinalName;
         private ServiceSecurity _finalSecurityObject;
-        private WrapperFunctions _unwrapper = new();
+        private Wrapper _unwrapper = new();
 
         /// <summary>
         /// <para type="description">The service name.</para>

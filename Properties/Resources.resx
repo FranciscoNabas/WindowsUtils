@@ -117,97 +117,64 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="DisconnectWMessageCleanRegPS1" xml:space="preserve">
-    <value />
-  </data>
-  <data name="DisconnectWMessageCleanRegTask" xml:space="preserve">
-    <value>&lt;?xml version="1.0" encoding="UTF-16"?&gt;
-&lt;Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"&gt;
-    &lt;RegistrationInfo /&gt;
-    &lt;Principals&gt;
-        &lt;Principal&gt;
-            &lt;UserId&gt;S-1-5-18&lt;/UserId&gt;
-            &lt;RunLevel&gt;HighestAvailable&lt;/RunLevel&gt;
-        &lt;/Principal&gt;
-    &lt;/Principals&gt;
-    &lt;Settings&gt;
-        &lt;AllowStartOnDemand&gt;false&lt;/AllowStartOnDemand&gt;
-        &lt;DisallowStartIfOnBatteries&gt;false&lt;/DisallowStartIfOnBatteries&gt;
-        &lt;StopIfGoingOnBatteries&gt;true&lt;/StopIfGoingOnBatteries&gt;
-        &lt;Hidden&gt;true&lt;/Hidden&gt;
-        &lt;MultipleInstancesPolicy&gt;IgnoreNew&lt;/MultipleInstancesPolicy&gt;
-        &lt;RestartOnFailure&gt;
-            &lt;Count&gt;3&lt;/Count&gt;
-            &lt;Interval&gt;PT1M&lt;/Interval&gt;
-        &lt;/RestartOnFailure&gt;
-        &lt;StartWhenAvailable&gt;true&lt;/StartWhenAvailable&gt;
-        &lt;IdleSettings&gt;
-            &lt;StopOnIdleEnd&gt;true&lt;/StopOnIdleEnd&gt;
-            &lt;RestartOnIdle&gt;false&lt;/RestartOnIdle&gt;
-        &lt;/IdleSettings&gt;
-    &lt;/Settings&gt;
-    &lt;Triggers&gt;
-        &lt;TimeTrigger&gt;
-            &lt;StartBoundary&gt;{0}&lt;/StartBoundary&gt;
-        &lt;/TimeTrigger&gt;
-        &lt;BootTrigger /&gt;
-    &lt;/Triggers&gt;
-    &lt;Actions&gt;
-        &lt;Exec&gt;
-            &lt;Command&gt;powershell.exe&lt;/Command&gt;
-            &lt;Arguments&gt;{1}&lt;/Arguments&gt;
-        &lt;/Exec&gt;
-    &lt;/Actions&gt;
-&lt;/Task&gt;</value>
-  </data>
-  <data name="DisconnectWMessagePwshP1" xml:space="preserve">
-    <value>Set-ExecutionPolicy Unrestricted -Scope 'Process'
-Add-Type -MemberDefinition @'
-[DllImport("Wtsapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-public static extern bool WTSSendMessageW(
-    IntPtr hserver
-    ,uint sessionid
-    ,string title
-    ,uint titlelength
-    ,string message
-    ,uint messagelength
-    ,uint style
-    ,uint timeout
-    ,out uint response
-    ,bool wait
-);
-[DllImport("Wtsapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-public static extern bool WTSDisconnectSession(
-    IntPtr hserver
-    ,uint sessionid
-    ,bool wait
-);
-'@ -Namespace CiscoWonders -Name Interop</value>
-  </data>
-  <data name="DisconnectWMessagePwshP2" xml:space="preserve">
-    <value>$errorcanceledbyuser = 1223
-$start = Get-Date
-[System.UInt32]$response = 0
-if ($allowcancel) {
-    [CiscoWonders.Interop]::WTSSendMessageW(0, $sessionid, 'Disconnecting session.', 44, $Message, $Message.Length * 2, 4145, ([System.Int32]$Timeout * 60), [ref]$response, $true)
-    switch ($response.Response) {
-        1 {
-            $elapsed = [math]::Ceiling(((Get-Date) - $start).TotalSeconds)
-            $remaining = [math]::Ceiling(([System.Int32]$Timeout * 60) - $elapsed)
-
-            Start-Sleep -Seconds $remaining
-
-            [CiscoWonders.Interop]::WTSDisconnectSession(0, [System.UInt32]$sessionid, $false)
-        }
-        2 { exit $errorcanceledbyuser }
-        32000 { [CiscoWonders.Interop]::WTSDisconnectSession(0, [System.UInt32]$sessionid, $false) }
-    }
-}
-else {
-    [CiscoWonders.Interop]::WTSSendMessageW(0, $sessionid, 'Disconnecting session.', 44, $Message, $Message.Length * 2, 4144, ([System.Int32]$Timeout * 60), [ref]$response, $true)
-    Start-Sleep -Seconds ([System.Int32]$Timeout * 60)
-    [CiscoWonders.Interop]::WTSDisconnectSession(0, [System.UInt32]$sessionid, $false)
-}
-exit 0</value>
+  <data name="DotNetFrameworkVersionTable" xml:space="preserve">
+    <value>[
+  {
+    "MinimumVersion": 378389,
+    "Version": "4.5",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 378675,
+    "Version": "4.5.1",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 379893,
+    "Version": "4.5.2",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 393295,
+    "Version": "4.6",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 394254,
+    "Version": "4.6.1",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 394802,
+    "Version": "4.6.2",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 460798,
+    "Version": "4.7",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 461308,
+    "Version": "4.7.1",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 461808,
+    "Version": "4.7.2",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 528040,
+    "Version": "4.8",
+    "Edition": 0
+  },
+  {
+    "MinimumVersion": 533320,
+    "Version": "4.8.1",
+    "Edition": 0
+  }
+]</value>
+    <comment>.NET Framework version table.</comment>
   </data>
 </root>

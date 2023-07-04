@@ -1,10 +1,34 @@
+using System.Text.Json;
 using System.Reflection;
 using System.Runtime.Serialization;
 using WindowsUtils.Commands;
 using WindowsUtils.Core;
+using System.Net;
 
 namespace WindowsUtils
 {
+    public enum MessageBoxReturn : int
+    {
+        Ok = 1,
+        Cancel = 2,
+        Abort = 3,
+        Retry = 4,
+        Ignore = 5,
+        Yes = 6,
+        No = 7,
+        TryAgain = 10,
+        Continue = 11,
+        TimeOut = 32000,
+        AsyncReturn = 32001
+    }
+
+    public enum DotNetEditionInfo : uint
+    {
+        FullFramework,
+        Core,
+        Clr
+    }
+
     public abstract class Enumeration : IComparable
     {
         internal string Name { get; set; }
@@ -103,7 +127,7 @@ namespace WindowsUtils
 
     internal class Utilities
     {
-        private static readonly WrapperFunctions unWrapper = new();
+        private static readonly Wrapper unWrapper = new();
 
         internal static string GetLastWin32Error() => unWrapper.GetLastWin32Error();
         internal static string GetLastWin32Error(int errorCode) => unWrapper.GetFormattedError(errorCode);
@@ -129,10 +153,10 @@ namespace WindowsUtils
         public NativeException(int error_number, string message, Exception inner_exception) :
             base(message, inner_exception) => _native_error_number = error_number;
 
-        private NativeException(Core.NativeException ex)
+        private NativeException(NativeExceptionBase ex)
             : base(Utilities.GetLastWin32Error(ex.NativeErrorCode), ex.InnerException) => _native_error_number = ex.NativeErrorCode;
 
-        public static explicit operator NativeException(Core.NativeException ex) => new(ex);
+        public static explicit operator NativeException(NativeExceptionBase ex) => new(ex);
     }
 
     /// <summary>
@@ -255,18 +279,80 @@ namespace WindowsUtils
         public MessageBoxType(uint value, string name) : base(value, name, typeof(MessageBoxType)) { }
     }
 
-    public enum MessageBoxReturn : int
+    public sealed class DotNetVersionInfo
     {
-        Ok = 1,
-        Cancel = 2,
-        Abort = 3,
-        Retry = 4,
-        Ignore = 5,
-        Yes = 6,
-        No = 7,
-        TryAgain = 10,
-        Continue = 11,
-        TimeOut = 32000,
-        AsyncReturn = 32001
+        private readonly long _release;
+        
+        public Version Version { get; }
+        public DotNetEditionInfo Edition { get; }
+        public string ComputerName { get; }
+
+        public DotNetVersionInfo(long minVersion, Version version, DotNetEditionInfo edition)
+            => (_release, Version, Edition, ComputerName) = (minVersion, version, edition, Environment.MachineName);
+
+        public DotNetVersionInfo(long minVersion, Version version, DotNetEditionInfo edition, string computerName)
+            => (_release, Version, Edition, ComputerName) = (minVersion, version, edition, computerName);
+
+        public DotNetVersionInfo(Version version, DotNetEditionInfo edition)
+            => (_release, Version, Edition, ComputerName) = (0, version, edition, Environment.MachineName);
+
+        public static DotNetVersionInfo GetInfoFromRelease(long release)
+        {
+            DotNetVersionInfo? previous = null;
+            foreach (DotNetVersionInfo versionInfo in GetAvailableVersionInfo().Where(i => i._release != 0).OrderBy(i => i._release))
+            {
+                if (release == versionInfo._release)
+                    return versionInfo;
+
+                if (previous is null && release < versionInfo._release)
+                    throw new ArgumentException("Invalid release number.");
+                
+                else if (previous is not null && release < versionInfo._release)
+                    return previous;
+                
+                previous = versionInfo;
+            }
+
+            throw new ArgumentException("Invalid release number.");
+        }
+
+        public static DotNetVersionInfo[] GetAvailableVersionInfo(bool includeCoreVersion = false)
+        {
+            List<DotNetVersionInfo> infoList = new();
+            using JsonDocument fromResourceDocument = JsonDocument.Parse(Properties.Resources.DotNetFrameworkVersionTable);
+            foreach (JsonElement element in fromResourceDocument.RootElement.EnumerateArray())
+                infoList.Add(new(
+                    element.GetProperty("MinimumVersion").GetInt64(),
+                    Version.Parse(element.GetProperty("Version").GetString()),
+                    (DotNetEditionInfo)element.GetProperty("Edition").GetUInt32()
+                ));
+
+            if (includeCoreVersion)
+            {
+                using WebClient client = new();
+                string dotnetCoreVerInfo = client.DownloadString(@"https://raw.githubusercontent.com/dotnet/core/main/release-notes/releases-index.json");
+                using JsonDocument fromWebDocument = JsonDocument.Parse(dotnetCoreVerInfo);
+                foreach (JsonElement element in fromWebDocument.RootElement.GetProperty("releases-index").EnumerateArray())
+                    infoList.Add(new(
+                        Version.Parse(element.GetProperty("channel-version").GetString()),
+                        DotNetEditionInfo.Core
+                    ));
+            }
+
+            return infoList.ToArray();
+        }
+    }
+
+    public sealed class DotNetInstalledUpdateInfo
+    {
+        public string Version { get; }
+        public string[] InstalledUpdates { get; }
+        public string ComputerName { get; }
+
+        public DotNetInstalledUpdateInfo(string version, string[] installedUpdates)
+            => (ComputerName, Version, InstalledUpdates) = (Environment.MachineName, version, installedUpdates);
+
+        public DotNetInstalledUpdateInfo(string computerName, string version, string[] installedUpdates)
+            => (ComputerName, Version, InstalledUpdates) = (computerName, version, installedUpdates);
     }
 }

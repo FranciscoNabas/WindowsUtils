@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "Services.h"
-#include "Utilities.h"
-#include "AccessControl.h"
 
 namespace WindowsUtils::Core
 {

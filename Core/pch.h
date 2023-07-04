@@ -10,6 +10,8 @@
 
 #define _WIN32_WINNT 0x0600
 
+#define DWERRORCHECKV(result) if (ERROR_SUCCESS != result) { return result; }
+#define DWERRORCHECKF(result) if (ERROR_SUCCESS != result) { return GetLastError(); }
 #define SharedVecPtr(T) std::shared_ptr<std::vector<T>>
 #define MakeVecPtr(T) std::make_shared<std::vector<T>>()
 

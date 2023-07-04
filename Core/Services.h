@@ -1,6 +1,9 @@
 #pragma once
 #pragma unmanaged
 
+#include "Utilities.h"
+#include "AccessControl.h"
+
 namespace WindowsUtils::Core
 {
 	extern "C" public class __declspec(dllexport) Services
