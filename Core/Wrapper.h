@@ -11,6 +11,7 @@
 #include <vcclr.h>
 
 using namespace System;
+using namespace System::IO;
 using namespace System::Security;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
@@ -21,6 +22,11 @@ namespace WindowsUtils::Core
 	/*========================================
 	==	  Managed object identification		==
 	==========================================*/
+
+	public enum class ArchiveFileType : DWORD
+	{
+		Cabinet
+	};
 
 	// Invoke-RemoteMessage
 	public ref class MessageResponseBase
@@ -293,6 +299,9 @@ namespace WindowsUtils::Core
 		void SetServiceSecurity(String^ serviceName, String^ computerName, String^ sddl, bool audit, bool changeOwner);
 		void SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner);
 
+		// Expand-File
+		void ExpandFile(String^ fileFullName, String^ destination, ArchiveFileType fileType);
+
 		// Registry operation
 		Object^ GetRegistryValue(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName);
 		Object^ GetRegistryValue(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName);
@@ -329,6 +338,8 @@ namespace WindowsUtils::Core
 		array<String^>^ GetRegistrySubKeyNames(String^ computerName, String^ userName, const LPWSTR& lpszPassword, RegistryHive hive, String^ subKey);
 		void LogonAndImpersonateUser(String^ userName, const LPWSTR& lpszPassword);
 	};
+
+	Exception^ FDIErrorToException(FDIERROR err);
 
 	public ref class NativeExceptionBase : public Exception
 	{

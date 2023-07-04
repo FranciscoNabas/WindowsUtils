@@ -428,6 +428,18 @@ namespace WindowsUtils::Core
 		wSddl = nullptr;
 	}
 
+	// Expand-File
+	void Wrapper::ExpandFile(String^ fileFullName, String^ destination, ArchiveFileType fileType)
+	{
+		LPSTR wFileName = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(Path::GetFileName(fileFullName)).ToPointer());
+		LPSTR wFilePath = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(Path::GetDirectoryName(fileFullName)).ToPointer());
+		LPSTR wDestination = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(destination).ToPointer());
+
+		DWORD result = utlptr->ExpandArchiveFile(wFileName, wFilePath, wDestination, (Utilities::ARCHIVE_FILE_TYPE)fileType);
+		if (result != ERROR_SUCCESS)
+			throw FDIErrorToException((FDIERROR)result);
+	}
+
 	// Registry operations
 	Object^ Wrapper::GetRegistryValue(RegistryHive hive, String^ subKey, String^ valueName)
 	{
@@ -1116,6 +1128,48 @@ namespace WindowsUtils::Core
 			domain = nullptr;
 			wUserName = nullptr;
 			CloseHandle(hToken);
+		}
+	}
+
+	Exception^ FDIErrorToException(FDIERROR err)
+	{
+		switch (err)
+		{
+		case FDIERROR_CABINET_NOT_FOUND:
+			return gcnew FileNotFoundException("Cabinet not found");
+
+		case FDIERROR_NOT_A_CABINET:
+			return gcnew ArgumentException("File is not a cabinet");
+
+		case FDIERROR_UNKNOWN_CABINET_VERSION:
+			return gcnew ArgumentException("Unknown cabinet version");
+
+		case FDIERROR_CORRUPT_CABINET:
+			return gcnew ArgumentException("Corrupt cabinet");
+
+		case FDIERROR_ALLOC_FAIL:
+			return gcnew OutOfMemoryException("Memory allocation failed");
+
+		case FDIERROR_BAD_COMPR_TYPE:
+			return gcnew ArgumentException("Unknown compression type");
+
+		case FDIERROR_MDI_FAIL:
+			return gcnew ApplicationException("Failure decompressing data");
+
+		case FDIERROR_TARGET_FILE:
+			return gcnew ApplicationException("Failure writing to target file");
+
+		case FDIERROR_RESERVE_MISMATCH:
+			return gcnew ArgumentException("Cabinets in set have different RESERVE sizes");
+
+		case FDIERROR_WRONG_CABINET:
+			return gcnew InvalidOperationException("Cabinet returned on fdintNEXT_CABINET is incorrect");
+
+		case FDIERROR_USER_ABORT:
+			return gcnew OperationCanceledException("Application aborted");
+
+		default:
+			return gcnew SystemException("Unknown error");
 		}
 	}
 }

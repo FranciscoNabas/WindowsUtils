@@ -348,6 +348,19 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
+	DWORD Utilities::ExpandArchiveFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, ARCHIVE_FILE_TYPE fileType)
+	{
+		switch (fileType)
+		{
+		case ARCHIVE_FILE_TYPE::Cabinet:
+			return ExpandCabinetFile(lpszFileName, lpszFilePath, lpszDestination);
+			break;
+
+		default:
+			break;
+		}
+	}
+
 	
 	/*========================================
 	==		Utility function definition		==
@@ -583,6 +596,41 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
+	DWORD ExpandCabinetFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination)
+	{
+		DWORD result = ERROR_SUCCESS;
+		ERF erfError;
+		HFDI hContext;
+
+		hContext = FDICreate(
+			FdiFnMemAloc,
+			FdiFnMemFree,
+			FdiFnFileOpen,
+			FdiFnFileRead,
+			FdiFnFileWrite,
+			FdiFnFileClose,
+			FdiFnFileSeek,
+			cpuUNKNOWN,
+			&erfError
+		);
+
+		if (hContext == NULL)
+			return (DWORD)erfError.erfOper;
+
+		if (!FDICopy(hContext, lpszFileName, lpszFilePath, 0, FdiFnNotifyCallback, NULL, lpszDestination))
+		{
+			if (hContext != NULL)
+				FDIDestroy(hContext);
+
+			return (DWORD)erfError.erfOper;
+		}
+
+		if (hContext != NULL)
+			FDIDestroy(hContext);
+
+		return result;
+	}
+
 	// Memory management helper functions
 	WuMemoryManagement& WuMemoryManagement::GetManager()
 	{
@@ -635,5 +683,97 @@ namespace WindowsUtils::Core
 	{
 		for (PVOID block : MemoryList)
 			HeapFree(GetProcessHeap(), NULL, block);
+	}
+
+	// FDI macro functions.
+
+	FNALLOC(FdiFnMemAloc)
+	{
+		return HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, cb);
+	}
+	FNFREE(FdiFnMemFree)
+	{
+		HeapFree(GetProcessHeap(), NULL, pv);
+	}
+	FNOPEN(FdiFnFileOpen)
+	{
+		HANDLE hFile = NULL;
+		DWORD dwDesiredAccess = 0;
+		DWORD dwCreationDisposition = 0;
+
+		UNREFERENCED_PARAMETER(pmode);
+
+		switch (oflag)
+		{
+		case _O_RDWR:
+			dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
+			break;
+
+		case _O_WRONLY:
+			dwDesiredAccess = GENERIC_WRITE;
+			break;
+
+		default:
+			dwDesiredAccess = GENERIC_READ;
+			break;
+		}
+
+		if (oflag & _O_CREAT)
+		{
+			dwCreationDisposition = CREATE_ALWAYS;
+		}
+		else
+		{
+			dwCreationDisposition = OPEN_EXISTING;
+		}
+
+		hFile = CreateFileA(pszFile,
+			dwDesiredAccess,
+			FILE_SHARE_READ,
+			NULL,
+			dwCreationDisposition,
+			FILE_ATTRIBUTE_NORMAL,
+			NULL);
+
+		return (INT_PTR)hFile;
+	}
+	FNREAD(FdiFnFileRead)
+	{
+		DWORD dwBytesRead = 0;
+
+		if (ReadFile((HANDLE)hf, pv, cb, &dwBytesRead, NULL) == FALSE)
+			dwBytesRead = (DWORD)-1L;
+		
+		return dwBytesRead;
+	}
+	FNWRITE(FdiFnFileWrite)
+	{
+		DWORD dwBytesWritten = 0;
+
+		if (WriteFile((HANDLE)hf, pv, cb, &dwBytesWritten, NULL) == FALSE)
+			dwBytesWritten = (DWORD)-1;
+
+		return dwBytesWritten;
+	}
+	FNCLOSE(FdiFnFileClose)
+	{
+		return (CloseHandle((HANDLE)hf) == TRUE) ? 0 : -1;
+	}
+	FNSEEK(FdiFnFileSeek)
+	{
+		return SetFilePointer((HANDLE)hf, dist, NULL, seektype);
+	}
+	
+	FNFDINOTIFY(FdiFnNotifyCallback)
+	{
+		switch (fdint)
+		{
+		case fdintCABINET_INFO:
+			break;
+
+		default:
+			break;
+		}
+		return 0;
 	}
 }

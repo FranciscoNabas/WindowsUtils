@@ -16,6 +16,10 @@ Struct WindowsUtils.Core.Utilities+_WU_OBJECT_HANDLE: AutoLayout, AnsiClass, Cla
   Methods:
     <MarshalCopy>(_WU_OBJECT_HANDLE*, _WU_OBJECT_HANDLE*): PrivateScope, Public, Static, SpecialName
     <MarshalDestroy>(_WU_OBJECT_HANDLE*): PrivateScope, Public, Static, SpecialName
+Struct WindowsUtils.Core.Utilities+_COMPRESSED_FILE_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
 Struct WindowsUtils.Core.AccessControl: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Registry: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit

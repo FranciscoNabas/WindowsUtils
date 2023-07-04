@@ -24,7 +24,7 @@ namespace WindowsUtils::Core
 
 			_WU_RESOURCE_MESSAGE_TABLE() { }
 			_WU_RESOURCE_MESSAGE_TABLE(DWORD id, LPWSTR message) : Id(id), Message(message) { }
-		}WU_RESOURCE_MESSAGE_TABLE, * PWU_RESOURCE_MESSAGE_TABLE;
+		} WU_RESOURCE_MESSAGE_TABLE, * PWU_RESOURCE_MESSAGE_TABLE;
 
 		// Get-ObjectHandle
 		typedef enum _VERSION_INFO_PROPERTY
@@ -34,7 +34,7 @@ namespace WindowsUtils::Core
 			, FileVersion = 3U
 			, CompanyName = 4U
 
-		}VERSION_INFO_PROPERTY;
+		} VERSION_INFO_PROPERTY;
 
 		typedef struct _WU_OBJECT_HANDLE
 		{
@@ -47,7 +47,14 @@ namespace WindowsUtils::Core
 			_WU_OBJECT_HANDLE() { }
 			_WU_OBJECT_HANDLE(LPWSTR inpobj, LPWSTR name, DWORD pid, LPWSTR imgpath, std::map<VERSION_INFO_PROPERTY, LPCWSTR> verinfo)
 				: InputObject(inpobj), Name(name), ProcessId(pid), ImagePath(imgpath), VersionInfo(verinfo) { }
-		}WU_OBJECT_HANDLE, * PWU_OBJECT_HANDLE;
+		} WU_OBJECT_HANDLE, * PWU_OBJECT_HANDLE;
+
+		// Expand-File
+		typedef enum _ARCHIVE_FILE_TYPE
+		{
+			Cabinet
+
+		} ARCHIVE_FILE_TYPE;
 
 		/*=========================================
 		==		 Function identification		 ==
@@ -70,6 +77,9 @@ namespace WindowsUtils::Core
 
 		// Send-Click
 		DWORD SendClick();
+
+		// Expand-File
+		DWORD ExpandArchiveFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, ARCHIVE_FILE_TYPE fileType);
 	};
 
 	/*
@@ -113,5 +123,61 @@ namespace WindowsUtils::Core
 	VOID PrintBufferW(LPWSTR& lpbuffer, WCHAR const* const format, ...);
 	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr);
 	DWORD GetEnvVariableW(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue);
-	
+
+	// Expand-File helper functions and objects.
+	typedef struct _FDI_CABINET_INFO
+	{
+		LPSTR NextCabName;
+		LPSTR NextDiskName;
+		LPSTR Path;
+		USHORT CurrentSetId;
+		USHORT NextCabIndex;
+
+	} FDI_CABINET_INFO, *PFDI_CABINET_INFO;
+
+	typedef struct _FDI_PARTIAL_FILE
+	{
+		LPSTR FileName;
+		LPSTR SourceCabName;
+		LPSTR SourceDiskName;
+
+	} FDI_PARTIAL_FILE, *PFDI_PARTIAL_FILE;
+
+	typedef struct _FDI_COPY_FILE_INFO
+	{
+		DWORD Length;
+		LPSTR FileName;
+		USHORT Date;
+		USHORT Time;
+		USHORT Attributes;
+
+	} FDI_COPY_FILE_INFO, *PFDI_COPY_FILE_INFO;
+
+	typedef struct _FDI_CLOSE_FILE_INFO
+	{
+		LPSTR FileName;
+		INT_PTR Handle;
+		USHORT Date;
+		USHORT Time;
+		USHORT Attributes;
+		BOOL Execute;
+
+	} FDI_CLOSE_FILE_INFO, *PFDI_CLOSE_FILE_INFO;
+
+	typedef struct _FDI_NEXT_CABINET_INFO
+	{
+		LPSTR NextCabName;
+
+	} FDI_NEXT_CABINET_INFO, *PFDI_NEXT_CABINET_INFO;
+
+	DWORD ExpandCabinetFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination);
+
+	FNALLOC(FdiFnMemAloc);
+	FNFREE(FdiFnMemFree);
+	FNOPEN(FdiFnFileOpen);
+	FNREAD(FdiFnFileRead);
+	FNWRITE(FdiFnFileWrite);
+	FNCLOSE(FdiFnFileClose);
+	FNSEEK(FdiFnFileSeek);
+	FNFDINOTIFY(FdiFnNotifyCallback);
 }
