@@ -2,6 +2,7 @@
 #pragma unmanaged
 
 #include "Utilities.h"
+#include "Notification.h"
 #include "AccessControl.h"
 
 namespace WindowsUtils::Core
@@ -15,8 +16,8 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		// Remove-Service
-		DWORD RemoveService(const LPWSTR& servicename, const LPWSTR& computername, BOOL stopservice);
-		DWORD RemoveService(SC_HANDLE& hservice, const LPWSTR& computername, BOOL stopservice);
+		DWORD RemoveService(const LPWSTR& servicename, const LPWSTR& computername, BOOL stopservice, Notification::PNATIVE_CONTEXT const& context);
+		DWORD RemoveService(SC_HANDLE& hservice, const LPWSTR& servicename, const LPWSTR& computername, BOOL stopservice, Notification::PNATIVE_CONTEXT const& context);
 
 		// Get-ServiceSecurity
 		DWORD GetServiceSecurity(const LPWSTR& serviceName, const LPWSTR& computerName, PSECURITY_DESCRIPTOR& pSvcSecurity, LPDWORD pdwSize, BOOL bAudit = FALSE);
@@ -26,6 +27,6 @@ namespace WindowsUtils::Core
 		DWORD SetServiceSecurity(const LPWSTR& lpszServiceName, const LPWSTR& lpszComputerName, const LPWSTR& lpszSddl, BOOL bChangeAudit, BOOL bChangeOwner);
 	};
 
-	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice, const LPWSTR& computername);
-	DWORD StopServiceWithTimeout(SC_HANDLE& hservice, LPSERVICE_STATUS lpsvcstatus);
+	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice, const LPWSTR& computername, Notification::PNATIVE_CONTEXT const& context);
+	DWORD StopServiceWithWarning(SC_HANDLE& hservice, SC_HANDLE& scm, LPWSTR const& lpszSvcName, LPSERVICE_STATUS lpsvcstatus, Notification::PNATIVE_CONTEXT const& context);
 }

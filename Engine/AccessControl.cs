@@ -1,11 +1,43 @@
 using System.Security.Principal;
 using System.Security.AccessControl;
+using System.Runtime.InteropServices;
 using WindowsUtils.Services;
 using WindowsUtils.Attributes;
-using System.Runtime.InteropServices;
 
 namespace WindowsUtils.Interop
 {
+    [Flags]
+    internal enum AccessType : uint
+    {
+        DELETE = 0x00010000,
+        READ_CONTROL = 0x00020000,
+        WRITE_DAC = 0x00040000,
+        WRITE_OWNER = 0x00080000,
+        SYNCHRONIZE = 0x00100000,
+        STANDARD_RIGHTS_REQUIRED = 0x000F0000,
+        STANDARD_RIGHTS_READ = READ_CONTROL,
+        STANDARD_RIGHTS_WRITE = READ_CONTROL,
+        STANDARD_RIGHTS_EXECUTE = READ_CONTROL,
+        STANDARD_RIGHTS_ALL = 0x001F0000,
+        SPECIFIC_RIGHTS_ALL = 0x0000FFFF,
+        ACCESS_SYSTEM_SECURITY = 0x01000000,
+        MAXIMUM_ALLOWED = 0x02000000,
+        GENERIC_READ = 0x80000000,
+        GENERIC_WRITE = 0x40000000,
+        GENERIC_EXECUTE = 0x20000000,
+        GENERIC_ALL = 0x10000000
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SECURITY_ATTRIBUTES
+    {
+        internal uint nLength;
+        internal IntPtr lpSecurityDescriptor;
+        
+        [MarshalAs(UnmanagedType.Bool)]
+        internal bool bInheritHandle;
+    }
+
     internal partial class NativeFunctions
     {
         [DllImport("Advapi32.dll", SetLastError = true)]

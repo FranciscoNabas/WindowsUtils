@@ -4,6 +4,7 @@
 #include "Registry.h"
 #include "Services.h"
 #include "Utilities.h"
+#include "Notification.h"
 #include "AccessControl.h"
 #include "TerminalServices.h"
 
@@ -234,6 +235,27 @@ namespace WindowsUtils::Core
 		Utilities::PWU_RESOURCE_MESSAGE_TABLE wrapper;
 	};
 
+	// A wrapper for the Cmdlet context
+	public ref class CmdletContextBase
+	{
+	public:
+		delegate void WriteProgressWrapper(UInt64 dataSize);
+		delegate void WriteWarningWrapper(UInt64 dataSize);
+
+		CmdletContextBase(WriteProgressWrapper^ progWrapper, WriteWarningWrapper^ warnWrapper, IntPtr mappedProgData, IntPtr mappedWarnData);
+		~CmdletContextBase();
+
+		Notification::PNATIVE_CONTEXT GetUnderlyingContext();
+
+	protected:
+		!CmdletContextBase();
+
+	private:
+		Notification::PNATIVE_CONTEXT _nativeContext;
+		GCHandle _progressGcHandle;
+		GCHandle _warningGcHandle;
+	};
+
 	// TEST ONLY
 	public ref class TokenPrivilege
 	{
@@ -262,14 +284,17 @@ namespace WindowsUtils::Core
 	{
 	public:
 		// Invoke-RemoteMessage
-		array<MessageResponseBase^>^ InvokeRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait);
+		array<MessageResponseBase^>^ SendRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait);
+
 		// Get-ComputerSession
 		array<ComputerSessionBase^>^ GetComputerSession(String^ computername, IntPtr session, Boolean onlyactive, Boolean includesystemsession);
+
 		// Disconnect-Session
 		Void DisconnectSession(IntPtr session, UInt32^ sessionid, Boolean wait);
 
 		// Get-FormattedError
 		String^ GetFormattedError(Int32 errorcode);
+
 		// Get-LastWin32Error
 		String^ GetLastWin32Error();
 
@@ -286,9 +311,9 @@ namespace WindowsUtils::Core
 		Dictionary<String^, String^>^ GetMsiProperties(String^ filepath);
 		
 		// Remove-Service
-		void RemoveService(String^ servicename, String^ computerName, bool stopservice);
-		void RemoveService(IntPtr hservice, String^ computername, bool stopservice);
-		void RemoveService(String^ servicename, bool stopservice);
+		void RemoveService(String^ servicename, String^ computerName, bool stopservice, CmdletContextBase^ context);
+		void RemoveService(IntPtr hservice, String^ servicename, String^ computername, bool stopservice, CmdletContextBase^ context);
+		void RemoveService(String^ servicename, bool stopservice, CmdletContextBase^ context);
 
 		// Get-ServiceSecurity
 		String^ GetServiceSecurityDescriptorString(String^ serviceName, String^ computerName, bool audit);

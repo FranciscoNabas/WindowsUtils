@@ -1,9 +1,9 @@
+using System.Net;
 using System.Text.Json;
 using System.Reflection;
 using System.Runtime.Serialization;
-using WindowsUtils.Commands;
 using WindowsUtils.Core;
-using System.Net;
+using WindowsUtils.Commands;
 
 namespace WindowsUtils
 {
@@ -100,7 +100,7 @@ namespace WindowsUtils
 
         public static uint MbOptionsResolver(string[] input)
         {
-            InvokeRemoteMessageCommand pshook = new();
+            SendRemoteMessageCommand pshook = new();
             List<string> processed = new();
             MessageBoxOption[] allNames = GetAvailableOptions();
             uint output = 0;

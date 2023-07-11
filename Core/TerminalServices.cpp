@@ -8,69 +8,83 @@ namespace WindowsUtils::Core
 	==========================================*/
 
 	// Invoke-RemoteMessage
-	DWORD TerminalServices::InvokeMessage(
-		LPWSTR lptitle														// The message box title.
-		, LPWSTR lpmessage													// The message text.
-		, DWORD dwstyle														// A bitwise combination of UINT-defined messagebox styles (See function MessageBox).
-		, DWORD dwtimeout													// Timeout, in seconds, for the function to wait a response.
-		, BOOL bwait														// TRUE for the function wait a response. If FALSE, the function returns imediately with code 32001 (0x7D01), IDASYNC.
-		, std::vector<DWORD>& rvecdwsessid									// The target session IDs.
-		, std::vector<TerminalServices::WU_MESSAGE_RESPONSE>& rvecmessres	// A vector to receive the message responses.
-		, HANDLE	hserversession = WTS_CURRENT_SERVER_HANDLE				// A handle to a WTS session.
-	)
-	{
+	DWORD TerminalServices::SendMessage(
+		const LPWSTR& lptitle,												// The message box title.
+		const LPWSTR& lpmessage,											// The message text.
+		DWORD const& dwstyle,												// A bitwise combination of UINT-defined messagebox styles (See function MessageBox).
+		DWORD const& dwtimeout,												// Timeout, in seconds, for the function to wait a response.
+		BOOL const& bwait,													// TRUE for the function wait a response. If FALSE, the function returns imediately with code 32001 (0x7D01), IDASYNC.
+		std::vector<DWORD>& rvecdwsessid,									// The target session IDs.
+		std::vector<TerminalServices::WU_MESSAGE_RESPONSE>& rvecmessres,	// A vector to receive the message responses.
+		HANDLE const& hserversession										// A handle to a WTS session.
+	) {
 		DWORD result = ERROR_SUCCESS;
 
-		if (rvecdwsessid.empty())
+		for (DWORD dwSession : rvecdwsessid)
 		{
-			DWORD dwsesscount = 0;
-			PWTS_SESSION_INFOW pwtssessinfo;
+			WU_MESSAGE_RESPONSE mrsingle;
 
-			if (!::WTSEnumerateSessionsW(hserversession, 0, 1, &pwtssessinfo, &dwsesscount))
-				return ::GetLastError();
-
-			for (DWORD i = 0; i < dwsesscount; i++)
+			if (!::WTSSendMessageW(
+				hserversession
+				,dwSession
+				,lptitle
+				,(DWORD)wcslen(lptitle) * 2
+				,lpmessage
+				,(DWORD)wcslen(lpmessage) * 2
+				,dwstyle
+				,dwtimeout
+				,&mrsingle.Response
+				,bwait
+			))
 			{
-				WU_MESSAGE_RESPONSE mrsingle;
-
-				// Session 0 is not an interactive session
-				if (pwtssessinfo[i].SessionId != 0)
-				{
-					if (!::WTSSendMessageW(
-						hserversession
-						, pwtssessinfo[i].SessionId
-						, lptitle
-						, (DWORD)wcslen(lptitle) * 2
-						, lpmessage
-						, (DWORD)wcslen(lpmessage) * 2
-						, dwstyle
-						, dwtimeout
-						, &mrsingle.Response
-						, bwait
-					))
-					{
-						result = ::GetLastError();
-						// We don't want to break if the session is not found, or cannot receive messages
-						if (ERROR_FILE_NOT_FOUND != result)
-							return result;
-						else
-							result = ERROR_SUCCESS;
-					}
-
-					mrsingle.SessionId = pwtssessinfo[i].SessionId;
-					rvecmessres.push_back(mrsingle);
-				}
+				result = ::GetLastError();
+				// We don't want to break if the session is not found, or cannot receive messages
+				if (ERROR_FILE_NOT_FOUND != result)
+					return result;
+				else
+					result = ERROR_SUCCESS;
 			}
-		}
-		else
-		{
-			for (size_t i = 0; i < rvecdwsessid.size(); i++)
+			if (dwSession == WTS_CURRENT_SESSION)
 			{
-				WU_MESSAGE_RESPONSE mrsingle;
+				DWORD sessid;
+				::ProcessIdToSessionId(GetCurrentProcessId(), &sessid);
+				mrsingle.SessionId = sessid;
+			}
+			else
+				mrsingle.SessionId = dwSession;
 
+			rvecmessres.push_back(mrsingle);
+		}
+		
+		return result;
+	}
+
+	DWORD TerminalServices::SendMessage(
+		const LPWSTR& lptitle,												// The message box title.
+		const LPWSTR& lpmessage,											// The message text.
+		DWORD const& dwstyle,												// A bitwise combination of UINT-defined messagebox styles (See function MessageBox).
+		DWORD const& dwtimeout,												// Timeout, in seconds, for the function to wait a response.
+		BOOL const& bwait,													// TRUE for the function wait a response. If FALSE, the function returns imediately with code 32001 (0x7D01), IDASYNC.
+		std::vector<TerminalServices::WU_MESSAGE_RESPONSE>& rvecmessres,	// A vector to receive the message responses.
+		HANDLE const& hserversession										// A handle to a WTS session.
+	) {
+		DWORD result = ERROR_SUCCESS;
+		DWORD dwsesscount = 0;
+		PWTS_SESSION_INFOW pwtssessinfo;
+
+		if (!::WTSEnumerateSessionsW(hserversession, 0, 1, &pwtssessinfo, &dwsesscount))
+			return ::GetLastError();
+
+		for (DWORD i = 0; i < dwsesscount; i++)
+		{
+			WU_MESSAGE_RESPONSE mrsingle;
+
+			// Session 0 is not an interactive session
+			if (pwtssessinfo[i].SessionId != 0)
+			{
 				if (!::WTSSendMessageW(
 					hserversession
-					, rvecdwsessid.at(i)
+					, pwtssessinfo[i].SessionId
 					, lptitle
 					, (DWORD)wcslen(lptitle) * 2
 					, lpmessage
@@ -88,15 +102,8 @@ namespace WindowsUtils::Core
 					else
 						result = ERROR_SUCCESS;
 				}
-				if (rvecdwsessid.at(i) == WTS_CURRENT_SESSION)
-				{
-					DWORD sessid;
-					::ProcessIdToSessionId(GetCurrentProcessId(), &sessid);
-					mrsingle.SessionId = sessid;
-				}
-				else
-					mrsingle.SessionId = rvecdwsessid.at(i);
-				
+
+				mrsingle.SessionId = pwtssessinfo[i].SessionId;
 				rvecmessres.push_back(mrsingle);
 			}
 		}

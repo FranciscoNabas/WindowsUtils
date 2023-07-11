@@ -72,34 +72,42 @@ namespace WindowsUtils::Core
 	==========================================*/
 
 	// Invoke-RemoteMessage
-	array<MessageResponseBase^>^ Wrapper::InvokeRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait)
+	array<MessageResponseBase^>^ Wrapper::SendRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait)
 	{
 		DWORD dwresult = ERROR_SUCCESS;
 		SharedVecPtr(TerminalServices::WU_MESSAGE_RESPONSE) presult = MakeVecPtr(TerminalServices::WU_MESSAGE_RESPONSE);
-		SharedVecPtr(DWORD) psessid = MakeVecPtr(DWORD);
+		SharedVecPtr(DWORD) psessid;
 
 		pin_ptr<const wchar_t> wTitle = PtrToStringChars(title);
 		pin_ptr<const wchar_t> wMessage = PtrToStringChars(message);
 
 		if (sessionid == nullptr)
-			dwresult = wtsptr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *psessid, *presult, (HANDLE)session);
+			dwresult = wtsptr->SendMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *presult, (HANDLE)session);
 
 		else
 		{
+			psessid = MakeVecPtr(DWORD);
 			for (int i = 0; i < sessionid->Length; i++)
 				psessid->push_back((DWORD)sessionid[i]);
 
-			dwresult = wtsptr->InvokeMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *psessid, *presult, (HANDLE)session);
+			dwresult = wtsptr->SendMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *psessid, *presult, (HANDLE)session);
 		}
 
 		if (ERROR_SUCCESS != dwresult)
+		{
+			wTitle = nullptr;
+			wMessage = nullptr;
 			throw gcnew NativeExceptionBase(dwresult);
+		}
 
 		array<MessageResponseBase^>^ output = gcnew array<MessageResponseBase^>((int)presult->size());
-
+		
 		for (size_t i = 0; i < presult->size(); i++)
 			if (presult->at(i).Response != 0)
 				output[(int)i] = gcnew MessageResponseBase(presult->at(i));
+
+		wTitle = nullptr;
+		wMessage = nullptr;
 
 		return output;
 	}
@@ -254,12 +262,12 @@ namespace WindowsUtils::Core
 	}
 
 	// Remove-Service
-	void Wrapper::RemoveService(String^ servicename, String^ computername, bool stopservice)
+	void Wrapper::RemoveService(String^ servicename, String^ computername, bool stopservice, CmdletContextBase^ context)
 	{
 		pin_ptr<const wchar_t> wcomputername = PtrToStringChars(computername);
 		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
 
-		DWORD result = svcptr->RemoveService((LPWSTR)wservicename, (LPWSTR)wcomputername, stopservice);
+		DWORD result = svcptr->RemoveService((LPWSTR)wservicename, (LPWSTR)wcomputername, stopservice, context->GetUnderlyingContext());
 		if (result != ERROR_SUCCESS)
 		{
 			wcomputername = nullptr;
@@ -271,11 +279,11 @@ namespace WindowsUtils::Core
 		wservicename = nullptr;
 	}
 	
-	void Wrapper::RemoveService(String^ servicename, bool stopservice)
+	void Wrapper::RemoveService(String^ servicename, bool stopservice, CmdletContextBase^ context)
 	{
 		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
 
-		DWORD result = svcptr->RemoveService((LPWSTR)wservicename, NULL, stopservice);
+		DWORD result = svcptr->RemoveService((LPWSTR)wservicename, NULL, stopservice, context->GetUnderlyingContext());
 		if (result != ERROR_SUCCESS)
 		{
 			wservicename = nullptr;
@@ -285,13 +293,14 @@ namespace WindowsUtils::Core
 		wservicename = nullptr;
 	}
 
-	void Wrapper::RemoveService(IntPtr hservice, String^ computername, bool stopservice)
+	void Wrapper::RemoveService(IntPtr hservice, String^ servicename, String^ computername, bool stopservice, CmdletContextBase^ context)
 	{
 		pin_ptr<const wchar_t> wcomputername = PtrToStringChars(computername);
+		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
 
 		HANDLE uhservice = static_cast<HANDLE>(hservice);
 		SC_HANDLE uschservice = static_cast<SC_HANDLE>(uhservice);
-		DWORD result = svcptr->RemoveService(uschservice, (LPWSTR)wcomputername, stopservice);
+		DWORD result = svcptr->RemoveService(uschservice, (LPWSTR)wservicename, (LPWSTR)wcomputername, stopservice, context->GetUnderlyingContext());
 
 		if (result != ERROR_SUCCESS)
 		{
@@ -1129,6 +1138,36 @@ namespace WindowsUtils::Core
 			wUserName = nullptr;
 			CloseHandle(hToken);
 		}
+	}
+
+	CmdletContextBase::CmdletContextBase(WriteProgressWrapper^ progWrapper, WriteWarningWrapper^ warnWrapper, IntPtr mappedProgFile, IntPtr mappedWarnFile)
+	{
+		_progressGcHandle = GCHandle::Alloc(progWrapper);
+		IntPtr progressDelegatePtr = Marshal::GetFunctionPointerForDelegate(progWrapper);
+		auto progressPtr = static_cast<Notification::UnmanagedWriteProgress>(progressDelegatePtr.ToPointer());
+
+		_warningGcHandle = GCHandle::Alloc(warnWrapper);
+		IntPtr WarningDelegatePtr = Marshal::GetFunctionPointerForDelegate(warnWrapper);
+		auto warningPtr = static_cast<Notification::UnmanagedWriteWarning>(WarningDelegatePtr.ToPointer());
+
+		_nativeContext = new Notification::NATIVE_CONTEXT(progressPtr, warningPtr, (HANDLE)mappedProgFile.ToPointer(), (HANDLE)mappedWarnFile.ToPointer());
+	}
+	CmdletContextBase::~CmdletContextBase()
+	{
+		_progressGcHandle.Free();
+		_warningGcHandle.Free();
+		delete _nativeContext;
+	}
+	CmdletContextBase::!CmdletContextBase()
+	{
+		_progressGcHandle.Free();
+		_warningGcHandle.Free();
+		delete _nativeContext;
+	}
+
+	Notification::PNATIVE_CONTEXT CmdletContextBase::GetUnderlyingContext()
+	{
+		return _nativeContext;
 	}
 
 	Exception^ FDIErrorToException(FDIERROR err)

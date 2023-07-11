@@ -31,7 +31,7 @@
         'Get-MsiProperties',
         'Get-RemoteMessageOptions',
         'Get-ResourceMessageTable', 
-        'Invoke-RemoteMessage',
+        'Send-RemoteMessage',
         'Send-Click',
         'Disconnect-Session',
         'Remove-Service',

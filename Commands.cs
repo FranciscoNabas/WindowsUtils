@@ -17,12 +17,12 @@ namespace WindowsUtils.Commands
     /// <para type="description">The Invoke-RemoteMessage cmdlet sends a MessageBox-Style message to sessions on local or remote computers.</para>
     ///</summary>
     [Cmdlet(
-        VerbsLifecycle.Invoke, "RemoteMessage",
+        VerbsCommunications.Send, "RemoteMessage",
         SupportsShouldProcess = true,
         ConfirmImpact = ConfirmImpact.High,
         DefaultParameterSetName = "NoWait"
     )]
-    public class InvokeRemoteMessageCommand : Cmdlet
+    public class SendRemoteMessageCommand : Cmdlet
     {
         private int _timeout = 0;
 
@@ -112,8 +112,8 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            Wrapper unwrapper = new();
-            uint nativestyle = MessageBoxOption.MbOptionsResolver(Style);
+            Wrapper unWrapper = new();
+            uint nativeStyle = MessageBoxOption.MbOptionsResolver(Style);
 
             /*
              * Querying Timeout value, this will throw if Wait is used with Timeout = 0 before showing the warning.
@@ -133,7 +133,7 @@ namespace WindowsUtils.Commands
                     {
                         try
                         {
-                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
+                            MessageResponseBase[] result = unWrapper.SendRemoteMessage(IntPtr.Zero, null, Title, Message, nativeStyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                         catch (NativeExceptionBase ex)
@@ -144,36 +144,14 @@ namespace WindowsUtils.Commands
                 }
                 else
                 {
-                    if (SessionId.Contains(0))
+                    try
                     {
-                        if (ShouldProcess(
-                        "",
-                        "Are you sure you want to send the message to all sessions on this computer?",
-                        "Session '0' represent all sessions on the computer"
-                        ))
-                        {
-                            try
-                            {
-                                MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, null, Title, Message, nativestyle, Timeout, Wait);
-                                result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
-                            }
-                            catch (NativeExceptionBase ex)
-                            {
-                                throw (NativeException)ex;
-                            }
-                        }
+                        MessageResponseBase[] result = unWrapper.SendRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativeStyle, Timeout, Wait);
+                        result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                     }
-                    else
+                    catch (NativeExceptionBase ex)
                     {
-                        try
-                        {
-                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativestyle, Timeout, Wait);
-                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
-                        }
-                        catch (NativeExceptionBase ex)
-                        {
-                            throw (NativeException)ex;
-                        }
+                        throw (NativeException)ex;
                     }
                 }
             }
@@ -190,7 +168,7 @@ namespace WindowsUtils.Commands
                     {
                         try
                         {
-                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativestyle, Timeout, Wait);
+                            MessageResponseBase[] result = unWrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                         catch (NativeExceptionBase ex)
@@ -211,7 +189,7 @@ namespace WindowsUtils.Commands
                         {
                             try
                             {
-                                MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativestyle, Timeout, Wait);
+                                MessageResponseBase[] result = unWrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
                                 result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                             }
                             catch (NativeExceptionBase ex)
@@ -224,7 +202,7 @@ namespace WindowsUtils.Commands
                     {
                         try
                         {
-                            MessageResponseBase[] result = unwrapper.InvokeRemoteMessage(session.SessionHandle.DangerousGetHandle(), SessionId, Title, Message, nativestyle, Timeout, Wait);
+                            MessageResponseBase[] result = unWrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), SessionId, Title, Message, nativeStyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                         catch (NativeExceptionBase ex)
@@ -284,18 +262,18 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            Wrapper unwrapper = new();
+            Wrapper unWrapper = new();
             try
             {
                 if (string.IsNullOrEmpty(ComputerName))
                 {
-                    ComputerSessionBase[] result = unwrapper.GetComputerSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
+                    ComputerSessionBase[] result = unWrapper.GetComputerSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
                     result.ToList().ForEach(x => WriteObject((ComputerSession)x));
                 }
                 else
                 {
                     using WtsSession session = new(ComputerName);
-                    ComputerSessionBase[] result = unwrapper.GetComputerSession(ComputerName, session.SessionHandle.DangerousGetHandle(), ActiveOnly, IncludeSystemSession);
+                    ComputerSessionBase[] result = unWrapper.GetComputerSession(ComputerName, session.SessionHandle.DangerousGetHandle(), ActiveOnly, IncludeSystemSession);
                     result.ToList().ForEach(x => WriteObject((ComputerSession)x));
                 }
             }
@@ -315,10 +293,10 @@ namespace WindowsUtils.Commands
     {
         protected override void ProcessRecord()
         {
-            Wrapper unwrapper = new();
+            Wrapper unWrapper = new();
             try
             {
-                unwrapper.SendClick();
+                unWrapper.SendClick();
             }
             catch (NativeExceptionBase ex)
             {
@@ -787,7 +765,7 @@ namespace WindowsUtils.Commands
         ConfirmImpact = ConfirmImpact.Medium,
         DefaultParameterSetName = "WithServiceName"
     )]
-    public class RemoveServiceCommand : PSCmdlet
+    public class RemoveServiceCommand : CoreCommandBase
     {
         /// <summary>
         /// <para type="description">The service controller input object.</para>
@@ -831,11 +809,11 @@ namespace WindowsUtils.Commands
         /// <para type="description">Suppresses confirmation.</para>
         /// </summary>
         [Parameter(HelpMessage = "Suppresses confirmation.")]
-        public SwitchParameter Force { get; set; }
+        new public SwitchParameter Force { get; set; }
 
         protected override void ProcessRecord()
         {
-            Wrapper unwrapper = new();
+            Wrapper unWrapper = new();
 
             if (ParameterSetName == "WithServiceController")
             {
@@ -843,7 +821,7 @@ namespace WindowsUtils.Commands
                 if (Force)
                     try
                     {
-                        unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                        unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
                     }
                     catch (NativeExceptionBase ex)
                     {
@@ -859,7 +837,7 @@ namespace WindowsUtils.Commands
                            "Removing Service"))
                             try
                             {
-                                unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                                unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
                             }
                             catch (NativeExceptionBase ex)
                             {
@@ -874,7 +852,7 @@ namespace WindowsUtils.Commands
                            "Removing Service"))
                             try
                             {
-                                unwrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.MachineName, Stop);
+                                unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
                             }
                             catch (NativeExceptionBase ex)
                             {
@@ -890,7 +868,7 @@ namespace WindowsUtils.Commands
                 if (string.IsNullOrEmpty(ComputerName))
                 {
                     if (Force)
-                        unwrapper.RemoveService(Name, Stop);
+                        unWrapper.RemoveService(Name, Stop, (CmdletContextBase)CmdletContext);
                     else
                     {
                         if (ShouldProcess(
@@ -899,7 +877,7 @@ namespace WindowsUtils.Commands
                            "Removing Service"))
                             try
                             {
-                                unwrapper.RemoveService(Name, Stop);
+                                unWrapper.RemoveService(Name, Stop, (CmdletContextBase)CmdletContext);
                             }
                             catch (NativeExceptionBase ex)
                             {
@@ -912,7 +890,7 @@ namespace WindowsUtils.Commands
                     if (Force)
                         try
                         {
-                            unwrapper.RemoveService(Name, ComputerName, Stop);
+                            unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext);
                         }
                         catch (NativeExceptionBase ex)
                         {
@@ -926,7 +904,7 @@ namespace WindowsUtils.Commands
                            "Removing Service"))
                             try
                             {
-                                unwrapper.RemoveService(Name, ComputerName, Stop);
+                                unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext);
                             }
                             catch (NativeExceptionBase ex)
                             {
@@ -1304,7 +1282,7 @@ namespace WindowsUtils.Commands
     {
         private string _serviceFinalName;
         private ServiceSecurity _finalSecurityObject;
-        private Wrapper _unwrapper = new();
+        private Wrapper _unWrapper = new();
 
         /// <summary>
         /// <para type="description">The service name.</para>
@@ -1442,7 +1420,7 @@ namespace WindowsUtils.Commands
                     break;
 
                 case "ByNameAndSddl":
-                    _finalSecurityObject = new(_unwrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                    _finalSecurityObject = new(_unWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
                     _finalSecurityObject.SetSecurityDescriptorSddlForm(Sddl);
                     _serviceFinalName = Name;
                     break;
@@ -1452,7 +1430,7 @@ namespace WindowsUtils.Commands
                         ?? throw new ItemNotFoundException($"No service with display name '{DisplayName}' found.");
 
                     _serviceFinalName = serviceName;
-                    _finalSecurityObject = new(_unwrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                    _finalSecurityObject = new(_unWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
                     _finalSecurityObject.SetSecurityDescriptorSddlForm(Sddl);
                     break;
 
@@ -1464,7 +1442,7 @@ namespace WindowsUtils.Commands
                         throw new ArgumentException("Invalid input object service handle.");
 
                     _serviceFinalName = InputObject.ServiceName;
-                    _finalSecurityObject = new(_unwrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                    _finalSecurityObject = new(_unWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
                     _finalSecurityObject.SetSecurityDescriptorSddlForm(Sddl);
                     break;
             }
@@ -1476,7 +1454,7 @@ namespace WindowsUtils.Commands
                     $"Are you sure you want to set security for service {Name} on the local computer?",
                     "Setting Service Security"
                 ))
-                    _unwrapper.SetServiceSecurity(_serviceFinalName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
+                    _unWrapper.SetServiceSecurity(_serviceFinalName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
             }
             else
             {
@@ -1485,7 +1463,7 @@ namespace WindowsUtils.Commands
                     $"Are you sure you want to set security for service {Name} on {ComputerName}?",
                     "Setting Service Security"
                 ))
-                    _unwrapper.SetServiceSecurity(_serviceFinalName, ComputerName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
+                    _unWrapper.SetServiceSecurity(_serviceFinalName, ComputerName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
             }
         }
     }

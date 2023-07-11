@@ -46,7 +46,8 @@ namespace WindowsUtils::Core
 		DWORD GetEnumeratedSession(std::vector<WU_COMPUTER_SESSION>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
 
 		// Invoke-RemoteMessage
-		DWORD InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD>& sessionId, std::vector<WU_MESSAGE_RESPONSE>& pvecres, HANDLE session);
+		DWORD SendMessage(const LPWSTR& pTitle, const LPWSTR& pMessage, DWORD const& style, DWORD const& timeout, BOOL const& bWait, std::vector<DWORD>& sessionId, std::vector<WU_MESSAGE_RESPONSE>& pvecres, HANDLE const& session);
+		DWORD SendMessage(const LPWSTR& pTitle, const LPWSTR& pMessage, DWORD const& style, DWORD const& timeout, BOOL const& bWait, std::vector<WU_MESSAGE_RESPONSE>& pvecres, HANDLE const& session);
 
 		// Disconnect-Session
 		DWORD DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);

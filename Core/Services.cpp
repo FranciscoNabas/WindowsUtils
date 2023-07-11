@@ -4,9 +4,10 @@
 namespace WindowsUtils::Core
 {
 	DWORD Services::RemoveService(
-		const LPWSTR& servicename		// The service name.
-		, const LPWSTR& computername		// Optional computer name.
-		, BOOL stopservice				// Stops the service, if it's running.
+		const LPWSTR& servicename,						// The service name.
+		const LPWSTR& computername,						// Optional computer name.
+		BOOL stopservice,								// Stops the service, if it's running.
+		Notification::PNATIVE_CONTEXT const& context	// A native representation of the Cmdlet context.
 	)
 	{
 		DWORD result = ERROR_SUCCESS;
@@ -46,11 +47,11 @@ namespace WindowsUtils::Core
 
 			if (lpservicestatus->dwCurrentState != SERVICE_STOPPED && lpservicestatus->dwCurrentState != SERVICE_STOP_PENDING)
 			{
-				result = StopDependentServices(hscmanager, hservice, NULL);
+				result = StopDependentServices(hscmanager, hservice, NULL, context);
 				if (result != ERROR_SUCCESS)
 					goto CLEANUP;
 
-				result = StopServiceWithTimeout(hservice, lpservicestatus);
+				result = StopServiceWithWarning(hservice, hscmanager, servicename, lpservicestatus, context);
 				if (result != ERROR_SUCCESS)
 					goto CLEANUP;
 			}
@@ -70,13 +71,17 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD Services::RemoveService(SC_HANDLE& hservice, const LPWSTR& computername, BOOL stopservice)
+	DWORD Services::RemoveService(SC_HANDLE& hservice, const LPWSTR& servicename, const LPWSTR& computername, BOOL stopservice, Notification::PNATIVE_CONTEXT const& context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		LPSERVICE_STATUS lpservicestatus;
 		SC_HANDLE scm = NULL;
 
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+
+		scm = ::OpenSCManager(computername, SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
+		if (scm == NULL)
+			return ::GetLastError();
 
 		if (stopservice == TRUE)
 		{
@@ -92,11 +97,11 @@ namespace WindowsUtils::Core
 			{
 				DWORD waittime = 0;
 
-				result = StopDependentServices(scm, hservice, computername);
+				result = StopDependentServices(scm, hservice, computername, context);
 				if (result != ERROR_SUCCESS)
 					goto CLEANUP;
 
-				result = StopServiceWithTimeout(hservice, lpservicestatus);
+				result = StopServiceWithWarning(hservice, scm, servicename, lpservicestatus, context);
 				if (result != ERROR_SUCCESS)
 					goto CLEANUP;
 			}
@@ -271,9 +276,10 @@ namespace WindowsUtils::Core
 
 	// Queries and stops services dependent of a given service.
 	DWORD StopDependentServices(
-		SC_HANDLE& scm					// Handle to the Service Control Manager. Used to open dependent services.
-		, SC_HANDLE& hservice			// Handle to the service we want to query dependence.
-		, const LPWSTR& computername		// Computer name. In cases where we inherit the service handle from the pipeline.
+		SC_HANDLE& scm,									// Handle to the Service Control Manager. Used to open dependent services.
+		SC_HANDLE& hservice,							// Handle to the service we want to query dependence.
+		const LPWSTR& computername,						// Computer name. In cases where we inherit the service handle from the pipeline.
+		Notification::PNATIVE_CONTEXT const& context	// A native representation of the Cmdlet context.
 	)
 	{
 		DWORD result = ERROR_SUCCESS;
@@ -321,7 +327,7 @@ namespace WindowsUtils::Core
 
 				__try
 				{
-					result = StopServiceWithTimeout(svccurrent, &ssp);
+					result = StopServiceWithWarning(svccurrent, scm, servicelist[i].lpServiceName , &ssp, context);
 					if (result == ERROR_SERVICE_NOT_ACTIVE)
 					{
 						result = ERROR_SUCCESS;
@@ -368,37 +374,78 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD StopServiceWithTimeout(SC_HANDLE& hservice, LPSERVICE_STATUS lpsvcstatus)
+	DWORD StopServiceWithWarning(SC_HANDLE& hservice, SC_HANDLE& scm, LPWSTR const& lpszSvcName, LPSERVICE_STATUS lpsvcstatus, Notification::PNATIVE_CONTEXT const& context)
 	{
 		DWORD result = ERROR_SUCCESS;
-		ULONGLONG starttime = GetTickCount64();
-		DWORD timeout = 3000;
+		DWORD dwChars = 0;
+
+		LPWSTR lpszDisplayName;
+		if (!GetServiceDisplayName(scm, lpszSvcName, NULL, &dwChars))
+		{
+			result = GetLastError();
+			if (result != ERROR_INSUFFICIENT_BUFFER)
+				return result;
+			else
+				result = ERROR_SUCCESS;
+		}
+
+		lpszDisplayName = new WCHAR[dwChars + 1];
+		dwChars += 1;
+		if (!GetServiceDisplayName(scm, lpszSvcName, lpszDisplayName, &dwChars))
+		{
+			delete[] lpszDisplayName;
+			return GetLastError();
+		}
+
+		size_t svcNameSz = wcslen(lpszSvcName) + 1;
+		size_t svcDisplayNameSz = wcslen(lpszDisplayName) + 1;
+		size_t totalSize = svcDisplayNameSz + svcNameSz + 38;
+
+		LPWSTR warningString = new WCHAR[totalSize];
+		_snwprintf_s(warningString, totalSize, _TRUNCATE, L"Waiting for service '%ws (%ws)' to stop...", lpszDisplayName, lpszSvcName);
 
 		do
 		{
-			if (!::ControlService(hservice, SERVICE_CONTROL_STOP, lpsvcstatus))
+			if (lpsvcstatus->dwCurrentState != SERVICE_STOP_PENDING && lpsvcstatus->dwCurrentState != SERVICE_START_PENDING && lpsvcstatus->dwCurrentState != SERVICE_STOPPED)
 			{
-				result = GetLastError();
+				if (!::ControlService(hservice, SERVICE_CONTROL_STOP, lpsvcstatus))
+				{
+					result = GetLastError();
 
-				/*
-				* ARGH! Check if the DARN thang is already stopped!
-				* That took me a while.
-				*/
-				if (result == ERROR_SERVICE_NOT_ACTIVE)
+					// Checking if the service is already stopped.
+					if (result == ERROR_SERVICE_NOT_ACTIVE)
+						break;
+
+					if (result != ERROR_SERVICE_CANNOT_ACCEPT_CTRL)
+						return result;
+				}
+			}
+
+			if (lpsvcstatus->dwCurrentState == SERVICE_STOP_PENDING)
+			{
+				::Sleep(2145);
+				NativeWriteWarning(context, warningString);
+				if (!QueryServiceStatus(hservice, lpsvcstatus))
+				{
+					result = GetLastError();
 					break;
-
-				if (result != ERROR_SERVICE_CANNOT_ACCEPT_CTRL)
-					return result;
+				}
 			}
 			else
-				break;
+			{
+				if (lpsvcstatus->dwCurrentState == SERVICE_STOPPED)
+					break;
 
-			::Sleep(lpsvcstatus->dwWaitHint);
+				totalSize = svcDisplayNameSz + svcNameSz + 66;
+				LPWSTR warningString2 = new WCHAR[totalSize];
+				_snwprintf_s(warningString2, totalSize, _TRUNCATE, L"Failed to stop service '%ws (%ws)'. Service will be marked to deletion.", lpszDisplayName, lpszSvcName);
+				NativeWriteWarning(context, warningString2);
+			}
 
-			if (GetTickCount64() - starttime > timeout)
-				return ERROR_TIMEOUT;
+		} while (lpsvcstatus->dwCurrentState != SERVICE_STOPPED);
 
-		} while (result == ERROR_SERVICE_CANNOT_ACCEPT_CTRL);
+		delete[] warningString;
+		delete[] lpszDisplayName;
 
 		return result;
 	}
