@@ -7,7 +7,7 @@ namespace WindowsUtils::Core
 		const LPWSTR& servicename,						// The service name.
 		const LPWSTR& computername,						// Optional computer name.
 		BOOL stopservice,								// Stops the service, if it's running.
-		Notification::PNATIVE_CONTEXT const& context	// A native representation of the Cmdlet context.
+		Notification::PNATIVE_CONTEXT context			// A native representation of the Cmdlet context.
 	)
 	{
 		DWORD result = ERROR_SUCCESS;
@@ -71,7 +71,7 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD Services::RemoveService(SC_HANDLE& hservice, const LPWSTR& servicename, const LPWSTR& computername, BOOL stopservice, Notification::PNATIVE_CONTEXT const& context)
+	DWORD Services::RemoveService(SC_HANDLE& hservice, const LPWSTR& servicename, const LPWSTR& computername, BOOL stopservice, Notification::PNATIVE_CONTEXT context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		LPSERVICE_STATUS lpservicestatus;
@@ -279,7 +279,7 @@ namespace WindowsUtils::Core
 		SC_HANDLE& scm,									// Handle to the Service Control Manager. Used to open dependent services.
 		SC_HANDLE& hservice,							// Handle to the service we want to query dependence.
 		const LPWSTR& computername,						// Computer name. In cases where we inherit the service handle from the pipeline.
-		Notification::PNATIVE_CONTEXT const& context	// A native representation of the Cmdlet context.
+		Notification::PNATIVE_CONTEXT context			// A native representation of the Cmdlet context.
 	)
 	{
 		DWORD result = ERROR_SUCCESS;
@@ -374,7 +374,7 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD StopServiceWithWarning(SC_HANDLE& hservice, SC_HANDLE& scm, LPWSTR const& lpszSvcName, LPSERVICE_STATUS lpsvcstatus, Notification::PNATIVE_CONTEXT const& context)
+	DWORD StopServiceWithWarning(SC_HANDLE& hservice, SC_HANDLE& scm, const LPWSTR& lpszSvcName, LPSERVICE_STATUS lpsvcstatus, Notification::PNATIVE_CONTEXT context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		DWORD dwChars = 0;

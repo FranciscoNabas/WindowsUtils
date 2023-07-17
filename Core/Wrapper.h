@@ -4,9 +4,11 @@
 #include "Registry.h"
 #include "Services.h"
 #include "Utilities.h"
+#include "Containers.h"
 #include "Notification.h"
 #include "AccessControl.h"
 #include "TerminalServices.h"
+#include "ProcessAndThread.h"
 
 #pragma managed
 #include <vcclr.h>
@@ -112,7 +114,7 @@ namespace WindowsUtils::Core
 		{
 			String^ get()
 			{
-				auto search = wrapper->VersionInfo.find(Utilities::FileDescription);
+				auto search = wrapper->VersionInfo.find(ProcessAndThread::FileDescription);
 				if (search != wrapper->VersionInfo.end())
 				{
 					if (NULL != search->second)
@@ -165,7 +167,7 @@ namespace WindowsUtils::Core
 		{
 			String^ get()
 			{
-				auto search = wrapper->VersionInfo.find(Utilities::ProductName);
+				auto search = wrapper->VersionInfo.find(ProcessAndThread::ProductName);
 				if (search != wrapper->VersionInfo.end())
 					if (NULL != search->second)
 						return gcnew String(search->second);
@@ -177,7 +179,7 @@ namespace WindowsUtils::Core
 		{
 			String^ get()
 			{
-				auto search = wrapper->VersionInfo.find(Utilities::FileVersion);
+				auto search = wrapper->VersionInfo.find(ProcessAndThread::FileVersion);
 				if (search != wrapper->VersionInfo.end())
 					if (NULL != search->second)
 						return gcnew String(search->second);
@@ -189,7 +191,7 @@ namespace WindowsUtils::Core
 		{
 			String^ get()
 			{
-				auto search = wrapper->VersionInfo.find(Utilities::CompanyName);
+				auto search = wrapper->VersionInfo.find(ProcessAndThread::CompanyName);
 				if (search != wrapper->VersionInfo.end())
 					if (NULL != search->second)
 						return gcnew String(search->second);
@@ -207,14 +209,14 @@ namespace WindowsUtils::Core
 		}
 
 		ObjectHandleBase();
-		ObjectHandleBase(Utilities::WU_OBJECT_HANDLE objhandle);
+		ObjectHandleBase(ProcessAndThread::WU_OBJECT_HANDLE objhandle);
 		~ObjectHandleBase();
 
 	protected:
 		!ObjectHandleBase();
 
 	private:
-		Utilities::PWU_OBJECT_HANDLE wrapper;
+		ProcessAndThread::PWU_OBJECT_HANDLE wrapper;
 	};
 
 	// Get-ResourceMessageTable
@@ -357,6 +359,8 @@ namespace WindowsUtils::Core
 		Services* svcptr;
 		AccessControl* acptr;
 		Registry* regptr;
+		ProcessAndThread* patptr;
+		Containers* ctnptr;
 
 		Object^ GetRegistryValue(String^ computerName, String^ userName, const LPWSTR& lpszPassword, RegistryHive hive, String^ subKey, String^ valueName);
 		array<Object^>^ GetRegistryValueList(String^ computerName, String^ userName, const LPWSTR& lpszPassword, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);

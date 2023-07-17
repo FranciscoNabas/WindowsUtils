@@ -48,10 +48,10 @@ namespace WindowsUtils::Core
 	ComputerSessionBase::!ComputerSessionBase() { delete wrapper; }
 
 	// Get-ObjectHandle
-	ObjectHandleBase::ObjectHandleBase() : wrapper(new Utilities::WU_OBJECT_HANDLE) { }
-	ObjectHandleBase::ObjectHandleBase(Utilities::WU_OBJECT_HANDLE objhandle)
+	ObjectHandleBase::ObjectHandleBase() : wrapper(new ProcessAndThread::WU_OBJECT_HANDLE) { }
+	ObjectHandleBase::ObjectHandleBase(ProcessAndThread::WU_OBJECT_HANDLE objhandle)
 	{
-		wrapper = new Utilities::WU_OBJECT_HANDLE;
+		wrapper = new ProcessAndThread::WU_OBJECT_HANDLE;
 		wrapper->ImagePath = objhandle.ImagePath;
 		wrapper->Name = objhandle.Name;
 		wrapper->InputObject = objhandle.InputObject;
@@ -170,7 +170,7 @@ namespace WindowsUtils::Core
 	// Get-ObjectHandle
 	array<ObjectHandleBase^>^ Wrapper::GetProcessObjectHandle(array<String^>^ fileName, Boolean closeHandle)
 	{
-		SharedVecPtr(Utilities::WU_OBJECT_HANDLE) ppOutput = MakeVecPtr(Utilities::WU_OBJECT_HANDLE);
+		SharedVecPtr(ProcessAndThread::WU_OBJECT_HANDLE) ppOutput = MakeVecPtr(ProcessAndThread::WU_OBJECT_HANDLE);
 		SharedVecPtr(LPCWSTR) reslist = MakeVecPtr(LPCWSTR);
 
 		for (int i = 0; i < fileName->Length; i++)
@@ -180,7 +180,7 @@ namespace WindowsUtils::Core
 			single = nullptr;
 		}
 
-		UINT result = utlptr->GetProcessObjectHandle(*ppOutput, *reslist, closeHandle);
+		UINT result = patptr->GetProcessObjectHandle(*ppOutput, *reslist, closeHandle);
 		if (result != ERROR_SUCCESS)
 			throw gcnew NativeExceptionBase(result);
 
@@ -444,7 +444,7 @@ namespace WindowsUtils::Core
 		LPSTR wFilePath = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(Path::GetDirectoryName(fileFullName)).ToPointer());
 		LPSTR wDestination = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(destination).ToPointer());
 
-		DWORD result = utlptr->ExpandArchiveFile(wFileName, wFilePath, wDestination, (Utilities::ARCHIVE_FILE_TYPE)fileType);
+		DWORD result = ctnptr->ExpandArchiveFile(wFileName, wFilePath, wDestination, (Containers::ARCHIVE_FILE_TYPE)fileType);
 		if (result != ERROR_SUCCESS)
 			throw FDIErrorToException((FDIERROR)result);
 	}

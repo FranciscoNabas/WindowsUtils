@@ -54,7 +54,7 @@
         https://learn.microsoft.com/en-us/dotnet/framework/migration-guide/how-to-determine-which-net-framework-updates-are-installed
         https://learn.microsoft.com/en-us/dotnet/core/install/how-to-detect-installed-versions?pivots=os-windows
 #>
-function Get-InstalledDotNetInformation {
+function Get-InstalledDotnet {
 
     [CmdletBinding()]
     param (

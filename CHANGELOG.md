@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
   
+## [1.7.0] - DONT FORGEEEEEEEEEEET THE DAAAAAAAAAAAATEEEEEEEEEEEEEEEEEE
+
+### Added
+
+- New `Get-InstalledDotnet` function.
+- Implemented `WindowsUtils.MemoryMappedShare` to exchange information between managed .NET and unmanaged C++.
+- Implemented new system for writing information from unmanaged code.
+  - A system using a delegate define in the Wrapper, defined in .NET, and cast to a function pointer in unmanaged code enables calling 'PSCmdlet' methods.
+  - A new `CoreCommandBase` class, with a `CmdletContext` class will be responsible for carrying the context to unmanaged code. This is a very common practice in Microsoft's modules.
+
+### Changed
+
+- `Remove-Service`
+  - When `Stop` is used, the Cmdlet doesn't time out anymore. Instead, it writes warnings, much like when using `Stop-Service.`
+
+### Bugs
+
+- Calling `Get-ObjectHandle` with insufficient privileges to an object caused access violation. The function was not parsing the `NTSTATUS` from the subroutine.
+
 ## [1.6.2] - 2023-06-22
 
 ### Added

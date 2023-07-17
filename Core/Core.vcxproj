@@ -161,9 +161,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AccessControl.h" />
+    <ClInclude Include="Containers.h" />
+    <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Notification.h" />
     <ClInclude Include="NtUtilities.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ProcessAndThread.h" />
     <ClInclude Include="Registry.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Services.h" />
@@ -174,6 +177,8 @@
   <ItemGroup>
     <ClCompile Include="AccessControl.cpp" />
     <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="Containers.cpp" />
+    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Notification.cpp" />
     <ClCompile Include="NtUtilities.cpp" />
     <ClCompile Include="pch.cpp">
@@ -182,6 +187,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ProcessAndThread.cpp" />
     <ClCompile Include="Registry.cpp" />
     <ClCompile Include="Services.cpp" />
     <ClCompile Include="Utilities.cpp" />

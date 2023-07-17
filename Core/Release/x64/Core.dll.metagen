@@ -7,21 +7,14 @@ Struct WindowsUtils.Core.Utilities: AutoLayout, AnsiClass, Class, Public, Sequen
   :System.ValueType
 Struct WindowsUtils.Core.Utilities+_WU_RESOURCE_MESSAGE_TABLE: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
-Struct WindowsUtils.Core.Utilities+_VERSION_INFO_PROPERTY: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
-  :System.Enum
-  Fields:
-    Int32 value__ : Public, SpecialName, RTSpecialName
-Struct WindowsUtils.Core.Utilities+_WU_OBJECT_HANDLE: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
-  :System.ValueType
-  Methods:
-    <MarshalCopy>(_WU_OBJECT_HANDLE*, _WU_OBJECT_HANDLE*): PrivateScope, Public, Static, SpecialName
-    <MarshalDestroy>(_WU_OBJECT_HANDLE*): PrivateScope, Public, Static, SpecialName
-Struct WindowsUtils.Core.Utilities+_ARCHIVE_FILE_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
-  :System.Enum
-  Fields:
-    Int32 value__ : Public, SpecialName, RTSpecialName
 Struct WindowsUtils.Core.AccessControl: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+Struct WindowsUtils.Core.Containers: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct WindowsUtils.Core.Containers+_ARCHIVE_FILE_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
 Struct WindowsUtils.Core.Notification: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Notification+_PROGRESS_RECORD_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
@@ -32,6 +25,17 @@ Struct WindowsUtils.Core.Notification+_MAPPED_PROGRESS_DATA: AutoLayout, AnsiCla
   :System.ValueType
 Struct WindowsUtils.Core.Notification+_NATIVE_CONTEXT: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+Struct WindowsUtils.Core.ProcessAndThread: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct WindowsUtils.Core.ProcessAndThread+_VERSION_INFO_PROPERTY: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
+Struct WindowsUtils.Core.ProcessAndThread+_WU_OBJECT_HANDLE: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+  Methods:
+    <MarshalCopy>(_WU_OBJECT_HANDLE*, _WU_OBJECT_HANDLE*): PrivateScope, Public, Static, SpecialName
+    <MarshalDestroy>(_WU_OBJECT_HANDLE*): PrivateScope, Public, Static, SpecialName
 Struct WindowsUtils.Core.Registry: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Services: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit

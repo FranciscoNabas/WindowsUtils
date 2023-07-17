@@ -5,14 +5,14 @@
 namespace WindowsUtils::Core
 {
 	Notification::_MAPPED_PROGRESS_DATA::_MAPPED_PROGRESS_DATA(
-		LPWSTR const& activity,
+		const LPWSTR& activity,
 		INT activityId,
-		LPWSTR const& currOperation,
+		const LPWSTR& currOperation,
 		INT parentActId,
 		DWORD percentComplete,
 		PROGRESS_RECORD_TYPE recType,
 		INT secRemaining,
-		LPWSTR const& status
+		const LPWSTR& status
 	) : ActivityId(activityId), ParentActivityId(parentActId), PercentComplete(percentComplete), RecordType(recType), SecondsRemaining(secRemaining)
 	{
 		size_t szActivity = wcslen(activity) + 1;
@@ -35,7 +35,7 @@ namespace WindowsUtils::Core
 		_memoryManager.Free(StatusDescription);
 	}
 
-	void NativeWriteProgress(Notification::PNATIVE_CONTEXT const& context, Notification::PMAPPED_PROGRESS_DATA progData)
+	void NativeWriteProgress(Notification::PNATIVE_CONTEXT context, Notification::PMAPPED_PROGRESS_DATA progData)
 	{
 		size_t dataSize = sizeof(*progData);
 		LPVOID view = MapViewOfFile(context->MappedProgressFile, FILE_MAP_WRITE, 0, 0, dataSize);
@@ -50,7 +50,7 @@ namespace WindowsUtils::Core
 		context->WriteProgressHook(dataSize);
 	}
 
-	void NativeWriteWarning(Notification::PNATIVE_CONTEXT const& context, LPWSTR const& text)
+	void NativeWriteWarning(Notification::PNATIVE_CONTEXT context, const LPWSTR& text)
 	{
 		size_t textLen = wcslen(text) + 1;
 		LPVOID view = MapViewOfFile(context->MappedWarningFile, FILE_MAP_WRITE, 0, 0, textLen * 2);

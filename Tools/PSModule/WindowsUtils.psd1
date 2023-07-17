@@ -21,7 +21,7 @@
     TypesToProcess = @('WindowsUtils.Types.ps1xml')
     FormatsToProcess = @('WindowsUtils.Format.ps1xml')
     FunctionsToExport = @(
-        'Get-InstalledDotNetInformation'
+        'Get-InstalledDotnet'
     )
     CmdletsToExport = @(
         'Get-ComputerSession',

@@ -26,14 +26,14 @@ namespace WindowsUtils::Core
 			LPWSTR StatusDescription;
 
 			_MAPPED_PROGRESS_DATA(
-				LPWSTR const& activity,
+				const LPWSTR& activity,
 				INT activityId,
-				LPWSTR const& currOperation,
+				const LPWSTR& currOperation,
 				INT parentActId,
 				DWORD percentComplete,
 				PROGRESS_RECORD_TYPE recType,
 				INT secRemaining,
-				LPWSTR const& status
+				const LPWSTR& status
 			);
 			~_MAPPED_PROGRESS_DATA();
 
@@ -58,6 +58,6 @@ namespace WindowsUtils::Core
 		} NATIVE_CONTEXT, *PNATIVE_CONTEXT;
 	};
 
-	void NativeWriteProgress(Notification::PNATIVE_CONTEXT const& context, Notification::PMAPPED_PROGRESS_DATA progData);
-	void NativeWriteWarning(Notification::PNATIVE_CONTEXT const& context, LPWSTR const& text);
+	void NativeWriteProgress(Notification::PNATIVE_CONTEXT context, Notification::PMAPPED_PROGRESS_DATA progData);
+	void NativeWriteWarning(Notification::PNATIVE_CONTEXT context, const LPWSTR& text);
 }

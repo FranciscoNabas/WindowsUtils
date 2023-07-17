@@ -1,9 +1,6 @@
 #pragma once
 #pragma unmanaged
 
-#include "pch.h"
-#include "NtUtilities.h"
-
 #define LOCFREEWCHECK(mem) if (NULL != mem) { LocalFree(mem); }
 #define ALLCHECK(ptr) if (NULL == ptr) { return ERROR_NOT_ENOUGH_MEMORY; }
 
@@ -26,42 +23,9 @@ namespace WindowsUtils::Core
 			_WU_RESOURCE_MESSAGE_TABLE(DWORD id, LPWSTR message) : Id(id), Message(message) { }
 		} WU_RESOURCE_MESSAGE_TABLE, * PWU_RESOURCE_MESSAGE_TABLE;
 
-		// Get-ObjectHandle
-		typedef enum _VERSION_INFO_PROPERTY
-		{
-			FileDescription = 1U
-			, ProductName = 2U
-			, FileVersion = 3U
-			, CompanyName = 4U
-
-		} VERSION_INFO_PROPERTY;
-
-		typedef struct _WU_OBJECT_HANDLE
-		{
-			LPWSTR		InputObject;								// Input object path. Helps tracking which handle belongs to which object, when querying multiple objects.
-			DWORD		ProcessId;									// ID from the process owning the handle.
-			LPWSTR		Name;										// Process image name. File base name.
-			LPWSTR		ImagePath;									// Process image path.
-			std::map<VERSION_INFO_PROPERTY, LPCWSTR> VersionInfo;	// Image version information.
-
-			_WU_OBJECT_HANDLE() { }
-			_WU_OBJECT_HANDLE(LPWSTR inpobj, LPWSTR name, DWORD pid, LPWSTR imgpath, std::map<VERSION_INFO_PROPERTY, LPCWSTR> verinfo)
-				: InputObject(inpobj), Name(name), ProcessId(pid), ImagePath(imgpath), VersionInfo(verinfo) { }
-		} WU_OBJECT_HANDLE, * PWU_OBJECT_HANDLE;
-
-		// Expand-File
-		typedef enum _ARCHIVE_FILE_TYPE
-		{
-			Cabinet
-
-		} ARCHIVE_FILE_TYPE;
-
 		/*=========================================
 		==		 Function identification		 ==
 		===========================================*/
-
-		// Get-ObjectHandle
-		DWORD GetProcessObjectHandle(std::vector<WU_OBJECT_HANDLE>& ppvecfho, std::vector<LPCWSTR>& reslist, BOOL closeHandle);
 
 		//Get-ResourceMessageTable
 		DWORD GetResourceMessageTable(std::vector<WU_RESOURCE_MESSAGE_TABLE>& rvecresmestb, LPWSTR& lplibName);
@@ -77,9 +41,6 @@ namespace WindowsUtils::Core
 
 		// Send-Click
 		DWORD SendClick();
-
-		// Expand-File
-		DWORD ExpandArchiveFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, ARCHIVE_FILE_TYPE fileType);
 	};
 
 	/*
@@ -117,67 +78,8 @@ namespace WindowsUtils::Core
 		void operator=(WuMemoryManagement const&) = delete;
 	};
 
-	DWORD GetProccesVersionInfo(LPWSTR& imagepath, Utilities::VERSION_INFO_PROPERTY& propname, LPWSTR& value);
-	DWORD CloseExtProcessHandle(HANDLE& hsourceproc, LPCWSTR& objname);
-	BOOL EndsWith(PWSTR& inputstr, LPCWSTR& comparestr);
-	VOID PrintBufferW(LPWSTR& lpbuffer, WCHAR const* const format, ...);
+	BOOL EndsWith(const LPWSTR& inputstr, const LPWSTR& comparestr);
+	VOID PrintBufferW(LPWSTR& lpbuffer, const WCHAR* const format, ...);
 	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr);
-	DWORD GetEnvVariableW(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue);
-
-	// Expand-File helper functions and objects.
-	typedef struct _FDI_CABINET_INFO
-	{
-		LPSTR NextCabName;
-		LPSTR NextDiskName;
-		LPSTR Path;
-		USHORT CurrentSetId;
-		USHORT NextCabIndex;
-
-	} FDI_CABINET_INFO, *PFDI_CABINET_INFO;
-
-	typedef struct _FDI_PARTIAL_FILE
-	{
-		LPSTR FileName;
-		LPSTR SourceCabName;
-		LPSTR SourceDiskName;
-
-	} FDI_PARTIAL_FILE, *PFDI_PARTIAL_FILE;
-
-	typedef struct _FDI_COPY_FILE_INFO
-	{
-		DWORD Length;
-		LPSTR FileName;
-		USHORT Date;
-		USHORT Time;
-		USHORT Attributes;
-
-	} FDI_COPY_FILE_INFO, *PFDI_COPY_FILE_INFO;
-
-	typedef struct _FDI_CLOSE_FILE_INFO
-	{
-		LPSTR FileName;
-		INT_PTR Handle;
-		USHORT Date;
-		USHORT Time;
-		USHORT Attributes;
-		BOOL Execute;
-
-	} FDI_CLOSE_FILE_INFO, *PFDI_CLOSE_FILE_INFO;
-
-	typedef struct _FDI_NEXT_CABINET_INFO
-	{
-		LPSTR NextCabName;
-
-	} FDI_NEXT_CABINET_INFO, *PFDI_NEXT_CABINET_INFO;
-
-	DWORD ExpandCabinetFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination);
-
-	FNALLOC(FdiFnMemAloc);
-	FNFREE(FdiFnMemFree);
-	FNOPEN(FdiFnFileOpen);
-	FNREAD(FdiFnFileRead);
-	FNWRITE(FdiFnFileWrite);
-	FNCLOSE(FdiFnFileClose);
-	FNSEEK(FdiFnFileSeek);
-	FNFDINOTIFY(FdiFnNotifyCallback);
+	DWORD GetEnvVariable(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue);
 }
