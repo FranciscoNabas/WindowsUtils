@@ -1,6 +1,7 @@
 #pragma once
 #pragma unmanaged
 
+#include "MemoryManagement.h"
 #include "Utilities.h"
 
 namespace WindowsUtils::Core

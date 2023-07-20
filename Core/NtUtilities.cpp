@@ -239,7 +239,7 @@ namespace WindowsUtils::Core
 		PSYSTEM_PROCESS_INFORMATION psysprocinfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
 		do
 		{
-			if (psysprocinfo->UniqueProcessId == (HANDLE)dwprocessid)
+			if (psysprocinfo->UniqueProcessId == reinterpret_cast<HANDLE>(dwprocessid))
 			{
 				size_t szimgname = wcslen(psysprocinfo->ImageName.Buffer) + 1;
 				if (szimgname > 1)

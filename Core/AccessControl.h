@@ -1,8 +1,7 @@
 #pragma once
 #pragma unmanaged
 
-#include "pch.h"
-#include "Utilities.h"
+#include "MemoryManagement.h"
 
 #define SE_PRIVILEGE_DISABLED 0x00000000L
 #define SE_PRIVILEGE_NONE 0x00000000L

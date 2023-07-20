@@ -1,4 +1,5 @@
 #include "pch.h"
+
 #include "AccessControl.h"
 
 namespace WindowsUtils::Core
@@ -47,7 +48,7 @@ namespace WindowsUtils::Core
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken))
             return GetLastError();
 
-        size_t privilegeCount = spvlpPrivilegeNameList->size();
+        DWORD privilegeCount = static_cast<DWORD>(spvlpPrivilegeNameList->size());
         PTOKEN_PRIVILEGES privileges = (PTOKEN_PRIVILEGES)MemoryManager.Allocate(sizeof(TOKEN_PRIVILEGES) + (sizeof(LUID_AND_ATTRIBUTES) * privilegeCount));
         privileges->PrivilegeCount = privilegeCount;
         for (size_t i = 0; i < privilegeCount; i++)

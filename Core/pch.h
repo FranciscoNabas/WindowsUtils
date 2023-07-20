@@ -51,5 +51,10 @@
 #include <sddl.h>
 #include <fdi.h>
 #include <fcntl.h>
+#include <io.h>
+#include <cmath>
+#include <psapi.h>
+#include <new>
+#include <system_error>
 
 #endif //PCH_H

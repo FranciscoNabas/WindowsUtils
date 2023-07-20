@@ -54,30 +54,6 @@ namespace WindowsUtils::Core
 		_LOAD_MODULE_ERROR_INFO() : IsLoaded(TRUE), ErrorCode(ERROR_SUCCESS) { }
 	}LOAD_MODULE_ERROR_INFO, * PLOAD_MODULE_ERROR_INFO;
 
-	/*
-	* Memory management class using the singleton design pattern.
-	* Reference: https://stackoverflow.com/questions/1008019/c-singleton-design-pattern
-	*/
-
-	class WuMemoryManagement
-	{
-	public:
-		static WuMemoryManagement& GetManager();
-		PVOID Allocate(size_t size);
-		VOID Free(PVOID block);
-
-	private:
-		BOOL IsRegistered(PVOID block);
-		std::vector<PVOID> MemoryList;
-
-		WuMemoryManagement() { }
-		~WuMemoryManagement();
-
-	public:
-		WuMemoryManagement(WuMemoryManagement const&) = delete;
-		void operator=(WuMemoryManagement const&) = delete;
-	};
-
 	BOOL EndsWith(const LPWSTR& inputstr, const LPWSTR& comparestr);
 	VOID PrintBufferW(LPWSTR& lpbuffer, const WCHAR* const format, ...);
 	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr);

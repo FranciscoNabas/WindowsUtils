@@ -327,7 +327,7 @@ namespace WindowsUtils::Core
 		void SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner);
 
 		// Expand-File
-		void ExpandFile(String^ fileFullName, String^ destination, ArchiveFileType fileType);
+		void ExpandFile(String^ fileFullName, String^ destination, ArchiveFileType fileType, CmdletContextBase^ context);
 
 		// Registry operation
 		Object^ GetRegistryValue(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName);

@@ -4,20 +4,20 @@
 
 namespace WindowsUtils::Core
 {
-	DWORD Containers::ExpandArchiveFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, ARCHIVE_FILE_TYPE fileType)
+	DWORD Containers::ExpandArchiveFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context)
 	{
+		DWORD result = ERROR_SUCCESS;
 		switch (fileType)
 		{
 		case ARCHIVE_FILE_TYPE::Cabinet:
-			return ExpandCabinetFile(lpszFileName, lpszFilePath, lpszDestination);
-			break;
-
-		default:
+			result = ExpandCabinetFile(lpszFileName, lpszFilePath, lpszDestination, context);
 			break;
 		}
+
+		return result;
 	}
 
-	DWORD ExpandCabinetFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination)
+	DWORD ExpandCabinetFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, Notification::PNATIVE_CONTEXT context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		ERF erfError;
@@ -65,6 +65,56 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
+	// FDI Notification definition.
+
+	_FDI_NOTIFICATION::_FDI_NOTIFICATION()
+		: Name(NULL), CabinetName(NULL)
+	{
+		_progressData = (Notification::PMAPPED_PROGRESS_DATA)MemoryManager.Allocate(sizeof(Notification::MAPPED_PROGRESS_DATA));
+	}
+
+	_FDI_NOTIFICATION::~_FDI_NOTIFICATION()
+	{
+		MemoryManager.Free(_progressData);
+		MemoryManager.Free(Name);
+		MemoryManager.Free(CabinetName);
+	}
+
+	_FDI_NOTIFICATION& _FDI_NOTIFICATION::GetNotifier()
+	{
+		static _FDI_NOTIFICATION instance;
+		return instance;
+	}
+
+	void _FDI_NOTIFICATION::WriteProgress(Notification::PNATIVE_CONTEXT context)
+	{
+		size_t nameSize = wcslen(Name) + 1;
+		size_t cabNameSize = wcslen(CabinetName) + 1;
+
+		DWORD procDigits = GetNumberDigitCount<ULONGLONG>(ProcessedBytes);
+		DWORD totalDigits = GetNumberDigitCount<ULONGLONG>(TotalUncompressedSize);
+
+		size_t totalActSize = nameSize + 13;
+		size_t totalStatSize = cabNameSize + procDigits + totalDigits + 21;
+
+		_progressData->PercentComplete = std::lround((ProcessedBytes / TotalUncompressedSize) * 100);
+		
+		// Sanity check.
+		if (_progressData->PercentComplete > 100) _progressData->PercentComplete = 100;
+		if (_progressData->PercentComplete < 0) _progressData->PercentComplete = 0;
+
+		_progressData->Activity = (LPWSTR)MemoryManager.Allocate(totalActSize * 2);
+		_progressData->StatusDescription = (LPWSTR)MemoryManager.Allocate(totalStatSize * 2);
+
+		swprintf_s(_progressData->Activity, totalActSize, L"Expanding '%ws'", CabinetName);
+		swprintf_s(_progressData->StatusDescription, totalStatSize, L"Current file: %ws. (%lld/%lld)B", Name, ProcessedBytes, TotalUncompressedSize);
+
+		NativeWriteProgress(context, _progressData);
+
+		MemoryManager.Free(_progressData->Activity);
+		MemoryManager.Free(_progressData->StatusDescription);
+	}
+
 	// FDI macro functions.
 
 	FNALLOC(FdiFnMemAloc)
@@ -77,71 +127,30 @@ namespace WindowsUtils::Core
 	}
 	FNOPEN(FdiFnFileOpen)
 	{
-		HANDLE hFile = NULL;
-		DWORD dwDesiredAccess = 0;
-		DWORD dwCreationDisposition = 0;
-
-		UNREFERENCED_PARAMETER(pmode);
-
-		switch (oflag)
-		{
-		case _O_RDWR:
-			dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
-			break;
-
-		case _O_WRONLY:
-			dwDesiredAccess = GENERIC_WRITE;
-			break;
-
-		default:
-			dwDesiredAccess = GENERIC_READ;
-			break;
-		}
+		int fileHandle;
 
 		if (oflag & _O_CREAT)
-		{
-			dwCreationDisposition = CREATE_ALWAYS;
-		}
-		else
-		{
-			dwCreationDisposition = OPEN_EXISTING;
-		}
+			SetFileAttributesA(pszFile, FILE_ATTRIBUTE_NORMAL);
 
-		hFile = CreateFileA(pszFile,
-			dwDesiredAccess,
-			FILE_SHARE_READ,
-			NULL,
-			dwCreationDisposition,
-			FILE_ATTRIBUTE_NORMAL,
-			NULL);
+		_sopen_s(&fileHandle, pszFile, oflag, _SH_DENYNO, pmode);
 
-		return (INT_PTR)hFile;
+		return fileHandle;
 	}
 	FNREAD(FdiFnFileRead)
 	{
-		DWORD dwBytesRead = 0;
-
-		if (ReadFile((HANDLE)hf, pv, cb, &dwBytesRead, NULL) == FALSE)
-			dwBytesRead = (DWORD)-1L;
-
-		return dwBytesRead;
+		return _read(static_cast<int>(hf), pv, cb);
 	}
 	FNWRITE(FdiFnFileWrite)
 	{
-		DWORD dwBytesWritten = 0;
-
-		if (WriteFile((HANDLE)hf, pv, cb, &dwBytesWritten, NULL) == FALSE)
-			dwBytesWritten = (DWORD)-1;
-
-		return dwBytesWritten;
+		return _write(static_cast<int>(hf), pv, cb);
 	}
 	FNCLOSE(FdiFnFileClose)
 	{
-		return (CloseHandle((HANDLE)hf) == TRUE) ? 0 : -1;
+		return _close(static_cast<int>(hf));
 	}
 	FNSEEK(FdiFnFileSeek)
 	{
-		return SetFilePointer((HANDLE)hf, dist, NULL, seektype);
+		return _lseek(static_cast<int>(hf), dist, seektype);
 	}
 
 	FNFDINOTIFY(FdiFnNotifyCallback)
@@ -210,5 +219,18 @@ namespace WindowsUtils::Core
 		}
 
 		return 0;
+	}
+
+	template <class T>
+	DWORD GetNumberDigitCount(T number)
+	{
+		DWORD digits = 0;
+		while (number)
+		{
+			number /= 10;
+			digits++;
+		}
+
+		return digits;
 	}
 }

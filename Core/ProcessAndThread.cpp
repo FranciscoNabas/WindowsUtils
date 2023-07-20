@@ -250,7 +250,7 @@ namespace WindowsUtils::Core
 		NTSTATUS ntcall = STATUS_SUCCESS;
 		HANDLE htarget = NULL;
 
-		LPCWSTR lpcpathnoroot = ::PathSkipRootW(rlpcobjectname);
+		LPWSTR lpcpathnoroot = ::PathSkipRootW(rlpcobjectname);
 		if (NULL == lpcpathnoroot)
 			return ::GetLastError();
 

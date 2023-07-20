@@ -2,6 +2,7 @@
 #pragma unmanaged
 
 #include "Utilities.h"
+#include "MemoryManagement.h"
 
 namespace WindowsUtils::Core
 {
@@ -35,6 +36,11 @@ namespace WindowsUtils::Core
 				INT secRemaining,
 				const LPWSTR& status
 			);
+
+			_MAPPED_PROGRESS_DATA()
+				: Activity(NULL), ActivityId(0), CurrentOperation(NULL), ParentActivityId(-1), PercentComplete(0), RecordType(PROGRESS_RECORD_TYPE::Processing), SecondsRemaining(-1), StatusDescription(NULL)
+			{ }
+
 			~_MAPPED_PROGRESS_DATA();
 
 		private:

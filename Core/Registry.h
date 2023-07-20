@@ -3,7 +3,7 @@
 
 #include <winreg.h>
 
-#include "Utilities.h"
+#include "MemoryManagement.h"
 
 #define MAX_KEY_LENGTH 255
 

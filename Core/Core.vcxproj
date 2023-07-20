@@ -163,6 +163,7 @@
     <ClInclude Include="AccessControl.h" />
     <ClInclude Include="Containers.h" />
     <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="MemoryManagement.h" />
     <ClInclude Include="Notification.h" />
     <ClInclude Include="NtUtilities.h" />
     <ClInclude Include="pch.h" />
@@ -170,6 +171,7 @@
     <ClInclude Include="Registry.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Services.h" />
+    <ClInclude Include="String.h" />
     <ClInclude Include="TerminalServices.h" />
     <ClInclude Include="Utilities.h" />
     <ClInclude Include="Wrapper.h" />
@@ -179,6 +181,7 @@
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="Containers.cpp" />
     <ClCompile Include="FileSystem.cpp" />
+    <ClCompile Include="MemoryManagement.cpp" />
     <ClCompile Include="Notification.cpp" />
     <ClCompile Include="NtUtilities.cpp" />
     <ClCompile Include="pch.cpp">
@@ -190,6 +193,7 @@
     <ClCompile Include="ProcessAndThread.cpp" />
     <ClCompile Include="Registry.cpp" />
     <ClCompile Include="Services.cpp" />
+    <ClCompile Include="String.cpp" />
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="TerminalServices.cpp" />
     <ClCompile Include="Wrapper.cpp" />

@@ -438,13 +438,13 @@ namespace WindowsUtils::Core
 	}
 
 	// Expand-File
-	void Wrapper::ExpandFile(String^ fileFullName, String^ destination, ArchiveFileType fileType)
+	void Wrapper::ExpandFile(String^ fileFullName, String^ destination, ArchiveFileType fileType, CmdletContextBase^ context)
 	{
 		LPSTR wFileName = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(Path::GetFileName(fileFullName)).ToPointer());
 		LPSTR wFilePath = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(Path::GetDirectoryName(fileFullName)).ToPointer());
 		LPSTR wDestination = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(destination).ToPointer());
 
-		DWORD result = ctnptr->ExpandArchiveFile(wFileName, wFilePath, wDestination, (Containers::ARCHIVE_FILE_TYPE)fileType);
+		DWORD result = ctnptr->ExpandArchiveFile(wFileName, wFilePath, wDestination, (Containers::ARCHIVE_FILE_TYPE)fileType, context->GetUnderlyingContext());
 		if (result != ERROR_SUCCESS)
 			throw FDIErrorToException((FDIERROR)result);
 	}

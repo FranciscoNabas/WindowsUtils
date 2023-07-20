@@ -24,7 +24,7 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		// Expand-File
-		DWORD ExpandArchiveFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, ARCHIVE_FILE_TYPE fileType);
+		DWORD ExpandArchiveFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context);
 	};
 
 	// Expand-File helper functions and objects.
@@ -32,56 +32,22 @@ namespace WindowsUtils::Core
 	{
 	public:
 		// Information regarding the current file.
-		LPWSTR Path;
 		LPWSTR Name;
-		DWORD Size;
 
 		// Information regarding the current cabinet.
-		DWORD CabIndex;
-		LPWSTR NextCabinet;
-		LPWSTR NextDisk;
-		PFDICABINETINFO CabinetInfo;
+		LPWSTR CabinetName;
 
 		// Related with progress notification.
-		Notification::PNATIVE_CONTEXT Context;
-		void WriteProgress()
-		{
-			WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-			auto progData = (Notification::PMAPPED_PROGRESS_DATA)MemoryManager.Allocate(sizeof(Notification::MAPPED_PROGRESS_DATA));
+		ULONGLONG TotalUncompressedSize;
+		ULONGLONG ProcessedBytes;
 
-			size_t pathLen = wcslen(Path) + 1;
-			size_t nameLen = wcslen(Name) + 1;
+		void WriteProgress(Notification::PNATIVE_CONTEXT context);
+		static _FDI_NOTIFICATION& GetNotifier();
 
-			
-			progData->Activity = L"Expanding cabinet";
-
-		}
-		
-		static _FDI_NOTIFICATION& GetNotifier()
-		{
-			static _FDI_NOTIFICATION instance;
-			return instance;
-		}
-
-		~_FDI_NOTIFICATION()
-		{
-			MemoryManager.Free(_progressData);
-			MemoryManager.Free(CabinetInfo);
-
-			// If those were not freed outside we free them here.
-			MemoryManager.Free(Path);
-			MemoryManager.Free(Name);
-			MemoryManager.Free(NextCabinet);
-			MemoryManager.Free(NextDisk);
-		}
+		~_FDI_NOTIFICATION();
 
 	private:
-		_FDI_NOTIFICATION()
-			: Path(NULL), Name(NULL), CabIndex(0), NextCabinet(NULL), NextDisk(NULL), CabinetInfo(NULL)
-		{
-			_progressData = (Notification::PMAPPED_PROGRESS_DATA)MemoryManager.Allocate(sizeof(Notification::MAPPED_PROGRESS_DATA));
-			CabinetInfo = (PFDICABINETINFO)MemoryManager.Allocate(sizeof(FDICABINETINFO));
-		}
+		_FDI_NOTIFICATION();
 
 		Notification::PMAPPED_PROGRESS_DATA _progressData;
 		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
@@ -92,7 +58,11 @@ namespace WindowsUtils::Core
 
 	} FDI_NOTIFICATION, *PFDI_NOTIFICATION;
 
-	DWORD ExpandCabinetFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination);
+	DWORD ExpandCabinetFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, Notification::PNATIVE_CONTEXT context);
+	
+	
+	template <class T>
+	DWORD GetNumberDigitCount(T number);
 
 	FNALLOC(FdiFnMemAloc);
 	FNFREE(FdiFnMemFree);

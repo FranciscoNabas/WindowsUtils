@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "Utilities.h"
-#include <psapi.h>
-#include <new>
-#include <system_error>
+
 
 #pragma comment(lib, "Psapi")
 
@@ -279,59 +277,5 @@ namespace WindowsUtils::Core
 		_wgetenv_s(&szrequiredstr, rlpvalue, szrequiredstr, rlpcvarname);
 
 		return result;
-	}
-
-	// Memory management helper functions
-	WuMemoryManagement& WuMemoryManagement::GetManager()
-	{
-		static WuMemoryManagement instance;
-
-		return instance;
-	}
-
-	PVOID WuMemoryManagement::Allocate(size_t size)
-	{
-		PVOID block = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size);
-		if (NULL == block)
-			throw std::system_error(std::error_code(static_cast<int>(ERROR_NOT_ENOUGH_MEMORY), std::generic_category()));
-
-		MemoryList.push_back(block);
-
-		return block;
-	}
-
-	VOID WuMemoryManagement::Free(PVOID block)
-	{
-		if (IsRegistered(block))
-		{
-			std::vector<PVOID>::iterator it;
-			for (it = MemoryList.begin(); it != MemoryList.end(); it++)
-			{
-				if (*it == block)
-				{
-					HeapFree(GetProcessHeap(), NULL, block);
-					MemoryList.erase(it);
-					break;
-				}
-			}
-		}
-	}
-
-	BOOL WuMemoryManagement::IsRegistered(PVOID block)
-	{
-		if (NULL == block)
-			return FALSE;
-
-		for (PVOID regblock : MemoryList)
-			if (regblock == block)
-				return TRUE;
-
-		return FALSE;
-	}
-
-	WuMemoryManagement::~WuMemoryManagement()
-	{
-		for (PVOID block : MemoryList)
-			HeapFree(GetProcessHeap(), NULL, block);
 	}
 }
