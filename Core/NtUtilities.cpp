@@ -3,59 +3,59 @@
 
 namespace WindowsUtils::Core
 {
-	NTSTATUS WINAPI GetNtProcessUsingFile(
-		LPCWSTR& rlpcfilename												// File full name.
-		, PFILE_PROCESS_IDS_USING_FILE_INFORMATION& rpprocusingfileinfo		// Output with a list of process IDs with handles to the file.
+	NTSTATUS GetNtProcessUsingFile(
+		WuString& fileName,															// File full name.
+		std::shared_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION> procUsingFileInfo	// Output with a list of process IDs with handles to the file.
 	)
 	{
 		NTSTATUS result = STATUS_SUCCESS;
-		IO_STATUS_BLOCK iostatblock = { 0 };
+		IO_STATUS_BLOCK ioStatusBlock = { 0 };
 
-		HMODULE hmodule = GetModuleHandleW(L"ntdll.dll");
-		if (INVALID_HANDLE_VALUE == hmodule || 0 == hmodule)
+		HMODULE hModule = GetModuleHandleW(L"ntdll.dll");
+		if (INVALID_HANDLE_VALUE == hModule || 0 == hModule)
 			return GetLastError();
 
-		_NtQueryInformationFile NtQueryInformationFile = (_NtQueryInformationFile)GetProcAddress(hmodule, "NtQueryInformationFile");
+		_NtQueryInformationFile NtQueryInformationFile = (_NtQueryInformationFile)GetProcAddress(hModule, "NtQueryInformationFile");
 		if (NULL == NtQueryInformationFile)
 			return GetLastError();
 
-		HANDLE hfile = CreateFileW(
-			rlpcfilename
-			, FILE_READ_ATTRIBUTES
-			, FILE_SHARE_READ
-			, NULL
-			, OPEN_EXISTING
-			, FILE_FLAG_BACKUP_SEMANTICS
-			, NULL
+		HANDLE hFile = CreateFileW(
+			fileName.GetWideBuffer(),
+			FILE_READ_ATTRIBUTES,
+			FILE_SHARE_READ,
+			NULL,
+			OPEN_EXISTING,
+			FILE_FLAG_BACKUP_SEMANTICS,
+			NULL
 		);
-		if (INVALID_HANDLE_VALUE == hfile)
+		if (INVALID_HANDLE_VALUE == hFile)
 			return GetLastError();
 
-		ULONG szbuffer = 1 << 10;
+		ULONG bufferSize = 1 << 10;
 		std::unique_ptr<BYTE[]> buffer;
 		do
 		{
-			buffer = std::make_unique<BYTE[]>(szbuffer);
-			result = NtQueryInformationFile(hfile, &iostatblock, buffer.get(), szbuffer, FileProcessIdsUsingFileInformation);
+			buffer = std::make_unique<BYTE[]>(bufferSize);
+			result = NtQueryInformationFile(hFile, &ioStatusBlock, buffer.get(), bufferSize, FileProcessIdsUsingFileInformation);
 			if (STATUS_SUCCESS != result && STATUS_INFO_LENGTH_MISMATCH != result)
 				return GetLastError();
 
 			if (STATUS_SUCCESS == result)
 				break;
 
-			szbuffer = (ULONG)iostatblock.Information;
+			bufferSize = (ULONG)ioStatusBlock.Information;
 
 		} while (result == STATUS_INFO_LENGTH_MISMATCH);
 
-		rpprocusingfileinfo = (PFILE_PROCESS_IDS_USING_FILE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (ULONG)iostatblock.Information);
-		CopyMemory(rpprocusingfileinfo, reinterpret_cast<PFILE_PROCESS_IDS_USING_FILE_INFORMATION>(buffer.get()), (ULONG)iostatblock.Information);
+		procUsingFileInfo = std::make_shared<FILE_PROCESS_IDS_USING_FILE_INFORMATION>(ioStatusBlock.Information);
+		RtlCopyMemory(procUsingFileInfo.get(), reinterpret_cast<PFILE_PROCESS_IDS_USING_FILE_INFORMATION>(buffer.get()), (ULONG)ioStatusBlock.Information);
 
-		CloseHandle(hfile);
+		CloseHandle(hFile);
 
 		return result;
 	}
 
-	DWORD WINAPI NtQueryObjectRaw(LPVOID lpparam)
+	DWORD NtQueryObjectRaw(LPVOID lpparam)
 	{
 		NTSTATUS result = STATUS_SUCCESS;
 		PTHREAD_FUNC_ARGUMENTS tfuncargs = reinterpret_cast<PTHREAD_FUNC_ARGUMENTS>(lpparam);
@@ -206,23 +206,23 @@ namespace WindowsUtils::Core
 	* Alternative to QueryFullProcessImageNameW.
 	* This function returns names from processes like, System, Registry or Secure System.
 	*/
-	NTSTATUS WINAPI GetProcessImageName(DWORD dwprocessid, LPWSTR& rlpimagename)
+	NTSTATUS WINAPI GetProcessImageName(DWORD processId, WuString& imageName)
 	{
 		NTSTATUS result = STATUS_SUCCESS;
-		ULONG szbuffer = 1 << 12;
-		ULONG szneededb = 0;
+		ULONG bufferSize = 1 << 12;
+		ULONG bytesNeeded = 0;
 
-		HMODULE hmodule = GetModuleHandleW(L"ntdll.dll");
-		if (INVALID_HANDLE_VALUE == hmodule || NULL == hmodule)
+		HMODULE hModule = GetModuleHandleW(L"ntdll.dll");
+		if (INVALID_HANDLE_VALUE == hModule || NULL == hModule)
 			return result;
 
-		_NtQuerySystemInformation NtQuerySystemInformation = (_NtQuerySystemInformation)GetProcAddress(hmodule, "NtQuerySystemInformation");
+		_NtQuerySystemInformation NtQuerySystemInformation = (_NtQuerySystemInformation)GetProcAddress(hModule, "NtQuerySystemInformation");
 
 		std::unique_ptr<BYTE[]> buffer;
 		do
 		{
-			buffer = std::make_unique<BYTE[]>(szbuffer);
-			result = NtQuerySystemInformation(SystemFullProcessInformation, buffer.get(), szbuffer, &szneededb);
+			buffer = std::make_unique<BYTE[]>(bufferSize);
+			result = NtQuerySystemInformation(SystemFullProcessInformation, buffer.get(), bufferSize, &bytesNeeded);
 			if (STATUS_SUCCESS != result
 				&& STATUS_INFO_LENGTH_MISMATCH != result
 				&& result != STATUS_BUFFER_OVERFLOW
@@ -232,26 +232,24 @@ namespace WindowsUtils::Core
 			if (STATUS_SUCCESS == result)
 				break;
 
-			szbuffer = szneededb;
+			bufferSize = bytesNeeded;
 
 		} while (result == STATUS_BUFFER_TOO_SMALL || result == STATUS_BUFFER_OVERFLOW || result == STATUS_INFO_LENGTH_MISMATCH);
 
-		PSYSTEM_PROCESS_INFORMATION psysprocinfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
+		PSYSTEM_PROCESS_INFORMATION systemProcInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
 		do
 		{
-			if (psysprocinfo->UniqueProcessId == reinterpret_cast<HANDLE>(dwprocessid))
+			if (systemProcInfo->UniqueProcessId == reinterpret_cast<HANDLE>(processId))
 			{
-				size_t szimgname = wcslen(psysprocinfo->ImageName.Buffer) + 1;
-				if (szimgname > 1)
-				{
-					rlpimagename = new WCHAR[szimgname];
-					wcscpy_s(rlpimagename, szimgname, psysprocinfo->ImageName.Buffer);
-				}
+				size_t imgNameSize = wcslen(systemProcInfo->ImageName.Buffer) + 1;
+				if (imgNameSize > 1)
+					imageName = systemProcInfo->ImageName.Buffer;
+				
 				break;
 			}
-			psysprocinfo = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)psysprocinfo + psysprocinfo->NextEntryOffset);
+			systemProcInfo = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)systemProcInfo + systemProcInfo->NextEntryOffset);
 
-		} while (psysprocinfo->NextEntryOffset != 0);
+		} while (systemProcInfo->NextEntryOffset != 0);
 
 		return result;
 	}

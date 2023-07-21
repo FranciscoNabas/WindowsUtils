@@ -1,7 +1,7 @@
 #pragma once
 #pragma unmanaged
 
-#include "pch.h"
+#include "String.h"
 
 #define STATUS_SUCCESS ERROR_SUCCESS
 #define STATUS_BUFFER_TOO_SMALL 0xC0000023L
@@ -207,8 +207,8 @@ namespace WindowsUtils::Core
 	==		 Function identification		==
 	==========================================*/
 
-	NTSTATUS WINAPI GetNtProcessUsingFile(LPCWSTR& rlpcfilename, PFILE_PROCESS_IDS_USING_FILE_INFORMATION& rpprocusingfileinfo);
-	DWORD WINAPI NtQueryObjectRaw(LPVOID lpparam);
-	NTSTATUS WINAPI NtQueryObjectWithTimeout(HANDLE hobject, OBJECT_INFORMATION_CLASS objinfoclass, PVOID objinfo, ULONG mstimeout);
-	NTSTATUS WINAPI GetProcessImageName(DWORD dwprocessid, LPWSTR& rlpimagename);
+	NTSTATUS GetNtProcessUsingFile(const WuString& fileName, std::shared_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION> procUsingFileInfo);
+	DWORD NtQueryObjectRaw(LPVOID param);
+	NTSTATUS NtQueryObjectWithTimeout(HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass, PVOID objectInfo, ULONG timeout);
+	NTSTATUS GetProcessImageName(DWORD processId, WuString& imageName);
 }

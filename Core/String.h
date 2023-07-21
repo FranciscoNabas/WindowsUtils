@@ -35,12 +35,14 @@ namespace WindowsUtils::Core
 
 	public:
 		WuString();
+		WuString(const size_t charCount, BOOL isWide = TRUE);
 		WuString(const LPSTR buffer);
 		WuString(const LPWSTR buffer);
 		WuString(const WuString& other);
 
 		~WuString();
 
+		void Initialize(const size_t charCount, BOOL isWide = TRUE);
 		const size_t Length();
 		const size_t Length() const;
 		LPSTR GetBuffer();

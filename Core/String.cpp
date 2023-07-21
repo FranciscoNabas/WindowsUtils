@@ -14,6 +14,11 @@ namespace WindowsUtils::Core
 		: _strBuff(NULL), _wideBuff(NULL), _charCount(0), _isWide(false), _isInitialized(false)
 	{ }
 
+	WuString::WuString(const size_t charCount, BOOL isWide = TRUE)
+	{
+		this->Initialize(charCount, isWide);
+	}
+
 	// 8-bit character.
 	WuString::WuString(const LPSTR buffer)
 	{
@@ -120,6 +125,25 @@ namespace WindowsUtils::Core
 	}
 
 	// Methods.
+	void WuString::Initialize(const size_t charCount, BOOL isWide = TRUE)
+	{
+		PVOID currentProcHeap = GetProcessHeap();
+		if (isWide)
+		{
+			_charCount = charCount + 1;
+			_wideBuff = static_cast<LPWSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, _charCount * 2));
+			_isInitialized = true;
+			_isWide = true;
+		}
+		else
+		{
+			_charCount = charCount + 1;
+			_strBuff = static_cast<LPSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, _charCount));
+			_isInitialized = true;
+			_isWide = false;
+		}
+	}
+
 	const size_t WuString::Length()
 	{
 		if (!_isInitialized)

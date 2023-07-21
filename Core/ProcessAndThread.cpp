@@ -6,148 +6,137 @@ namespace WindowsUtils::Core
 {
 	// Get-ObjectHandle
 	DWORD ProcessAndThread::GetProcessObjectHandle(
-		std::vector<ProcessAndThread::WU_OBJECT_HANDLE>& rvecobjhandle	// A vector of object handle output objects.
-		, std::vector<LPCWSTR>& rvecinputpath					// A vector of input objects.
-		, BOOL closehandle = FALSE								// TRUE for closing the handles found.
-	)
-	{
+		std::vector<ProcessAndThread::WU_OBJECT_HANDLE>& objectHandleInfo,	// A vector of object handle output objects.
+		std::vector<WuString>& inputPath,									// A vector of input objects.
+		BOOL closeHandle = FALSE											// TRUE for closing the handles found.
+	) {
 		DWORD result = ERROR_SUCCESS;
 
-		for (size_t i = 0; i < rvecinputpath.size(); i++)
+		for (WuString path : inputPath)
 		{
 			/*
 			* This strips the path out of the input object so we can add it to the 'InputObject' property.
 			* This will need to be changed in the future to support multiple object types.
 			*/
-			WCHAR lpinputobj[MAX_PATH] = { 0 };
-			wcscpy_s(lpinputobj, MAX_PATH, rvecinputpath.at(i));
-			PathStripPathW(lpinputobj);
+			WuString inputObject = path;
+			PathStripPathW(inputObject.GetWideBuffer());
 
-			PFILE_PROCESS_IDS_USING_FILE_INFORMATION pprocidufile = NULL;
-			result = GetNtProcessUsingFile(rvecinputpath.at(i), pprocidufile);
+			std::shared_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION> procUsingFile;
+			result = GetNtProcessUsingFile(path, procUsingFile);
 			if (result != ERROR_SUCCESS)
 				return result;
 
-			for (ULONG j = 0; j < pprocidufile->NumberOfProcessIdsInList; j++)
+			for (ULONG j = 0; j < procUsingFile.get()->NumberOfProcessIdsInList; j++)
 			{
-				PWU_OBJECT_HANDLE uphobj = new WU_OBJECT_HANDLE;
-				HANDLE hprocess = NULL;
+				WuAllocator<WU_OBJECT_HANDLE> objHandle(sizeof(WU_OBJECT_HANDLE));
 
-				size_t szinputobj = wcslen(lpinputobj) + 1;
-				uphobj->InputObject = new WCHAR[szinputobj];
-				wcscpy_s(uphobj->InputObject, szinputobj, lpinputobj);
+				objHandle.Get()->InputObject = inputObject;
+				objHandle.Get()->ProcessId = procUsingFile.get()->ProcessIdList[j];
 
-				uphobj->ProcessId = (DWORD)pprocidufile->ProcessIdList[j];
-
-				if (uphobj->ProcessId == 10220)
+				if (objHandle.Get()->ProcessId == 10220)
 					result = 0;
 
-				hprocess = OpenProcess(
-					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE
-					, FALSE
-					, (DWORD)pprocidufile->ProcessIdList[j]
+				HANDLE hProcess = OpenProcess(
+					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE,
+					FALSE,
+					(DWORD)procUsingFile.get()->ProcessIdList[j]
 				);
-				if (NULL != hprocess)
+				if (hProcess != NULL)
 				{
-					DWORD szmaxpath = MAX_PATH;
-					uphobj->ImagePath = new WCHAR[MAX_PATH]{ 0 };
-					uphobj->Name = new WCHAR[MAX_PATH]{ 0 };
-					::QueryFullProcessImageNameW(hprocess, 0, uphobj->ImagePath, &szmaxpath);
+					DWORD maxPath = MAX_PATH;
+					objHandle.Get()->ImagePath.Initialize(MAX_PATH);
+					objHandle.Get()->Name.Initialize(MAX_PATH);
+					::QueryFullProcessImageNameW(hProcess, 0, objHandle.Get()->ImagePath.GetWideBuffer(), &maxPath);
 
-					if (wcslen(uphobj->ImagePath) == 0)
+					if (objHandle.Get()->ImagePath.Length() == 0)
 					{
-						result = GetProcessImageName(uphobj->ProcessId, uphobj->Name);
-						if (wcslen(uphobj->Name) > 0)
+						result = GetProcessImageName(objHandle.Get()->ProcessId, objHandle.Get()->Name);
+						if (objHandle.Get()->Name.Length() > 0)
 						{
-							wcscpy_s(uphobj->ImagePath, MAX_PATH, uphobj->Name);
-							::PathStripPathW(uphobj->Name);
+							objHandle.Get()->ImagePath = objHandle.Get()->Name;
+							::PathStripPathW(objHandle.Get()->Name.GetWideBuffer());
 						}
 
 					}
 					else
 					{
-						wcscpy_s(uphobj->Name, MAX_PATH, uphobj->ImagePath);
-						::PathStripPathW(uphobj->Name);
+						objHandle.Get()->Name = objHandle.Get()->ImagePath;
+						::PathStripPathW(objHandle.Get()->Name.GetWideBuffer());
 					}
 
-					for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
+					for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName })
 					{
-						LPWSTR lpinter = { 0 };
-						GetProccessVersionInfo(uphobj->ImagePath, verinfoprop, lpinter);
-						uphobj->VersionInfo.emplace(std::make_pair(verinfoprop, LPCWSTR(lpinter)));
+						WuString value;
+						GetProccessVersionInfo(objHandle.Get()->ImagePath, versionInfo, value);
+						objHandle.Get()->VersionInfo->emplace(std::make_pair(versionInfo, value));
 					}
 
-					if (closehandle)
+					if (CloseHandle)
 					{
-						result = CloseExtProcessHandle(hprocess, rvecinputpath.at(i));
+						result = CloseExtProcessHandle(hProcess, path);
 						if (ERROR_SUCCESS != result)
 							return result;
 					}
-					::CloseHandle(hprocess);
+					CloseHandle(hProcess);
 				}
 				else
 				{
-					if (ERROR_ACCESS_DENIED == ::GetLastError())
+					if (GetLastError() == ERROR_ACCESS_DENIED)
 					{
-						hprocess = OpenProcess(
-							PROCESS_QUERY_LIMITED_INFORMATION
-							, FALSE
-							, (DWORD)pprocidufile->ProcessIdList[j]
+						hProcess = OpenProcess(
+							PROCESS_QUERY_LIMITED_INFORMATION,
+							FALSE,
+							procUsingFile.get()->ProcessIdList[j]
 						);
 
-						DWORD szmaxpath = MAX_PATH;
-						uphobj->ImagePath = new WCHAR[MAX_PATH]{ 0 };
-						uphobj->Name = new WCHAR[MAX_PATH]{ 0 };
-						if (::QueryFullProcessImageNameW(hprocess, 0, uphobj->ImagePath, &szmaxpath))
+						DWORD maxPath = MAX_PATH;
+						objHandle.Get()->ImagePath.Initialize(MAX_PATH);
+						objHandle.Get()->Name.Initialize(MAX_PATH);
+						if (QueryFullProcessImageNameW(hProcess, 0, objHandle.Get()->ImagePath.GetWideBuffer(), &maxPath))
 						{
-							wcscpy_s(uphobj->Name, MAX_PATH, uphobj->ImagePath);
-							::PathStripPathW(uphobj->Name);
+							objHandle.Get()->Name = objHandle.Get()->ImagePath;
+							::PathStripPathW(objHandle.Get()->Name.GetWideBuffer());
 
-							for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
+							for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName })
 							{
-								LPWSTR lpinter;
-								GetProccessVersionInfo(uphobj->ImagePath, verinfoprop, lpinter);
-								uphobj->VersionInfo.emplace(std::make_pair(verinfoprop, LPCWSTR(lpinter)));
+								WuString value;
+								GetProccessVersionInfo(objHandle.Get()->ImagePath, versionInfo, value);
+								objHandle.Get()->VersionInfo->emplace(std::make_pair(versionInfo, value));
 							}
 						}
 						else
 						{
-							if (ERROR_SUCCESS == GetProcessImageName(uphobj->ProcessId, uphobj->Name))
+							if (GetProcessImageName(objHandle.Get()->ProcessId, objHandle.Get()->Name) == ERROR_SUCCESS)
 							{
-								wcscpy_s(uphobj->ImagePath, MAX_PATH, uphobj->Name);
-								::PathStripPathW(uphobj->Name);
+								objHandle.Get()->ImagePath = objHandle.Get()->Name;
+								::PathStripPathW(objHandle.Get()->Name.GetWideBuffer());
 							}
 
 							if (
-								wcscmp(uphobj->Name, L"System") == 0
-								|| wcscmp(uphobj->Name, L"Secure System") == 0
-								|| wcscmp(uphobj->Name, L"Registry") == 0)
+								objHandle.Get()->Name == L"System" ||
+								objHandle.Get()->Name == L"Secure System" ||
+								objHandle.Get()->Name == L"Registry")
 							{
 								LPCWSTR windir = L"windir";
 								LPWSTR lpenvvalue;
 								result = GetEnvVariable(windir, lpenvvalue);
 								DWERRORCHECKV(result);
 
-								std::wstring wstrwindir(lpenvvalue);
-								std::wstring imagepath = L"\\System32\\ntoskrnl.exe";
-								std::wstring fullimagepath = wstrwindir + imagepath;
+								objHandle.Get()->ImagePath = lpenvvalue;
+								objHandle.Get()->ImagePath += L"\\System32\\ntoskrnl.exe";
 
-								wcscpy_s(uphobj->ImagePath, MAX_PATH, fullimagepath.c_str());
-
-								for (VERSION_INFO_PROPERTY verinfoprop : { FileDescription, ProductName, FileVersion, CompanyName })
+								for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName })
 								{
-									LPWSTR lpinter;
-									GetProccessVersionInfo(uphobj->ImagePath, verinfoprop, lpinter);
-									uphobj->VersionInfo.emplace(std::make_pair(verinfoprop, LPCWSTR(lpinter)));
+									WuString value;
+									GetProccessVersionInfo(objHandle.Get()->ImagePath, versionInfo, value);
+									objHandle.Get()->VersionInfo->emplace(std::make_pair(versionInfo, value));
 								}
 							}
 						}
 					}
 				}
 
-				rvecobjhandle.push_back(*uphobj);
-
-				delete uphobj;
+				objectHandleInfo.push_back(*objHandle.Get());
 			}
 		}
 
@@ -160,9 +149,9 @@ namespace WindowsUtils::Core
 
 	// Gets process image version information.
 	DWORD GetProccessVersionInfo(
-		LPWSTR& imagepath,									// The process image file path.
-		ProcessAndThread::VERSION_INFO_PROPERTY& propname,	// The property name, or 'key' value.
-		LPWSTR& value										// The return value.
+		const WuString& imagepath,								// The process image file path.
+		ProcessAndThread::VERSION_INFO_PROPERTY propname,	// The property name, or 'key' value.
+		WuString& value										// The return value.
 	) {
 		DWORD result = ERROR_SUCCESS;
 		WORD* langncodepage;
@@ -242,8 +231,8 @@ namespace WindowsUtils::Core
 	* Used by the parameter -CloseHandle, from Get-ObjectHandle.
 	*/
 	DWORD CloseExtProcessHandle(
-		HANDLE& rhextprocess		// A valid handle to the external process.
-		, LPCWSTR& rlpcobjectname	// The object name, used on GetProcessObjectHandle.
+		HANDLE hExtProcess,				// A valid handle to the external process.
+		const WuString& objectName		// The object name, used on GetProcessObjectHandle.
 	)
 	{
 		DWORD result = ERROR_SUCCESS;
