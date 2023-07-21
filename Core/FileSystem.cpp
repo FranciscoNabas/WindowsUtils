@@ -4,57 +4,43 @@
 
 namespace WindowsUtils::Core
 {
-	DWORD FileSystem::CreateFolderTree(const LPWSTR& lpszPath)
+	DWORD FileSystem::CreateFolderTree(const WuString& path)
 	{
 		DWORD result = ERROR_SUCCESS;
 
-		if (CheckDirectoryExists(lpszPath))
+		if (CheckDirectoryExists(path))
 			return result;
 
-		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-
-		size_t pathLen = wcslen(lpszPath) + 1;
-		LPWSTR lpszParent = (LPWSTR)MemoryManager.Allocate(pathLen * 2);
-		wcscpy_s(lpszParent, pathLen, lpszPath);
-
-		LPWSTR lpszPos = wcsrchr(lpszParent, '\\');
-		if (!lpszPos)
+		WuString parent = path;
+		if (!parent.Contains('\\'))
 			return ERROR_INVALID_DRIVE;
 
-		result = CreateFolderTree(lpszParent);
+		result = CreateFolderTree(parent);
 		if (result != ERROR_SUCCESS)
-		{
-			MemoryManager.Free(lpszParent);
 			return result;
-		}
 
-		if (!CreateDirectory(lpszPath, NULL))
+		if (!CreateDirectoryW(path.GetWideBuffer(), NULL))
 		{
 			result = GetLastError();
 			if (result == ERROR_ALREADY_EXISTS)
 				result = ERROR_SUCCESS;
 		}
 
-		MemoryManager.Free(lpszParent);
-
 		return  result;
 	}
 	
-	BOOL FileSystem::CheckDirectoryExists(const LPWSTR& lpszDirName)
+	BOOL FileSystem::CheckDirectoryExists(const WuString& path)
 	{
-		DWORD result = GetFileAttributes(lpszDirName);
+		DWORD result = GetFileAttributesW(path.GetWideBuffer());
 		if (result == INVALID_FILE_ATTRIBUTES)
 			return FALSE;
 
 		return (result & FILE_ATTRIBUTE_DIRECTORY) > 0;
 	}
 
-	void FileSystem::TrimEndingDirectorySeparator(const LPWSTR& lpszPath)
+	void FileSystem::TrimEndingDirectorySeparator(WuString& path)
 	{
-		if (EndsWith(lpszPath, L"\\"))
-		{
-			size_t strLen = wcslen(lpszPath);
-			lpszPath[strLen - 1] = 0;
-		}
+		if (path.EndsWith('\\'))
+			path.Remove(path.Length() - 1, 1);
 	}
 }

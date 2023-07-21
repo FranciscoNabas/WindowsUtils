@@ -29,7 +29,7 @@ namespace WindowsUtils::Core
 	private:
 		LPSTR _strBuff;
 		LPWSTR _wideBuff;
-		UINT _charCount;
+		size_t _charCount;
 		bool _isWide;
 		bool _isInitialized;
 
@@ -41,12 +41,23 @@ namespace WindowsUtils::Core
 
 		~WuString();
 
-		const UINT Length();
+		const size_t Length();
+		const size_t Length() const;
 		LPSTR GetBuffer();
+		LPSTR GetBuffer() const;
 		LPWSTR GetWideBuffer();
+		LPWSTR GetWideBuffer() const;
 
 		void Format(const LPSTR format, ...);
 		void Format(const LPWSTR format, ...);
+
+		void Remove(size_t index, size_t count);
+
+		BOOL Contains (const CHAR character) const;
+		BOOL Contains(const WCHAR character) const;
+
+		BOOL EndsWith(const CHAR character) const;
+		BOOL EndsWith(const WCHAR character) const;
 
 		void operator= (const LPSTR other);
 		void operator= (const LPWSTR other);
@@ -56,12 +67,12 @@ namespace WindowsUtils::Core
 		void operator+= (const LPWSTR other);
 		void operator+= (const WuString& other);
 
-		BOOL operator== (const LPSTR other);
-		BOOL operator== (const LPWSTR other);
-		BOOL operator== (const WuString& other);
+		BOOL operator== (const LPSTR other) const;
+		BOOL operator== (const LPWSTR other) const;
+		BOOL operator== (const WuString& other) const;
 
-		BOOL operator!= (const LPSTR other);
-		BOOL operator!= (const LPWSTR other);
-		BOOL operator!= (const WuString& other);
+		BOOL operator!= (const LPSTR other) const;
+		BOOL operator!= (const LPWSTR other) const;
+		BOOL operator!= (const WuString& other) const;
 	};
 }

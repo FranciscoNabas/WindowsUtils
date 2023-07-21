@@ -22,14 +22,19 @@ namespace WindowsUtils::Core
 		else
 		{
 			// With the null terminating character.
-			_charCount = static_cast<UINT>(strlen(buffer) + 1);
+			_charCount = strlen(buffer) + 1;
 			PVOID currentProcHeap = GetProcessHeap();
 
 			_strBuff = static_cast<LPSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, _charCount));
-			_isInitialized = true;
-			_isWide = false;
+			if (_strBuff != NULL)
+			{
+				_isInitialized = true;
+				_isWide = false;
 
-			strcpy_s(_strBuff, _charCount, buffer);
+				strcpy_s(_strBuff, _charCount, buffer);
+			}
+			else
+				throw "Insufficient memory.";
 		}
 	}
 
@@ -41,15 +46,20 @@ namespace WindowsUtils::Core
 		else
 		{
 			// With the null terminating character.
-			_charCount = static_cast<UINT>(wcslen(buffer) + 1);
-			UINT byteSize = _charCount * 2;
+			_charCount = wcslen(buffer) + 1;
+			size_t byteSize = _charCount * 2;
 			PVOID currentProcHeap = GetProcessHeap();
 
 			_wideBuff = static_cast<LPWSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, byteSize));
-			_isInitialized = true;
-			_isWide = true;
+			if (_wideBuff != NULL)
+			{
+				_isInitialized = true;
+				_isWide = true;
 
-			wcscpy_s(_wideBuff, _charCount, buffer);
+				wcscpy_s(_wideBuff, _charCount, buffer);
+			}
+			else
+				throw "Insufficient memory.";
 		}
 	}
 
@@ -59,24 +69,34 @@ namespace WindowsUtils::Core
 		if (other._isInitialized)
 		{
 			PVOID currentProcHeap = GetProcessHeap();
-			UINT _charCount = other._charCount;
+			_charCount = other._charCount;
 
 			if (other._isWide)
 			{
-				UINT byteSize = other._charCount * 2;
+				size_t byteSize = other._charCount * 2;
 				_wideBuff = static_cast<LPWSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, byteSize));
-				_isInitialized = true;
-				_isWide = true;
+				if (_wideBuff != NULL)
+				{
+					_isInitialized = true;
+					_isWide = true;
 
-				wcscpy_s(_wideBuff, _charCount, other._wideBuff);
+					wcscpy_s(_wideBuff, _charCount, other._wideBuff);
+				}
+				else
+					throw "Insufficient memory.";
 			}
 			else
 			{
 				_strBuff = static_cast<LPSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, _charCount));
-				_isInitialized = true;
-				_isWide = false;
+				if (_strBuff != NULL)
+				{
+					_isInitialized = true;
+					_isWide = false;
 
-				strcpy_s(_strBuff, _charCount, other._strBuff);
+					strcpy_s(_strBuff, _charCount, other._strBuff);
+				}
+				else
+					throw "Insufficient memory.";
 			}
 		}
 		else
@@ -100,17 +120,26 @@ namespace WindowsUtils::Core
 	}
 
 	// Methods.
-	const UINT WuString::Length()
+	const size_t WuString::Length()
 	{
 		if (!_isInitialized)
 			throw "String is not initialized!";
 
 		// Also update the char count.
 		if (_isWide)
-			_charCount = static_cast<const UINT>(wcslen(_wideBuff));
+			_charCount = wcslen(_wideBuff);
 		else
-			_charCount = static_cast<const UINT>(strlen(_strBuff));
+			_charCount = strlen(_strBuff);
 
+		return _charCount;
+	}
+
+	const size_t WuString::Length() const
+	{
+		if (!_isInitialized)
+			throw "String is not initialized!";
+
+		// If it's constant, the char count was not modified by the application.
 		return _charCount;
 	}
 
@@ -122,7 +151,23 @@ namespace WindowsUtils::Core
 		return _strBuff;
 	}
 
+	LPSTR WuString::GetBuffer() const
+	{
+		if (!_isInitialized || _isWide)
+			throw "String is not initialized!";
+
+		return _strBuff;
+	}
+
 	LPWSTR WuString::GetWideBuffer()
+	{
+		if (!_isInitialized || !_isWide)
+			throw "String is not initialized!";
+
+		return _wideBuff;
+	}
+
+	LPWSTR WuString::GetWideBuffer() const
 	{
 		if (!_isInitialized || !_isWide)
 			throw "String is not initialized!";
@@ -139,7 +184,8 @@ namespace WindowsUtils::Core
 		va_list args;
 
 		va_start(args, format);
-		_charCount = _vscprintf(format, args) + 1;
+		_charCount = _vscprintf(format, args);
+		_charCount++;
 
 		if (_strBuff != NULL && _isInitialized)
 			HeapFree(currentProcHeap, 0, _strBuff);
@@ -161,7 +207,8 @@ namespace WindowsUtils::Core
 		va_list args;
 
 		va_start(args, format);
-		_charCount = _vscwprintf(format, args) + 1;
+		_charCount = _vscwprintf(format, args);
+		_charCount++;
 
 		UINT byteSize = _charCount * 2;
 		if (_wideBuff != NULL && _isInitialized)
@@ -175,6 +222,101 @@ namespace WindowsUtils::Core
 		}
 	}
 
+	void WuString::Remove(size_t index, size_t count)
+	{
+		if (!_isInitialized)
+			throw "String is not initialized!";
+
+		if (count >= _charCount)
+			throw "Count can't be greater than the string length.";
+
+		if (index < 0 || index + count > _charCount - 2)
+			throw "Index outside of string boundaries.";
+
+		PVOID currentProcHeap = GetProcessHeap();
+		size_t newCharCount = _charCount - count;
+		if (_isWide)
+		{
+			LPWSTR newBuff = static_cast<LPWSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, newCharCount * 2));
+			if (newBuff != NULL)
+			{
+				size_t newLastIndex = 0;
+				for (size_t i = 0; i < _charCount - 1; i++)
+				{
+					if (i < index || i > index + count)
+					{
+						newBuff[newLastIndex] = _wideBuff[i];
+						newLastIndex++;
+					}
+				}
+			}
+		}
+		else
+		{
+			LPSTR newBuff = static_cast<LPSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, newCharCount * 2));
+			if (newBuff != NULL)
+			{
+				size_t newLastIndex = 0;
+				for (size_t i = 0; i < _charCount - 1; i++)
+				{
+					if (i < index || i > index + count)
+					{
+						newBuff[newLastIndex] = _strBuff[i];
+						newLastIndex++;
+					}
+				}
+			}
+		}
+
+		_charCount = newCharCount;
+	}
+
+	BOOL WuString::Contains(const CHAR character) const
+	{
+		if (!_isInitialized)
+			throw "String is not initialized!";
+
+		if (strrchr(_strBuff, character))
+			return TRUE;
+
+		return FALSE;
+	}
+
+	BOOL WuString::Contains(const WCHAR character) const
+	{
+		if (!_isInitialized)
+			throw "String is not initialized!";
+
+		if (wcsrchr(_wideBuff, character))
+			return TRUE;
+
+		return FALSE;
+	}
+
+	BOOL WuString::EndsWith(const CHAR character) const
+	{
+		if (!_isInitialized)
+			throw "String is not initialized!";
+
+		// 0-based array plus /0.
+		if (_strBuff[_charCount - 2] == character)
+			return TRUE;
+
+		return FALSE;
+	}
+
+	BOOL WuString::EndsWith(const WCHAR character) const
+	{
+		if (!_isInitialized)
+			throw "String is not initialized!";
+
+		// 0-based array plus /0.
+		if (_wideBuff[_charCount - 2] == character)
+			return TRUE;
+
+		return FALSE;
+	}
+
 	// Assignment operator.
 	void WuString::operator= (const LPSTR other)
 	{
@@ -183,7 +325,7 @@ namespace WindowsUtils::Core
 		else
 		{
 			PVOID currentProcHeap = GetProcessHeap();
-			_charCount = static_cast<UINT>(strlen(other) + 1);
+			_charCount = strlen(other) + 1;
 
 			if (_strBuff != NULL && _isInitialized)
 				HeapFree(currentProcHeap, 0, _strBuff);
@@ -205,9 +347,9 @@ namespace WindowsUtils::Core
 		else
 		{
 			PVOID currentProcHeap = GetProcessHeap();
-			_charCount = static_cast<UINT>(wcslen(other) + 1);
+			_charCount = wcslen(other) + 1;
 
-			UINT byteSize = _charCount * 2;
+			size_t byteSize = _charCount * 2;
 			if (_wideBuff != NULL && _isInitialized)
 				HeapFree(currentProcHeap, 0, _wideBuff);
 
@@ -229,9 +371,9 @@ namespace WindowsUtils::Core
 
 			if (other._isWide)
 			{
-				_charCount = static_cast<UINT>(wcslen(other._wideBuff) + 1);
+				_charCount = wcslen(other._wideBuff) + 1;
 
-				UINT byteSize = _charCount * 2;
+				size_t byteSize = _charCount * 2;
 				if (_wideBuff != NULL && _isInitialized)
 					HeapFree(currentProcHeap, 0, _wideBuff);
 
@@ -245,7 +387,7 @@ namespace WindowsUtils::Core
 			}
 			else
 			{
-				_charCount = static_cast<UINT>(strlen(other._strBuff) + 1);
+				_charCount = strlen(other._strBuff) + 1;
 
 				if (_strBuff != NULL && _isInitialized)
 					HeapFree(currentProcHeap, 0, _strBuff);
@@ -263,14 +405,14 @@ namespace WindowsUtils::Core
 			this->WuString::WuString();
 	}
 
-	// Compount assignment operator.
+	// Compound assignment operator.
 	void WuString::operator+=(const LPSTR other)
 	{
 		if (other != NULL)
 		{
 			PVOID currentProcHeap = GetProcessHeap();
 
-			UINT newCharCount = static_cast<UINT>(strlen(other) + 1);
+			size_t newCharCount = strlen(other) + 1;
 			_charCount += newCharCount;
 
 			LPSTR newBuff = static_cast<LPSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, _charCount));
@@ -294,9 +436,9 @@ namespace WindowsUtils::Core
 		{
 			PVOID currentProcHeap = GetProcessHeap();
 
-			UINT newCharCount = static_cast<UINT>(wcslen(other) + 1);
+			size_t newCharCount = wcslen(other) + 1;
 			_charCount += newCharCount;
-			UINT byteSize = _charCount * 2;
+			size_t byteSize = _charCount * 2;
 
 			LPWSTR newBuff = static_cast<LPWSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, byteSize));
 			if (newBuff != NULL)
@@ -321,9 +463,9 @@ namespace WindowsUtils::Core
 
 			if (other._isWide)
 			{
-				UINT newCharCount = static_cast<UINT>(wcslen(other._wideBuff) + 1);
+				size_t newCharCount = wcslen(other._wideBuff) + 1;
 				_charCount += newCharCount;
-				UINT byteSize = _charCount * 2;
+				size_t byteSize = _charCount * 2;
 
 				LPWSTR newBuff = static_cast<LPWSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, byteSize));
 				if (newBuff != NULL)
@@ -340,7 +482,7 @@ namespace WindowsUtils::Core
 			}
 			else
 			{
-				UINT newCharCount = static_cast<UINT>(strlen(other._strBuff) + 1);
+				size_t newCharCount = strlen(other._strBuff) + 1;
 				_charCount += newCharCount;
 
 				LPSTR newBuff = static_cast<LPSTR>(HeapAlloc(currentProcHeap, HEAP_ZERO_MEMORY, _charCount));
@@ -360,7 +502,7 @@ namespace WindowsUtils::Core
 	}
 
 	// Equality operator.
-	BOOL WuString::operator==(const LPSTR other)
+	BOOL WuString::operator==(const LPSTR other) const
 	{
 		BOOL result;
 
@@ -385,7 +527,7 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	BOOL WuString::operator==(const LPWSTR other)
+	BOOL WuString::operator==(const LPWSTR other) const
 	{
 		BOOL result;
 
@@ -410,7 +552,7 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	BOOL WuString::operator==(const WuString& other)
+	BOOL WuString::operator==(const WuString& other) const
 	{
 		BOOL result;
 
@@ -444,17 +586,17 @@ namespace WindowsUtils::Core
 	}
 
 	// Inequality operator.
-	BOOL WuString::operator!=(const LPSTR other)
+	BOOL WuString::operator!=(const LPSTR other) const
 	{
 		return !(*this == other);
 	}
 
-	BOOL WuString::operator!=(const LPWSTR other)
+	BOOL WuString::operator!=(const LPWSTR other) const
 	{
 		return !(*this == other);
 	}
 
-	BOOL WuString::operator!=(const WuString& other)
+	BOOL WuString::operator!=(const WuString& other) const
 	{
 		return !(*this == other);
 	}

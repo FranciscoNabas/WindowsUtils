@@ -4,7 +4,7 @@
 
 namespace WindowsUtils::Core
 {
-    DWORD AccessControl::GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES& lpTokenPrivileges)
+    DWORD AccessControl::GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES lpTokenPrivileges)
     {
         DWORD result = ERROR_SUCCESS;
         HANDLE hToken;
@@ -38,43 +38,31 @@ namespace WindowsUtils::Core
         return result;
     }
 
-    DWORD AccessControl::AdjustCurrentTokenPrivilege(SharedVecPtr(LPCWSTR)& spvlpPrivilegeNameList, const DWORD& dwAttributes)
+    DWORD AccessControl::AdjustCurrentTokenPrivilege(SharedVecPtr(LPCWSTR)& spvlpPrivilegeNameList, const DWORD dwAttributes)
     {
         DWORD result = ERROR_SUCCESS;
         HANDLE hToken;
-
-        WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken))
             return GetLastError();
 
         DWORD privilegeCount = static_cast<DWORD>(spvlpPrivilegeNameList->size());
-        PTOKEN_PRIVILEGES privileges = (PTOKEN_PRIVILEGES)MemoryManager.Allocate(sizeof(TOKEN_PRIVILEGES) + (sizeof(LUID_AND_ATTRIBUTES) * privilegeCount));
-        privileges->PrivilegeCount = privilegeCount;
+        WuAllocator<TOKEN_PRIVILEGES> privAll(sizeof(TOKEN_PRIVILEGES) + (sizeof(LUID_AND_ATTRIBUTES) * privilegeCount));
+        
+        privAll.Get()->PrivilegeCount = privilegeCount;
         for (size_t i = 0; i < privilegeCount; i++)
         {
-            if (!LookupPrivilegeValueW(NULL, spvlpPrivilegeNameList->at(i), &privileges->Privileges[i].Luid))
-            {
-                MemoryManager.Free(privileges);
+            if (!LookupPrivilegeValueW(NULL, spvlpPrivilegeNameList->at(i), &privAll.Get()->Privileges[i].Luid))
                 return GetLastError();
-            }
-            privileges->Privileges[i].Attributes = dwAttributes;
+            
+            privAll.Get()->Privileges[i].Attributes = dwAttributes;
         }
 
-        if (!AdjustTokenPrivileges(hToken, FALSE, privileges, 0, NULL, NULL))
+        if (!AdjustTokenPrivileges(hToken, FALSE, privAll.Get(), 0, NULL, NULL))
             result = GetLastError();
 
-        MemoryManager.Free(privileges);
         CloseHandle(hToken);
 
-        // For testing. Checking if the privilege adjustment worked.
-        /*AccessControl::GetCurrentTokenPrivileges(privileges);
-        LUID_AND_ATTRIBUTES current;
-        for (size_t i = 0; i < privileges->PrivilegeCount; i++)
-        {
-            current = privileges->Privileges[i];
-        }*/
-        
         return result;
     }
 }

@@ -2,6 +2,7 @@
 #pragma unmanaged
 
 #include "Utilities.h"
+#include "String.h"
 #include "MemoryManagement.h"
 
 namespace WindowsUtils::Core
@@ -17,34 +18,31 @@ namespace WindowsUtils::Core
 
 		typedef struct _MAPPED_PROGRESS_DATA
 		{
-			LPWSTR Activity;
+			WuString Activity;
 			INT ActivityId;
-			LPWSTR CurrentOperation;
+			WuString CurrentOperation;
 			INT ParentActivityId;
 			DWORD PercentComplete;
 			PROGRESS_RECORD_TYPE RecordType;
 			INT SecondsRemaining;
-			LPWSTR StatusDescription;
+			WuString StatusDescription;
 
 			_MAPPED_PROGRESS_DATA(
-				const LPWSTR& activity,
+				const WuString& activity,
 				INT activityId,
-				const LPWSTR& currOperation,
+				const WuString& currOperation,
 				INT parentActId,
 				DWORD percentComplete,
 				PROGRESS_RECORD_TYPE recType,
 				INT secRemaining,
-				const LPWSTR& status
+				const WuString& status
 			);
 
 			_MAPPED_PROGRESS_DATA()
-				: Activity(NULL), ActivityId(0), CurrentOperation(NULL), ParentActivityId(-1), PercentComplete(0), RecordType(PROGRESS_RECORD_TYPE::Processing), SecondsRemaining(-1), StatusDescription(NULL)
+				: Activity(), ActivityId(0), CurrentOperation(), ParentActivityId(-1), PercentComplete(0), RecordType(PROGRESS_RECORD_TYPE::Processing), SecondsRemaining(-1), StatusDescription()
 			{ }
 
 			~_MAPPED_PROGRESS_DATA();
-
-		private:
-			WuMemoryManagement& _memoryManager = WuMemoryManagement::GetManager();
 
 		} MAPPED_PROGRESS_DATA, *PMAPPED_PROGRESS_DATA;
 
@@ -65,5 +63,5 @@ namespace WindowsUtils::Core
 	};
 
 	void NativeWriteProgress(Notification::PNATIVE_CONTEXT context, Notification::PMAPPED_PROGRESS_DATA progData);
-	void NativeWriteWarning(Notification::PNATIVE_CONTEXT context, const LPWSTR& text);
+	void NativeWriteWarning(Notification::PNATIVE_CONTEXT context, const WuString& text);
 }
