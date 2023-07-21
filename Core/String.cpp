@@ -124,6 +124,86 @@ namespace WindowsUtils::Core
 		_isWide = false;
 	}
 
+	// Static methods.
+	BOOL WuString::IsNullOrEmpty(const LPSTR string)
+	{
+		if (string != NULL)
+			return strlen(string) == 0;
+
+		return TRUE;
+	}
+
+	BOOL WuString::IsNullOrEmpty(const LPWSTR string)
+	{
+		if (string != NULL)
+			return wcslen(string) == 0;
+
+		return TRUE;
+	}
+
+	BOOL WuString::IsNullOrEmpty(const WuString& string)
+	{
+		if (string._isInitialized)
+			return string.Length() == 0;
+
+		return TRUE;
+	}
+
+	BOOL WuString::IsNullOrWhiteSpace(const LPSTR string)
+	{
+		if (string == NULL)
+			return TRUE;
+
+		size_t stringLength = strlen(string);
+		for (size_t i = 0; i < stringLength; i++)
+		{
+			if (string[i] != ' ')
+				return FALSE;
+		}
+
+		return TRUE;
+	}
+
+	BOOL WuString::IsNullOrWhiteSpace(const LPWSTR string)
+	{
+		if (string == NULL)
+			return TRUE;
+
+		size_t stringLength = wcslen(string);
+		for (size_t i = 0; i < stringLength; i++)
+		{
+			if (string[i] != ' ')
+				return FALSE;
+		}
+
+		return TRUE;
+	}
+
+	BOOL WuString::IsNullOrWhiteSpace(const WuString& string)
+	{
+		if (!string._isInitialized)
+			return TRUE;
+
+		if (string._isWide)
+		{
+			for (size_t i = 0; i < string.Length(); i++)
+			{
+				if (string._wideBuff[i] != ' ')
+					return FALSE;
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < string.Length(); i++)
+			{
+				if (string._strBuff[i] != ' ')
+					return FALSE;
+			}
+		}
+
+		return TRUE;
+	}
+
 	// Methods.
 	void WuString::Initialize(const size_t charCount, BOOL isWide = TRUE)
 	{
@@ -142,6 +222,16 @@ namespace WindowsUtils::Core
 			_isInitialized = true;
 			_isWide = false;
 		}
+	}
+
+	BOOL WuString::IsInitialized() const
+	{
+		return _isInitialized;
+	}
+
+	BOOL WuString::IsInitialized()
+	{
+		return _isInitialized;
 	}
 
 	const size_t WuString::Length()
@@ -339,6 +429,77 @@ namespace WindowsUtils::Core
 			return TRUE;
 
 		return FALSE;
+	}
+
+	BOOL WuString::EndsWith(const LPSTR suffix, BOOL ignoreCase = FALSE) const
+	{
+		if (!_isInitialized || _isWide)
+			throw "String is not initialized!";
+
+		if (suffix == NULL)
+			throw "Suffix cannot be null.";
+
+		size_t suffixLen = strlen(suffix);
+		if (suffixLen > this->Length())
+			throw "Suffix cannot be bigger than the string.";
+
+		if (ignoreCase)
+			return _strnicmp(_strBuff + this->Length() - suffixLen, suffix, suffixLen) == 0;
+
+		return strncmp(_strBuff + this->Length() - suffixLen, suffix, suffixLen) == 0;
+	}
+
+	BOOL WuString::EndsWith(const LPWSTR suffix, BOOL ignoreCase = FALSE) const
+	{
+		if (!_isInitialized || !_isWide)
+			throw "String is not initialized!";
+
+		if (suffix == NULL)
+			throw "Suffix cannot be null.";
+
+		size_t suffixLen = wcslen(suffix);
+		if (suffixLen > this->Length())
+			throw "Suffix cannot be bigger than the string.";
+
+		if (ignoreCase)
+			return _wcsnicmp(_wideBuff + this->Length() - suffixLen, suffix, suffixLen) == 0;
+
+		return wcsncmp(_wideBuff + this->Length() - suffixLen, suffix, suffixLen) == 0;
+	}
+
+	BOOL WuString::EndsWith(const WuString& suffix, BOOL ignoreCase = FALSE) const
+	{
+		BOOL result;
+
+		if (!_isInitialized || !suffix._isInitialized)
+			throw "Both strings needs to be initialized.";
+
+		if (_isWide)
+		{
+			if (suffix._isWide)
+			{
+				if (ignoreCase)
+					result = _wcsnicmp(_wideBuff + this->Length() - suffix.Length(), suffix.GetWideBuffer(), suffix.Length()) == 0;
+				else
+					result = wcsncmp(_wideBuff + this->Length() - suffix.Length(), suffix.GetWideBuffer(), suffix.Length()) == 0;
+			}
+			else
+				result = FALSE;
+		}
+		else
+		{
+			if (suffix._isWide)
+				result = FALSE;
+			else
+			{
+				if (ignoreCase)
+					result = _strnicmp(_strBuff + this->Length() - suffix.Length(), suffix._strBuff, suffix.Length()) == 0;
+				else
+					result = strncmp(_strBuff + this->Length() - suffix.Length(), suffix._strBuff, suffix.Length()) == 0;
+			}
+		}
+
+		return result;
 	}
 
 	// Assignment operator.

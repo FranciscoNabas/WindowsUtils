@@ -54,8 +54,5 @@ namespace WindowsUtils::Core
 		_LOAD_MODULE_ERROR_INFO() : IsLoaded(TRUE), ErrorCode(ERROR_SUCCESS) { }
 	}LOAD_MODULE_ERROR_INFO, * PLOAD_MODULE_ERROR_INFO;
 
-	BOOL EndsWith(const LPWSTR& inputstr, const LPWSTR& comparestr);
-	VOID PrintBufferW(LPWSTR& lpbuffer, const WCHAR* const format, ...);
-	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr);
 	DWORD GetEnvVariable(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue);
 }

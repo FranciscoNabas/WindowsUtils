@@ -4,7 +4,7 @@
 
 namespace WindowsUtils::Core
 {
-    DWORD AccessControl::GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES lpTokenPrivileges)
+    DWORD AccessControl::GetCurrentTokenPrivileges(std::shared_ptr<TOKEN_PRIVILEGES> tokenPrivileges)
     {
         DWORD result = ERROR_SUCCESS;
         HANDLE hToken;
@@ -27,18 +27,17 @@ namespace WindowsUtils::Core
             result = ERROR_SUCCESS;
         }
 
-        lpTokenPrivileges = (PTOKEN_PRIVILEGES)MemoryManager.Allocate(dwBytesNeeded);
-        if (!GetTokenInformation(hToken, TokenPrivileges, (LPVOID)lpTokenPrivileges, dwBytesNeeded, &dwBytesNeeded))
+        tokenPrivileges = std::make_shared<TOKEN_PRIVILEGES>(dwBytesNeeded);
+        if (!GetTokenInformation(hToken, TokenPrivileges, (LPVOID)tokenPrivileges.get(), dwBytesNeeded, &dwBytesNeeded))
         {
             CloseHandle(hToken);
-            MemoryManager.Free(lpTokenPrivileges);
             return GetLastError();
         }
 
         return result;
     }
 
-    DWORD AccessControl::AdjustCurrentTokenPrivilege(SharedVecPtr(LPCWSTR)& spvlpPrivilegeNameList, const DWORD dwAttributes)
+    DWORD AccessControl::AdjustCurrentTokenPrivilege(SharedVecPtr(WuString)& spvlpPrivilegeNameList, const DWORD dwAttributes)
     {
         DWORD result = ERROR_SUCCESS;
         HANDLE hToken;
@@ -49,16 +48,16 @@ namespace WindowsUtils::Core
         DWORD privilegeCount = static_cast<DWORD>(spvlpPrivilegeNameList->size());
         WuAllocator<TOKEN_PRIVILEGES> privAll(sizeof(TOKEN_PRIVILEGES) + (sizeof(LUID_AND_ATTRIBUTES) * privilegeCount));
         
-        privAll.Get()->PrivilegeCount = privilegeCount;
+        privAll->PrivilegeCount = privilegeCount;
         for (size_t i = 0; i < privilegeCount; i++)
         {
-            if (!LookupPrivilegeValueW(NULL, spvlpPrivilegeNameList->at(i), &privAll.Get()->Privileges[i].Luid))
+            if (!LookupPrivilegeValueW(NULL, spvlpPrivilegeNameList->at(i).GetWideBuffer(), &privAll->Privileges[i].Luid))
                 return GetLastError();
             
-            privAll.Get()->Privileges[i].Attributes = dwAttributes;
+            privAll->Privileges[i].Attributes = dwAttributes;
         }
 
-        if (!AdjustTokenPrivileges(hToken, FALSE, privAll.Get(), 0, NULL, NULL))
+        if (!AdjustTokenPrivileges(hToken, FALSE, privAll.get(), 0, NULL, NULL))
             result = GetLastError();
 
         CloseHandle(hToken);

@@ -42,7 +42,18 @@ namespace WindowsUtils::Core
 
 		~WuString();
 
+		static BOOL IsNullOrEmpty(const LPSTR string);
+		static BOOL IsNullOrEmpty(const LPWSTR string);
+		static BOOL IsNullOrEmpty(const WuString& string);
+
+		static BOOL IsNullOrWhiteSpace(const LPSTR string);
+		static BOOL IsNullOrWhiteSpace(const LPWSTR string);
+		static BOOL IsNullOrWhiteSpace(const WuString& string);
+
 		void Initialize(const size_t charCount, BOOL isWide = TRUE);
+		BOOL IsInitialized() const;
+		BOOL IsInitialized();
+		
 		const size_t Length();
 		const size_t Length() const;
 		LPSTR GetBuffer();
@@ -60,6 +71,9 @@ namespace WindowsUtils::Core
 
 		BOOL EndsWith(const CHAR character) const;
 		BOOL EndsWith(const WCHAR character) const;
+		BOOL EndsWith(const LPSTR suffix, BOOL ignoreCase = FALSE) const;
+		BOOL EndsWith(const LPWSTR suffix, BOOL ignoreCase = FALSE) const;
+		BOOL EndsWith(const WuString& suffix, BOOL ignoreCase = FALSE) const;
 
 		void operator= (const LPSTR other);
 		void operator= (const LPWSTR other);

@@ -149,80 +149,56 @@ namespace WindowsUtils::Core
 
 	// Gets process image version information.
 	DWORD GetProccessVersionInfo(
-		const WuString& imagepath,								// The process image file path.
-		ProcessAndThread::VERSION_INFO_PROPERTY propname,	// The property name, or 'key' value.
+		const WuString& imagePath,							// The process image file path.
+		ProcessAndThread::VERSION_INFO_PROPERTY propName,	// The property name, or 'key' value.
 		WuString& value										// The return value.
 	) {
 		DWORD result = ERROR_SUCCESS;
-		WORD* langncodepage;
+		LPWORD codePage = NULL;
+		LPWSTR desc = NULL;
 		UINT len;
-		WCHAR* desc;
-		WCHAR text[256];
 
-		LPWSTR lppropname = { 0 };
-		switch (propname)
+		WuString propertyName;
+		switch (propName)
 		{
 		case ProcessAndThread::FileDescription:
-			lppropname = new WCHAR[16];
-			wcscpy_s(lppropname, 16, L"FileDescription");
+			propertyName = L"FileDescription";
 			break;
 		case ProcessAndThread::ProductName:
-			lppropname = new WCHAR[12];
-			wcscpy_s(lppropname, 12, L"ProductName");
+			propertyName = L"ProductName";
 			break;
 		case ProcessAndThread::FileVersion:
-			lppropname = new WCHAR[12];
-			wcscpy_s(lppropname, 12, L"FileVersion");
+			propertyName = L"FileVersion";
 			break;
 		case ProcessAndThread::CompanyName:
-			lppropname = new WCHAR[12];
-			wcscpy_s(lppropname, 12, L"CompanyName");
+			propertyName = L"CompanyName";
 			break;
 		default:
 			break;
 		}
 
-		if (0 == lppropname)
-			return ::GetLastError();
+		DWORD infoSize = ::GetFileVersionInfoSizeW(imagePath.GetWideBuffer(), NULL);
+		WuAllocator<BYTE[]> buffer(infoSize);
 
-		size_t complen = 256 + wcslen(lppropname) + 2;
-
-		DWORD verinfosize = ::GetFileVersionInfoSizeW(imagepath, NULL);
-		LPVOID buffer = (LPVOID)::HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, verinfosize);
-		if (NULL == buffer)
-			return ERROR_NOT_ENOUGH_MEMORY;
-
-		if (!::GetFileVersionInfoW(imagepath, NULL, verinfosize, buffer))
+		if (!::GetFileVersionInfoW(imagePath.GetWideBuffer(), NULL, infoSize, buffer.Get()))
 			return GetLastError();
 
-		if (!::VerQueryValueW(buffer, L"\\VarFileInfo\\Translation", (LPVOID*)&langncodepage, &len))
+		if (!::VerQueryValueW(buffer.Get(), L"\\VarFileInfo\\Translation", (LPVOID*)&codePage, &len))
 			return GetLastError();
 
-		::StringCchPrintfW(text, complen, TEXT("\\StringFileInfo\\%04x%04x\\"), langncodepage[0], langncodepage[1]);
+		WuString text(propertyName.Length() + 258);
+		text.Format(L"\\StringFileInfo\\%04x%04x\\", codePage[0], codePage[1]);
+		text += propertyName;
 
-		std::wstring subbuffer(text);
-		std::wstring propertyname(lppropname);
-		std::wstring resulttest = subbuffer + propertyname;
-
-		if (::VerQueryValueW(buffer, resulttest.c_str(), (LPVOID*)&desc, &len))
+		if (::VerQueryValueW(buffer.Get(), text.GetWideBuffer(), (LPVOID*)&desc, &len))
 		{
-
-			size_t descsz = wcslen(desc) + 1;
-			if (descsz > 1 && !IsNullOrWhiteSpace(desc))
-			{
-				value = new WCHAR[descsz];
-				wcscpy_s(value, descsz, desc);
-			}
+			if (!WuString::IsNullOrWhiteSpace(desc))
+				value = desc;
 			else
-				value = new WCHAR[1]{ 0 };
+				value = L"";
 		}
 		else
-			value = new WCHAR[1]{ 0 };
-
-		if (NULL != buffer)
-			::HeapFree(::GetProcessHeap(), NULL, buffer);
-
-		delete[] lppropname;
+			value = L"";
 
 		return result;
 	}
@@ -233,14 +209,13 @@ namespace WindowsUtils::Core
 	DWORD CloseExtProcessHandle(
 		HANDLE hExtProcess,				// A valid handle to the external process.
 		const WuString& objectName		// The object name, used on GetProcessObjectHandle.
-	)
-	{
+	) {
 		DWORD result = ERROR_SUCCESS;
-		NTSTATUS ntcall = STATUS_SUCCESS;
-		HANDLE htarget = NULL;
+		NTSTATUS ntCall = STATUS_SUCCESS;
+		HANDLE hTarget = NULL;
 
-		LPWSTR lpcpathnoroot = ::PathSkipRootW(rlpcobjectname);
-		if (NULL == lpcpathnoroot)
+		WuString pathNoRoot = ::PathSkipRootW(objectName.GetWideBuffer());
+		if (!pathNoRoot.IsInitialized())
 			return ::GetLastError();
 
 		HMODULE hmodule = ::GetModuleHandleW(L"ntdll.dll");
@@ -255,44 +230,46 @@ namespace WindowsUtils::Core
 		do
 		{
 			buffer = std::make_unique<BYTE[]>(szbuffer);
-			ntcall = NtQueryInformationProcess(rhextprocess, ProcessHandleInformation, buffer.get(), szbuffer, &szbuffneed);
+			ntCall = NtQueryInformationProcess(hExtProcess, ProcessHandleInformation, buffer.get(), szbuffer, &szbuffneed);
 
-			if (STATUS_SUCCESS != ntcall && STATUS_INFO_LENGTH_MISMATCH != ntcall)
-				return ntcall;
+			if (STATUS_SUCCESS != ntCall && STATUS_INFO_LENGTH_MISMATCH != ntCall)
+				return ntCall;
 
-			if (STATUS_SUCCESS == ntcall)
+			if (STATUS_SUCCESS == ntCall)
 				break;
 
 			szbuffer = szbuffneed;
 
-		} while (ntcall == STATUS_INFO_LENGTH_MISMATCH);
+		} while (ntCall == STATUS_INFO_LENGTH_MISMATCH);
 
 		PPROCESS_HANDLE_SNAPSHOT_INFORMATION phsnapinfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
 
 		for (ULONG i = 0; i < phsnapinfo->NumberOfHandles; i++)
 		{
-			POBJECT_NAME_INFORMATION pobjnameinfo = (POBJECT_NAME_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(OBJECT_NAME_INFORMATION));
-			if (NULL == pobjnameinfo)
-				return ERROR_NOT_ENOUGH_MEMORY;
+			WuAllocator<OBJECT_NAME_INFORMATION> objectNameInfo;
 
-			if (!::DuplicateHandle(rhextprocess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &htarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
+			if (!::DuplicateHandle(hExtProcess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
 				continue;
 
-			ntcall = NtQueryObjectWithTimeout(htarget, ObjectNameInformation, pobjnameinfo, 200);
-			if (STATUS_SUCCESS != ntcall)
-				return ntcall;
+			ntCall = NtQueryObjectWithTimeout(hTarget, ObjectNameInformation, objectNameInfo.Get(), 200);
+			if (STATUS_SUCCESS != ntCall)
+				return ntCall;
 
-			::CloseHandle(htarget);
+			::CloseHandle(hTarget);
 
-			if (pobjnameinfo->Name.Buffer && EndsWith(pobjnameinfo->Name.Buffer, lpcpathnoroot))
+			if (objectNameInfo.Get()->Name.Buffer)
 			{
-				if (!::DuplicateHandle(rhextprocess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &htarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
-					result = GetLastError();
-
-				else
+				WuString buffString = objectNameInfo.Get()->Name.Buffer;
+				if (buffString.EndsWith(pathNoRoot))
 				{
-					::CloseHandle(htarget);
-					break;
+					if (!::DuplicateHandle(hExtProcess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
+						result = GetLastError();
+
+					else
+					{
+						::CloseHandle(hTarget);
+						break;
+					}
 				}
 			}
 		}

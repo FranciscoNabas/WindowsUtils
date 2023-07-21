@@ -3,6 +3,7 @@
 
 #include <winreg.h>
 
+#include "String.h"
 #include "MemoryManagement.h"
 
 #define MAX_KEY_LENGTH 255
@@ -12,13 +13,13 @@ namespace WindowsUtils::Core
     extern "C" public class __declspec(dllexport) Registry
     {
     public:
-        LSTATUS GetRegistryKeyValue(const LPWSTR& lpszComputerName, const HKEY& hRootKey, const LPWSTR& lpszSubKey, const LPWSTR& lpszValueName, DWORD& dwType, PVOID& pvData, DWORD& dwBytesReturned);
-        LSTATUS GetRegistryKeyValue(HKEY& hRegistry, const LPWSTR& lpszSubKey, const LPWSTR& lpszValueName, DWORD& dwType, PVOID& pvData, DWORD& dwBytesReturned);
+        LSTATUS GetRegistryKeyValue(const WuString& computerName, const HKEY hRootKey, const WuString& subKey, const WuString& valueName, DWORD type, std::shared_ptr<BYTE[]> data, DWORD bytesReturned);
+        LSTATUS GetRegistryKeyValue(HKEY hRegistry, const WuString& subKey, const WuString& valueName, DWORD type, std::shared_ptr<BYTE[]> data, DWORD bytesReturned);
 
-        LSTATUS GetRegistryKeyValueList(const LPWSTR& lpszComputerName, const HKEY& hRootKey, const LPWSTR& lpszSubKey, PVALENT pValArray, DWORD dwValCount, LPWSTR& lpDataBuffer);
-        LSTATUS GetRegistryKeyValueList(HKEY& hRegistry, const LPWSTR& lpszSubKey, PVALENT pValArray, DWORD dwValCount, LPWSTR& lpDataBuffer);
+        LSTATUS GetRegistryKeyValueList(const WuString& computerName, const HKEY hRootKey, const WuString& subKey, PVALENT valArray, DWORD valCount, WuString& dataBuffer);
+        LSTATUS GetRegistryKeyValueList(HKEY hRegistry, const WuString& subKey, PVALENT valArray, DWORD valCount, WuString& dataBuffer);
         
-        LSTATUS GetRegistrySubkeyNames(const LPWSTR& lpszComputerName, const HKEY& hRootKey, const LPWSTR& lpszSubKey, DWORD dwOptions, std::vector<LPWSTR>& vecSubkeyNames);
-        LSTATUS GetRegistrySubkeyNames(HKEY& hRegistry, const LPWSTR& lpszSubKey, DWORD dwOptions, std::vector<LPWSTR>& vecSubkeyNames);
+        LSTATUS GetRegistrySubkeyNames(const WuString& computerName, const HKEY hRootKey, const WuString& subKey, DWORD options, std::vector<WuString>& subkeyNames);
+        LSTATUS GetRegistrySubkeyNames(HKEY hRegistry, const WuString& subKey, DWORD options, std::vector<WuString>& subkeyNames);
     };
 }

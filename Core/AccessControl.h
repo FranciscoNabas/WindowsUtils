@@ -1,6 +1,7 @@
 #pragma once
 #pragma unmanaged
 
+#include "String.h"
 #include "MemoryManagement.h"
 
 #define SE_PRIVILEGE_DISABLED 0x00000000L
@@ -12,7 +13,7 @@ namespace WindowsUtils::Core
     {
     public:
 
-        DWORD static GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES lpTokenPrivileges);
-        DWORD static AdjustCurrentTokenPrivilege(SharedVecPtr(LPCWSTR)& spvlpPrivilegeNameList, const DWORD dwAttributes);
+        DWORD static GetCurrentTokenPrivileges(std::shared_ptr<TOKEN_PRIVILEGES> tokenPrivileges);
+        DWORD static AdjustCurrentTokenPrivilege(SharedVecPtr(WuString)& spvlpPrivilegeNameList, const DWORD dwAttributes);
     };
 }

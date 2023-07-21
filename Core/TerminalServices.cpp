@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+
 #include "TerminalServices.h"
 
 namespace WindowsUtils::Core

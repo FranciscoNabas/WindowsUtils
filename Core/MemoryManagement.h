@@ -7,10 +7,13 @@ namespace WindowsUtils::Core
 	class WuAllocator
 	{
 	public:
-		WuAllocator<T>(SIZE_T size);
-		~WuAllocator<T>();
+		WuAllocator();
+		WuAllocator(SIZE_T size);
+		~WuAllocator();
 
-		T* Get();
+		T* get();
+
+		T* operator-> ();
 
 	private:
 		T* _buffer;

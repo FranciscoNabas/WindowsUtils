@@ -1,7 +1,7 @@
 #pragma once
 #pragma unmanaged
 
-#include "pch.h"
+#include "String.h"
 
 namespace WindowsUtils::Core
 {
@@ -16,15 +16,26 @@ namespace WindowsUtils::Core
 		typedef struct _WU_COMPUTER_SESSION
 		{
 			INT						SessionId;		// Session ID.
-			LPWSTR					UserName;		// User name, on the format 'Domain\Username'.
-			LPWSTR					SessionName;	// Session name.
+			WuString				UserName;		// User name, on the format 'Domain\Username'.
+			WuString				SessionName;	// Session name.
 			LARGE_INTEGER			LastInputTime;	// Last input time.
 			LARGE_INTEGER			LogonTime;		// User logon time.
 			WTS_CONNECTSTATE_CLASS	SessionState;	// Session state.
 
 			_WU_COMPUTER_SESSION() { }
-			_WU_COMPUTER_SESSION(INT sessid, LPWSTR usrname, LPWSTR sessname, LARGE_INTEGER linptime, LARGE_INTEGER lgtime, WTS_CONNECTSTATE_CLASS sesstate)
-				: SessionId(sessid), UserName(usrname), SessionName(sessname), LastInputTime(linptime), LogonTime(lgtime), SessionState(sesstate) { }
+			_WU_COMPUTER_SESSION(INT sessid, const WuString& usrname, const WuString& sessname, LARGE_INTEGER linptime, LARGE_INTEGER lgtime, WTS_CONNECTSTATE_CLASS sesstate)
+				: SessionId(sessid), LastInputTime(linptime), LogonTime(lgtime), SessionState(sesstate)
+			{
+				UserName = *new WuString(usrname);
+				SessionName = *new WuString(sessname);
+			}
+
+			~_WU_COMPUTER_SESSION()
+			{
+				delete UserName;
+				delete SessionName;
+			}
+
 		}WU_COMPUTER_SESSION, * PWU_COMPUTER_SESSION;
 
 		// Invoke-RemoteMessage

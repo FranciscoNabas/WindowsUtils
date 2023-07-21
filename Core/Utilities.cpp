@@ -202,28 +202,6 @@ namespace WindowsUtils::Core
 	==		Utility function definition		==
 	==========================================*/
 
-	BOOL EndsWith(const LPWSTR& inputstr, const LPWSTR& comparestr)
-	{
-		LPCWSTR pdest = wcsstr(inputstr, comparestr);
-		if (NULL == pdest)
-			return FALSE;
-		else
-			return TRUE;
-	}
-
-	// Write formatted output in a buffer. The memory allocation is what makes this function needed.
-	VOID PrintBufferW(LPWSTR& lpbuffer,  const WCHAR* const format, ...)
-	{
-		va_list args;
-		int ilength;
-
-		va_start(args, format);
-		ilength = _vscwprintf(format, args) + 1;
-
-		lpbuffer = new WCHAR[ilength];
-		vswprintf_s(lpbuffer, ilength, format, args);
-	}
-
 	// Gets extented error information for Get-MsiProperties
 	DWORD Utilities::GetMsiExtendedError(LPWSTR& lperrormessage)
 	{
@@ -244,22 +222,6 @@ namespace WindowsUtils::Core
 		result = MsiFormatRecordW(NULL, hlasterror, lperrormessage, &dwszerrbuffer);
 
 		return result;
-	}
-
-	// Checks if a C-style string is null or white space.
-	BOOL IsNullOrWhiteSpace(LPWSTR& lpinputstr)
-	{
-		size_t strlen = wcslen(lpinputstr);
-		if (strlen > 0)
-		{
-			for (size_t i = 0; i < strlen; i++)
-			{
-				if (lpinputstr[i] != ' ')
-					return FALSE;
-			}
-		}
-		
-		return TRUE;
 	}
 
 	// Helper function to retrieve environment variables safely.

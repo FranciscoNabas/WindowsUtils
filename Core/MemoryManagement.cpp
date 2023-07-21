@@ -5,21 +5,34 @@
 namespace WindowsUtils::Core
 {
 	// Simple allocator definition.
-	template <class T>
+	template<class T>
+	WuAllocator<T>::WuAllocator()
+	{
+		_processHeap = GetProcessHeap();
+		_buffer = HeapAlloc(_processHeap, HEAP_ZERO_MEMORY, sizeof(T));
+	}
+
+	template<class T>
 	WuAllocator<T>::WuAllocator(SIZE_T size)
 	{
 		_processHeap = GetProcessHeap();
-		_buffer = HeapAlloc(_processHeap, HEAP_ZERO_MEMORY, size)
+		_buffer = HeapAlloc(_processHeap, HEAP_ZERO_MEMORY, size);
 	}
 
-	template <class T>
+	template<class T>
 	WuAllocator<T>::~WuAllocator()
 	{
 		HeapFree(_processHeap, 0, _buffer);
 	}
 
-	template <class T>
-	T* WuAllocator<T>::Get()
+	template<class T>
+	T* WuAllocator<T>::get()
+	{
+		return static_cast<T*>(buffer);
+	}
+
+	template<class T>
+	T* WuAllocator<T>::operator->()
 	{
 		return static_cast<T*>(buffer);
 	}

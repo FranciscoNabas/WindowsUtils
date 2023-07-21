@@ -4,23 +4,21 @@
 namespace WindowsUtils::Core
 {
     LSTATUS Registry::GetRegistryKeyValue(
-        const LPWSTR& lpszComputerName,   // The computer name to get the value from.
-        const HKEY& hRootKey,             // The hive.
-        const LPWSTR& lpszSubKey,         // The subkey path.
-        const LPWSTR& lpszValueName,      // The key value name, or property name.
-        DWORD& dwType,                    // The return data type.
-        PVOID& pvData,                    // The pointer that receives the data.
-        DWORD& dwBytesReturned            // The number of bytes returned.
+        const WuString& computerName,  // The computer name to get the value from.
+        const HKEY hRootKey,           // The hive.
+        const WuString& subKey,        // The subkey path.
+        const WuString& valueName,     // The key value name, or property name.
+        DWORD type,                    // The return data type.
+        std::shared_ptr<BYTE[]> data,  // The pointer that receives the data.
+        DWORD bytesReturned            // The number of bytes returned.
     ) {
         LSTATUS result = ERROR_SUCCESS;
         HKEY hRegistry;
 
-        WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-
-        result = RegConnectRegistry(lpszComputerName, hRootKey, &hRegistry);
+        result = RegConnectRegistry(computerName.GetWideBuffer(), hRootKey, &hRegistry);
         DWERRORCHECKV(result);
 
-        result = RegGetValue(hRegistry, lpszSubKey, lpszValueName, RRF_RT_ANY, &dwType, NULL, &dwBytesReturned);
+        result = RegGetValue(hRegistry, subKey.GetWideBuffer(), valueName.GetWideBuffer(), RRF_RT_ANY, &type, NULL, &bytesReturned);
         if (result != ERROR_SUCCESS)
         {
             if (result != ERROR_MORE_DATA)
@@ -30,49 +28,45 @@ namespace WindowsUtils::Core
             }
         }
 
-        pvData = (PVOID)MemoryManager.Allocate(dwBytesReturned);
-        result = RegGetValue(hRegistry, lpszSubKey, lpszValueName, RRF_RT_ANY, &dwType, pvData, &dwBytesReturned);
+        data = std::make_shared<BYTE[]>(bytesReturned);
+        result = RegGetValue(hRegistry, subKey.GetWideBuffer(), valueName.GetWideBuffer(), RRF_RT_ANY, &type, data.get(), &bytesReturned);
 
         RegCloseKey(hRegistry);
         return result;
     }
 
-    LSTATUS Registry::GetRegistryKeyValue(HKEY& hRegistry, const LPWSTR& lpszSubKey, const LPWSTR& lpszValueName, DWORD& dwType, PVOID& pvData, DWORD& dwBytesReturned)
+    LSTATUS Registry::GetRegistryKeyValue(HKEY hRegistry, const WuString& subKey, const WuString& valueName, DWORD dwType, std::shared_ptr<BYTE[]> data, DWORD bytesReturned)
     {
         LSTATUS result = ERROR_SUCCESS;
 
-        WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-
-        result = RegGetValue(hRegistry, lpszSubKey, lpszValueName, RRF_RT_ANY, &dwType, NULL, &dwBytesReturned);
+        result = RegGetValue(hRegistry, subKey.GetWideBuffer(), valueName.GetWideBuffer(), RRF_RT_ANY, &dwType, NULL, &bytesReturned);
         if (result != ERROR_SUCCESS)
             return result;
 
-        pvData = (PVOID)MemoryManager.Allocate(dwBytesReturned);
-        result = RegGetValue(hRegistry, lpszSubKey, lpszValueName, RRF_RT_ANY, &dwType, pvData, &dwBytesReturned);
+        data = std::make_shared<BYTE[]>(bytesReturned);
+        result = RegGetValue(hRegistry, subKey.GetWideBuffer(), valueName.GetWideBuffer(), RRF_RT_ANY, &dwType, data.get(), &bytesReturned);
 
         RegCloseKey(hRegistry);
         return result;
     }
 
     LSTATUS Registry::GetRegistrySubkeyNames(
-        const LPWSTR& lpszComputerName,         // The computer name to get the value from.
-        const HKEY& hRootKey,                   // The hive.
-        const LPWSTR& lpszSubKey,               // The subkey path.
-        DWORD dwOptions,                        // 0 for normal keys, REG_OPTION_OPEN_LINK for sym link keys.
-        std::vector<LPWSTR>& vecSubkeyNames     // The vector that receives all subkey names. This operation is not recursive.
+        const WuString& computerName,         // The computer name to get the value from.
+        const HKEY hRootKey,                  // The hive.
+        const WuString& subKey,               // The subkey path.
+        DWORD options,                        // 0 for normal keys, REG_OPTION_OPEN_LINK for sym link keys.
+        std::vector<WuString>& subkeyNames    // The vector that receives all subkey names. This operation is not recursive.
     ) {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwSubkeyNameSz = MAX_KEY_LENGTH;
-        LPWSTR persName = NULL;
+        WuString persName;
         HKEY hRegistry;
         HKEY hSubKey;
 
-        WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-
-        result = RegConnectRegistry(lpszComputerName, hRootKey, &hRegistry);
+        result = RegConnectRegistry(computerName.GetWideBuffer(), hRootKey, &hRegistry);
         DWERRORCHECKV(result);
 
-        result = RegOpenKeyEx(hRegistry, lpszSubKey, dwOptions, KEY_READ, &hSubKey);
+        result = RegOpenKeyEx(hRegistry, subKey.GetWideBuffer(), options, KEY_READ, &hSubKey);
         if (result != ERROR_SUCCESS)
         {
             RegCloseKey(hRegistry);
@@ -97,10 +91,8 @@ namespace WindowsUtils::Core
             if (result == ERROR_NO_MORE_ITEMS)
                 break;
 
-            DWORD szChars = dwSubkeyNameSz + 1;
-            persName = (LPWSTR)MemoryManager.Allocate(szChars * 2);
-            wcscpy_s(persName, szChars, (LPWSTR)buffer.get());
-            vecSubkeyNames.push_back(persName);
+            persName = reinterpret_cast<LPWSTR>(buffer.get());
+            subkeyNames.push_back(persName);
             currentIndex++;
 
         } while (result != ERROR_NO_MORE_ITEMS);
@@ -112,16 +104,14 @@ namespace WindowsUtils::Core
         return result;
     }
 
-    LSTATUS Registry::GetRegistrySubkeyNames(HKEY& hRegistry, const LPWSTR& lpszSubKey, DWORD dwOptions, std::vector<LPWSTR>& vecSubkeyNames)
+    LSTATUS Registry::GetRegistrySubkeyNames(HKEY hRegistry, const WuString& subKey, DWORD options, std::vector<WuString>& subkeyNames)
     {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwSubkeyNameSz = MAX_KEY_LENGTH;
-        LPWSTR persName = NULL;
+        WuString persName;
         HKEY hSubKey;
 
-        WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-
-        result = RegOpenKeyEx(hRegistry, lpszSubKey, dwOptions, KEY_READ, &hSubKey);
+        result = RegOpenKeyEx(hRegistry, subKey.GetWideBuffer(), options, KEY_READ, &hSubKey);
         if (result != ERROR_SUCCESS)
             return result;
 
@@ -142,10 +132,8 @@ namespace WindowsUtils::Core
             if (result == ERROR_NO_MORE_ITEMS)
                 break;
 
-            DWORD szChars = dwSubkeyNameSz + 1;
-            persName = (LPWSTR)MemoryManager.Allocate(szChars * 2);
-            wcscpy_s(persName, szChars, (LPWSTR)buffer.get());
-            vecSubkeyNames.push_back(persName);
+            persName = reinterpret_cast<LPWSTR>(buffer.get());
+            subkeyNames.push_back(persName);
             currentIndex++;
 
         } while (result != ERROR_NO_MORE_ITEMS);
@@ -157,24 +145,22 @@ namespace WindowsUtils::Core
     }
 
     LSTATUS Registry::GetRegistryKeyValueList(
-        const LPWSTR& lpszComputerName,    // The computer name.
-        const HKEY& hRootKey,              // The hive.
-        const LPWSTR& lpszSubKey,          // The subkey path.
-        PVALENT pValArray,                 // An array of VALENT objects. The 've_valuename' of each object must contain the value name to retrieve the value.
-        DWORD dwValCount,                  // The number of VALENT objects in 'pValArray'.
-        LPWSTR& lpDataBuffer               // The buffer that receives the data.
+        const WuString& computerName,      // The computer name.
+        const HKEY hRootKey,               // The hive.
+        const WuString& subKey,            // The subkey path.
+        PVALENT valArray,                  // An array of VALENT objects. The 've_valuename' of each object must contain the value name to retrieve the value.
+        DWORD valCount,                    // The number of VALENT objects in 'pValArray'.
+        WuString& dataBuffer               // The buffer that receives the data.
     ) {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwBuffSize = 0;
         HKEY hRegistry;
         HKEY hSubKey;
 
-        WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-
-        result = RegConnectRegistry(lpszComputerName, hRootKey, &hRegistry);
+        result = RegConnectRegistry(computerName.GetWideBuffer(), hRootKey, &hRegistry);
         DWERRORCHECKV(result);
 
-        result = RegOpenKeyEx(hRegistry, lpszSubKey, KEY_QUERY_VALUE, KEY_READ, &hSubKey);
+        result = RegOpenKeyEx(hRegistry, subKey.GetWideBuffer(), KEY_QUERY_VALUE, KEY_READ, &hSubKey);
         if (result != ERROR_SUCCESS)
         {
             RegCloseKey(hSubKey);
@@ -182,7 +168,7 @@ namespace WindowsUtils::Core
             return result;
         }
 
-        result = RegQueryMultipleValues(hSubKey, pValArray, dwValCount, NULL, &dwBuffSize);
+        result = RegQueryMultipleValues(hSubKey, valArray, valCount, NULL, &dwBuffSize);
         if (result != ERROR_SUCCESS)
         {
             if (result != ERROR_MORE_DATA)
@@ -193,12 +179,8 @@ namespace WindowsUtils::Core
             }
         }
 
-        lpDataBuffer = (LPWSTR)MemoryManager.Allocate(dwBuffSize);
-        result = RegQueryMultipleValues(hSubKey, pValArray, dwValCount, lpDataBuffer, &dwBuffSize);
-        
-        // We don't want to free the buffer because in every VALENT structure in the list,
-        // the 've_valueptr' points to the data in that buffer. The registry API is weird man.
-        // MemoryManager.Free(lpszBuffer);
+        dataBuffer.Initialize(dwBuffSize);
+        result = RegQueryMultipleValues(hSubKey, valArray, valCount, dataBuffer.GetWideBuffer(), &dwBuffSize);
         
         RegCloseKey(hSubKey);
         RegCloseKey(hRegistry);
@@ -206,7 +188,7 @@ namespace WindowsUtils::Core
         return result;
     }
 
-    LSTATUS Registry::GetRegistryKeyValueList(HKEY& hRegistry, const LPWSTR& lpszSubKey, PVALENT pValArray, DWORD dwValCount, LPWSTR& lpDataBuffer)
+    LSTATUS Registry::GetRegistryKeyValueList(HKEY hRegistry, const WuString& subKey, PVALENT valArray, DWORD valCount, WuString& dataBuffer)
     {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwBuffSize = 0;
@@ -214,11 +196,11 @@ namespace WindowsUtils::Core
 
         WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 
-        result = RegOpenKeyEx(hRegistry, lpszSubKey, KEY_QUERY_VALUE, KEY_READ, &hSubKey);
+        result = RegOpenKeyEx(hRegistry, subKey.GetWideBuffer(), KEY_QUERY_VALUE, KEY_READ, &hSubKey);
         if (result != ERROR_SUCCESS)
             return result;
 
-        result = RegQueryMultipleValues(hSubKey, pValArray, dwValCount, NULL, &dwBuffSize);
+        result = RegQueryMultipleValues(hSubKey, valArray, valCount, NULL, &dwBuffSize);
         if (result != ERROR_SUCCESS)
         {
             if (result != ERROR_MORE_DATA)
@@ -228,8 +210,8 @@ namespace WindowsUtils::Core
             }
         }
 
-        lpDataBuffer = (LPWSTR)MemoryManager.Allocate(dwBuffSize);
-        result = RegQueryMultipleValues(hSubKey, pValArray, dwValCount, lpDataBuffer, &dwBuffSize);
+        dataBuffer.Initialize(dwBuffSize);
+        result = RegQueryMultipleValues(hSubKey, valArray, valCount, dataBuffer.GetWideBuffer(), &dwBuffSize);
 
         RegCloseKey(hSubKey);
 
