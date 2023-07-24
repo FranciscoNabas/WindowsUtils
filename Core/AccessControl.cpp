@@ -4,13 +4,12 @@
 
 namespace WindowsUtils::Core
 {
-    DWORD AccessControl::GetCurrentTokenPrivileges(std::shared_ptr<TOKEN_PRIVILEGES> tokenPrivileges)
+    // Caller needs to call 'LocalFree'.
+    DWORD AccessControl::GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES tokenPrivileges)
     {
         DWORD result = ERROR_SUCCESS;
         HANDLE hToken;
         DWORD dwBytesNeeded;
-
-        WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_QUERY_SOURCE, &hToken))
             return GetLastError();
@@ -27,8 +26,8 @@ namespace WindowsUtils::Core
             result = ERROR_SUCCESS;
         }
 
-        tokenPrivileges = std::make_shared<TOKEN_PRIVILEGES>(dwBytesNeeded);
-        if (!GetTokenInformation(hToken, TokenPrivileges, (LPVOID)tokenPrivileges.get(), dwBytesNeeded, &dwBytesNeeded))
+        tokenPrivileges = (PTOKEN_PRIVILEGES)LocalAlloc(LMEM_ZEROINIT, dwBytesNeeded);
+        if (!GetTokenInformation(hToken, TokenPrivileges, (LPVOID)tokenPrivileges, dwBytesNeeded, &dwBytesNeeded))
         {
             CloseHandle(hToken);
             return GetLastError();
@@ -37,7 +36,7 @@ namespace WindowsUtils::Core
         return result;
     }
 
-    DWORD AccessControl::AdjustCurrentTokenPrivilege(SharedVecPtr(WuString)& spvlpPrivilegeNameList, const DWORD dwAttributes)
+    DWORD AccessControl::AdjustCurrentTokenPrivilege(wuvector<WuString>* spvlpPrivilegeNameList, const DWORD dwAttributes)
     {
         DWORD result = ERROR_SUCCESS;
         HANDLE hToken;
@@ -46,20 +45,24 @@ namespace WindowsUtils::Core
             return GetLastError();
 
         DWORD privilegeCount = static_cast<DWORD>(spvlpPrivilegeNameList->size());
-        WuAllocator<TOKEN_PRIVILEGES> privAll(sizeof(TOKEN_PRIVILEGES) + (sizeof(LUID_AND_ATTRIBUTES) * privilegeCount));
+        LUID_AND_ATTRIBUTES* luidAndAttr = new LUID_AND_ATTRIBUTES[privilegeCount];
+        TOKEN_PRIVILEGES privileges = {
+            privilegeCount,
+            luidAndAttr[0]
+        };
         
-        privAll->PrivilegeCount = privilegeCount;
         for (size_t i = 0; i < privilegeCount; i++)
         {
-            if (!LookupPrivilegeValueW(NULL, spvlpPrivilegeNameList->at(i).GetWideBuffer(), &privAll->Privileges[i].Luid))
+            if (!LookupPrivilegeValueW(NULL, spvlpPrivilegeNameList->at(i).GetBuffer(), &privileges.Privileges[i].Luid))
                 return GetLastError();
             
-            privAll->Privileges[i].Attributes = dwAttributes;
+            privileges.Privileges[i].Attributes = dwAttributes;
         }
 
-        if (!AdjustTokenPrivileges(hToken, FALSE, privAll.get(), 0, NULL, NULL))
+        if (!AdjustTokenPrivileges(hToken, FALSE, &privileges, 0, NULL, NULL))
             result = GetLastError();
 
+        delete[] luidAndAttr;
         CloseHandle(hToken);
 
         return result;

@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "Utilities.h"
 
+#include "Utilities.h"
 
 #pragma comment(lib, "Psapi")
 
@@ -12,39 +12,46 @@ namespace WindowsUtils::Core
 
 	// Get-FormattedMessage
 	DWORD Utilities::GetFormattedError(
-		DWORD dwerrorcode				// The Win32 error code.
-		, LPWSTR& rlperrormess			// The output message string.
-	)
-	{
+		DWORD errorCode,				// The Win32 error code.
+		WuString& errorMessage			// The output message string.
+	) {
+		LPWSTR buffer = NULL;
 		if (!::FormatMessageW(
-			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER
-			, NULL
-			, dwerrorcode
-			, 0
-			, (LPWSTR)&rlperrormess
-			, 0
-			, NULL
+			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+			NULL,
+			errorCode,
+			0,
+			buffer,
+			0,
+			NULL
 		))
 			return GetLastError();
+
+		errorMessage = buffer;
+		LocalFree(buffer);
 
 		return ERROR_SUCCESS;
 	}
 
 	// Get-LastWin32Error
 	DWORD Utilities::GetFormattedWin32Error(
-		LPWSTR& rlperrormess				// The output message string.
+		WuString& errorMessage		// The output message string.
 	)
 	{
+		LPWSTR buffer = NULL;
 		if (!::FormatMessageW(
-			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER
-			, NULL
-			, GetLastError()
-			, 0
-			, (LPWSTR)&rlperrormess
-			, 0
-			, NULL
+			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+			NULL,
+			GetLastError(),
+			0,
+			buffer,
+			0,
+			NULL
 		))
 			return GetLastError();
+
+		errorMessage = buffer;
+		LocalFree(buffer);
 
 		return ERROR_SUCCESS;
 	}
@@ -89,111 +96,111 @@ namespace WindowsUtils::Core
 
 	// Get-ResourceMessageTable
 	DWORD Utilities::GetResourceMessageTable(
-		std::vector<Utilities::WU_RESOURCE_MESSAGE_TABLE>& rvecresmestb	// A vector of resource message table objects.
-		, LPWSTR& lplibname												// The resource path.
-	)
-	{
+		wuvector<Utilities::WU_RESOURCE_MESSAGE_TABLE>* messageTableOut,	// A vector of resource message table objects.
+		const WuString& libName												// The resource path.
+	) {
 		DWORD result = ERROR_SUCCESS;
 
-		HMODULE hmodule = ::LoadLibraryExW(lplibname, NULL, LOAD_LIBRARY_AS_DATAFILE);
-		if (NULL == hmodule)
+		HMODULE hModule = ::LoadLibraryExW(libName.GetBuffer(), NULL, LOAD_LIBRARY_AS_DATAFILE);
+		if (NULL == hModule)
 			return ::GetLastError();
 
-		HRSRC hresource = ::FindResourceW(hmodule, MAKEINTRESOURCE(1), RT_MESSAGETABLE);
-		if (NULL == hresource)
+		HRSRC hResource = ::FindResourceW(hModule, MAKEINTRESOURCE(1), RT_MESSAGETABLE);
+		if (NULL == hResource)
 			return ::GetLastError();
 
-		HGLOBAL hload = LoadResource(hmodule, hresource);
-		if (NULL == hload)
+		HGLOBAL hLoad = LoadResource(hModule, hResource);
+		if (NULL == hLoad)
 			return ::GetLastError();
 
-		PVOID pmessagetable = LockResource(hload);
-		DWORD dwblocknumber = ((PMESSAGE_RESOURCE_DATA)pmessagetable)->NumberOfBlocks;
-		PMESSAGE_RESOURCE_BLOCK pmessblock = ((PMESSAGE_RESOURCE_DATA)pmessagetable)->Blocks;
+		PVOID messageTable = LockResource(hLoad);
+		DWORD blockNumber = ((PMESSAGE_RESOURCE_DATA)messageTable)->NumberOfBlocks;
+		PMESSAGE_RESOURCE_BLOCK messageBlock = ((PMESSAGE_RESOURCE_DATA)messageTable)->Blocks;
 
-		for (DWORD block = 0; block < dwblocknumber; block++)
+		for (DWORD block = 0; block < blockNumber; block++)
 		{
-			DWORD dwlowid = pmessblock[block].LowId;
-			DWORD dwhighid = pmessblock[block].HighId;
-			DWORD dwoffset = 0;
+			DWORD offset = 0;
 
-			for (DWORD id = dwlowid; id <= dwhighid; id++)
+			for (DWORD id = messageBlock[block].LowId; id <= messageBlock[block].HighId; id++)
 			{
-				WU_RESOURCE_MESSAGE_TABLE rmessingle;
+				WU_RESOURCE_MESSAGE_TABLE tableEntryOut;
 
-				PMESSAGE_RESOURCE_ENTRY pmessentry =
-					(PMESSAGE_RESOURCE_ENTRY)((PBYTE)pmessagetable +
-						(DWORD)pmessblock[block].OffsetToEntries + dwoffset);
+				PMESSAGE_RESOURCE_ENTRY tableEntry =
+					(PMESSAGE_RESOURCE_ENTRY)((PBYTE)messageTable +
+						(DWORD)messageBlock[block].OffsetToEntries + offset);
 
-				rmessingle.Id = id;
-				PrintBufferW(rmessingle.Message, L"%S", pmessentry->Text);
+				tableEntryOut.Id = id;
+				tableEntryOut.Message.Format(L"%ws", tableEntry->Text);
 
-				rvecresmestb.push_back(rmessingle);
-				dwoffset += pmessentry->Length;
+				messageTableOut->push_back(tableEntryOut);
+				offset += tableEntry->Length;
 			}
 		}
 
-		if (NULL != hmodule)
-			FreeLibrary(hmodule);
+		if (NULL != hModule)
+			FreeLibrary(hModule);
 
 		return result;
 	}
 
 	// Get-MsiProperties
 	DWORD Utilities::GetMsiProperties(
-		std::map<LPWSTR, LPWSTR>& rmapprop	// A map with the properties and values from the MSI database.
-		, LPWSTR& lpfilename				// The MSI file path.
+		wumap<WuString, WuString>* propertyMap,		// A map with the properties and values from the MSI database.
+		const WuString& fileName					// The MSI file path.
 	)
 	{
 		DWORD result = ERROR_SUCCESS;
-		DWORD dwszbuffer = 0;
-		PMSIHANDLE pdatabase;
-		PMSIHANDLE pview;
-		PMSIHANDLE precord;
+		DWORD bufferSize = 0;
+		MSIHANDLE hDatabase;
+		MSIHANDLE hView;
+		MSIHANDLE hRecord;
 
-		result = MsiOpenDatabaseW(lpfilename, L"MSIDBOPEN_READONLY", &pdatabase);
+		result = MsiOpenDatabaseW(fileName.GetBuffer(), L"MSIDBOPEN_READONLY", &hDatabase);
 		DWERRORCHECKV(result);
 
-		result = MsiDatabaseOpenViewW(pdatabase, L"Select Property, Value From Property", &pview);
+		result = MsiDatabaseOpenViewW(hDatabase, L"Select Property, Value From Property", &hView);
 		DWERRORCHECKV(result);
 
-		result = MsiViewExecute(pview, NULL);
+		result = MsiViewExecute(hView, NULL);
 		DWERRORCHECKV(result);
 
 		do
 		{
-			LPWSTR lproperty = { 0 };
-			LPWSTR lpvalue = { 0 };
-
-			result = MsiViewFetch(pview, &precord);
+			result = MsiViewFetch(hView, &hRecord);
 			DWERRORCHECKV(result);
 
 			/*
 			* First column, property name.
 			* Calculating buffer size.
 			*/
-			result = MsiRecordGetStringW(precord, 1, NULL, &dwszbuffer);
+			result = MsiRecordGetStringW(hRecord, 1, NULL, &bufferSize);
 			DWERRORCHECKV(result);
 
 			// \0
-			dwszbuffer++;
-			lproperty = new WCHAR[dwszbuffer];
-			result = MsiRecordGetStringW(precord, 1, lproperty, &dwszbuffer);
+			bufferSize++;
+			WuString property;
+			property.Initialize(bufferSize);
+			result = MsiRecordGetStringW(hRecord, 1, property.GetBuffer(), &bufferSize);
 			DWERRORCHECKV(result);
 
 			// Second column, value.
-			dwszbuffer = 0;
-			result = MsiRecordGetStringW(precord, 2, NULL, &dwszbuffer);
+			bufferSize = 0;
+			result = MsiRecordGetStringW(hRecord, 2, NULL, &bufferSize);
 			DWERRORCHECKV(result);
 
-			dwszbuffer++;
-			lpvalue = new WCHAR[dwszbuffer];
-			result = MsiRecordGetStringW(precord, 2, lpvalue, &dwszbuffer);
+			bufferSize++;
+			WuString value;
+			value.Initialize(bufferSize);
+			result = MsiRecordGetStringW(hRecord, 2, value.GetBuffer(), &bufferSize);
 			DWERRORCHECKV(result);
 
-			rmapprop[lproperty] = lpvalue;
+			// We are using 'emplace' here because both strings created in this iteration will
+			// be passed as parameter for the constructors from the strings inside the map.
+			// The constructor will take care of the copy, and the destructor will deallocate
+			// both strings created in this iteration.
+			propertyMap->emplace(property, value);
 
-		} while (precord != 0);
+		} while (hRecord != 0);
 
 		return result;
 	}
@@ -202,41 +209,41 @@ namespace WindowsUtils::Core
 	==		Utility function definition		==
 	==========================================*/
 
-	// Gets extented error information for Get-MsiProperties
-	DWORD Utilities::GetMsiExtendedError(LPWSTR& lperrormessage)
+	// Gets extended error information for Get-MsiProperties
+	DWORD Utilities::GetMsiExtendedError(WuString& errorMessage)
 	{
 		DWORD result = ERROR_SUCCESS;
-		DWORD dwszerrbuffer = 0;
+		DWORD bufferSize = 0;
 
-		PMSIHANDLE hlasterror = MsiGetLastErrorRecord();
-		if (NULL == hlasterror)
+		MSIHANDLE hLastError = MsiGetLastErrorRecord();
+		if (hLastError == NULL)
 			return GetLastError();
 
-		result = MsiFormatRecordW(NULL, hlasterror, NULL, &dwszerrbuffer);
-		if (ERROR_SUCCESS != result)
+		result = MsiFormatRecordW(NULL, hLastError, NULL, &bufferSize);
+		if (result != ERROR_SUCCESS)
 			return result;
 
-		dwszerrbuffer++;
-		lperrormessage = new WCHAR[dwszerrbuffer];
+		bufferSize++;
+		errorMessage.Initialize(bufferSize);
 
-		result = MsiFormatRecordW(NULL, hlasterror, lperrormessage, &dwszerrbuffer);
+		result = MsiFormatRecordW(NULL, hLastError, errorMessage.GetBuffer(), &bufferSize);
 
 		return result;
 	}
 
 	// Helper function to retrieve environment variables safely.
-	DWORD GetEnvVariable(LPCWSTR& rlpcvarname, LPWSTR& rlpvalue)
+	DWORD GetEnvVariable(const WuString& variableName, WuString& value)
 	{
 		DWORD result = ERROR_SUCCESS;
-		size_t szrequiredstr = 0;
+		size_t bufferSize = 0;
 
-		_wgetenv_s(&szrequiredstr, NULL, 0, rlpcvarname);
-		if (szrequiredstr == 0)
+		_wgetenv_s(&bufferSize, NULL, 0, variableName.GetBuffer());
+		if (bufferSize == 0)
 			return ERROR_FILE_NOT_FOUND;
 
-		rlpvalue = new WCHAR[szrequiredstr]{ 0 };
+		value.Initialize(bufferSize);
 		
-		_wgetenv_s(&szrequiredstr, rlpvalue, szrequiredstr, rlpcvarname);
+		_wgetenv_s(&bufferSize, value.GetBuffer(), bufferSize, variableName.GetBuffer());
 
 		return result;
 	}

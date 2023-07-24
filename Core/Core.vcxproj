@@ -162,6 +162,7 @@
   <ItemGroup>
     <ClInclude Include="AccessControl.h" />
     <ClInclude Include="Containers.h" />
+    <ClInclude Include="Expressions.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="MemoryManagement.h" />
     <ClInclude Include="Notification.h" />
@@ -181,7 +182,6 @@
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="Containers.cpp" />
     <ClCompile Include="FileSystem.cpp" />
-    <ClCompile Include="MemoryManagement.cpp" />
     <ClCompile Include="Notification.cpp" />
     <ClCompile Include="NtUtilities.cpp" />
     <ClCompile Include="pch.cpp">
@@ -193,7 +193,6 @@
     <ClCompile Include="ProcessAndThread.cpp" />
     <ClCompile Include="Registry.cpp" />
     <ClCompile Include="Services.cpp" />
-    <ClCompile Include="String.cpp" />
     <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="TerminalServices.cpp" />
     <ClCompile Include="Wrapper.cpp" />

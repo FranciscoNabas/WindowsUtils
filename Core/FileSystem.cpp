@@ -19,7 +19,7 @@ namespace WindowsUtils::Core
 		if (result != ERROR_SUCCESS)
 			return result;
 
-		if (!CreateDirectoryW(path.GetWideBuffer(), NULL))
+		if (!CreateDirectoryW(path.GetBuffer(), NULL))
 		{
 			result = GetLastError();
 			if (result == ERROR_ALREADY_EXISTS)
@@ -31,7 +31,7 @@ namespace WindowsUtils::Core
 	
 	BOOL FileSystem::CheckDirectoryExists(const WuString& path)
 	{
-		DWORD result = GetFileAttributesW(path.GetWideBuffer());
+		DWORD result = GetFileAttributes(path.GetBuffer());
 		if (result == INVALID_FILE_ATTRIBUTES)
 			return FALSE;
 

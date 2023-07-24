@@ -24,7 +24,7 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		// Expand-File
-		DWORD ExpandArchiveFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context);
+		DWORD ExpandArchiveFile(const WuString& lpszFileName, const WuString& lpszFilePath, const WuString& lpszDestination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context);
 	};
 
 	// Expand-File helper functions and objects.
@@ -32,10 +32,10 @@ namespace WindowsUtils::Core
 	{
 	public:
 		// Information regarding the current file.
-		LPWSTR Name;
+		WuString Name;
 
 		// Information regarding the current cabinet.
-		LPWSTR CabinetName;
+		WuString CabinetName;
 
 		// Related with progress notification.
 		ULONGLONG TotalUncompressedSize;
@@ -50,7 +50,6 @@ namespace WindowsUtils::Core
 		_FDI_NOTIFICATION();
 
 		Notification::PMAPPED_PROGRESS_DATA _progressData;
-		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
 
 	public:
 		_FDI_NOTIFICATION(const _FDI_NOTIFICATION&) = delete;
@@ -58,7 +57,7 @@ namespace WindowsUtils::Core
 
 	} FDI_NOTIFICATION, *PFDI_NOTIFICATION;
 
-	DWORD ExpandCabinetFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, Notification::PNATIVE_CONTEXT context);
+	DWORD ExpandCabinetFile(const WuString& lpszFileName, const WuString& lpszFilePath, const WuString& lpszDestination, Notification::PNATIVE_CONTEXT context);
 	
 	
 	template <class T>

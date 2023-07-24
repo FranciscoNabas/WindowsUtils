@@ -26,6 +26,11 @@
 #define _UNICODE
 #endif // UNICODE
 
+// Maximum username character count. 'lmcons.h'.
+#ifndef UNLEN
+#define UNLEN 256
+#endif
+
 // Library imports.
 #pragma comment (lib, "Cabinet.lib")
 #pragma comment (lib, "Ole32.lib")
@@ -43,7 +48,7 @@
 #include <strsafe.h>
 #include <Shlwapi.h>
 #include <MsiQuery.h>
-#include <string>
+#include <xstring>
 #include <vector>
 #include <map>
 #include <memory>

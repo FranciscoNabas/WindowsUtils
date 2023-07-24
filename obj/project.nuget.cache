@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "/MyUFHB0TdlIAgDWkofVczb4XsxDz6IJj660MDeeSfcoVGU6ryL1hK6GGEdgze5xudZfpKDWYFtWOddkfAguZQ==",
+  "dgSpecHash": "xCtSsnuNmKL+FKxBUzisTUaD/artjeIEh1Ll1CLgDad/Nn6ciyvkQn+HygYwmqTEfWt2xPm8QvJiobYYu+fHOg==",
   "success": true,
-  "projectFilePath": "\\\\CISCOSRVP01P\\Frank\\Repositories\\.WindowsUtils\\WindowsUtils.csproj",
+  "projectFilePath": "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\7.0.0\\microsoft.bcl.asyncinterfaces.7.0.0.nupkg.sha512",
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",

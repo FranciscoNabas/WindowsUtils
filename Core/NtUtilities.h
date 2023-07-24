@@ -59,7 +59,6 @@ namespace WindowsUtils::Core
 	} OBJECT_TYPE_INFORMATION, * POBJECT_TYPE_INFORMATION;
 
 	// General
-
 	typedef struct _IO_STATUS_BLOCK {
 		union {
 			NTSTATUS Status;
@@ -114,7 +113,6 @@ namespace WindowsUtils::Core
 	}PROCESSINFOCLASS;
 
 	// System
-
 	typedef enum _SYSTEM_INFORMATION_CLASS
 	{
 		SystemProcessInformation = 6,
@@ -158,7 +156,7 @@ namespace WindowsUtils::Core
 		LARGE_INTEGER WriteTransferCount;
 		LARGE_INTEGER OtherTransferCount;
 		SYSTEM_THREAD_INFORMATION Threads[1]; // SystemProcessInformation
-	} SYSTEM_PROCESS_INFORMATION, * PSYSTEM_PROCESS_INFORMATION;
+	} SYSTEM_PROCESS_INFORMATION, *PSYSTEM_PROCESS_INFORMATION;
 	
 	// Procedures
 
@@ -168,7 +166,7 @@ namespace WindowsUtils::Core
 		PVOID					FileInformation,
 		ULONG					Length,
 		FILE_INFORMATION_CLASS	FileInformationClass
-		);
+	);
 
 	typedef NTSTATUS(NTAPI* _NtDuplicateObject)(
 		HANDLE		SourceProcessHandle,
@@ -178,7 +176,7 @@ namespace WindowsUtils::Core
 		ACCESS_MASK	DesiredAccess,
 		ULONG		Attributes,
 		ULONG		Options
-		);
+	);
 
 	typedef NTSTATUS(NTAPI* _NtQueryInformationProcess)(
 		HANDLE				ProcessHandle,
@@ -186,7 +184,7 @@ namespace WindowsUtils::Core
 		PVOID				ProcessInformation,
 		ULONG				ProcessInformationLength,
 		PULONG				ReturnLength
-		);
+	);
 
 	typedef NTSTATUS(NTAPI* _NtQueryObject)(
 		HANDLE						Handle,
@@ -194,20 +192,20 @@ namespace WindowsUtils::Core
 		PVOID						ObjectInformation,
 		ULONG						ObjectInformationLength,
 		PULONG						ReturnLength
-		);
+	);
 
 	typedef NTSTATUS(NTAPI* _NtQuerySystemInformation)(
 		SYSTEM_INFORMATION_CLASS	SystemInformationClass,
 		PVOID						SystemInformation,
 		ULONG						SystemInformationLength,
 		PULONG						ReturnLength
-		);
+	);
 
 	/*========================================
 	==		 Function identification		==
 	==========================================*/
 
-	NTSTATUS GetNtProcessUsingFile(const WuString& fileName, std::shared_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION> procUsingFileInfo);
+	NTSTATUS GetNtProcessUsingFile(const WuString& fileName, PFILE_PROCESS_IDS_USING_FILE_INFORMATION procUsingFileInfo);
 	DWORD NtQueryObjectRaw(LPVOID param);
 	NTSTATUS NtQueryObjectWithTimeout(HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass, PVOID objectInfo, ULONG timeout);
 	NTSTATUS GetProcessImageName(DWORD processId, WuString& imageName);

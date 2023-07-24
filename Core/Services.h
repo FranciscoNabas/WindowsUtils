@@ -28,5 +28,5 @@ namespace WindowsUtils::Core
 	};
 
 	DWORD StopDependentServices(SC_HANDLE scm, SC_HANDLE hservice, const WuString& computername, Notification::PNATIVE_CONTEXT context);
-	DWORD StopServiceWithWarning(SC_HANDLE hservice, SC_HANDLE scm, const WuString& lpszSvcName, std::shared_ptr<SERVICE_STATUS> lpsvcstatus, Notification::PNATIVE_CONTEXT context);
+	DWORD StopServiceWithWarning(SC_HANDLE hservice, SC_HANDLE scm, const WuString& lpszSvcName, LPSERVICE_STATUS lpsvcstatus, Notification::PNATIVE_CONTEXT context);
 }

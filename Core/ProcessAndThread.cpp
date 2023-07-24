@@ -6,78 +6,82 @@ namespace WindowsUtils::Core
 {
 	// Get-ObjectHandle
 	DWORD ProcessAndThread::GetProcessObjectHandle(
-		std::vector<ProcessAndThread::WU_OBJECT_HANDLE>& objectHandleInfo,	// A vector of object handle output objects.
-		std::vector<WuString>& inputPath,									// A vector of input objects.
-		BOOL closeHandle = FALSE											// TRUE for closing the handles found.
+		wuvector<WU_OBJECT_HANDLE>* objectHandleList,		// A vector of object handle output objects.
+		wuvector<WuString>* inputPath,						// A vector of input objects.
+		BOOL closeHandle = FALSE							// TRUE for closing the handles found.
 	) {
 		DWORD result = ERROR_SUCCESS;
 
-		for (WuString path : inputPath)
+		for (WuString path : *inputPath)
 		{
 			/*
 			* This strips the path out of the input object so we can add it to the 'InputObject' property.
 			* This will need to be changed in the future to support multiple object types.
 			*/
 			WuString inputObject = path;
-			PathStripPathW(inputObject.GetWideBuffer());
+			PathStripPath(inputObject.GetBuffer());
 
-			std::shared_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION> procUsingFile;
+			PFILE_PROCESS_IDS_USING_FILE_INFORMATION procUsingFile = NULL;
 			result = GetNtProcessUsingFile(path, procUsingFile);
 			if (result != ERROR_SUCCESS)
 				return result;
 
-			for (ULONG j = 0; j < procUsingFile.get()->NumberOfProcessIdsInList; j++)
+			for (ULONG j = 0; j < procUsingFile->NumberOfProcessIdsInList; j++)
 			{
-				WuAllocator<WU_OBJECT_HANDLE> objHandle(sizeof(WU_OBJECT_HANDLE));
+				wuunique_ptr<WU_OBJECT_HANDLE> objHandle = make_wuunique<WU_OBJECT_HANDLE>();
 
-				objHandle.Get()->InputObject = inputObject;
-				objHandle.Get()->ProcessId = procUsingFile.get()->ProcessIdList[j];
+				objHandle->InputObject = inputObject;
+				objHandle->ProcessId = static_cast<DWORD>(procUsingFile->ProcessIdList[j]);
 
-				if (objHandle.Get()->ProcessId == 10220)
+				if (objHandle->ProcessId == 10220)
 					result = 0;
 
 				HANDLE hProcess = OpenProcess(
 					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE,
 					FALSE,
-					(DWORD)procUsingFile.get()->ProcessIdList[j]
+					(DWORD)procUsingFile->ProcessIdList[j]
 				);
 				if (hProcess != NULL)
 				{
 					DWORD maxPath = MAX_PATH;
-					objHandle.Get()->ImagePath.Initialize(MAX_PATH);
-					objHandle.Get()->Name.Initialize(MAX_PATH);
-					::QueryFullProcessImageNameW(hProcess, 0, objHandle.Get()->ImagePath.GetWideBuffer(), &maxPath);
-
-					if (objHandle.Get()->ImagePath.Length() == 0)
+					objHandle->ImagePath.Initialize(MAX_PATH);
+					objHandle->Name.Initialize(MAX_PATH);
+					if (!QueryFullProcessImageName(hProcess, 0, objHandle->ImagePath.GetBuffer(), &maxPath))
 					{
-						result = GetProcessImageName(objHandle.Get()->ProcessId, objHandle.Get()->Name);
-						if (objHandle.Get()->Name.Length() > 0)
-						{
-							objHandle.Get()->ImagePath = objHandle.Get()->Name;
-							::PathStripPathW(objHandle.Get()->Name.GetWideBuffer());
-						}
+						HeapFree(GetProcessHeap(), 0, procUsingFile);
+						return GetLastError();
+					}
 
+					if (objHandle->ImagePath.Length() == 0)
+					{
+						result = GetProcessImageName(objHandle->ProcessId, objHandle->Name);
+						if (objHandle->Name.Length() > 0)
+						{
+							objHandle->ImagePath = objHandle->Name;
+							PathStripPath(objHandle->Name.GetBuffer());
+						}
 					}
 					else
 					{
-						objHandle.Get()->Name = objHandle.Get()->ImagePath;
-						::PathStripPathW(objHandle.Get()->Name.GetWideBuffer());
+						objHandle->Name = objHandle->ImagePath;
+						PathStripPathW(objHandle->Name.GetBuffer());
 					}
 
 					for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName })
 					{
 						WuString value;
-						GetProccessVersionInfo(objHandle.Get()->ImagePath, versionInfo, value);
-						objHandle.Get()->VersionInfo->emplace(std::make_pair(versionInfo, value));
+						GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
+						objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
 					}
 
-					if (CloseHandle)
+					if (closeHandle)
 					{
 						result = CloseExtProcessHandle(hProcess, path);
 						if (ERROR_SUCCESS != result)
 							return result;
 					}
 					CloseHandle(hProcess);
+					HeapFree(GetProcessHeap(), 0, procUsingFile);
 				}
 				else
 				{
@@ -86,57 +90,63 @@ namespace WindowsUtils::Core
 						hProcess = OpenProcess(
 							PROCESS_QUERY_LIMITED_INFORMATION,
 							FALSE,
-							procUsingFile.get()->ProcessIdList[j]
+							static_cast<DWORD>(procUsingFile->ProcessIdList[j])
 						);
+						if (hProcess == NULL)
+						{
+							HeapFree(GetProcessHeap(), 0, procUsingFile);
+							return GetLastError();
+						}
 
 						DWORD maxPath = MAX_PATH;
-						objHandle.Get()->ImagePath.Initialize(MAX_PATH);
-						objHandle.Get()->Name.Initialize(MAX_PATH);
-						if (QueryFullProcessImageNameW(hProcess, 0, objHandle.Get()->ImagePath.GetWideBuffer(), &maxPath))
+						objHandle->ImagePath.Initialize(MAX_PATH);
+						objHandle->Name.Initialize(MAX_PATH);
+						if (QueryFullProcessImageName(hProcess, 0, objHandle->ImagePath.GetBuffer(), &maxPath))
 						{
-							objHandle.Get()->Name = objHandle.Get()->ImagePath;
-							::PathStripPathW(objHandle.Get()->Name.GetWideBuffer());
+							objHandle->Name = objHandle->ImagePath;
+							PathStripPathW(objHandle->Name.GetBuffer());
 
 							for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName })
 							{
 								WuString value;
-								GetProccessVersionInfo(objHandle.Get()->ImagePath, versionInfo, value);
-								objHandle.Get()->VersionInfo->emplace(std::make_pair(versionInfo, value));
+								GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
+								objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
 							}
 						}
 						else
 						{
-							if (GetProcessImageName(objHandle.Get()->ProcessId, objHandle.Get()->Name) == ERROR_SUCCESS)
+							if (GetProcessImageName(objHandle->ProcessId, objHandle->Name) == ERROR_SUCCESS)
 							{
-								objHandle.Get()->ImagePath = objHandle.Get()->Name;
-								::PathStripPathW(objHandle.Get()->Name.GetWideBuffer());
+								objHandle->ImagePath = objHandle->Name;
+								PathStripPath(objHandle->Name.GetBuffer());
 							}
 
 							if (
-								objHandle.Get()->Name == L"System" ||
-								objHandle.Get()->Name == L"Secure System" ||
-								objHandle.Get()->Name == L"Registry")
+								objHandle->Name == L"System" ||
+								objHandle->Name == L"Secure System" ||
+								objHandle->Name == L"Registry")
 							{
-								LPCWSTR windir = L"windir";
-								LPWSTR lpenvvalue;
-								result = GetEnvVariable(windir, lpenvvalue);
+								result = GetEnvVariable(L"windir", objHandle->ImagePath);
 								DWERRORCHECKV(result);
 
-								objHandle.Get()->ImagePath = lpenvvalue;
-								objHandle.Get()->ImagePath += L"\\System32\\ntoskrnl.exe";
+								objHandle->ImagePath += L"\\System32\\ntoskrnl.exe";
 
 								for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName })
 								{
 									WuString value;
-									GetProccessVersionInfo(objHandle.Get()->ImagePath, versionInfo, value);
-									objHandle.Get()->VersionInfo->emplace(std::make_pair(versionInfo, value));
+									GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
+									objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
 								}
 							}
 						}
 					}
+					else
+					{
+						HeapFree(GetProcessHeap(), 0, procUsingFile);
+					}
 				}
 
-				objectHandleInfo.push_back(*objHandle.Get());
+				objectHandleList->push_back(*objHandle.get());
 			}
 		}
 
@@ -177,20 +187,20 @@ namespace WindowsUtils::Core
 			break;
 		}
 
-		DWORD infoSize = ::GetFileVersionInfoSizeW(imagePath.GetWideBuffer(), NULL);
-		WuAllocator<BYTE[]> buffer(infoSize);
+		DWORD infoSize = GetFileVersionInfoSize(imagePath.GetBuffer(), NULL);
+		wuunique_ha_ptr<void> buffer = make_wuunique_ha<void>(infoSize);
 
-		if (!::GetFileVersionInfoW(imagePath.GetWideBuffer(), NULL, infoSize, buffer.Get()))
+		if (!GetFileVersionInfo(imagePath.GetBuffer(), NULL, infoSize, buffer.get()))
 			return GetLastError();
 
-		if (!::VerQueryValueW(buffer.Get(), L"\\VarFileInfo\\Translation", (LPVOID*)&codePage, &len))
+		if (!VerQueryValue(buffer.get(), L"\\VarFileInfo\\Translation", (LPVOID*)&codePage, &len))
 			return GetLastError();
 
 		WuString text(propertyName.Length() + 258);
 		text.Format(L"\\StringFileInfo\\%04x%04x\\", codePage[0], codePage[1]);
 		text += propertyName;
 
-		if (::VerQueryValueW(buffer.Get(), text.GetWideBuffer(), (LPVOID*)&desc, &len))
+		if (VerQueryValue(buffer.get(), text.GetBuffer(), (LPVOID*)&desc, &len))
 		{
 			if (!WuString::IsNullOrWhiteSpace(desc))
 				value = desc;
@@ -214,13 +224,13 @@ namespace WindowsUtils::Core
 		NTSTATUS ntCall = STATUS_SUCCESS;
 		HANDLE hTarget = NULL;
 
-		WuString pathNoRoot = ::PathSkipRootW(objectName.GetWideBuffer());
+		WuString pathNoRoot = PathSkipRoot(objectName.GetBuffer());
 		if (!pathNoRoot.IsInitialized())
-			return ::GetLastError();
+			return GetLastError();
 
-		HMODULE hmodule = ::GetModuleHandleW(L"ntdll.dll");
+		HMODULE hmodule = GetModuleHandle(L"ntdll.dll");
 		if (INVALID_HANDLE_VALUE == hmodule || NULL == hmodule)
-			return ::GetLastError();
+			return GetLastError();
 
 		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)::GetProcAddress(hmodule, "NtQueryInformationProcess");
 
@@ -246,20 +256,21 @@ namespace WindowsUtils::Core
 
 		for (ULONG i = 0; i < phsnapinfo->NumberOfHandles; i++)
 		{
-			WuAllocator<OBJECT_NAME_INFORMATION> objectNameInfo;
+			
+			wuunique_ptr<OBJECT_NAME_INFORMATION> objectNameInfo = make_wuunique<OBJECT_NAME_INFORMATION>();
 
 			if (!::DuplicateHandle(hExtProcess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
 				continue;
 
-			ntCall = NtQueryObjectWithTimeout(hTarget, ObjectNameInformation, objectNameInfo.Get(), 200);
+			ntCall = NtQueryObjectWithTimeout(hTarget, ObjectNameInformation, objectNameInfo.get(), 200);
 			if (STATUS_SUCCESS != ntCall)
 				return ntCall;
 
 			::CloseHandle(hTarget);
 
-			if (objectNameInfo.Get()->Name.Buffer)
+			if (objectNameInfo->Name.Buffer)
 			{
-				WuString buffString = objectNameInfo.Get()->Name.Buffer;
+				WuString buffString = objectNameInfo->Name.Buffer;
 				if (buffString.EndsWith(pathNoRoot))
 				{
 					if (!::DuplicateHandle(hExtProcess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))

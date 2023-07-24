@@ -2,6 +2,7 @@
 #pragma unmanaged
 
 #include "Utilities.h"
+#include "Expressions.h"
 #include "NtUtilities.h"
 
 namespace WindowsUtils::Core
@@ -26,34 +27,21 @@ namespace WindowsUtils::Core
 		typedef struct _WU_OBJECT_HANDLE
 		{
 			WuString		InputObject;									// Input object path. Helps tracking which handle belongs to which object, when querying multiple objects.
-			ULONG_PTR		ProcessId;										// ID from the process owning the handle.
+			DWORD			ProcessId;										// ID from the process owning the handle.
 			WuString		Name;											// Process image name. File base name.
 			WuString		ImagePath;										// Process image path.
-			std::map<VERSION_INFO_PROPERTY, const WuString>* VersionInfo;	// Image version information.
+			wumap<VERSION_INFO_PROPERTY, const WuString> VersionInfo;		// Image version information.
 
 			_WU_OBJECT_HANDLE()
-			{
-				InputObject = *new WuString();
-				Name = *new WuString();
-				ImagePath = *new WuString();
-				VersionInfo = new std::map<VERSION_INFO_PROPERTY, const WuString>();
-			}
-			_WU_OBJECT_HANDLE(const WuString& inputObj, const WuString& name, DWORD pid, const WuString& imagePath, const std::map<VERSION_INFO_PROPERTY, const WuString>& versionInfo)
-				: ProcessId(pid)
-			{
-				InputObject = *new WuString(inputObj);
-				Name = *new WuString(name);
-				ImagePath = *new WuString(imagePath);
-				VersionInfo = new std::map<VERSION_INFO_PROPERTY, const WuString>();
-			}
+				: InputObject(), ProcessId(0), Name(), ImagePath(), VersionInfo()
+			{ }
+			
+			_WU_OBJECT_HANDLE(const WuString& inputObj, DWORD pid, const WuString& name, const WuString& imagePath, const wumap<VERSION_INFO_PROPERTY, const WuString>& versionInfo)
+				: InputObject(inputObj), ProcessId(pid), Name(name), ImagePath(imagePath), VersionInfo(versionInfo)
+			{ }
 
-			~_WU_OBJECT_HANDLE()
-			{
-				delete &InputObject;
-				delete &Name;
-				delete &ImagePath;
-				delete VersionInfo;
-			}
+			~_WU_OBJECT_HANDLE() { }
+
 		} WU_OBJECT_HANDLE, *PWU_OBJECT_HANDLE;
 
 		/*=========================================
@@ -61,7 +49,7 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		// Get-ObjectHandle
-		DWORD GetProcessObjectHandle(std::vector<WU_OBJECT_HANDLE>& objectHandleList, std::vector<WuString>& reslist, BOOL closeHandle);
+		DWORD GetProcessObjectHandle(wuvector<WU_OBJECT_HANDLE>* objectHandleList, wuvector<WuString>* resList, BOOL closeHandle);
 	};
 
 	/*=========================================

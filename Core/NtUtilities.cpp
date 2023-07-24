@@ -4,10 +4,9 @@
 namespace WindowsUtils::Core
 {
 	NTSTATUS GetNtProcessUsingFile(
-		WuString& fileName,															// File full name.
-		std::shared_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION> procUsingFileInfo	// Output with a list of process IDs with handles to the file.
-	)
-	{
+		const WuString& fileName,									// File full name.
+		PFILE_PROCESS_IDS_USING_FILE_INFORMATION procUsingFileInfo	// Output with a list of process IDs with handles to the file.
+	) {
 		NTSTATUS result = STATUS_SUCCESS;
 		IO_STATUS_BLOCK ioStatusBlock = { 0 };
 
@@ -20,7 +19,7 @@ namespace WindowsUtils::Core
 			return GetLastError();
 
 		HANDLE hFile = CreateFileW(
-			fileName.GetWideBuffer(),
+			fileName.GetBuffer(),
 			FILE_READ_ATTRIBUTES,
 			FILE_SHARE_READ,
 			NULL,
@@ -47,8 +46,8 @@ namespace WindowsUtils::Core
 
 		} while (result == STATUS_INFO_LENGTH_MISMATCH);
 
-		procUsingFileInfo = std::make_shared<FILE_PROCESS_IDS_USING_FILE_INFORMATION>(ioStatusBlock.Information);
-		RtlCopyMemory(procUsingFileInfo.get(), reinterpret_cast<PFILE_PROCESS_IDS_USING_FILE_INFORMATION>(buffer.get()), (ULONG)ioStatusBlock.Information);
+		procUsingFileInfo = (PFILE_PROCESS_IDS_USING_FILE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ioStatusBlock.Information);
+		RtlCopyMemory(procUsingFileInfo, reinterpret_cast<PFILE_PROCESS_IDS_USING_FILE_INFORMATION>(buffer.get()), (ULONG)ioStatusBlock.Information);
 
 		CloseHandle(hFile);
 
@@ -138,12 +137,11 @@ namespace WindowsUtils::Core
 	* We use a separate thread that gets terminated after a timeout.
 	*/
 	NTSTATUS WINAPI NtQueryObjectWithTimeout(
-		HANDLE hobject								// A valid handle to the object.
-		, OBJECT_INFORMATION_CLASS objinfoclass		// One of the OBJECT_INFORMATION_CLASS enumerations.
-		, PVOID pobjinfo							// Object containing the queried information. The type of object depends on the object information class.
-		, ULONG mstimeout							// Maximum timeout in milliseconds.
-	)
-	{
+		HANDLE hobject,								// A valid handle to the object.
+		OBJECT_INFORMATION_CLASS objinfoclass,		// One of the OBJECT_INFORMATION_CLASS enumerations.
+		PVOID pobjinfo,							// Object containing the queried information. The type of object depends on the object information class.
+		ULONG mstimeout							// Maximum timeout in milliseconds.
+	) {
 		NTSTATUS result = STATUS_SUCCESS;
 		PTHREAD_FUNC_ARGUMENTS threadcallargs = new THREAD_FUNC_ARGUMENTS;
 		DWORD dwthreadid = 0;

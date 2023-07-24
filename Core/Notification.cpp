@@ -13,19 +13,11 @@ namespace WindowsUtils::Core
 		PROGRESS_RECORD_TYPE recType,
 		INT secRemaining,
 		const WuString& status
-	) : ActivityId(activityId), ParentActivityId(parentActId), PercentComplete(percentComplete), RecordType(recType), SecondsRemaining(secRemaining)
-	{
-		Activity = *new WuString(activity);
-		CurrentOperation = *new WuString(currOperation);
-		StatusDescription = *new WuString(status);
-	}
+	) : Activity(activity), ActivityId(activityId), CurrentOperation(currOperation), ParentActivityId(parentActId),
+			PercentComplete(percentComplete), RecordType(recType), SecondsRemaining(secRemaining), StatusDescription(status)
+	{ }
 
-	Notification::_MAPPED_PROGRESS_DATA::~_MAPPED_PROGRESS_DATA()
-	{
-		delete &Activity;
-		delete &CurrentOperation;
-		delete &StatusDescription;
-	}
+	Notification::_MAPPED_PROGRESS_DATA::~_MAPPED_PROGRESS_DATA() { }
 
 	void NativeWriteProgress(Notification::PNATIVE_CONTEXT context, Notification::PMAPPED_PROGRESS_DATA progData)
 	{
@@ -48,7 +40,7 @@ namespace WindowsUtils::Core
 
 		if (view != NULL)
 		{
-			wcscpy_s((LPWSTR)view, textLen, text.GetWideBuffer());
+			wcscpy_s((LPWSTR)view, textLen, text.GetBuffer());
 			UnmapViewOfFile(view);
 			context->WriteWarningHook(textLen * 2);
 		}

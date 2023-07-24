@@ -3,18 +3,15 @@ Assembly Core, Version=1.0.*, Culture=Invariant Language (Invariant Country):
 	hash=SHA1, flags=PublicKey
 Assembly mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
 	hash=None, flags=None
+Struct WindowsUtils.Core.AccessControl: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
 Struct WindowsUtils.Core.Utilities: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Utilities+_WU_RESOURCE_MESSAGE_TABLE: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
-Struct WindowsUtils.Core.AccessControl: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
-  :System.ValueType
-Struct WindowsUtils.Core.Containers: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
-  :System.ValueType
-Struct WindowsUtils.Core.Containers+_ARCHIVE_FILE_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
-  :System.Enum
-  Fields:
-    Int32 value__ : Public, SpecialName, RTSpecialName
+  Methods:
+    <MarshalCopy>(_WU_RESOURCE_MESSAGE_TABLE*, _WU_RESOURCE_MESSAGE_TABLE*): PrivateScope, Public, Static, SpecialName
+    <MarshalDestroy>(_WU_RESOURCE_MESSAGE_TABLE*): PrivateScope, Public, Static, SpecialName
 Struct WindowsUtils.Core.Notification: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Notification+_PROGRESS_RECORD_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
@@ -24,6 +21,14 @@ Struct WindowsUtils.Core.Notification+_PROGRESS_RECORD_TYPE: AutoLayout, AnsiCla
 Struct WindowsUtils.Core.Notification+_MAPPED_PROGRESS_DATA: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Notification+_NATIVE_CONTEXT: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct WindowsUtils.Core.Containers: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct WindowsUtils.Core.Containers+_ARCHIVE_FILE_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
+Struct WindowsUtils.Core.FileSystem: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.ProcessAndThread: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
@@ -44,6 +49,9 @@ Struct WindowsUtils.Core.TerminalServices: AutoLayout, AnsiClass, Class, Public,
   :System.ValueType
 Struct WindowsUtils.Core.TerminalServices+_WU_COMPUTER_SESSION: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+  Methods:
+    <MarshalCopy>(_WU_COMPUTER_SESSION*, _WU_COMPUTER_SESSION*): PrivateScope, Public, Static, SpecialName
+    <MarshalDestroy>(_WU_COMPUTER_SESSION*): PrivateScope, Public, Static, SpecialName
 Struct WindowsUtils.Core.TerminalServices+_WU_MESSAGE_RESPONSE: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Class WindowsUtils.Core.MessageResponseBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
@@ -59,8 +67,8 @@ Class WindowsUtils.Core.MessageResponseBase: AutoLayout, AnsiClass, Class, Publi
     get_Response(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
 Class WindowsUtils.Core.ComputerSessionBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
-    Void .ctor(_WU_COMPUTER_SESSION, System.String): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
-    Void .ctor(_WU_COMPUTER_SESSION): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+    Void .ctor(_WU_COMPUTER_SESSION*, System.String): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+    Void .ctor(_WU_COMPUTER_SESSION*): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Interfaces:
     System.IDisposable
@@ -106,7 +114,7 @@ Class WindowsUtils.Core.ObjectHandleBase: AutoLayout, AnsiClass, Class, Public, 
     get_ImagePath(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
 Class WindowsUtils.Core.ResourceMessageTableCore: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
-    Void .ctor(_WU_RESOURCE_MESSAGE_TABLE): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+    Void .ctor(_WU_RESOURCE_MESSAGE_TABLE*): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Interfaces:
     System.IDisposable
@@ -169,7 +177,7 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetServiceSecurityDescriptorString(String, String, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     SetServiceSecurity(String, String, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     SetServiceSecurity(String, String, String, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
-    ExpandFile(String, String, ArchiveFileType): PrivateScope, Public, HideBySig
+    ExpandFile(String, String, ArchiveFileType, CmdletContextBase): PrivateScope, Public, HideBySig
     GetRegistryValue(IntPtr, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(RegistryHive, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(String, RegistryHive, String, String): PrivateScope, Public, HideBySig
@@ -185,8 +193,8 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetRegistryValueList(String, RegistryHive, String, String[]): PrivateScope, Public, HideBySig
     GetRegistryValueList(String, SecureString, RegistryHive, String, String[]): PrivateScope, Public, HideBySig
     GetRegistryValueList(String, String, SecureString, RegistryHive, String, String[]): PrivateScope, Public, HideBySig
-    GetStringArrayFromDoubleNullTermninatedCStyleArray(IntPtr, UInt32 IsLong): PrivateScope, Public, HideBySig
-    GetStringArrayFromDoubleNullTermninatedCStyleArray(Char** IsImplicitlyDereferenced, UInt32 IsLong): PrivateScope, Public, HideBySig
+    GetStringArrayFromDoubleNullTerminatedCStyleArray(IntPtr, UInt32 IsLong): PrivateScope, Public, HideBySig
+    GetStringArrayFromDoubleNullTerminatedCStyleArray(Char* IsConst IsConst, UInt32 IsLong): PrivateScope, Public, HideBySig
     LogonAndImpersonateUser(String, SecureString): PrivateScope, Public, HideBySig
 Class WindowsUtils.Core.NativeExceptionBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
   :System.Exception

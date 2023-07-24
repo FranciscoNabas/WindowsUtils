@@ -3,44 +3,94 @@
 
 namespace WindowsUtils::Core
 {
-	template <class T>
 	class WuAllocator
 	{
 	public:
-		WuAllocator();
-		WuAllocator(SIZE_T size);
-		~WuAllocator();
+		WuAllocator() noexcept
+		{
+			_process_heap = GetProcessHeap();
+		}
 
-		T* get();
+		~WuAllocator() {}
 
-		T* operator-> ();
+		_NODISCARD_RAW_PTR_ALLOC inline void* allocate(_CRT_GUARDOVERFLOW const size_t size)
+		{
+			void* block = HeapAlloc(_process_heap, HEAP_ZERO_MEMORY, size);
+			if (block == NULL)
+				throw "Error not enough memory.";
+
+			return block;
+		}
+
+		inline void deallocate(void* const _ptr)
+		{
+			HeapFree(_process_heap, 0, _ptr);
+		}
 
 	private:
-		T* _buffer;
-		PVOID _processHeap;
+		void* _process_heap;
 	};
 
 	/*
-	* Memory management class using the singleton design pattern.
-	* Reference: https://stackoverflow.com/questions/1008019/c-singleton-design-pattern
+	*	These are helpers to allow using smart pointers with custom allocators.
+	*	This is mainly so we can create smart pointers with custom sizes.
 	*/
-
-	class WuMemoryManagement
+	struct HeapAllocFreer
 	{
-	public:
-		static WuMemoryManagement& GetManager();
-		PVOID Allocate(size_t size);
-		VOID Free(PVOID block);
-
-	private:
-		BOOL IsRegistered(PVOID block);
-		std::vector<PVOID> MemoryList;
-
-		WuMemoryManagement() { }
-		~WuMemoryManagement();
-
-	public:
-		WuMemoryManagement(WuMemoryManagement const&) = delete;
-		void operator=(WuMemoryManagement const&) = delete;
+		void operator()(void* p) const noexcept {
+			HeapFree(GetProcessHeap(), 0, p);
+		}
 	};
+
+	template <class T>
+	using wuunique_ptr = std::unique_ptr<T>;
+
+	template <class T>
+	using wuunique_ha_ptr = std::unique_ptr<T, HeapAllocFreer>;
+
+	template <class T>
+	using wushared_ptr = std::shared_ptr<T>;
+
+	template <class T>
+	[[nodiscard]]
+	wuunique_ptr<T> make_wuunique() {
+		return std::make_unique<T>();
+	}
+	
+	template <class T, class... Args>
+	[[nodiscard]]
+	wuunique_ptr<T> make_wuunique(Args&&... args) {
+		return std::make_unique<T>(args);
+	}
+	
+	template <class T>
+	[[nodiscard]]
+	wuunique_ha_ptr<T> make_wuunique_ha(size_t size) noexcept
+	{
+		return wuunique_ha_ptr<T>{
+			static_cast<T*>(HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size))
+		};
+	}
+
+	template <class T, class... Args>
+	wushared_ptr<T> make_wushared(Args&&... args) {
+		return std::make_shared<T>(args);
+	}
+
+	template <class T>
+	wushared_ptr<T> make_wushared() {
+		return std::make_shared<T>();
+	}
+
+	template <class T>
+	[[nodiscard]]
+	wushared_ptr<T> make_wushared_ha(size_t size) noexcept
+	{
+		return wushared_ptr<T> {
+			std::shared_ptr<T>(
+				static_cast<T*>(HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size)),
+				HeapAllocFreer()
+			)
+		};
+	}
 }

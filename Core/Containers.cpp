@@ -4,20 +4,20 @@
 
 namespace WindowsUtils::Core
 {
-	DWORD Containers::ExpandArchiveFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context)
+	DWORD Containers::ExpandArchiveFile(const WuString& fileName, const WuString& filePath, const WuString& destination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		switch (fileType)
 		{
 		case ARCHIVE_FILE_TYPE::Cabinet:
-			result = ExpandCabinetFile(lpszFileName, lpszFilePath, lpszDestination, context);
+			result = ExpandCabinetFile(fileName, filePath, destination, context);
 			break;
 		}
 
 		return result;
 	}
 
-	DWORD ExpandCabinetFile(const LPSTR& lpszFileName, const LPSTR& lpszFilePath, const LPSTR& lpszDestination, Notification::PNATIVE_CONTEXT context)
+	DWORD ExpandCabinetFile(const WuString& fileName, const WuString& filePath, const WuString& destination, Notification::PNATIVE_CONTEXT context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		ERF erfError;
@@ -51,7 +51,7 @@ namespace WindowsUtils::Core
 		*	having an accurate progress bar.
 		*/
 
-		if (!FDICopy(hContext, lpszFileName, lpszFilePath, 0, FdiFnNotifyCallback, NULL, NULL))
+		if (!FDICopy(hContext, fileName.GetAnsiBuffer(), filePath.GetAnsiBuffer(), 0, FdiFnNotifyCallback, NULL, NULL))
 		{
 			if (hContext != NULL)
 				FDIDestroy(hContext);
@@ -68,17 +68,10 @@ namespace WindowsUtils::Core
 	// FDI Notification definition.
 
 	_FDI_NOTIFICATION::_FDI_NOTIFICATION()
-		: Name(NULL), CabinetName(NULL)
-	{
-		_progressData = (Notification::PMAPPED_PROGRESS_DATA)MemoryManager.Allocate(sizeof(Notification::MAPPED_PROGRESS_DATA));
-	}
+		: Name(), CabinetName(), _progressData()
+	{ }
 
-	_FDI_NOTIFICATION::~_FDI_NOTIFICATION()
-	{
-		MemoryManager.Free(_progressData);
-		MemoryManager.Free(Name);
-		MemoryManager.Free(CabinetName);
-	}
+	_FDI_NOTIFICATION::~_FDI_NOTIFICATION()	{ }
 
 	_FDI_NOTIFICATION& _FDI_NOTIFICATION::GetNotifier()
 	{
@@ -88,31 +81,7 @@ namespace WindowsUtils::Core
 
 	void _FDI_NOTIFICATION::WriteProgress(Notification::PNATIVE_CONTEXT context)
 	{
-		size_t nameSize = wcslen(Name) + 1;
-		size_t cabNameSize = wcslen(CabinetName) + 1;
-
-		DWORD procDigits = GetNumberDigitCount<ULONGLONG>(ProcessedBytes);
-		DWORD totalDigits = GetNumberDigitCount<ULONGLONG>(TotalUncompressedSize);
-
-		size_t totalActSize = nameSize + 13;
-		size_t totalStatSize = cabNameSize + procDigits + totalDigits + 21;
-
-		_progressData->PercentComplete = std::lround((ProcessedBytes / TotalUncompressedSize) * 100);
 		
-		// Sanity check.
-		if (_progressData->PercentComplete > 100) _progressData->PercentComplete = 100;
-		if (_progressData->PercentComplete < 0) _progressData->PercentComplete = 0;
-
-		_progressData->Activity = (LPWSTR)MemoryManager.Allocate(totalActSize * 2);
-		_progressData->StatusDescription = (LPWSTR)MemoryManager.Allocate(totalStatSize * 2);
-
-		swprintf_s(_progressData->Activity, totalActSize, L"Expanding '%ws'", CabinetName);
-		swprintf_s(_progressData->StatusDescription, totalStatSize, L"Current file: %ws. (%lld/%lld)B", Name, ProcessedBytes, TotalUncompressedSize);
-
-		NativeWriteProgress(context, _progressData);
-
-		MemoryManager.Free(_progressData->Activity);
-		MemoryManager.Free(_progressData->StatusDescription);
 	}
 
 	// FDI macro functions.

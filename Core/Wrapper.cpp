@@ -9,11 +9,11 @@ namespace WindowsUtils::Core
 
 	//Invoke-RemoteMessage
 	MessageResponseBase::MessageResponseBase() : wrapper(new TerminalServices::WU_MESSAGE_RESPONSE) { }
-	MessageResponseBase::MessageResponseBase(TerminalServices::WU_MESSAGE_RESPONSE exmessres)
+	MessageResponseBase::MessageResponseBase(TerminalServices::WU_MESSAGE_RESPONSE unwrapped)
 	{
 		wrapper = new TerminalServices::WU_MESSAGE_RESPONSE(
-			exmessres.SessionId
-			, exmessres.Response
+			unwrapped.SessionId,
+			unwrapped.Response
 		);
 	}
 	MessageResponseBase::~MessageResponseBase() { delete wrapper; }
@@ -21,27 +21,27 @@ namespace WindowsUtils::Core
 
 	//Get-ComputerSession
 	ComputerSessionBase::ComputerSessionBase() : wrapper(new TerminalServices::WU_COMPUTER_SESSION) { }
-	ComputerSessionBase::ComputerSessionBase(TerminalServices::WU_COMPUTER_SESSION excompsess)
+	ComputerSessionBase::ComputerSessionBase(TerminalServices::WU_COMPUTER_SESSION unwrapped)
 	{
 		wrapper = new TerminalServices::WU_COMPUTER_SESSION(
-			excompsess.SessionId
-			, excompsess.UserName
-			, excompsess.SessionName
-			, excompsess.LastInputTime
-			, excompsess.LogonTime
-			, excompsess.SessionState
+			unwrapped.SessionId,
+			unwrapped.UserName,
+			unwrapped.SessionName,
+			unwrapped.LastInputTime,
+			unwrapped.LogonTime,
+			unwrapped.SessionState
 		);
 	}
-	ComputerSessionBase::ComputerSessionBase(TerminalServices::WU_COMPUTER_SESSION excompsess, String^ inppcname)
+	ComputerSessionBase::ComputerSessionBase(TerminalServices::WU_COMPUTER_SESSION unwrapped, String^ computerName)
 	{
-		_computername = inppcname;
+		_computerName = computerName;
 		wrapper = new TerminalServices::WU_COMPUTER_SESSION(
-			excompsess.SessionId
-			, excompsess.UserName
-			, excompsess.SessionName
-			, excompsess.LastInputTime
-			, excompsess.LogonTime
-			, excompsess.SessionState
+			unwrapped.SessionId,
+			unwrapped.UserName,
+			unwrapped.SessionName,
+			unwrapped.LastInputTime,
+			unwrapped.LogonTime,
+			unwrapped.SessionState
 		);
 	}
 	ComputerSessionBase::~ComputerSessionBase() { delete wrapper; }
@@ -49,21 +49,21 @@ namespace WindowsUtils::Core
 
 	// Get-ObjectHandle
 	ObjectHandleBase::ObjectHandleBase() : wrapper(new ProcessAndThread::WU_OBJECT_HANDLE) { }
-	ObjectHandleBase::ObjectHandleBase(ProcessAndThread::WU_OBJECT_HANDLE objhandle)
+	ObjectHandleBase::ObjectHandleBase(ProcessAndThread::WU_OBJECT_HANDLE objectHandle)
 	{
 		wrapper = new ProcessAndThread::WU_OBJECT_HANDLE;
-		wrapper->ImagePath = objhandle.ImagePath;
-		wrapper->Name = objhandle.Name;
-		wrapper->InputObject = objhandle.InputObject;
-		wrapper->ProcessId = objhandle.ProcessId;
-		wrapper->VersionInfo = objhandle.VersionInfo;
+		wrapper->ImagePath = objectHandle.ImagePath;
+		wrapper->Name = objectHandle.Name;
+		wrapper->InputObject = objectHandle.InputObject;
+		wrapper->ProcessId = objectHandle.ProcessId;
+		wrapper->VersionInfo = objectHandle.VersionInfo;
 	}
 	ObjectHandleBase::~ObjectHandleBase() { delete wrapper; }
 	ObjectHandleBase::!ObjectHandleBase() { delete wrapper; }
 
 	// Get-ResourceMessageTable
 	ResourceMessageTableCore::ResourceMessageTableCore() :wrapper(new Utilities::WU_RESOURCE_MESSAGE_TABLE) { }
-	ResourceMessageTableCore::ResourceMessageTableCore(Utilities::WU_RESOURCE_MESSAGE_TABLE resmes) { wrapper = new Utilities::WU_RESOURCE_MESSAGE_TABLE(resmes.Id, resmes.Message); }
+	ResourceMessageTableCore::ResourceMessageTableCore(Utilities::WU_RESOURCE_MESSAGE_TABLE messageTable) { wrapper = new Utilities::WU_RESOURCE_MESSAGE_TABLE(messageTable.Id, messageTable.Message.GetBuffer()); }
 	ResourceMessageTableCore::~ResourceMessageTableCore() { delete wrapper; }
 	ResourceMessageTableCore::!ResourceMessageTableCore() { delete wrapper; }
 
@@ -74,62 +74,55 @@ namespace WindowsUtils::Core
 	// Invoke-RemoteMessage
 	array<MessageResponseBase^>^ Wrapper::SendRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait)
 	{
-		DWORD dwresult = ERROR_SUCCESS;
-		SharedVecPtr(TerminalServices::WU_MESSAGE_RESPONSE) presult = MakeVecPtr(TerminalServices::WU_MESSAGE_RESPONSE);
-		SharedVecPtr(DWORD) psessid;
+		DWORD result = ERROR_SUCCESS;
+		
+		wusunique_vector<TerminalServices::WU_MESSAGE_RESPONSE> responseList = make_wusunique_vector<TerminalServices::WU_MESSAGE_RESPONSE>();
+		wusunique_vector<DWORD> sessionIdList;
 
-		pin_ptr<const wchar_t> wTitle = PtrToStringChars(title);
-		pin_ptr<const wchar_t> wMessage = PtrToStringChars(message);
+		WuString wuTitle = GetWuStringFromSystemString(title);
+		WuString wuMessage = GetWuStringFromSystemString(message);
 
 		if (sessionid == nullptr)
-			dwresult = wtsptr->SendMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *presult, (HANDLE)session);
+			result = wtsptr->SendMessage(wuTitle, wuMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, responseList.get(), (HANDLE)session);
 
 		else
 		{
-			psessid = MakeVecPtr(DWORD);
+			sessionIdList = make_wusunique_vector<DWORD>();
 			for (int i = 0; i < sessionid->Length; i++)
-				psessid->push_back((DWORD)sessionid[i]);
+				sessionIdList->push_back((DWORD)sessionid[i]);
 
-			dwresult = wtsptr->SendMessage((LPWSTR)wTitle, (LPWSTR)wMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, *psessid, *presult, (HANDLE)session);
+			result = wtsptr->SendMessage(wuTitle, wuMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, sessionIdList.get(), responseList.get(), (HANDLE)session);
 		}
 
-		if (ERROR_SUCCESS != dwresult)
-		{
-			wTitle = nullptr;
-			wMessage = nullptr;
-			throw gcnew NativeExceptionBase(dwresult);
-		}
+		if (ERROR_SUCCESS != result)
+			throw gcnew NativeExceptionBase(result);
 
-		array<MessageResponseBase^>^ output = gcnew array<MessageResponseBase^>((int)presult->size());
-		
-		for (size_t i = 0; i < presult->size(); i++)
-			if (presult->at(i).Response != 0)
-				output[(int)i] = gcnew MessageResponseBase(presult->at(i));
+		List<MessageResponseBase^>^ output = gcnew List<MessageResponseBase^>();
+		for(TerminalServices::WU_MESSAGE_RESPONSE response : *responseList)
+			if (response.Response != 0)
+				output->Add(gcnew MessageResponseBase(response));
 
-		wTitle = nullptr;
-		wMessage = nullptr;
-
-		return output;
+		return output->ToArray();
 	}
 
 	// Get-ComputerSession
-	array<ComputerSessionBase^>^ Wrapper::GetComputerSession(String^ computername, IntPtr session, Boolean onlyactive, Boolean includesystemsession)
+	array<ComputerSessionBase^>^ Wrapper::GetComputerSession(String^ computerName, IntPtr session, Boolean activeOnly, Boolean includeSystemSessions)
 	{
-		SharedVecPtr(TerminalServices::WU_COMPUTER_SESSION) result = MakeVecPtr(TerminalServices::WU_COMPUTER_SESSION);
-		DWORD opresult = wtsptr->GetEnumeratedSession(*result, (HANDLE)session, onlyactive, includesystemsession);
-		if (opresult != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(opresult);
+		wusunique_vector<TerminalServices::WU_COMPUTER_SESSION> sessionList = make_wusunique_vector<TerminalServices::WU_COMPUTER_SESSION>();
+		DWORD result = wtsptr->GetEnumeratedSession(sessionList.get(), (HANDLE)session, activeOnly, includeSystemSessions);
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeExceptionBase(result);
 
-		array<ComputerSessionBase^>^ output = gcnew array<ComputerSessionBase^>((int)result->size());
+		List<ComputerSessionBase^>^ output = gcnew List<ComputerSessionBase^>((int)sessionList->size());
 
-		if (nullptr != computername)
-			for (size_t i = 0; i < result->size(); i++)
-				output[(int)i] = gcnew ComputerSessionBase(result->at(i), computername);
+		if (computerName != nullptr)
+			for (TerminalServices::WU_COMPUTER_SESSION sessionInfo : *sessionList)
+				output->Add(gcnew ComputerSessionBase(sessionInfo, computerName));
 		else
-			for (size_t i = 0; i < result->size(); i++)
-				output[(int)i] = gcnew ComputerSessionBase(result->at(i));
+			for (TerminalServices::WU_COMPUTER_SESSION sessionInfo : *sessionList)
+				output->Add(gcnew ComputerSessionBase(sessionInfo));
 
-		return output;
+		return output->ToArray();
 	}
 
 	// Disconnect-Session
@@ -147,40 +140,39 @@ namespace WindowsUtils::Core
 	}
 
 	// Get-FormattedError
-	String^ Wrapper::GetFormattedError(Int32 errorcode)
+	String^ Wrapper::GetFormattedError(Int32 errorCode)
 	{
-		std::shared_ptr<LPWSTR> errormess = std::make_shared<LPWSTR>();
-		DWORD result = utlptr->GetFormattedError((DWORD)errorcode, *errormess);
-		if (ERROR_SUCCESS != result)
+		WuString errorMessage;
+		DWORD result = utlptr->GetFormattedError((DWORD)errorCode, errorMessage);
+		if (result != ERROR_SUCCESS)
 			throw gcnew NativeExceptionBase(result, String::Format("'GetFormattedError' failed with {0}", result));
 
-		return gcnew String(*errormess);
+		return gcnew String(errorMessage.GetBuffer());
 	}
 	// Get-LastWin32Error
 	String^ Wrapper::GetLastWin32Error()
 	{
-		std::shared_ptr<LPWSTR> errormess = std::make_shared<LPWSTR>();
-		DWORD result = utlptr->GetFormattedWin32Error(*errormess);
-		if (ERROR_SUCCESS != result)
-			throw gcnew NativeExceptionBase(result);
+		WuString errorMessage;
+		DWORD result = utlptr->GetFormattedWin32Error(errorMessage);
+		if (result != ERROR_SUCCESS)
+			throw gcnew NativeExceptionBase(result, String::Format("'GetFormattedError' failed with {0}", result));
 
-		return gcnew String(*errormess);
+		return gcnew String(errorMessage.GetBuffer());
 	}
 
 	// Get-ObjectHandle
 	array<ObjectHandleBase^>^ Wrapper::GetProcessObjectHandle(array<String^>^ fileName, Boolean closeHandle)
 	{
-		SharedVecPtr(ProcessAndThread::WU_OBJECT_HANDLE) ppOutput = MakeVecPtr(ProcessAndThread::WU_OBJECT_HANDLE);
-		SharedVecPtr(LPCWSTR) reslist = MakeVecPtr(LPCWSTR);
+		wusunique_vector<ProcessAndThread::WU_OBJECT_HANDLE> ppOutput = make_wusunique_vector<ProcessAndThread::WU_OBJECT_HANDLE>();
+		wusunique_vector<WuString> reslist = make_wusunique_vector<WuString>();
 
-		for (int i = 0; i < fileName->Length; i++)
+		for each (String^ name in fileName)
 		{
-			pin_ptr<const WCHAR> single = PtrToStringChars(fileName[i]);
-			reslist->push_back((LPCWSTR)single);
-			single = nullptr;
+			WuString wuName = GetWuStringFromSystemString(name);
+			reslist->push_back(wuName);
 		}
 
-		UINT result = patptr->GetProcessObjectHandle(*ppOutput, *reslist, closeHandle);
+		UINT result = patptr->GetProcessObjectHandle(ppOutput.get(), reslist.get(), closeHandle);
 		if (result != ERROR_SUCCESS)
 			throw gcnew NativeExceptionBase(result);
 
@@ -203,174 +195,164 @@ namespace WindowsUtils::Core
 	}
 
 	// Get-ResourceMessageTable
-	array<ResourceMessageTableCore^>^ Wrapper::GetResourceMessageTable(String^ libpath)
+	array<ResourceMessageTableCore^>^ Wrapper::GetResourceMessageTable(String^ libPath)
 	{
-		SharedVecPtr(Utilities::WU_RESOURCE_MESSAGE_TABLE) ppresult = MakeVecPtr(Utilities::WU_RESOURCE_MESSAGE_TABLE);
-		pin_ptr<const wchar_t> pplibpath = PtrToStringChars(libpath);
-
-		LPWSTR wlibpath = (LPWSTR)pplibpath;
-		DWORD result = utlptr->GetResourceMessageTable(*ppresult, wlibpath);
+		wusunique_vector<Utilities::WU_RESOURCE_MESSAGE_TABLE> messageTable = make_wusunique_vector<Utilities::WU_RESOURCE_MESSAGE_TABLE>();
+		
+		WuString wuLibPath = GetWuStringFromSystemString(libPath);
+		
+		DWORD result = utlptr->GetResourceMessageTable(messageTable.get(), wuLibPath);
 		if (result != ERROR_SUCCESS)
 		{
 			if (result == ERROR_BAD_EXE_FORMAT)
 			{
-				PathStripPathW((LPWSTR)wlibpath);
-				String^ errormsg = gcnew String(wlibpath);
-				wlibpath = nullptr;
+				PathStripPathW(wuLibPath.GetBuffer());
+				String^ errormsg = gcnew String(wuLibPath.GetBuffer());
 				throw gcnew NativeExceptionBase(result, errormsg + " is not a valid Win32 application.");
 			}
 			else
-			{
-				wlibpath = nullptr;
 				throw gcnew NativeExceptionBase(result);
-			}
 		}
 
-		array<ResourceMessageTableCore^>^ output = gcnew array<ResourceMessageTableCore^>((int)ppresult->size());
-		for (size_t i = 0; i < ppresult->size(); i++)
-			output[(int)i] = gcnew ResourceMessageTableCore(ppresult->at(i));
+		List<ResourceMessageTableCore^>^ output = gcnew List<ResourceMessageTableCore^>();
+		for (Utilities::WU_RESOURCE_MESSAGE_TABLE tableEntry : *messageTable)
+			output->Add(gcnew ResourceMessageTableCore(tableEntry));
 
-		wlibpath = nullptr;
-		return output;
+		return output->ToArray();
 	}
 
 	// Get-MsiProperties
-	Dictionary<String^, String^>^ Wrapper::GetMsiProperties(String^ filepath)
+	Dictionary<String^, String^>^ Wrapper::GetMsiProperties(String^ filePath)
 	{
 		Dictionary<String^, String^>^ output = gcnew Dictionary<String^, String^>();
-		auto ppresult = std::make_shared<std::map<LPWSTR, LPWSTR>>();
-		pin_ptr<const wchar_t> wfilename = PtrToStringChars(filepath);
+		wusunique_map<WuString, WuString> propertyMap = make_wusunique_map<WuString, WuString>();
+		WuString wuFileName = GetWuStringFromSystemString(filePath);
 
-		LPWSTR lpfilename = (LPWSTR)wfilename;
-		DWORD result = utlptr->GetMsiProperties(*ppresult, lpfilename);
+		DWORD result = utlptr->GetMsiProperties(propertyMap.get(), wuFileName);
 		if (ERROR_SUCCESS != result && ERROR_NO_MORE_ITEMS != result)
 		{
-			wfilename = nullptr;
-			LPWSTR pextmsierr;
-			DWORD inResu = utlptr->GetMsiExtendedError(pextmsierr);
-			if (ERROR_SUCCESS == inResu)
-				throw gcnew NativeExceptionBase(result, GetFormattedError(result), gcnew SystemException(gcnew String(pextmsierr)));
+			WuString msiError;
+			DWORD inResult = utlptr->GetMsiExtendedError(msiError);
+			if (ERROR_SUCCESS == inResult)
+				throw gcnew NativeExceptionBase(result, GetFormattedError(result), gcnew SystemException(gcnew String(msiError.GetBuffer())));
 			else
 				throw gcnew NativeExceptionBase(result);
 		}
 
-		std::map<LPWSTR, LPWSTR>::iterator itr;
-		for (itr = ppresult->begin(); itr != ppresult->end(); itr++)
-			output->Add(gcnew String(itr->first), gcnew String(itr->second));
+		std::map<WuString, WuString>::iterator itr;
+		for (itr = propertyMap->begin(); itr != propertyMap->end(); itr++)
+			output->Add(gcnew String(itr->first.GetBuffer()), gcnew String(itr->second.GetBuffer()));
 
 		return output;
 	}
 
 	// Remove-Service
-	void Wrapper::RemoveService(String^ servicename, String^ computername, bool stopservice, CmdletContextBase^ context)
+	void Wrapper::RemoveService(String^ serviceName, String^ computerName, bool stopService, CmdletContextBase^ context)
 	{
-		pin_ptr<const wchar_t> wcomputername = PtrToStringChars(computername);
-		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
+		WuString wuComputerName = GetWuStringFromSystemString(computerName);
+		WuString wuServiceName = GetWuStringFromSystemString(serviceName);
 
-		DWORD result = svcptr->RemoveService((LPWSTR)wservicename, (LPWSTR)wcomputername, stopservice, context->GetUnderlyingContext());
+		DWORD result = svcptr->RemoveService(wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext());
 		if (result != ERROR_SUCCESS)
-		{
-			wcomputername = nullptr;
-			wservicename = nullptr;
 			throw gcnew NativeExceptionBase(result);
-		}
-		
-		wcomputername = nullptr;
-		wservicename = nullptr;
 	}
 	
-	void Wrapper::RemoveService(String^ servicename, bool stopservice, CmdletContextBase^ context)
+	void Wrapper::RemoveService(String^ serviceName, bool stopService, CmdletContextBase^ context)
 	{
-		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
+		WuString wuServiceName = GetWuStringFromSystemString(serviceName);
 
-		DWORD result = svcptr->RemoveService((LPWSTR)wservicename, NULL, stopservice, context->GetUnderlyingContext());
+		DWORD result = svcptr->RemoveService(wuServiceName, L"", stopService, context->GetUnderlyingContext());
 		if (result != ERROR_SUCCESS)
-		{
-			wservicename = nullptr;
 			throw gcnew NativeExceptionBase(result);
-		}
-
-		wservicename = nullptr;
 	}
 
-	void Wrapper::RemoveService(IntPtr hservice, String^ servicename, String^ computername, bool stopservice, CmdletContextBase^ context)
+	void Wrapper::RemoveService(IntPtr hService, String^ serviceName, String^ computerName, bool stopService, CmdletContextBase^ context)
 	{
-		pin_ptr<const wchar_t> wcomputername = PtrToStringChars(computername);
-		pin_ptr<const wchar_t> wservicename = PtrToStringChars(servicename);
+		WuString wuComputerName = GetWuStringFromSystemString(computerName);
+		WuString wuServiceName = GetWuStringFromSystemString(serviceName);
 
-		HANDLE uhservice = static_cast<HANDLE>(hservice);
-		SC_HANDLE uschservice = static_cast<SC_HANDLE>(uhservice);
-		DWORD result = svcptr->RemoveService(uschservice, (LPWSTR)wservicename, (LPWSTR)wcomputername, stopservice, context->GetUnderlyingContext());
+
+		HANDLE wService = static_cast<HANDLE>(hService);
+		SC_HANDLE schService = static_cast<SC_HANDLE>(wService);
+		DWORD result = svcptr->RemoveService(schService, wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext());
 
 		if (result != ERROR_SUCCESS)
-		{
-			wcomputername = nullptr;
 			throw gcnew NativeExceptionBase(result);
-		}
-
-		wcomputername = nullptr;
 	}
 
 	// Get-ServiceSecurity
 	String^ Wrapper::GetServiceSecurityDescriptorString(String^ serviceName, String^ computerName, bool audit)
 	{
 		DWORD result = ERROR_SUCCESS;
-		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
-		pin_ptr<const wchar_t> wComputerName = PtrToStringChars(computerName);
+
+		WuString wuServiceName = GetWuStringFromSystemString(computerName);
+		WuString wuComputerName = GetWuStringFromSystemString(serviceName);
 
 		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
 		if (audit)
 			secInfo |= SACL_SECURITY_INFORMATION;
 
-		PSECURITY_DESCRIPTOR svcSecurity;
+		PSECURITY_DESCRIPTOR svcSecurity = NULL;
 		DWORD size = 0;
 		if (audit)
-			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, svcSecurity, &size, TRUE);
+			result = svcptr->GetServiceSecurity(wuServiceName, wuComputerName, svcSecurity, &size, TRUE);
 		else
-			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, svcSecurity, &size);
+			result = svcptr->GetServiceSecurity(wuServiceName, wuComputerName, svcSecurity, &size);
 
 		if (result != ERROR_SUCCESS)
 		{
-			wServiceName = nullptr;
-			wComputerName = nullptr;
+			if (svcSecurity != NULL)
+				LocalFree(svcSecurity);
+			
 			throw gcnew NativeExceptionBase(result);
 		}
 
 		LPWSTR sddl;
 		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
 
-		wServiceName = nullptr;
-		wComputerName = nullptr;
-		return gcnew String(sddl);
+		if (svcSecurity != NULL)
+			LocalFree(svcSecurity);
+
+		String^ manSddl = gcnew String(sddl);
+		LocalFree(sddl);
+
+		return manSddl;
 	}
 
 	String^ Wrapper::GetServiceSecurityDescriptorString(String^ serviceName, bool audit)
 	{
 		DWORD result = ERROR_SUCCESS;
-		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
+
+		WuString wuServiceName = GetWuStringFromSystemString(serviceName);
 		
 		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
 		if (audit)
 			secInfo |= SACL_SECURITY_INFORMATION;
 
-		PSECURITY_DESCRIPTOR svcSecurity;
+		PSECURITY_DESCRIPTOR svcSecurity = NULL;
 		DWORD size = 0;
 		if (audit)
-			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, L".", svcSecurity, &size, TRUE);
+			result = svcptr->GetServiceSecurity(wuServiceName, L"", svcSecurity, &size, TRUE);
 		else
-			result = svcptr->GetServiceSecurity((LPWSTR)wServiceName, L".", svcSecurity, &size);
+			result = svcptr->GetServiceSecurity(wuServiceName, L"", svcSecurity, &size);
 
 		if (result != ERROR_SUCCESS)
 		{
-			wServiceName = nullptr;
+			if (svcSecurity != NULL)
+				LocalFree(svcSecurity);
 			throw gcnew NativeExceptionBase(result);
 		}
 
 		LPWSTR sddl;
 		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
 		
-		wServiceName = nullptr;
-		return gcnew String(sddl);
+		if (svcSecurity != NULL)
+			LocalFree(svcSecurity);
+
+		String^ manSddl = gcnew String(sddl);
+		LocalFree(sddl);
+
+		return manSddl;
 	}
 
 	String^ Wrapper::GetServiceSecurityDescriptorString(IntPtr hService, bool audit)
@@ -383,7 +365,7 @@ namespace WindowsUtils::Core
 		if (audit)
 			secInfo |= SACL_SECURITY_INFORMATION;
 
-		PSECURITY_DESCRIPTOR svcSecurity;
+		PSECURITY_DESCRIPTOR svcSecurity = NULL;
 		DWORD size = 0;
 		if (audit)
 			result = svcptr->GetServiceSecurity(whService, svcSecurity, &size, TRUE);
@@ -391,50 +373,45 @@ namespace WindowsUtils::Core
 			result = svcptr->GetServiceSecurity(whService, svcSecurity, &size);
 
 		if (result != ERROR_SUCCESS)
+		{
+			if (svcSecurity != NULL)
+				LocalFree(svcSecurity);
+
 			throw gcnew NativeExceptionBase(result);
+		}
 
 		LPWSTR sddl;
 		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
 
-		return gcnew String(sddl);
+		if (svcSecurity != NULL)
+			LocalFree(svcSecurity);
+
+		String^ manSddl = gcnew String(sddl);
+		LocalFree(sddl);
+
+		return manSddl;
 	}
 
 	// Set-ServiceSecurity
 	void Wrapper::SetServiceSecurity(String^ serviceName, String^ computerName, String^ sddl, bool audit, bool changeOwner)
 	{
-		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
-		pin_ptr<const wchar_t> wComputerName = PtrToStringChars(computerName);
-		pin_ptr<const wchar_t> wSddl = PtrToStringChars(sddl);
-
-		DWORD result = svcptr->SetServiceSecurity((LPWSTR)wServiceName, (LPWSTR)wComputerName, (LPWSTR)wSddl, audit, changeOwner);
+		WuString wuServiceName = GetWuStringFromSystemString(serviceName);
+		WuString wuComputerName = GetWuStringFromSystemString(computerName);
+		WuString wuSddl = GetWuStringFromSystemString(sddl);
+		
+		DWORD result = svcptr->SetServiceSecurity(wuServiceName, wuComputerName, wuSddl, audit, changeOwner);
 		if (result != ERROR_SUCCESS)
-		{
-			wServiceName = nullptr;
-			wComputerName = nullptr;
-			wSddl = nullptr;
 			throw gcnew NativeExceptionBase(result);
-		}
-
-		wServiceName = nullptr;
-		wComputerName = nullptr;
-		wSddl = nullptr;
 	}
 
 	void Wrapper::SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner)
 	{
-		pin_ptr<const wchar_t> wServiceName = PtrToStringChars(serviceName);
-		pin_ptr<const wchar_t> wSddl = PtrToStringChars(sddl);
+		WuString wuServiceName = GetWuStringFromSystemString(serviceName);
+		WuString wuSddl = GetWuStringFromSystemString(sddl);
 
-		DWORD result = svcptr->SetServiceSecurity((LPWSTR)wServiceName, L".", (LPWSTR)wSddl, audit, changeOwner);
+		DWORD result = svcptr->SetServiceSecurity(wuServiceName, L"", wuSddl, audit, changeOwner);
 		if (result != ERROR_SUCCESS)
-		{
-			wServiceName = nullptr;
-			wSddl = nullptr;
 			throw gcnew NativeExceptionBase(result);
-		}
-
-		wServiceName = nullptr;
-		wSddl = nullptr;
 	}
 
 	// Expand-File
@@ -452,49 +429,41 @@ namespace WindowsUtils::Core
 	// Registry operations
 	Object^ Wrapper::GetRegistryValue(RegistryHive hive, String^ subKey, String^ valueName)
 	{
-		return GetRegistryValue(L"", L"", L"", hive, subKey, valueName);
+		WuString wuPass = L"";
+		return GetRegistryValue(L"", L"", wuPass, hive, subKey, valueName);
 	}
 
 	Object^ Wrapper::GetRegistryValue(String^ computerName, RegistryHive hive, String^ subKey, String^ valueName)
 	{
-		return GetRegistryValue(computerName, L"", L"", hive, subKey, valueName);
+		WuString wuPass = L"";
+		return GetRegistryValue(computerName, L"", wuPass, hive, subKey, valueName);
 	}
 
 	Object^ Wrapper::GetRegistryValue(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName)
 	{
-		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistryValue(L"", userName, wPass, hive, subKey, valueName);
+		WuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return GetRegistryValue(L"", userName, wuPass, hive, subKey, valueName);
 	}
 
 	Object^ Wrapper::GetRegistryValue(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName)
 	{
-		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistryValue(computerName, userName, wPass, hive, subKey, valueName);
+		WuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return GetRegistryValue(computerName, userName, wuPass, hive, subKey, valueName);
 	}
 
 	Object^ Wrapper::GetRegistryValue(IntPtr hRegistry, String^ subKey, String^ valueName)
 	{
-		DWORD dwValueType;
-		DWORD dwBytesReturned;
-		PVOID pvData;
+		DWORD dwValueType = 0;
+		DWORD dwBytesReturned = 0;
+		wuunique_ha_ptr<void> data;
 
-		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-
-		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
-		pin_ptr<const wchar_t> wValueName = PtrToStringChars(valueName);
+		WuString wuSubKey = GetWuStringFromSystemString(subKey);
+		WuString wuValueName = GetWuStringFromSystemString(valueName);
 
 		HKEY whReg = (HKEY)hRegistry.ToPointer();
-		LSTATUS result = regptr->GetRegistryKeyValue(whReg, (LPWSTR)wSubKey, (LPWSTR)wValueName, dwValueType, pvData, dwBytesReturned);
+		LSTATUS result = regptr->GetRegistryKeyValue(whReg, wuSubKey, wuValueName, dwValueType, data, dwBytesReturned);
 		if (result != ERROR_SUCCESS)
-		{
-			wSubKey = nullptr;
-			wValueName = nullptr;
-
 			throw gcnew NativeExceptionBase(result);
-		}
-
-		wSubKey = nullptr;
-		wValueName = nullptr;
 
 		Object^ output;
 		switch (dwValueType)
@@ -502,13 +471,13 @@ namespace WindowsUtils::Core
 		case REG_BINARY:
 		{
 			output = gcnew array<byte>(dwBytesReturned);
-			Marshal::Copy((IntPtr)pvData, (array<byte>^)output, 0, dwBytesReturned);
+			Marshal::Copy((IntPtr)data.get(), (array<byte>^)output, 0, dwBytesReturned);
 		}
 		break;
 
 		case REG_DWORD:
 		{
-			DWORD* dwData = static_cast<DWORD*>(pvData);
+			DWORD* dwData = reinterpret_cast<DWORD*>(data.get());
 			output = gcnew Int32(*dwData);
 		}
 		break;
@@ -516,37 +485,37 @@ namespace WindowsUtils::Core
 		case REG_EXPAND_SZ:
 		{
 			// Getting the necessary buffer.
-			DWORD bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, NULL, 0);
+			LPCWSTR strData = reinterpret_cast<LPCWSTR>(data.get());
+			DWORD bytesNeeded = ExpandEnvironmentStrings(strData, NULL, 0);
 			if (bytesNeeded == 0)
 				throw gcnew NativeExceptionBase(GetLastError());
 
-			LPWSTR buffer = (LPWSTR)MemoryManager.Allocate(bytesNeeded);
-			bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, buffer, bytesNeeded);
+			WuString buffer(bytesNeeded);
+			bytesNeeded = ExpandEnvironmentStrings(strData, buffer.GetBuffer(), bytesNeeded);
 			if (bytesNeeded == 0)
 				throw gcnew NativeExceptionBase(GetLastError());
 
-			output = gcnew String(buffer);
-			MemoryManager.Free(buffer);
+			output = gcnew String(buffer.GetBuffer());
 		}
 		break;
 
 		case REG_LINK:
-			output = gcnew String((LPWSTR)pvData);
+			output = gcnew String(reinterpret_cast<LPWSTR>(data.get()));
 			break;
 
 		case REG_MULTI_SZ:
-			output = GetStringArrayFromDoubleNullTermninatedCStyleArray((LPWSTR)pvData, dwBytesReturned);
+			output = GetStringArrayFromDoubleNullTerminatedCStyleArray(reinterpret_cast<LPWSTR>(data.get()), dwBytesReturned);
 			break;
 
 		case REG_QWORD:
 		{
-			long long* qwData = static_cast<long long*>(pvData);
+			long long* qwData = reinterpret_cast<long long*>(data.get());
 			output = gcnew Int64(*qwData);
 		}
 		break;
 
 		case REG_SZ:
-			output = gcnew String((LPWSTR)pvData);
+			output = gcnew String(reinterpret_cast<LPWSTR>(data.get()));
 			break;
 
 		default:
@@ -560,112 +529,88 @@ namespace WindowsUtils::Core
 	Object^ Wrapper::GetRegistryValue(
 		String^ computerName,	  // The computer name. If the computer is remote, it needs Remote Registry enabled.
 		String^ userName,		  // User name to impersonate before connecting to the registry.
-		const LPWSTR& password,	  // User password.
+		WuString& password,		  // User password.
 		RegistryHive hive,		  // The root hive.
 		String^ subKey,			  // The subkey path.
 		String^ valueName		  // The value property name.
 	) {
-		DWORD dwValueType;
-		DWORD dwBytesReturned;
-		PVOID pvData;
-
-		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-		pin_ptr<const wchar_t> temp;
+		DWORD dwValueType = 0;
+		DWORD dwBytesReturned = 0;
+		wuunique_ha_ptr<void> data;
 
 		// Managing logon.
 		if (!String::IsNullOrEmpty(userName))
 			LogonAndImpersonateUser(userName, password);
-
-		LPWSTR wComputerName = NULL;
+		
+		WuString wuComputerName;
 		if (!String::IsNullOrEmpty(computerName))
-		{
-			temp = PtrToStringChars(computerName);
-			wComputerName = (LPWSTR)temp;
-		}
+			wuComputerName = GetWuStringFromSystemString(computerName);
 
-		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
-		pin_ptr<const wchar_t> wValueName = PtrToStringChars(valueName);
+		WuString wuSubKey = GetWuStringFromSystemString(subKey);
+		WuString wuValueName = GetWuStringFromSystemString(valueName);
 
-		LSTATUS result = regptr->GetRegistryKeyValue(wComputerName, (HKEY)hive, (LPWSTR)wSubKey, (LPWSTR)wValueName, dwValueType, pvData, dwBytesReturned);
+		LSTATUS result = regptr->GetRegistryKeyValue(wuComputerName, (HKEY)hive, wuSubKey, wuValueName, dwValueType, data, dwBytesReturned);
 		if (result != ERROR_SUCCESS)
 		{
 			RevertToSelf();
-
-			temp = nullptr;
-			wSubKey = nullptr;
-			wValueName = nullptr;
-
 			throw gcnew NativeExceptionBase(result);
 		}
-
-		temp = nullptr;
-		wSubKey = nullptr;
-		wValueName = nullptr;
 
 		Object^ output;
 		switch (dwValueType)
 		{
 		case REG_BINARY:
-			{
-				output = gcnew array<byte>(dwBytesReturned);
-				Marshal::Copy((IntPtr)pvData, (array<byte>^)output, 0, dwBytesReturned);
-			}
-			break;
+		{
+			output = gcnew array<byte>(dwBytesReturned);
+			Marshal::Copy((IntPtr)data.get(), (array<byte>^)output, 0, dwBytesReturned);
+		}
+		break;
 
 		case REG_DWORD:
-			{
-				DWORD* dwData = static_cast<DWORD*>(pvData);
-				output = gcnew Int32(*dwData);
-			}
-			break;
+		{
+			DWORD* dwData = reinterpret_cast<DWORD*>(data.get());
+			output = gcnew Int32(*dwData);
+		}
+		break;
 
 		case REG_EXPAND_SZ:
-			{
-				// Getting the necessary buffer.
-				DWORD bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, NULL, 0);
-				if (bytesNeeded == 0)
-				{
-					RevertToSelf();
-					throw gcnew NativeExceptionBase(GetLastError());
-				}
-				
-				LPWSTR buffer = (LPWSTR)MemoryManager.Allocate(bytesNeeded);
-				bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, buffer, bytesNeeded);
-				if (bytesNeeded == 0)
-				{
-					RevertToSelf();
-					throw gcnew NativeExceptionBase(GetLastError());
-				}
-				
-				output = gcnew String(buffer);
-				MemoryManager.Free(buffer);
-			}
-			break;
+		{
+			// Getting the necessary buffer.
+			LPCWSTR strData = reinterpret_cast<LPCWSTR>(data.get());
+			DWORD bytesNeeded = ExpandEnvironmentStrings(strData, NULL, 0);
+			if (bytesNeeded == 0)
+				throw gcnew NativeExceptionBase(GetLastError());
+
+			WuString buffer(bytesNeeded);
+			bytesNeeded = ExpandEnvironmentStrings(strData, buffer.GetBuffer(), bytesNeeded);
+			if (bytesNeeded == 0)
+				throw gcnew NativeExceptionBase(GetLastError());
+
+			output = gcnew String(buffer.GetBuffer());
+		}
+		break;
 
 		case REG_LINK:
-			output = gcnew String((LPWSTR)pvData);
+			output = gcnew String(reinterpret_cast<LPWSTR>(data.get()));
 			break;
 
 		case REG_MULTI_SZ:
-			output = GetStringArrayFromDoubleNullTermninatedCStyleArray((LPWSTR)pvData, dwBytesReturned);
+			output = GetStringArrayFromDoubleNullTerminatedCStyleArray(reinterpret_cast<LPWSTR>(data.get()), dwBytesReturned);
 			break;
 
 		case REG_QWORD:
-			{
-				long long* qwData = static_cast<long long*>(pvData);
-				output = gcnew Int64(*qwData);
-			}
-			break;
+		{
+			long long* qwData = reinterpret_cast<long long*>(data.get());
+			output = gcnew Int64(*qwData);
+		}
+		break;
 
 		case REG_SZ:
-			output = gcnew String((LPWSTR)pvData);
+			output = gcnew String(reinterpret_cast<LPWSTR>(data.get()));
 			break;
-		
+
 		default:
-			{
-				RevertToSelf();
-				throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", dwValueType));
-			}
+			throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", dwValueType));
 			break;
 		}
 
@@ -676,88 +621,74 @@ namespace WindowsUtils::Core
 
 	array<String^>^ Wrapper::GetRegistrySubKeyNames(RegistryHive hive, String^ subKey)
 	{
-		return GetRegistrySubKeyNames(L"", L"", L"", hive, subKey);
+		WuString wuPass = L"";
+		return GetRegistrySubKeyNames(L"", L"", wuPass, hive, subKey);
 	}
 
 	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ computerName, RegistryHive hive, String^ subKey)
 	{
-		return GetRegistrySubKeyNames(computerName, L"", L"", hive, subKey);
+		WuString wuPass = L"";
+		return GetRegistrySubKeyNames(computerName, L"", wuPass, hive, subKey);
 	}
 
 	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey)
 	{
-		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistrySubKeyNames(L"", userName, wPass, hive, subKey);
+		WuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return GetRegistrySubKeyNames(L"", userName, wuPass, hive, subKey);
 	}
 
 	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey)
 	{
-		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistrySubKeyNames(computerName, userName, wPass, hive, subKey);
+		WuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return GetRegistrySubKeyNames(computerName, userName, wuPass, hive, subKey);
 	}
 
 	array<String^>^ Wrapper::GetRegistrySubKeyNames(IntPtr hRegistry, String^ subKey)
 	{
 		LSTATUS result = ERROR_SUCCESS;
-		SharedVecPtr(LPWSTR) subkeyNameVec = MakeVecPtr(LPWSTR);
+		wusunique_vector<WuString> subkeyNameVec = make_wusunique_vector<WuString>();
 
-		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
+		WuString wuSubKey = GetWuStringFromSystemString(subKey);
 
 		HKEY whReg = (HKEY)hRegistry.ToPointer();
-		result = regptr->GetRegistrySubkeyNames(whReg, (LPWSTR)wSubKey, 0, *subkeyNameVec);
+		result = regptr->GetRegistrySubkeyNames(whReg, wuSubKey, 0, subkeyNameVec.get());
 		if (result != ERROR_SUCCESS)
-		{
-			wSubKey = nullptr;
 			throw gcnew NativeExceptionBase(result);
-		}
-
-		wSubKey = nullptr;
 
 		List<String^>^ output = gcnew List<String^>();
-		for (LPWSTR singleName : *subkeyNameVec)
-			output->Add(gcnew String(singleName));
+		for (WuString singleName : *subkeyNameVec)
+			output->Add(gcnew String(singleName.GetBuffer()));
 
 		RevertToSelf();
 
 		return output->ToArray();
 	}
 
-	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, const LPWSTR& password, RegistryHive hive, String^ subKey)
+	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, WuString& password, RegistryHive hive, String^ subKey)
 	{
 		LSTATUS result = ERROR_SUCCESS;
-		SharedVecPtr(LPWSTR) subkeyNameVec = MakeVecPtr(LPWSTR);
-		pin_ptr<const wchar_t> temp;
+		wusunique_vector<WuString> subkeyNameVec = make_wusunique_vector<WuString>();
 
 		// Managing logon.
 		if (!String::IsNullOrEmpty(userName))
 			LogonAndImpersonateUser(userName, password);
 
-		LPWSTR wComputerName = NULL;
+		WuString wuComputerName;
 		if (!String::IsNullOrEmpty(computerName))
-		{
-			temp = PtrToStringChars(computerName);
-			wComputerName = (LPWSTR)temp;
-		}
+			wuComputerName = GetWuStringFromSystemString(computerName);
 
-		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
+		WuString wuSubKey = GetWuStringFromSystemString(subKey);
 
-		result = regptr->GetRegistrySubkeyNames(wComputerName, (HKEY)hive, (LPWSTR)wSubKey, 0, *subkeyNameVec);
+		result = regptr->GetRegistrySubkeyNames(wuComputerName, (HKEY)hive, wuSubKey, 0, subkeyNameVec.get());
 		if (result != ERROR_SUCCESS)
 		{
 			RevertToSelf();
-
-			temp = nullptr;
-			wSubKey = nullptr;
-			
 			throw gcnew NativeExceptionBase(result);
 		}
 
-		temp = nullptr;
-		wSubKey = nullptr;
-
 		List<String^>^ output = gcnew List<String^>();
-		for (LPWSTR singleName : *subkeyNameVec)
-			output->Add(gcnew String(singleName));
+		for (WuString singleName : *subkeyNameVec)
+			output->Add(gcnew String(singleName.GetBuffer()));
 
 		RevertToSelf();
 
@@ -766,24 +697,26 @@ namespace WindowsUtils::Core
 
 	array<Object^>^ Wrapper::GetRegistryValueList(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return Wrapper::GetRegistryValueList(L"", userName, wPass, hive, subKey, valueNameList);
+		WuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return Wrapper::GetRegistryValueList(L"", userName, wuPass, hive, subKey, valueNameList);
 	}
 
 	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return Wrapper::GetRegistryValueList(computerName, userName, wPass, hive, subKey, valueNameList);
+		WuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		return Wrapper::GetRegistryValueList(computerName, userName, wuPass, hive, subKey, valueNameList);
 	}
 
 	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		return Wrapper::GetRegistryValueList(computerName, L"", L"", hive, subKey, valueNameList);
+		WuString wuPass = L"";
+		return Wrapper::GetRegistryValueList(computerName, L"", wuPass, hive, subKey, valueNameList);
 	}
 
 	array<Object^>^ Wrapper::GetRegistryValueList(RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		return Wrapper::GetRegistryValueList(L"", L"", L"", hive, subKey, valueNameList);
+		WuString wuPass = L"";
+		return Wrapper::GetRegistryValueList(L"", L"", wuPass, hive, subKey, valueNameList);
 	}
 
 	array<Object^>^ Wrapper::GetRegistryValueList(IntPtr hRegistry, String^ subKey, array<String^>^ valueNameList)
@@ -791,32 +724,21 @@ namespace WindowsUtils::Core
 		LSTATUS nativeResult;
 		DWORD dwValCount = valueNameList->Length;
 		PVALENT pValList = new VALENT[valueNameList->Length];
-		LPWSTR lpDataBuffer;
-
-		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
-
-		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
+		WuString* wuValueNames = new WuString[valueNameList->Length];
+		
+		wuunique_ha_ptr<void> buffer;
+		WuString wuSubKey = GetWuStringFromSystemString(subKey);
 
 		for (DWORD i = 0; i < dwValCount; i++)
 		{
-			pin_ptr<const wchar_t> wValueName = PtrToStringChars(valueNameList[i]);
-			size_t sizeValName = wcslen(wValueName) + 1;
-
-			pValList[i].ve_valuename = (LPWSTR)MemoryManager.Allocate(sizeValName * 2);
-			wcscpy_s(pValList[i].ve_valuename, sizeValName, wValueName);
-
-			wValueName = nullptr;
+			wuValueNames[i] = GetWuStringFromSystemString(valueNameList[i]);
+			pValList[i].ve_valuename = wuValueNames[i].GetBuffer();
 		}
 		
 		HKEY whReg = (HKEY)hRegistry.ToPointer();
-		nativeResult = regptr->GetRegistryKeyValueList(whReg, (LPWSTR)wSubKey, pValList, dwValCount, lpDataBuffer);
+		nativeResult = regptr->GetRegistryKeyValueList(whReg, wuSubKey, pValList, dwValCount, buffer);
 		if (nativeResult != ERROR_SUCCESS)
-		{
-			wSubKey = nullptr;
 			throw gcnew NativeExceptionBase(nativeResult);
-		}
-
-		wSubKey = nullptr;
 
 		array<Object^>^ output = gcnew array<Object^>(dwValCount);
 		for (DWORD i = 0; i < dwValCount; i++)
@@ -843,21 +765,14 @@ namespace WindowsUtils::Core
 				// Getting the necessary buffer.
 				DWORD bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, NULL, 0);
 				if (bytesNeeded == 0)
-				{
-					MemoryManager.Free(lpDataBuffer);
 					throw gcnew NativeExceptionBase(GetLastError());
-				}
 
-				LPWSTR buffer = (LPWSTR)MemoryManager.Allocate(bytesNeeded);
-				bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, buffer, bytesNeeded);
+				WuString expBuffer(bytesNeeded);
+				bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, expBuffer.GetBuffer(), bytesNeeded);
 				if (bytesNeeded == 0)
-				{
-					MemoryManager.Free(lpDataBuffer);
 					throw gcnew NativeExceptionBase(GetLastError());
-				}
 
-				output[i] = gcnew String(buffer);
-				MemoryManager.Free(buffer);
+				output[i] = gcnew String(expBuffer.GetBuffer());
 			}
 			break;
 
@@ -866,7 +781,7 @@ namespace WindowsUtils::Core
 				break;
 
 			case REG_MULTI_SZ:
-				output[i] = GetStringArrayFromDoubleNullTermninatedCStyleArray((LPWSTR)pvData, pValList[i].ve_valuelen);
+				output[i] = GetStringArrayFromDoubleNullTerminatedCStyleArray((LPWSTR)pvData, pValList[i].ve_valuelen);
 				break;
 
 			case REG_QWORD:
@@ -881,66 +796,43 @@ namespace WindowsUtils::Core
 				break;
 
 			default:
-			{
-				MemoryManager.Free(lpDataBuffer);
 				throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", pValList[i].ve_type));
 			}
-			break;
-			}
 		}
-
-		MemoryManager.Free(lpDataBuffer);
 
 		return output;
 	}
 
-	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, String^ userName, const LPWSTR& password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
+	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, String^ userName, WuString& password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
 		LSTATUS nativeResult;
 		DWORD dwValCount = valueNameList->Length;
 		PVALENT pValList = new VALENT[valueNameList->Length];
-		pin_ptr<const wchar_t> temp;
-		LPWSTR lpDataBuffer;
-
-		WuMemoryManagement& MemoryManager = WuMemoryManagement::GetManager();
+		WuString* wuValueNames = new WuString[valueNameList->Length];
+		wuunique_ha_ptr<void> buffer;
 
 		// Managing logon.
 		if (!String::IsNullOrEmpty(userName))
 			LogonAndImpersonateUser(userName, password);
 
-		LPWSTR wComputerName = NULL;
+		WuString wuComputerName;
 		if (!String::IsNullOrEmpty(computerName))
-		{
-			temp = PtrToStringChars(computerName);
-			wComputerName = (LPWSTR)temp;
-		}
+			wuComputerName = GetWuStringFromSystemString(computerName);
 
-		pin_ptr<const wchar_t> wSubKey = PtrToStringChars(subKey);
+		WuString wuSubKey = GetWuStringFromSystemString(subKey);
 
 		for (DWORD i = 0; i < dwValCount; i++)
 		{
-			pin_ptr<const wchar_t> wValueName = PtrToStringChars(valueNameList[i]);
-			size_t sizeValName = wcslen(wValueName) + 1;
-
-			pValList[i].ve_valuename = (LPWSTR)MemoryManager.Allocate(sizeValName * 2);
-			wcscpy_s(pValList[i].ve_valuename, sizeValName, wValueName);
-
-			wValueName = nullptr;
+			wuValueNames[i] = GetWuStringFromSystemString(valueNameList[i]);
+			pValList[i].ve_valuename = wuValueNames[i].GetBuffer();
 		}
 
-		nativeResult = regptr->GetRegistryKeyValueList(wComputerName, (HKEY)hive, (LPWSTR)wSubKey, pValList, dwValCount, lpDataBuffer);
+		nativeResult = regptr->GetRegistryKeyValueList(wuComputerName, (HKEY)hive, wuSubKey, pValList, dwValCount, buffer);
 		if (nativeResult != ERROR_SUCCESS)
 		{
 			RevertToSelf();
-
-			temp = nullptr;
-			wSubKey = nullptr;
-
 			throw gcnew NativeExceptionBase(nativeResult);
 		}
-
-		temp = nullptr;
-		wSubKey = nullptr;
 
 		array<Object^>^ output = gcnew array<Object^>(dwValCount);
 		for (DWORD i = 0; i < dwValCount; i++)
@@ -969,23 +861,18 @@ namespace WindowsUtils::Core
 				if (bytesNeeded == 0)
 				{
 					RevertToSelf();
-					MemoryManager.Free(lpDataBuffer);
-
 					throw gcnew NativeExceptionBase(GetLastError());
 				}
 
-				LPWSTR buffer = (LPWSTR)MemoryManager.Allocate(bytesNeeded);
-				bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, buffer, bytesNeeded);
+				WuString expBuffer(bytesNeeded);
+				bytesNeeded = ExpandEnvironmentStrings((LPCWSTR)pvData, expBuffer.GetBuffer(), bytesNeeded);
 				if (bytesNeeded == 0)
 				{
 					RevertToSelf();
-					MemoryManager.Free(lpDataBuffer);
-
 					throw gcnew NativeExceptionBase(GetLastError());
 				}
 
-				output[i] = gcnew String(buffer);
-				MemoryManager.Free(buffer);
+				output[i] = gcnew String(expBuffer.GetBuffer());
 			}
 			break;
 
@@ -994,7 +881,7 @@ namespace WindowsUtils::Core
 				break;
 
 			case REG_MULTI_SZ:
-				output[i] = GetStringArrayFromDoubleNullTermninatedCStyleArray((LPWSTR)pvData, pValList[i].ve_valuelen);
+				output[i] = GetStringArrayFromDoubleNullTerminatedCStyleArray((LPWSTR)pvData, pValList[i].ve_valuelen);
 				break;
 
 			case REG_QWORD:
@@ -1011,8 +898,6 @@ namespace WindowsUtils::Core
 			default:
 				{
 					RevertToSelf();
-					MemoryManager.Free(lpDataBuffer);
-
 					throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", pValList[i].ve_type));
 				}
 				break;
@@ -1020,13 +905,12 @@ namespace WindowsUtils::Core
 		}
 		
 		RevertToSelf();
-		MemoryManager.Free(lpDataBuffer);
 
 		return output;
 	}
 
 	// Utilities
-	array<String^>^ Wrapper::GetStringArrayFromDoubleNullTermninatedCStyleArray(const LPWSTR& pvNativeArray, DWORD dwszBytes)
+	array<String^>^ Wrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray(const LPWSTR pvNativeArray, DWORD dwszBytes)
 	{
 		List<String^>^ stringList = gcnew List<String^>();
 		LPWSTR lpszNativeArray = pvNativeArray;
@@ -1047,7 +931,7 @@ namespace WindowsUtils::Core
 		return stringList->ToArray();
 	}
 
-	array<String^>^ Wrapper::GetStringArrayFromDoubleNullTermninatedCStyleArray(IntPtr nativeArray, DWORD dwszBytes)
+	array<String^>^ Wrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray(IntPtr nativeArray, DWORD dwszBytes)
 	{
 		List<String^>^ stringList = gcnew List<String^>();
 		LPWSTR wNativeArray = (LPWSTR)nativeArray.ToPointer();
@@ -1070,57 +954,39 @@ namespace WindowsUtils::Core
 
 	void Wrapper::LogonAndImpersonateUser(String^ userName, SecureString^ password)
 	{
-		LPWSTR wPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		LogonAndImpersonateUser(userName, wPass);
+		WuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+		LogonAndImpersonateUser(userName, wuPass);
 	}
 
 	// Logs on the given user and impersonates it.
 	// You must call 'RevertToSelf()' to revert to the caller.
 	void Wrapper::LogonAndImpersonateUser(
-		String^ userName,			 // The user name. If the user belongs to a domain, enter the down-level logon name: 'DOMAIN\UserName'.
-		const LPWSTR& lpszPassword	 // The user's password, if any.
+		String^ userName,	 // The user name. If the user belongs to a domain, enter the down-level logon name: 'DOMAIN\UserName'.
+		WuString& password	 // The user's password, if any.
 	) {
 		if (!String::IsNullOrEmpty(userName))
 		{
-			LPWSTR wDomain = NULL;
-			pin_ptr<const wchar_t> domain;
-			pin_ptr<const wchar_t> wUserName;
+			WuString wuDomain;
+			WuString wuUserName;
 			HANDLE hToken;
 
 			if (userName->Contains(L"\\"))
 			{
-				domain = PtrToStringChars(userName->Split('\\')[0]);
-				wUserName = PtrToStringChars(userName->Split('\\')[1]);
-
-				wDomain = (LPWSTR)domain;
+				wuDomain = GetWuStringFromSystemString(userName->Split('\\')[0]);
+				wuUserName = GetWuStringFromSystemString(userName->Split('\\')[1]);
 			}
 			else
-				wUserName = PtrToStringChars(userName);
+				wuUserName = GetWuStringFromSystemString(userName);
 
-			if (!LogonUser((LPWSTR)wUserName, wDomain, lpszPassword, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &hToken))
+			if (!LogonUser(wuUserName.GetBuffer(), wuDomain.GetBuffer(), password.GetBuffer(), LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &hToken))
 			{
-				if (lpszPassword != NULL)
-				{
-					size_t sztpl = wcslen(lpszPassword) + 1;
-					SecureZeroMemory(lpszPassword, sztpl * 2);
-				}
-
-				domain = nullptr;
-				wUserName = nullptr;
-
+				password.SecureErase();
 				throw gcnew NativeExceptionBase(GetLastError());
 			}
 
 			if (!ImpersonateLoggedOnUser(hToken))
 			{
-				if (lpszPassword != NULL)
-				{
-					size_t sztpl = wcslen(lpszPassword) + 1;
-					SecureZeroMemory(lpszPassword, sztpl * 2);
-				}
-
-				domain = nullptr;
-				wUserName = nullptr;
+				password.SecureErase();
 				CloseHandle(hToken);
 
 				throw gcnew NativeExceptionBase(GetLastError());
@@ -1128,14 +994,8 @@ namespace WindowsUtils::Core
 
 			// Zeroing the memory here instead of Marshal::ZeroFreeGlobalAllocUnicode
 			// So the plain text stays less time in memory.
-			if (lpszPassword != NULL)
-			{
-				size_t sztpl = wcslen(lpszPassword) + 1;
-				SecureZeroMemory(lpszPassword, sztpl * 2);
-			}
+			password.SecureErase();
 
-			domain = nullptr;
-			wUserName = nullptr;
 			CloseHandle(hToken);
 		}
 	}
@@ -1163,6 +1023,12 @@ namespace WindowsUtils::Core
 		_progressGcHandle.Free();
 		_warningGcHandle.Free();
 		delete _nativeContext;
+	}
+
+	WuString GetWuStringFromSystemString(String^ string)
+	{
+		pin_ptr<const wchar_t> pinnedString = PtrToStringChars(string);
+		return WuString((LPWSTR)pinnedString);
 	}
 
 	Notification::PNATIVE_CONTEXT CmdletContextBase::GetUnderlyingContext()

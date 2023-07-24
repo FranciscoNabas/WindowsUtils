@@ -63,6 +63,9 @@
     <ClInclude Include="MemoryManagement.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Expressions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Wrapper.cpp">
@@ -102,12 +105,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FileSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="String.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MemoryManagement.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
