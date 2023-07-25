@@ -36,7 +36,7 @@ namespace WindowsUtils::Core
         return result;
     }
 
-    DWORD AccessControl::AdjustCurrentTokenPrivilege(wuvector<WuString>* spvlpPrivilegeNameList, const DWORD dwAttributes)
+    DWORD AccessControl::AdjustCurrentTokenPrivilege(wuvector<WWuString>* spvlpPrivilegeNameList, const DWORD dwAttributes)
     {
         DWORD result = ERROR_SUCCESS;
         HANDLE hToken;

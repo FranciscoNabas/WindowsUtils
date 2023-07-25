@@ -1,13 +1,14 @@
 #include "pch.h"
+
 #include "Registry.h"
 
 namespace WindowsUtils::Core
 {
     LSTATUS Registry::GetRegistryKeyValue(
-        const WuString& computerName,  // The computer name to get the value from.
+        const WWuString& computerName,  // The computer name to get the value from.
         const HKEY hRootKey,           // The hive.
-        const WuString& subKey,        // The subkey path.
-        const WuString& valueName,     // The key value name, or property name.
+        const WWuString& subKey,        // The subkey path.
+        const WWuString& valueName,     // The key value name, or property name.
         DWORD type,                    // The return data type.
         wuunique_ha_ptr<void>& data,   // The pointer that receives the data.
         DWORD bytesReturned            // The number of bytes returned.
@@ -35,7 +36,7 @@ namespace WindowsUtils::Core
         return result;
     }
 
-    LSTATUS Registry::GetRegistryKeyValue(HKEY hRegistry, const WuString& subKey, const WuString& valueName, DWORD dwType, wuunique_ha_ptr<void>& data, DWORD bytesReturned)
+    LSTATUS Registry::GetRegistryKeyValue(HKEY hRegistry, const WWuString& subKey, const WWuString& valueName, DWORD dwType, wuunique_ha_ptr<void>& data, DWORD bytesReturned)
     {
         LSTATUS result = ERROR_SUCCESS;
 
@@ -51,15 +52,15 @@ namespace WindowsUtils::Core
     }
 
     LSTATUS Registry::GetRegistrySubkeyNames(
-        const WuString& computerName,         // The computer name to get the value from.
+        const WWuString& computerName,         // The computer name to get the value from.
         const HKEY hRootKey,                  // The hive.
-        const WuString& subKey,               // The subkey path.
+        const WWuString& subKey,               // The subkey path.
         DWORD options,                        // 0 for normal keys, REG_OPTION_OPEN_LINK for sym link keys.
-        wuvector<WuString>* subkeyNames       // The vector that receives all subkey names. This operation is not recursive.
+        wuvector<WWuString>* subkeyNames       // The vector that receives all subkey names. This operation is not recursive.
     ) {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwSubkeyNameSz = MAX_KEY_LENGTH;
-        WuString persName;
+        WWuString persName;
         HKEY hRegistry;
         HKEY hSubKey;
 
@@ -104,11 +105,11 @@ namespace WindowsUtils::Core
         return result;
     }
 
-    LSTATUS Registry::GetRegistrySubkeyNames(HKEY hRegistry, const WuString& subKey, DWORD options, wuvector<WuString>* subkeyNames)
+    LSTATUS Registry::GetRegistrySubkeyNames(HKEY hRegistry, const WWuString& subKey, DWORD options, wuvector<WWuString>* subkeyNames)
     {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwSubkeyNameSz = MAX_KEY_LENGTH;
-        WuString persName;
+        WWuString persName;
         HKEY hSubKey;
 
         result = RegOpenKeyEx(hRegistry, subKey.GetBuffer(), options, KEY_READ, &hSubKey);
@@ -145,9 +146,9 @@ namespace WindowsUtils::Core
     }
 
     LSTATUS Registry::GetRegistryKeyValueList(
-        const WuString& computerName,      // The computer name.
+        const WWuString& computerName,      // The computer name.
         const HKEY hRootKey,               // The hive.
-        const WuString& subKey,            // The subkey path.
+        const WWuString& subKey,            // The subkey path.
         PVALENT valArray,                  // An array of VALENT objects. The 've_valuename' of each object must contain the value name to retrieve the value.
         DWORD valCount,                    // The number of VALENT objects in 'pValArray'.
         wuunique_ha_ptr<void>& dataBuffer  // The buffer that receives the data.
@@ -188,7 +189,7 @@ namespace WindowsUtils::Core
         return result;
     }
 
-    LSTATUS Registry::GetRegistryKeyValueList(HKEY hRegistry, const WuString& subKey, PVALENT valArray, DWORD valCount, wuunique_ha_ptr<void>& dataBuffer)
+    LSTATUS Registry::GetRegistryKeyValueList(HKEY hRegistry, const WWuString& subKey, PVALENT valArray, DWORD valCount, wuunique_ha_ptr<void>& dataBuffer)
     {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwBuffSize = 0;

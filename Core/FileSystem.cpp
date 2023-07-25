@@ -4,14 +4,14 @@
 
 namespace WindowsUtils::Core
 {
-	DWORD FileSystem::CreateFolderTree(const WuString& path)
+	DWORD FileSystem::CreateFolderTree(const WWuString& path)
 	{
 		DWORD result = ERROR_SUCCESS;
 
 		if (CheckDirectoryExists(path))
 			return result;
 
-		WuString parent = path;
+		WWuString parent = path;
 		if (!parent.Contains('\\'))
 			return ERROR_INVALID_DRIVE;
 
@@ -29,7 +29,7 @@ namespace WindowsUtils::Core
 		return  result;
 	}
 	
-	BOOL FileSystem::CheckDirectoryExists(const WuString& path)
+	BOOL FileSystem::CheckDirectoryExists(const WWuString& path)
 	{
 		DWORD result = GetFileAttributes(path.GetBuffer());
 		if (result == INVALID_FILE_ATTRIBUTES)
@@ -38,7 +38,7 @@ namespace WindowsUtils::Core
 		return (result & FILE_ATTRIBUTE_DIRECTORY) > 0;
 	}
 
-	void FileSystem::TrimEndingDirectorySeparator(WuString& path)
+	void FileSystem::TrimEndingDirectorySeparator(WWuString& path)
 	{
 		if (path.EndsWith('\\'))
 			path.Remove(path.Length() - 1, 1);

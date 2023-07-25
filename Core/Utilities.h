@@ -20,7 +20,7 @@ namespace WindowsUtils::Core
 		typedef struct _WU_RESOURCE_MESSAGE_TABLE
 		{
 			DWORD	 Id;			// Message ID.
-			WuString Message;		// Message text.
+			WWuString Message;		// Message text.
 
 			_WU_RESOURCE_MESSAGE_TABLE() { }
 			_WU_RESOURCE_MESSAGE_TABLE(DWORD id, LPWSTR message)
@@ -36,17 +36,17 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		//Get-ResourceMessageTable
-		DWORD GetResourceMessageTable(wuvector<WU_RESOURCE_MESSAGE_TABLE>* messageTable, const WuString& libName);
+		DWORD GetResourceMessageTable(wuvector<WU_RESOURCE_MESSAGE_TABLE>* messageTable, const WWuString& libName);
 
 		// Get-LastWin32Error
-		DWORD GetFormattedWin32Error(WuString& errorMessage);
+		DWORD GetFormattedWin32Error(WWuString& errorMessage);
 		
 		// Get-FormattedError
-		DWORD GetFormattedError(DWORD errorCode, WuString& errorMessage);
+		DWORD GetFormattedError(DWORD errorCode, WWuString& errorMessage);
 
 		// Get-MsiProperties
-		DWORD GetMsiProperties(wumap<WuString, WuString>* propertyMap, const WuString& fileName);
-		DWORD GetMsiExtendedError(WuString& errorMessage);
+		DWORD GetMsiProperties(wumap<WWuString, WWuString>* propertyMap, const WWuString& fileName);
+		DWORD GetMsiExtendedError(WWuString& errorMessage);
 
 		// Send-Click
 		DWORD SendClick();
@@ -64,5 +64,5 @@ namespace WindowsUtils::Core
 
 	}LOAD_MODULE_ERROR_INFO, * PLOAD_MODULE_ERROR_INFO;
 
-	DWORD GetEnvVariable(const WuString& variableName, WuString& value);
+	DWORD GetEnvVariable(const WWuString& variableName, WWuString& value);
 }

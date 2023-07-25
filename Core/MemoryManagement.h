@@ -1,36 +1,38 @@
 #pragma once
 #pragma unmanaged
 
+#include "pch.h"
+
+class WuAllocator
+{
+public:
+	WuAllocator() noexcept
+	{
+		_process_heap = GetProcessHeap();
+	}
+
+	~WuAllocator() {}
+
+	_NODISCARD_RAW_PTR_ALLOC inline void* allocate(_CRT_GUARDOVERFLOW const size_t size)
+	{
+		void* block = HeapAlloc(_process_heap, HEAP_ZERO_MEMORY, size);
+		if (block == NULL)
+			throw "Error not enough memory.";
+
+		return block;
+	}
+
+	inline void deallocate(void* const _ptr)
+	{
+		HeapFree(_process_heap, 0, _ptr);
+	}
+
+private:
+	void* _process_heap;
+};
+
 namespace WindowsUtils::Core
 {
-	class WuAllocator
-	{
-	public:
-		WuAllocator() noexcept
-		{
-			_process_heap = GetProcessHeap();
-		}
-
-		~WuAllocator() {}
-
-		_NODISCARD_RAW_PTR_ALLOC inline void* allocate(_CRT_GUARDOVERFLOW const size_t size)
-		{
-			void* block = HeapAlloc(_process_heap, HEAP_ZERO_MEMORY, size);
-			if (block == NULL)
-				throw "Error not enough memory.";
-
-			return block;
-		}
-
-		inline void deallocate(void* const _ptr)
-		{
-			HeapFree(_process_heap, 0, _ptr);
-		}
-
-	private:
-		void* _process_heap;
-	};
-
 	/*
 	*	These are helpers to allow using smart pointers with custom allocators.
 	*	This is mainly so we can create smart pointers with custom sizes.

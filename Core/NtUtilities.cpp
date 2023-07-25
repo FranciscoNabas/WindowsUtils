@@ -4,8 +4,8 @@
 namespace WindowsUtils::Core
 {
 	NTSTATUS GetNtProcessUsingFile(
-		const WuString& fileName,									// File full name.
-		PFILE_PROCESS_IDS_USING_FILE_INFORMATION procUsingFileInfo	// Output with a list of process IDs with handles to the file.
+		const WWuString& fileName,														// File full name.
+		wuunique_ha_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION>& procUsingFileInfo	// Output with a list of process IDs with handles to the file.
 	) {
 		NTSTATUS result = STATUS_SUCCESS;
 		IO_STATUS_BLOCK ioStatusBlock = { 0 };
@@ -46,8 +46,8 @@ namespace WindowsUtils::Core
 
 		} while (result == STATUS_INFO_LENGTH_MISMATCH);
 
-		procUsingFileInfo = (PFILE_PROCESS_IDS_USING_FILE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ioStatusBlock.Information);
-		RtlCopyMemory(procUsingFileInfo, reinterpret_cast<PFILE_PROCESS_IDS_USING_FILE_INFORMATION>(buffer.get()), (ULONG)ioStatusBlock.Information);
+		procUsingFileInfo = make_wuunique_ha<FILE_PROCESS_IDS_USING_FILE_INFORMATION>(ioStatusBlock.Information);
+		RtlCopyMemory(procUsingFileInfo.get(), reinterpret_cast<PFILE_PROCESS_IDS_USING_FILE_INFORMATION>(buffer.get()), (ULONG)ioStatusBlock.Information);
 
 		CloseHandle(hFile);
 
@@ -204,7 +204,7 @@ namespace WindowsUtils::Core
 	* Alternative to QueryFullProcessImageNameW.
 	* This function returns names from processes like, System, Registry or Secure System.
 	*/
-	NTSTATUS WINAPI GetProcessImageName(DWORD processId, WuString& imageName)
+	NTSTATUS WINAPI GetProcessImageName(DWORD processId, WWuString& imageName)
 	{
 		NTSTATUS result = STATUS_SUCCESS;
 		ULONG bufferSize = 1 << 12;

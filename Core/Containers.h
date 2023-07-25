@@ -24,7 +24,7 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		// Expand-File
-		DWORD ExpandArchiveFile(const WuString& lpszFileName, const WuString& lpszFilePath, const WuString& lpszDestination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context);
+		DWORD ExpandArchiveFile(WuString& lpszFileName, WuString& lpszFilePath, const WuString& lpszDestination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context);
 	};
 
 	// Expand-File helper functions and objects.
@@ -57,7 +57,7 @@ namespace WindowsUtils::Core
 
 	} FDI_NOTIFICATION, *PFDI_NOTIFICATION;
 
-	DWORD ExpandCabinetFile(const WuString& lpszFileName, const WuString& lpszFilePath, const WuString& lpszDestination, Notification::PNATIVE_CONTEXT context);
+	DWORD ExpandCabinetFile(WuString& lpszFileName, WuString& lpszFilePath, const WuString& lpszDestination, Notification::PNATIVE_CONTEXT context);
 	
 	
 	template <class T>

@@ -10,8 +10,8 @@ namespace WindowsUtils::Core
 
 	// Invoke-RemoteMessage
 	DWORD TerminalServices::SendMessage(
-		const WuString& title,												// The message box title.
-		const WuString& message,											// The message text.
+		WWuString& title,													// The message box title.
+		WWuString& message,													// The message text.
 		DWORD style,														// A bitwise-or combination of UINT-defined MessageBox styles (See function MessageBox).
 		DWORD timeout,														// Timeout, in seconds, for the function to wait a response.
 		BOOL wait,															// TRUE for the function wait a response. If FALSE, the function returns immediately with code 32001 (0x7D01), IDASYNC.
@@ -61,8 +61,8 @@ namespace WindowsUtils::Core
 	}
 
 	DWORD TerminalServices::SendMessage(
-		const WuString& title,												// The message box title.
-		const WuString& message,											// The message text.
+		WWuString& title,													// The message box title.
+		WWuString& message,													// The message text.
 		DWORD style,														// A bitwise-or combination of UINT-defined MessageBox styles (See function MessageBox).
 		DWORD timeout,														// Timeout, in seconds, for the function to wait a response.
 		BOOL wait,															// TRUE for the function wait a response. If FALSE, the function returns immediately with code 32001 (0x7D01), IDASYNC.
@@ -173,7 +173,7 @@ namespace WindowsUtils::Core
 					if (ERROR_SUCCESS != result)
 						goto CLEANUP;
 
-					if (!WuString::IsNullOrEmpty(computerSession.UserName))
+					if (!WWuString::IsNullOrEmpty(computerSession.UserName))
 						sessionInfoList->push_back(computerSession);
 				}
 			}
@@ -224,11 +224,13 @@ namespace WindowsUtils::Core
 
 		if (wcslen(infoBuffer->UserName) > 1)
 		{
-			WuString currentProcUser(UNLEN);
+			wuunique_ha_ptr<WCHAR> unameBuff = make_wuunique_ha<WCHAR>(UNLEN * 2);
 			DWORD bufferSize = UNLEN;
 
-			if (FALSE == GetUserNameW(currentProcUser.GetBuffer(), &bufferSize))
+			if (FALSE == GetUserNameW(unameBuff.get(), &bufferSize))
 				return ::GetLastError();
+
+			WWuString currentProcUser(unameBuff.get());
 
 			if (currentProcUser == infoBuffer->UserName && hServer == WTS_CURRENT_SERVER_HANDLE)
 				computerSession->LastInputTime.QuadPart = 0;

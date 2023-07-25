@@ -4,7 +4,7 @@
 
 namespace WindowsUtils::Core
 {
-	DWORD Containers::ExpandArchiveFile(const WuString& fileName, const WuString& filePath, const WuString& destination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context)
+	DWORD Containers::ExpandArchiveFile(WuString& fileName, WuString& filePath, const WuString& destination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		switch (fileType)
@@ -17,7 +17,7 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD ExpandCabinetFile(const WuString& fileName, const WuString& filePath, const WuString& destination, Notification::PNATIVE_CONTEXT context)
+	DWORD ExpandCabinetFile(WuString& fileName, WuString& filePath, const WuString& destination, Notification::PNATIVE_CONTEXT context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		ERF erfError;
@@ -51,7 +51,7 @@ namespace WindowsUtils::Core
 		*	having an accurate progress bar.
 		*/
 
-		if (!FDICopy(hContext, fileName.GetAnsiBuffer(), filePath.GetAnsiBuffer(), 0, FdiFnNotifyCallback, NULL, NULL))
+		if (!FDICopy(hContext, fileName.GetBuffer(), filePath.GetBuffer(), 0, FdiFnNotifyCallback, NULL, NULL))
 		{
 			if (hContext != NULL)
 				FDIDestroy(hContext);

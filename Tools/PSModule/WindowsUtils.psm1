@@ -241,10 +241,10 @@ function Get-InstalledDotnet {
                 }
             }
 
-            Write-Output [PSCustomObject]@{
+            Write-Output ([PSCustomObject]@{
                 VersionInfo = $remoteVersionInfo
                 InstalledUpdates = $patchInfo
-            }
+            })
         }
         else {
             Write-Output $remoteVersionInfo

@@ -7,21 +7,21 @@ namespace WindowsUtils::Core
 	// Get-ObjectHandle
 	DWORD ProcessAndThread::GetProcessObjectHandle(
 		wuvector<WU_OBJECT_HANDLE>* objectHandleList,		// A vector of object handle output objects.
-		wuvector<WuString>* inputPath,						// A vector of input objects.
+		wuvector<WWuString>* inputPath,						// A vector of input objects.
 		BOOL closeHandle = FALSE							// TRUE for closing the handles found.
 	) {
 		DWORD result = ERROR_SUCCESS;
 
-		for (WuString path : *inputPath)
+		for (WWuString path : *inputPath)
 		{
 			/*
 			* This strips the path out of the input object so we can add it to the 'InputObject' property.
 			* This will need to be changed in the future to support multiple object types.
 			*/
-			WuString inputObject = path;
+			WWuString inputObject = path;
 			PathStripPath(inputObject.GetBuffer());
 
-			PFILE_PROCESS_IDS_USING_FILE_INFORMATION procUsingFile = NULL;
+			wuunique_ha_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION> procUsingFile;
 			result = GetNtProcessUsingFile(path, procUsingFile);
 			if (result != ERROR_SUCCESS)
 				return result;
@@ -44,15 +44,12 @@ namespace WindowsUtils::Core
 				if (hProcess != NULL)
 				{
 					DWORD maxPath = MAX_PATH;
-					objHandle->ImagePath.Initialize(MAX_PATH);
-					objHandle->Name.Initialize(MAX_PATH);
-					if (!QueryFullProcessImageName(hProcess, 0, objHandle->ImagePath.GetBuffer(), &maxPath))
-					{
-						HeapFree(GetProcessHeap(), 0, procUsingFile);
-						return GetLastError();
-					}
+					wuunique_ha_ptr<WCHAR> imgNameBuffer = make_wuunique_ha<WCHAR>(MAX_PATH * 2);
 
-					if (objHandle->ImagePath.Length() == 0)
+					if (!QueryFullProcessImageName(hProcess, 0, imgNameBuffer.get(), &maxPath))
+						return GetLastError();
+
+					if (wcslen(imgNameBuffer.get()) == 0)
 					{
 						result = GetProcessImageName(objHandle->ProcessId, objHandle->Name);
 						if (objHandle->Name.Length() > 0)
@@ -63,13 +60,14 @@ namespace WindowsUtils::Core
 					}
 					else
 					{
+						objHandle->ImagePath = imgNameBuffer.get();
 						objHandle->Name = objHandle->ImagePath;
 						PathStripPathW(objHandle->Name.GetBuffer());
 					}
 
 					for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName })
 					{
-						WuString value;
+						WWuString value;
 						GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
 						objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
 					}
@@ -81,7 +79,6 @@ namespace WindowsUtils::Core
 							return result;
 					}
 					CloseHandle(hProcess);
-					HeapFree(GetProcessHeap(), 0, procUsingFile);
 				}
 				else
 				{
@@ -90,25 +87,29 @@ namespace WindowsUtils::Core
 						hProcess = OpenProcess(
 							PROCESS_QUERY_LIMITED_INFORMATION,
 							FALSE,
-							static_cast<DWORD>(procUsingFile->ProcessIdList[j])
+							objHandle->ProcessId
 						);
 						if (hProcess == NULL)
 						{
-							HeapFree(GetProcessHeap(), 0, procUsingFile);
-							return GetLastError();
+							result = GetLastError();
+							if (result != ERROR_ACCESS_DENIED)
+								return result;
+							else
+								result = ERROR_SUCCESS;
 						}
 
 						DWORD maxPath = MAX_PATH;
-						objHandle->ImagePath.Initialize(MAX_PATH);
-						objHandle->Name.Initialize(MAX_PATH);
-						if (QueryFullProcessImageName(hProcess, 0, objHandle->ImagePath.GetBuffer(), &maxPath))
+						wuunique_ha_ptr<WCHAR> imgNameBuffer = make_wuunique_ha<WCHAR>(MAX_PATH * 2);
+
+						if (QueryFullProcessImageName(hProcess, 0, imgNameBuffer.get(), &maxPath))
 						{
+							objHandle->ImagePath = imgNameBuffer.get();
 							objHandle->Name = objHandle->ImagePath;
 							PathStripPathW(objHandle->Name.GetBuffer());
 
 							for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName })
 							{
-								WuString value;
+								WWuString value;
 								GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
 								objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
 							}
@@ -133,16 +134,12 @@ namespace WindowsUtils::Core
 
 								for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName })
 								{
-									WuString value;
+									WWuString value;
 									GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
 									objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
 								}
 							}
 						}
-					}
-					else
-					{
-						HeapFree(GetProcessHeap(), 0, procUsingFile);
 					}
 				}
 
@@ -159,16 +156,16 @@ namespace WindowsUtils::Core
 
 	// Gets process image version information.
 	DWORD GetProccessVersionInfo(
-		const WuString& imagePath,							// The process image file path.
+		const WWuString& imagePath,							// The process image file path.
 		ProcessAndThread::VERSION_INFO_PROPERTY propName,	// The property name, or 'key' value.
-		WuString& value										// The return value.
+		WWuString& value									// The return value.
 	) {
 		DWORD result = ERROR_SUCCESS;
 		LPWORD codePage = NULL;
 		LPWSTR desc = NULL;
 		UINT len;
 
-		WuString propertyName;
+		WWuString propertyName;
 		switch (propName)
 		{
 		case ProcessAndThread::FileDescription:
@@ -187,7 +184,7 @@ namespace WindowsUtils::Core
 			break;
 		}
 
-		DWORD infoSize = GetFileVersionInfoSize(imagePath.GetBuffer(), NULL);
+		DWORD infoSize = GetFileVersionInfoSizeW(imagePath.GetBuffer(), NULL);
 		wuunique_ha_ptr<void> buffer = make_wuunique_ha<void>(infoSize);
 
 		if (!GetFileVersionInfo(imagePath.GetBuffer(), NULL, infoSize, buffer.get()))
@@ -196,13 +193,13 @@ namespace WindowsUtils::Core
 		if (!VerQueryValue(buffer.get(), L"\\VarFileInfo\\Translation", (LPVOID*)&codePage, &len))
 			return GetLastError();
 
-		WuString text(propertyName.Length() + 258);
+		WWuString text;
 		text.Format(L"\\StringFileInfo\\%04x%04x\\", codePage[0], codePage[1]);
 		text += propertyName;
 
 		if (VerQueryValue(buffer.get(), text.GetBuffer(), (LPVOID*)&desc, &len))
 		{
-			if (!WuString::IsNullOrWhiteSpace(desc))
+			if (!WWuString::IsNullOrWhiteSpace(desc))
 				value = desc;
 			else
 				value = L"";
@@ -218,14 +215,14 @@ namespace WindowsUtils::Core
 	*/
 	DWORD CloseExtProcessHandle(
 		HANDLE hExtProcess,				// A valid handle to the external process.
-		const WuString& objectName		// The object name, used on GetProcessObjectHandle.
+		const WWuString& objectName		// The object name, used on GetProcessObjectHandle.
 	) {
 		DWORD result = ERROR_SUCCESS;
 		NTSTATUS ntCall = STATUS_SUCCESS;
 		HANDLE hTarget = NULL;
 
-		WuString pathNoRoot = PathSkipRoot(objectName.GetBuffer());
-		if (!pathNoRoot.IsInitialized())
+		WWuString pathNoRoot = PathSkipRoot(objectName.GetBuffer());
+		if (pathNoRoot.Length() == 0)
 			return GetLastError();
 
 		HMODULE hmodule = GetModuleHandle(L"ntdll.dll");
@@ -270,7 +267,7 @@ namespace WindowsUtils::Core
 
 			if (objectNameInfo->Name.Buffer)
 			{
-				WuString buffString = objectNameInfo->Name.Buffer;
+				WWuString buffString = objectNameInfo->Name.Buffer;
 				if (buffString.EndsWith(pathNoRoot))
 				{
 					if (!::DuplicateHandle(hExtProcess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))

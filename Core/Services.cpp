@@ -4,8 +4,8 @@
 namespace WindowsUtils::Core
 {
 	DWORD Services::RemoveService(
-		const WuString& serviceName,					// The service name.
-		const WuString& computerName,					// Optional computer name.
+		const WWuString& serviceName,					// The service name.
+		const WWuString& computerName,					// Optional computer name.
 		BOOL stopService,								// Stops the service, if it's running.
 		Notification::PNATIVE_CONTEXT context			// A native representation of the Cmdlet context.
 	)
@@ -68,7 +68,7 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD Services::RemoveService(SC_HANDLE hService, const WuString& serviceName, const WuString& computerName, BOOL stopService, Notification::PNATIVE_CONTEXT context)
+	DWORD Services::RemoveService(SC_HANDLE hService, const WWuString& serviceName, const WWuString& computerName, BOOL stopService, Notification::PNATIVE_CONTEXT context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		SC_HANDLE hScm = NULL;
@@ -113,15 +113,15 @@ namespace WindowsUtils::Core
 	}
 
 	DWORD Services::GetServiceSecurity(
-		const WuString& serviceName,
-		const WuString& computerName,
+		const WWuString& serviceName,
+		const WWuString& computerName,
 		PSECURITY_DESCRIPTOR pSvcSecurity,
 		LPDWORD pdwSize,
 		BOOL bAudit
 	) {
 		DWORD result = ERROR_SUCCESS;
 		wusunique_vector<SC_HANDLE> sc_handles = make_wusunique_vector<SC_HANDLE>();
-		wusunique_vector<WuString> privilegeList = make_wusunique_vector<WuString>();
+		wusunique_vector<WWuString> privilegeList = make_wusunique_vector<WWuString>();
 		
 		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
 		DWORD dwServiceAccess = READ_CONTROL;
@@ -172,7 +172,7 @@ namespace WindowsUtils::Core
 	) {
 		DWORD result = ERROR_SUCCESS;
 		DWORD bytesNeeded = 0;
-		wusunique_vector<WuString> privilegeList = make_wusunique_vector<WuString>();
+		wusunique_vector<WWuString> privilegeList = make_wusunique_vector<WWuString>();
 
 		SECURITY_INFORMATION secInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
 		DWORD dwServiceAccess = READ_CONTROL;
@@ -199,9 +199,9 @@ namespace WindowsUtils::Core
 	}
 
 	DWORD Services::SetServiceSecurity(
-		const WuString& serviceName,		// The service name.
-		const WuString& computerName,		// The computer name where to set the service security.
-		const WuString& sddl,				// The SDDL representation of the security descriptor to set.
+		const WWuString& serviceName,		// The service name.
+		const WWuString& computerName,		// The computer name where to set the service security.
+		const WWuString& sddl,				// The SDDL representation of the security descriptor to set.
 		BOOL changeAudit,					// TRUE to change SACL.
 		BOOL changeOwner					// TRUE to change the owner.
 	) {
@@ -210,7 +210,7 @@ namespace WindowsUtils::Core
 		PSECURITY_DESCRIPTOR pSecDesc;
 		
 		wusunique_vector<SC_HANDLE> scHandles = make_wusunique_vector<SC_HANDLE>();
-		wusunique_vector<WuString> privilegeList = make_wusunique_vector<WuString>();
+		wusunique_vector<WWuString> privilegeList = make_wusunique_vector<WWuString>();
 
 		if (!ConvertStringSecurityDescriptorToSecurityDescriptor(sddl.GetBuffer(), SDDL_REVISION_1, &pSecDesc, &dwSzSecDesc))
 			return GetLastError();
@@ -268,7 +268,7 @@ namespace WindowsUtils::Core
 	DWORD StopDependentServices(
 		SC_HANDLE hScm,								// Handle to the Service Control Manager. Used to open dependent services.
 		SC_HANDLE hService,							// Handle to the service we want to query dependence.
-		const WuString& computerName,				// Computer name. In cases where we inherit the service handle from the pipeline.
+		const WWuString& computerName,				// Computer name. In cases where we inherit the service handle from the pipeline.
 		Notification::PNATIVE_CONTEXT context		// A native representation of the Cmdlet context.
 	)
 	{
@@ -338,7 +338,7 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD StopServiceWithWarning(SC_HANDLE hService, SC_HANDLE hScm, const WuString& serviceName, LPSERVICE_STATUS serviceStatus, Notification::PNATIVE_CONTEXT context)
+	DWORD StopServiceWithWarning(SC_HANDLE hService, SC_HANDLE hScm, const WWuString& serviceName, LPSERVICE_STATUS serviceStatus, Notification::PNATIVE_CONTEXT context)
 	{
 		DWORD result = ERROR_SUCCESS;
 		DWORD dwChars = 0;
@@ -353,11 +353,14 @@ namespace WindowsUtils::Core
 		}
 
 		dwChars += 1;
-		WuString displayName(dwChars);
-		if (!GetServiceDisplayName(hScm, serviceName.GetBuffer(), displayName.GetBuffer(), &dwChars))
+		DWORD bytesNeeded = dwChars * 2;
+		wuunique_ha_ptr<WCHAR> dnameBuffer = make_wuunique_ha<WCHAR>(bytesNeeded);
+		if (!GetServiceDisplayName(hScm, serviceName.GetBuffer(), dnameBuffer.get(), &dwChars))
 			return GetLastError();
 
-		WuString warningText;
+		WWuString displayName(dnameBuffer.get());
+
+		WWuString warningText;
 		warningText.Format(L"Waiting for service '%ws (%ws)' to stop...", displayName, serviceName.GetBuffer());
 
 		do

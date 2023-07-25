@@ -1,8 +1,6 @@
 #pragma once
 #pragma unmanaged
 
-#include "pch.h"
-
 #include "MemoryManagement.h"
 
 ///////////////////////////////////////////////////////////////////////////
@@ -28,28 +26,60 @@
 //  This code, and the WindowsUtils module are distributed under
 //  the MIT license. (are you sure you want to use this?)
 //
-//  There is no warranty that this is a stable, optimized, and safe code.
+//  There is no warranty that this is stable, optimized, or safe.
 //
 ///////////////////////////////////////////////////////////////////////////
 
-
-// These base structs were added so we can make case insensitive comparison.
+// These base structs were added so we can specialize other functionalities.
 
 template <class _char_type>
 struct _WChar_traits_ext : std::_WChar_traits<_char_type>
 {
-    _NODISCARD static inline int icompare(_In_reads_(count) const _char_type* const left,
-        _In_reads_(_count) const _char_type* const right, const size_t count) noexcept {
+    _NODISCARD static inline int comparenocase(_In_reads_(count) const _char_type* const left,
+        _In_reads_(count) const _char_type* const right, const size_t count) noexcept {
         return _wcsnicmp(reinterpret_cast<const wchar_t*>(left), reinterpret_cast<const wchar_t*>(right), count);
+    }
+
+    _NODISCARD static inline _char_type* format(WuAllocator* allocator, const _char_type* format, va_list args) {
+        if (format != NULL) {
+            size_t char_count = _vscwprintf(format, args) + 1;
+            _char_type* buffer = static_cast<_char_type*>(allocator->allocate(char_count * sizeof(_char_type)));
+            vswprintf_s(buffer, char_count, format, args);
+
+            return buffer;
+        }
+
+        return NULL;
+    }
+
+    _NODISCARD static inline const _char_type* findstr(const _char_type* first, const _char_type* second) {
+        return wcsstr(reinterpret_cast<const wchar_t*>(first), reinterpret_cast<const wchar_t*>(second));
     }
 };
 
 template <class _char_type, class _int_type>
 struct _Narrow_char_traits_ex : std::_Narrow_char_traits<_char_type, _int_type>
 {
-    _NODISCARD static inline int icompare(_In_reads_(count) const _char_type* const left,
-        _In_reads_(_count) const _char_type* const right, const size_t count) noexcept {
+    _NODISCARD static inline int comparenocase(_In_reads_(count) const _char_type* const left,
+        _In_reads_(count) const _char_type* const right, const size_t count) noexcept {
         return _strnicmp(left, right, count);
+    }
+
+    _NODISCARD static inline _char_type* format(WuAllocator* allocator, const _char_type* format, va_list args) {
+        if (format != NULL) {
+
+            size_t char_count = _vscprintf(format, args) + 1;
+            _char_type* buffer = static_cast<_char_type*>(allocator->allocate(char_count * sizeof(_char_type)));
+            vsprintf_s(buffer, char_count, format, args);
+
+            return buffer;
+        }
+
+        return NULL;
+    }
+
+    _NODISCARD static inline const _char_type* findstr(const _char_type* first, const _char_type* second) {
+        return strstr(reinterpret_cast<const char*>(first), reinterpret_cast<const char*>(second));
     }
 };
 
@@ -68,6 +98,8 @@ struct char_traits<char16_t> : _WChar_traits_ext<char16_t> {};
 template <>
 struct char_traits<char32_t> : std::_Char_traits<char32_t, unsigned int> {};
 
+static constexpr auto npos{ static_cast<size_t>(-1) };
+
 // Base string class.
 
 template <class _char_type, class _traits = char_traits<_char_type>>
@@ -77,120 +109,410 @@ private:
     _char_type* _buffer;
     size_t _char_count;
     WuAllocator* _allocator;
-    bool _is_initialized;
 
 public:
-    //////////////////////////////////////////////////////////////////
-    //
-    //  ~ Constructors
-    //
-    //////////////////////////////////////////////////////////////////
 
-    // Default constructor will construct the allocator, and default
-    // the buffer and char count to zero;
-    WuBaseString();
+    WuBaseString() {
+        _allocator = new WuAllocator();
+        _char_count = 0;
+        _buffer = static_cast<_char_type*>(_allocator->allocate(sizeof(_char_type)));
+    }
 
-    // Construct from a raw pointer. This will construct the allocator,
-    // and allocate memory for the buffer based on the ptr char count.
-    WuBaseString(const _char_type* ptr);
+    WuBaseString(const _char_type* ptr) {
+        if (ptr == NULL)
+        {
+            _allocator = new WuAllocator();
+            _char_count = 0;
+            _buffer = static_cast<_char_type*>(_allocator->allocate(sizeof(_char_type)));
+        }
 
-    // Construct from another string.
-    WuBaseString(const WuBaseString& other);
+        else {
+            _allocator = new WuAllocator();
+            _char_count = _traits::length(ptr);
 
-    // Destructor.
-    ~WuBaseString();
+            size_t buffer_size = (_char_count + 1) * sizeof(_char_type);
+            _buffer = static_cast<_char_type*>(_allocator->allocate(buffer_size));
 
-    //////////////////////////////////////////////////////////////////
-    //
-    //  ~ Methods
-    //
-    //////////////////////////////////////////////////////////////////
+            _traits::copy(_buffer, ptr, _char_count);
+        }
+    }
+    WuBaseString(const WuBaseString& other) {
+        if (other._buffer == NULL)
+        {
+            _allocator = new WuAllocator();
+            _char_count = 0;
+            _buffer = static_cast<_char_type*>(_allocator->allocate(sizeof(_char_type)));
+        }
 
-    // Allocates the input number of characters to the buffer.
-    inline void Initialize(const size_t char_count);
+        else {
+            _allocator = new WuAllocator();
+            _char_count = other._char_count;
 
-    // Fills the buffer with zeros, and deallocate the
-    // buffer, if 'deallocate' = true;
-    inline void SecureErase(bool deallocate = true);
+            size_t buffer_size = (_char_count + 1) * sizeof(_char_type);
+            _buffer = static_cast<_char_type*>(_allocator->allocate(buffer_size));
 
-    // Returns the string length without '\0'.
-    // Updates the char count every time.
-    inline const size_t Length();
-    inline const size_t Length() const;
+            _traits::copy(_buffer, other._buffer, _char_count);
+        }
+    }
+    WuBaseString(WuBaseString&& other) noexcept
+        : WuBaseString() {
+        Swap(*this, other);
+    }
 
-    // Check if a string is null, empty or consists only of
-    // white spaces.
-    inline static bool IsNullOrEmpty(const _char_type* ptr);
-    inline static bool IsNullOrEmpty(const WuBaseString& str);
-    inline static bool IsNullOrWhiteSpace(const _char_type* ptr);
-    inline static bool IsNullOrWhiteSpace(const WuBaseString& str);
+    ~WuBaseString() {
+        if (_buffer != NULL)
+            _allocator->deallocate(static_cast<void*>(_buffer));
 
-    // Returns the string raw pointer. Equivalent to the
-    // std::string::c_str();
-    _NODISCARD inline const _char_type* GetBuffer();
-    _NODISCARD inline const _char_type* const GetBuffer() const;
+        _buffer = NULL;
+        _char_count = 0;
+        delete _allocator;
+    }
 
-    // Writes formatted data to a string.
-    void Format(const _char_type* format, ...);
-    void Format(const WuBaseString& format, ...);
+    friend void Swap(WuBaseString& first, WuBaseString& second) {
+        using std::swap;
 
-    // Removes one or more characters from the string, starting
-    // at the specified index.
-    void Remove(const size_t index, const size_t count);
-    void Remove(const size_t index);
+        swap(first._char_count, second._char_count);
+        swap(first._allocator, second._allocator);
+        swap(first._buffer, second._buffer);
+    }
 
-    // Checks if a string contains a char, or other string.
-    inline bool Contains(const _char_type tchar) const;
-    inline bool Contains(const _char_type* ptr) const;
-    inline bool Contains(const WuBaseString& str) const;
+    inline void SecureErase(bool deallocate = true) {
+        if (_buffer != NULL) {
+            size_t char_count = _traits::length(_buffer);
+            if (char_count > 0) {
+                RtlSecureZeroMemory(_buffer, char_count * sizeof(_char_type));
+            }
+            if (deallocate) {
+                _allocator->deallocate(_buffer);
+                _buffer = NULL;
+                _char_count = 0;
+            }
+        }
+    }
 
-    // Checks if a string ends with a specified char, or string.
-    inline bool EndsWith(const _char_type tchar) const;
-    inline bool EndsWith(const _char_type* ptr, bool ignore_case = false) const;
-    inline bool EndsWith(const WuBaseString& str, bool ignore_case = false) const;
+    inline const size_t Length() {
+        size_t len = 0;
+        if (_buffer != 0) {
+            _char_count = _traits::length(_buffer);
+            len = _char_count;
+        }
 
-    //////////////////////////////////////////////////////////////////
-    //
-    //  ~ Operators
-    //
-    //////////////////////////////////////////////////////////////////
+        return len;
+    }
+    inline const size_t Length() const {
+        size_t len = 0;
+        if (_buffer != 0) {
+            len = _traits::length(_buffer);
+        }
 
-    // Indexing operator.
-    inline _char_type operator[](const size_t index);
+        return len;
+    }
 
-    // Assignment operator.
-    inline void operator=(const _char_type* other);
-    inline void operator=(const WuBaseString& other);
+    inline static bool IsNullOrEmpty(const _char_type* ptr) {
+        if (ptr != NULL)
+            return _traits::length(ptr) == 0;
 
-    // Compound assignment addition operator.
-    inline void operator+=(const _char_type* other);
-    inline void operator+=(const WuBaseString& other);
+        return true;
+    }
 
-    // Equality operators.
-    inline bool operator==(const _char_type* right);
-    inline bool operator==(const WuBaseString& right);
-    inline bool operator!=(const _char_type* right);
-    inline bool operator!=(const WuBaseString& right);
+    inline static bool IsNullOrEmpty(const WuBaseString& str) {
+        return str.Length() == 0;
+    }
 
-    // Size operators.
-    inline bool operator<(const _char_type* right);
-    inline bool operator<(const WuBaseString& right);
-    inline bool operator>(const _char_type* right);
-    inline bool operator>(const WuBaseString& right);
-    inline bool operator<=(const _char_type* right);
-    inline bool operator<=(const WuBaseString& right);
-    inline bool operator>=(const _char_type* right);
-    inline bool operator>=(const WuBaseString& right);
+    inline static bool IsNullOrWhiteSpace(const _char_type* ptr) {
+        if (ptr == NULL)
+            return true;
 
-private:
-    inline void InitializeToZero();
+        size_t char_count = _traits::length(ptr);
+        for (size_t i = 0; i < char_count; i++) {
+            if (ptr[i] != ' ')
+                return false;
+        }
+
+        return true;
+    }
+
+    inline static bool IsNullOrWhiteSpace(const WuBaseString& str) {
+        for (size_t i = 0; i < str.Length(); i++) {
+            if (str._buffer[i] != ' ')
+                return false;
+        }
+
+        return true;
+    }
+
+    _NODISCARD inline _char_type* GetBuffer() {
+        return _buffer;
+    }
+
+    _NODISCARD inline const _char_type* const GetBuffer() const {
+        return _buffer;
+    }
+
+    void Format(const _char_type* format, ...) {
+        va_list args;
+        va_start(args, format);
+
+        _buffer = _traits::format(_allocator, format, args);
+        _char_count = _traits::length(_buffer);
+    }
+
+    void Format(const WuBaseString& format, ...) {
+        if (!IsNullOrEmpty(format)) {
+            va_list args;
+            va_start(args, format);
+
+            _buffer = _traits::format(_allocator, format._buffer, args);
+            _char_count = _traits::length(_buffer);
+        }
+    }
+
+    void Remove(const size_t index, const size_t count) {
+        if (count > _char_count)
+            throw "Count can't be greater than the string length.";
+
+        if (index < 0 || index + count > _char_count - 1)
+            throw "Index outside of string boundaries.";
+
+        size_t new_count = _char_count - count + 1;
+        _char_type* new_buffer = static_cast<_char_type*>(_allocator->allocate(new_count * sizeof(_char_type)));
+
+        size_t last_index = 0;
+        for (size_t i = 0; i < _char_count; i++) {
+            if (i < index || i >= index + count) {
+                new_buffer[last_index] = _buffer[i];
+                last_index++;
+            }
+        }
+
+        _allocator->deallocate(_buffer);
+        _buffer = new_buffer;
+        _char_count = new_count - 1;
+    }
+
+    void Remove(const size_t index) {
+        if (index < 0 || index + 1 > _char_count - 1)
+            throw "Index outside of string boundaries.";
+
+        // +1 because of '\0'.
+        size_t new_count = _char_count;
+        _char_type* new_buffer = static_cast<_char_type*>(_allocator->allocate(new_count * sizeof(_char_type)));
+
+        size_t last_index = 0;
+        for (size_t i = 0; i < _char_count; i++) {
+            if (i < index || i >= index + 1) {
+                new_buffer[last_index] = _buffer[i];
+                last_index++;
+            }
+        }
+
+        _allocator->deallocate(_buffer);
+        _buffer = new_buffer;
+        _char_count = new_count - 1;
+    }
+
+    inline bool Contains(const _char_type tchar) const {
+        if (_traits::find(_buffer, _char_count, tchar) != NULL)
+            return true;
+
+        return false;
+    }
+
+    inline bool Contains(const _char_type* ptr) const {
+        if (ptr == NULL)
+            throw "Input string cannot be null.";
+
+        const _char_type* find = _traits::findstr(_buffer, ptr);
+        if (find != NULL && find != _buffer)
+            return true;
+
+        return false;
+    }
+
+    inline bool Contains(const WuBaseString& str) const {
+        const _char_type* find = _traits::findstr(_buffer, str._buffer);
+        if (find != NULL && find != _buffer)
+            return true;
+
+        return false;
+    }
+
+    inline bool EndsWith(const _char_type tchar) const {
+        // 0-based array plus /0.
+        if (_buffer[_char_count - 2] == tchar)
+            return true;
+
+        return false;
+    }
+
+    inline bool EndsWith(const _char_type* ptr, bool ignore_case = false) const {
+        if (ptr == NULL)
+            throw "Input string cannot be null.";
+
+        size_t input_len = _traits::length(ptr);
+        if (input_len > this->Length())
+            throw "Input string cannot be bigger than the original.";
+
+        if (ignore_case)
+            return _traits::comparenocase(_buffer + this->Length() - input_len, ptr, input_len) == 0;
+
+        return _traits::compare(_buffer + this->Length() - input_len, ptr, input_len) == 0;
+    }
+
+    inline bool EndsWith(const WuBaseString& str, bool ignore_case = false) const {
+        size_t input_len = str.Length();
+        if (str.Length() > this->Length())
+            throw "Input string cannot be bigger than the original.";
+
+        if (ignore_case)
+            return _traits::comparenocase(_buffer + this->Length() - input_len, str._buffer, input_len) == 0;
+
+        return _traits::compare(_buffer + this->Length() - input_len, str._buffer, input_len) == 0;
+    }
+
+    inline _char_type operator[](const size_t index) {
+        if (index < 0 && index > _char_count)
+            throw "Index outside the boundaries of this string.";
+
+        return _buffer[index];
+    }
+
+    friend WuBaseString operator+(const WuBaseString& left, const _char_type* right) {
+        if (right == NULL)
+            return WuBaseString(left);
+
+        WuBaseString result;
+        size_t left_len = left.Length();
+        size_t right_len = _traits::length(right);
+        size_t in_len = left_len + right_len + 1;
+
+        result._buffer = static_cast<_char_type*>(result._allocator->allocate(in_len * sizeof(_char_type)));
+
+        _traits::copy(result._buffer, left._buffer, left_len);
+        _traits::copy(result._buffer + left_len, right, right_len);
+        result._char_count = in_len - 1;
+
+        return result;
+    }
+
+    friend WuBaseString operator+(const WuBaseString& left, const WuBaseString& right) {
+        WuBaseString result;
+        size_t left_len = left.Length();
+        size_t right_len = right.Length();
+        size_t in_len = left_len + right_len + 1;
+
+        result._buffer = static_cast<_char_type*>(result._allocator->allocate(in_len * sizeof(_char_type)));
+
+        _traits::copy(result._buffer, left._buffer, left_len);
+        _traits::copy(result._buffer + left_len, right._buffer, right_len);
+        result._char_count = in_len - 1;
+
+        return result;
+    }
+
+    inline WuBaseString& operator=(const _char_type* other) {
+        WuBaseString otherStr(other);
+        Swap(*this, otherStr);
+
+        return *this;
+    }
+
+    inline WuBaseString& operator=(WuBaseString other) {
+        Swap(*this, other);
+
+        return *this;
+    }
+
+    inline WuBaseString& operator+=(const _char_type* other) {
+        *this = *this + other;
+
+        return *this;
+    }
+
+    inline WuBaseString& operator+=(const WuBaseString& other) {
+        *this = *this + other;
+
+        return *this;
+    }
+
+    inline bool operator==(const _char_type* right) const {
+        if (right == NULL) {
+            return false;
+        }
+        else {
+            size_t right_len = _traits::length(right);
+            size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
+            return _traits::compare(_buffer, right, biggest) == 0;
+        }
+    }
+
+    inline bool operator==(const WuBaseString& right) const {
+        size_t biggest = (((this->Length()) > (right.Length())) ? (this->Length()) : (right.Length()));
+        return _traits::compare(_buffer, right._buffer, biggest) == 0;
+    }
+    inline bool operator!=(const _char_type* right) const {
+        return !(*this == right);
+    }
+    inline bool operator!=(const WuBaseString& right) const {
+        return !(*this == right);
+    }
+
+    inline bool operator<(const _char_type* right) const {
+        if (right == NULL) {
+            return false;
+        }
+        else {
+            size_t right_len = _traits::length(right);
+            size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
+            return _traits::compare(_buffer, right, biggest) < 0;
+        }
+    }
+
+    inline bool operator<(const WuBaseString& right) const {
+        size_t biggest = (((this->Length()) > (right.Length())) ? (this->Length()) : (right.Length()));
+        return _traits::compare(_buffer, right._buffer, biggest) < 0;
+    }
+
+    inline bool operator>(const _char_type* right) const {
+        return !(*this < right);
+    }
+
+    inline bool operator>(const WuBaseString& right) const {
+        return !(*this < right);
+    }
+
+    inline bool operator<=(const _char_type* right) const {
+        if (right == NULL) {
+            return false;
+        }
+        else {
+            size_t right_len = _traits::length(right);
+            size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
+            return _traits::compare(_buffer, right, biggest) <= 0;
+        }
+    }
+
+    inline bool operator<=(const WuBaseString& right) const {
+        size_t biggest = (((this->Length()) > (right.Length())) ? (this->Length()) : (right.Length()));
+        return _traits::compare(_buffer, right._buffer, biggest) <= 0;
+    }
+
+    inline bool operator>=(const _char_type* right) const {
+        if (right == NULL) {
+            return false;
+        }
+        else {
+            size_t right_len = _traits::length(right);
+            size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
+            return _traits::compare(_buffer, right, biggest) >= 0;
+        }
+    }
+
+    inline bool operator>=(const WuBaseString& right) const {
+        size_t biggest = (((this->Length()) > (right.Length())) ? (this->Length()) : (right.Length()));
+        return _traits::compare(_buffer, right._buffer, biggest) >= 0;
+    }
 };
-
-//////////////////////////////////////////////////////////////
-//
-//  ~ 8-bit, 16-bit, and 32-bit types
-//
-//////////////////////////////////////////////////////////////
 
 using WWuString = WuBaseString<wchar_t, char_traits<wchar_t>>;
 using WuString = WuBaseString<char, char_traits<char>>;
@@ -200,626 +522,3 @@ using u32WuString = WuBaseString<char32_t, char_traits<char32_t>>;
 #if defined(__cpp_lib_char8_t)
 using u8WuString = WuBaseString<char8_t, char_traits<char8_t>>;
 #endif
-
-//////////////////////////////////////////////////////////////
-//
-//  ~ Constructor implementation
-//
-//////////////////////////////////////////////////////////////
-
-template <class _char_type, class _traits>
-WuBaseString<_char_type, _traits>::WuBaseString() {
-    this->InitializeToZero();
-}
-
-template <class _char_type, class _traits>
-WuBaseString<_char_type, _traits>::WuBaseString(const _char_type* ptr) {
-    if (ptr == NULL) {
-        this->InitializeToZero();
-    }
-    else {
-        _is_initialized = false;
-
-        _allocator = new WuAllocator();
-        _char_count = _traits::length(ptr);
-
-        size_t buffer_size = (_char_count + 1) * sizeof(_char_type);
-        _buffer = static_cast<_char_type*>(_allocator->allocate(buffer_size));
-        _is_initialized = true;
-
-        _traits::copy(_buffer, ptr, _char_count);
-    }
-}
-
-template <class _char_type, class _traits>
-WuBaseString<_char_type, _traits>::WuBaseString(const WuBaseString& other) {
-    if (other._buffer == NULL) {
-        this->InitializeToZero();
-    }
-    else {
-        _is_initialized = false;
-
-        _allocator = new WuAllocator();
-        _char_count = other._char_count;
-
-        size_t buffer_size = (_char_count + 1) * sizeof(_char_type);
-        _buffer = static_cast<_char_type*>(_allocator->allocate(buffer_size));
-        _is_initialized = true;
-
-        _traits::copy(_buffer, other._buffer, _char_count);
-    }
-}
-
-template <class _char_type, class _traits>
-WuBaseString<_char_type, _traits>::~WuBaseString() {
-    if (_is_initialized && _buffer != NULL) {
-        _allocator->deallocate(static_cast<void*>(_buffer));
-    }
-    _buffer = NULL;
-    _char_count = 0;
-    _is_initialized = false;
-
-    delete _allocator;
-}
-
-//////////////////////////////////////////////////////////////
-//
-//  ~ Method implementation
-//
-//////////////////////////////////////////////////////////////
-
-template <class _char_type, class _traits>
-inline void WuBaseString<_char_type, _traits>::InitializeToZero() {
-    _buffer = NULL;
-    _char_count = 0;
-    _is_initialized = false;
-    _allocator = new WuAllocator();
-}
-
-template <class _char_type, class _traits>
-inline void WuBaseString<_char_type, _traits>::Initialize(const size_t char_count) {
-    _is_initialized = false;
-    _char_count = 0;
-
-    size_t buffer_size = (char_count + 1) * sizeof(_char_type);
-    _buffer = static_cast<_char_type*>(_allocator->allocate(buffer_size));
-    _is_initialized = true;
-}
-
-template <class _char_type, class _traits>
-inline void WuBaseString<_char_type, _traits>::SecureErase(bool deallocate) {
-    if (_is_initialized && _buffer != NULL) {
-        size_t char_count = _traits::length(_buffer);
-        if (char_count > 0) {
-            RtlSecureZeroMemory(_buffer, char_count * sizeof(_char_type));
-        }
-        if (deallocate) {
-            _allocator->deallocate(_buffer);
-            _is_initialized = false;
-            _buffer = NULL;
-            _char_count = 0;
-        }
-    }
-}
-
-template <class _char_type, class _traits>
-inline const size_t WuBaseString<_char_type, _traits>::Length() {
-    size_t len = 0;
-    if (_is_initialized && _buffer != 0) {
-        _char_count = _traits::length(_buffer);
-        len = _char_count;
-    }
-
-    return len;
-}
-
-template <class _char_type, class _traits>
-inline const size_t WuBaseString<_char_type, _traits>::Length() const {
-    size_t len = 0;
-    if (_is_initialized && _buffer != 0) {
-        _char_count = _traits::length(_buffer);
-        len = _char_count;
-    }
-
-    return len;
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::IsNullOrEmpty(const _char_type* ptr) {
-    if (ptr != NULL)
-        return _traits::length(ptr) == 0;
-
-    return true;
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::IsNullOrEmpty(const WuBaseString& str) {
-    if (str._is_initialized && str._buffer != NULL)
-        return str.Length() == 0;
-
-    return true;
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::IsNullOrWhiteSpace(const _char_type* ptr) {
-    if (ptr == NULL)
-        return TRUE;
-
-    size_t char_count = _traits::length(ptr);
-    for (size_t i = 0; i < char_count; i++) {
-        if (ptr[i] != ' ')
-            return FALSE;
-    }
-
-    return TRUE;
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::IsNullOrWhiteSpace(const WuBaseString& str) {
-    if (!str._is_initialized || str._buffer == NULL)
-        return true;
-
-    for (size_t i = 0; i < str.Length(); i++) {
-        if (str._buffer[i] != ' ')
-            return FALSE;
-    }
-
-    return TRUE;
-}
-
-template <class _char_type, class _traits>
-_NODISCARD inline const _char_type* WuBaseString<_char_type, _traits>::GetBuffer() {
-    return _buffer;
-}
-
-template <class _char_type, class _traits>
-_NODISCARD inline const _char_type* const WuBaseString<_char_type, _traits>::GetBuffer() const {
-    return _buffer;
-}
-
-template <class _char_type, class _traits>
-void WuBaseString<_char_type, _traits>::Format(const _char_type* format, ...) {
-    if (format != NULL) {
-        va_list args;
-        va_start(args, format);
-
-        _char_count = _vscprintf(format, args) + 1;
-        if (_is_initialized && _buffer != NULL)
-            _allocator->deallocate(_buffer);
-
-        _buffer = static_cast<_char_type*>(_allocator->allocate(_char_count * sizeof(_char_type)));
-        vsprintf_s(_buffer, _char_count, format, args);
-
-        _is_initialized = true;
-    }
-}
-
-template <class _char_type, class _traits>
-void WuBaseString<_char_type, _traits>::Format(const WuBaseString& format, ...) {
-    if (format._is_initialized && format._buffer != NULL) {
-        va_list args;
-        va_start(args, format._buffer);
-
-        _char_count = _vscprintf(format._buffer, args) + 1;
-        if (_is_initialized && _buffer != NULL)
-            _allocator->deallocate(_buffer);
-
-        _buffer = static_cast<_char_type*>(_allocator->allocate(_char_count * sizeof(_char_type)));
-        vsprintf_s(_buffer, _char_count, format._buffer, args);
-
-        _is_initialized = true;
-    }
-}
-
-template <class _char_type, class _traits>
-void WuBaseString<_char_type, _traits>::Remove(const size_t index, const size_t count) {
-    if (_is_initialized && _buffer != NULL) {
-        if (count > _char_count)
-            throw "Count can't be greater than the string length.";
-
-        if (index < 0 || index + count > _char_count - 2)
-            throw "Index outside of string boundaries.";
-
-        size_t new_count = _char_count - count + 1;
-        _allocator->deallocate(_buffer);
-        _char_type* new_buffer = static_cast<_char_type*>(_allocator->allocate(new_count * sizeof(_char_type)));
-
-        size_t last_index = 0;
-        for (size_t i = 0; i < _char_count - 1; i++) {
-            if (i < index || i > index + count) {
-                new_buffer[last_index] = _buffer[i];
-                last_index++;
-            }
-        }
-
-        _buffer = new_buffer;
-        _char_count = new_count - 1;
-    }
-}
-
-template <class _char_type, class _traits>
-void WuBaseString<_char_type, _traits>::Remove(const size_t index) {
-    if (_is_initialized && _buffer != NULL) {
-        size_t count = 1;
-        if (count > _char_count)
-            throw "Count can't be greater than the string length.";
-
-        if (index < 0 || index + count > _char_count - 2)
-            throw "Index outside of string boundaries.";
-
-        size_t new_count = _char_count - count + 1;
-        _allocator->deallocate(_buffer);
-        _char_type* new_buffer = static_cast<_char_type*>(_allocator->allocate(new_count * sizeof(_char_type)));
-
-        size_t last_index = 0;
-        for (size_t i = 0; i < _char_count - 1; i++) {
-            if (i < index || i > index + count) {
-                new_buffer[last_index] = _buffer[i];
-                last_index++;
-            }
-        }
-
-        _buffer = new_buffer;
-        _char_count = new_count - 1;
-    }
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::Contains(const _char_type tchar) const {
-    if (!_is_initialized || _buffer == NULL)
-        return false;
-
-    if (_traits::find(_buffer, 1, &tchar) != NULL)
-        return true;
-
-    return false;
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::Contains(const _char_type* ptr) const {
-    if (!_is_initialized || _buffer == NULL)
-        return false;
-
-    if (ptr == NULL)
-        throw "Input string cannot be null.";
-
-    size_t char_count = _traits::length(ptr);
-    if (_traits::find(_buffer, char_count, ptr) != NULL)
-        return true;
-
-    return false;
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::Contains(const WuBaseString& str) const {
-    if (!_is_initialized || _buffer == NULL)
-        return false;
-
-    if (!str._is_initialized || str._buffer == NULL)
-        throw "Input string is not initialized.";
-
-    if (_traits::find(_buffer, str.Length(), str > _buffer) != NULL)
-        return true;
-
-    return false;
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::EndsWith(const _char_type tchar) const {
-    if (!_is_initialized || _buffer == NULL)
-        return false;
-
-    // 0-based array plus /0.
-    if (_buffer[_char_count - 2] == tchar)
-        return TRUE;
-
-    return FALSE;
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::EndsWith(const _char_type* ptr, bool ignore_case) const {
-    if (!_is_initialized || _buffer == NULL)
-        return false;
-
-    if (ptr == NULL)
-        throw "Input string cannot be null.";
-
-    size_t input_len = _traits::length(ptr);
-    if (input_len > this->Length())
-        throw "Input string cannot be bigger than the original.";
-
-    if (ignore_case)
-        return _traits::icompare(_buffer + this->Length() - input_len, ptr, input_len) == 0;
-
-    return _traits::compare(_buffer + this->Length() - input_len, ptr, input_len) == 0;
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::EndsWith(const WuBaseString& str, bool ignore_case) const {
-    if (!_is_initialized || _buffer == NULL)
-        return false;
-
-    if (!str._is_initialized || str._buffer == NULL)
-        throw "Input string is not initialized.";
-
-    size_t input_len = str.Length();
-    if (str.Length() > this->Length())
-        throw "Input string cannot be bigger than the original.";
-
-    if (ignore_case)
-        return _traits::icompare(_buffer + this->Length() - input_len, str._buffer, input_len) == 0;
-
-    return _traits::compare(_buffer + this->Length() - input_len, str._buffer, input_len) == 0;
-}
-
-//////////////////////////////////////////////////////////////
-//
-//  ~ Operator implementation
-//
-//////////////////////////////////////////////////////////////
-
-template <class _char_type, class _traits>
-inline _char_type WuBaseString<_char_type, _traits>::operator[](const size_t index) {
-    if (!_is_initialized || _buffer = NULL)
-        throw "String is not initialized!";
-
-    if (index < 0 && index > _char_count)
-        throw "Index outside the boundaries of this string.";
-
-    return _buffer[index];
-}
-
-template <class _char_type, class _traits>
-inline void WuBaseString<_char_type, _traits>::operator=(const _char_type* other) {
-    if (other == NULL)
-        throw "Input string cannot be NULL.";
-
-    size_t in_len = _traits::length(other) + 1;
-    if (_is_initialized && _buffer != NULL) {
-        _allocator->deallocate(_buffer);
-    }
-
-    _allocator->allocate(in_len * sizeof(_char_type));
-    _is_initialized = true;
-
-    in_len--;
-    _traits::copy(_buffer, other, in_len);
-    _char_count = in_len - 1;
-
-    _traits::assign(_buffer[in_len], _char_type());
-}
-
-template <class _char_type, class _traits>
-inline void WuBaseString<_char_type, _traits>::operator=(const WuBaseString& other) {
-    if (!other._is_initialized || other._buffer == NULL)
-        throw "Input string is not initialized.";
-
-    size_t in_len = other.Length() + 1;
-    if (_is_initialized && _buffer != NULL) {
-        _allocator->deallocate(_buffer);
-    }
-
-    _allocator->allocate(in_len * sizeof(_char_type));
-    _is_initialized = true;
-
-    in_len--;
-    _traits::copy(_buffer, other._buffer, in_len);
-    _char_count = in_len - 1;
-
-    _traits::assign(_buffer[in_len], _char_type());
-}
-
-template <class _char_type, class _traits>
-inline void WuBaseString<_char_type, _traits>::operator+=(const _char_type* other) {
-    if (other != NULL) {
-        if (!_is_initialized || _buffer == NULL) {
-            size_t total_len = _traits::length(other) + 1;
-            _buffer = static_cast<_char_type*>(_allocator->allocate(total_len * sizeof(_char_type)));
-            _is_initialized = true;
-
-            total_len--;
-            _traits::copy(_buffer, other, total_len);
-            _char_count = total_len;
-
-            _traits::assign(_buffer[total_len], _char_type());
-        }
-        else {
-            size_t total_len = _traits::length(other) + this->Length() + 1;
-            _char_type* new_ptr = static_cast<_char_type*>(_allocator->allocate(total_len * sizeof(_char_type)));
-            _is_initialized = true;
-
-            total_len--;
-            _traits::copy(new_ptr, _buffer, _char_count);
-            _traits::copy(new_ptr + _char_count, other, total_len);
-            _char_count = total_len;
-
-            if (_buffer != NULL)
-                _allocator->deallocate(_buffer);
-
-            _traits::assign(new_ptr[total_len], _char_type());
-            _buffer = new_ptr;
-        }
-    }
-}
-
-template <class _char_type, class _traits>
-inline void WuBaseString<_char_type, _traits>::operator+=(const WuBaseString& other) {
-    if (!other._is_initialized || other._buffer == NULL) {
-        if (!_is_initialized || _buffer == NULL) {
-            size_t total_len = other.Length() + 1;
-            _buffer = static_cast<_char_type*>(_allocator->allocate(total_len * sizeof(_char_type)));
-            _is_initialized = true;
-
-            total_len--;
-            _traits::copy(_buffer, other._buffer, total_len);
-            _char_count = total_len;
-
-            _traits::assign(_buffer[total_len], _char_type());
-        }
-        else {
-            size_t total_len = other.Length() + this->Length() + 1;
-            _char_type* new_ptr = static_cast<_char_type*>(_allocator->allocate(total_len * sizeof(_char_type)));
-            _is_initialized = true;
-
-            total_len--;
-            _traits::copy(new_ptr, _buffer, _char_count);
-            _traits::copy(new_ptr + _char_count, other._buffer, total_len);
-            _char_count = total_len;
-
-            if (_buffer != NULL)
-                _allocator->deallocate(_buffer);
-
-            _traits::assign(new_ptr[total_len], _char_type());
-            _buffer = new_ptr;
-        }
-    }
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator==(const _char_type* right) {
-    if (_buffer == NULL) {
-        if (right == NULL) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    else {
-        if (right == NULL) {
-            return false;
-        }
-        else {
-            size_t right_len = _traits::length(right);
-            size_t biggest = (((this->Length()) < (right_len)) ? (this->Length()) : (right_len));
-            return _traits::compare(_buffer, right, biggest) == 0;
-        }
-    }
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator==(const WuBaseString& right) {
-    if (_buffer == NULL) {
-        if (right._buffer == NULL) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-    else {
-        if (right._buffer == NULL) {
-            return false;
-        }
-        else {
-            size_t biggest = (((this->Length()) < (right.Length())) ? (this->Length()) : (right.Length()));
-            return _traits::compare(_buffer, right._buffer, biggest) == 0;
-        }
-    }
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator!=(const _char_type* right) {
-    return !(*this == right);
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator!=(const WuBaseString& right) {
-    return !(*this == right);
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator<(const _char_type* right) {
-    if (_buffer == NULL) {
-        if (right == NULL) {
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-    else {
-        if (right == NULL) {
-            return false;
-        }
-        else {
-            size_t right_len = _traits::length(right);
-            size_t biggest = (((this->Length()) < (right_len)) ? (this->Length()) : (right_len));
-            return _traits::compare(_buffer, right, biggest) < 0;
-        }
-    }
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator<(const WuBaseString& right) {
-    if (_buffer == NULL) {
-        if (right._buffer == NULL) {
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-    else {
-        if (right._buffer == NULL) {
-            return false;
-        }
-        else {
-            size_t biggest = (((this->Length()) < (right.Length())) ? (this->Length()) : (right.Length()));
-            return _traits::compare(_buffer, right._buffer, biggest) < 0;
-        }
-    }
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator>(const _char_type* right) {
-    return !(*this < right);
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator>(const WuBaseString& right) {
-    return !(*this < right);
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator<=(const _char_type* right) {
-    if (_buffer == NULL) {
-        return true;
-    }
-    else {
-        if (right == NULL) {
-            return false;
-        }
-        else {
-            size_t right_len = _traits::length(right);
-            size_t biggest = (((this->Length()) < (right_len)) ? (this->Length()) : (right_len));
-            return _traits::compare(_buffer, right, biggest) <= 0;
-        }
-    }
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator<=(const WuBaseString& right) {
-    if (_buffer == NULL) {
-        return true;
-    }
-    else {
-        if (right._buffer == NULL) {
-            return false;
-        }
-        else {
-            size_t biggest = (((this->Length()) < (right.Length())) ? (this->Length()) : (right.Length()));
-            return _traits::compare(_buffer, right._buffer, biggest) <= 0;
-        }
-    }
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator>=(const _char_type* right) {
-    return !(*this <= right);
-}
-
-template <class _char_type, class _traits>
-inline bool WuBaseString<_char_type, _traits>::operator>=(const WuBaseString& right) {
-    return !(*this <= right);
-}

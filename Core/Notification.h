@@ -18,24 +18,24 @@ namespace WindowsUtils::Core
 
 		typedef struct _MAPPED_PROGRESS_DATA
 		{
-			WuString Activity;
+			WWuString Activity;
 			INT ActivityId;
-			WuString CurrentOperation;
+			WWuString CurrentOperation;
 			INT ParentActivityId;
 			DWORD PercentComplete;
 			PROGRESS_RECORD_TYPE RecordType;
 			INT SecondsRemaining;
-			WuString StatusDescription;
+			WWuString StatusDescription;
 
 			_MAPPED_PROGRESS_DATA(
-				const WuString& activity,
+				const WWuString& activity,
 				INT activityId,
-				const WuString& currOperation,
+				const WWuString& currOperation,
 				INT parentActId,
 				DWORD percentComplete,
 				PROGRESS_RECORD_TYPE recType,
 				INT secRemaining,
-				const WuString& status
+				const WWuString& status
 			);
 
 			_MAPPED_PROGRESS_DATA()
@@ -63,5 +63,5 @@ namespace WindowsUtils::Core
 	};
 
 	void NativeWriteProgress(Notification::PNATIVE_CONTEXT context, Notification::PMAPPED_PROGRESS_DATA progData);
-	void NativeWriteWarning(Notification::PNATIVE_CONTEXT context, const WuString& text);
+	void NativeWriteWarning(Notification::PNATIVE_CONTEXT context, const WWuString& text);
 }

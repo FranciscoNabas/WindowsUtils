@@ -205,8 +205,8 @@ namespace WindowsUtils::Core
 	==		 Function identification		==
 	==========================================*/
 
-	NTSTATUS GetNtProcessUsingFile(const WuString& fileName, PFILE_PROCESS_IDS_USING_FILE_INFORMATION procUsingFileInfo);
+	NTSTATUS GetNtProcessUsingFile(const WWuString& fileName, wuunique_ha_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION>& procUsingFileInfo);
 	DWORD NtQueryObjectRaw(LPVOID param);
 	NTSTATUS NtQueryObjectWithTimeout(HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass, PVOID objectInfo, ULONG timeout);
-	NTSTATUS GetProcessImageName(DWORD processId, WuString& imageName);
+	NTSTATUS GetProcessImageName(DWORD processId, WWuString& imageName);
 }

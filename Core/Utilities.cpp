@@ -13,7 +13,7 @@ namespace WindowsUtils::Core
 	// Get-FormattedMessage
 	DWORD Utilities::GetFormattedError(
 		DWORD errorCode,				// The Win32 error code.
-		WuString& errorMessage			// The output message string.
+		WWuString& errorMessage			// The output message string.
 	) {
 		LPWSTR buffer = NULL;
 		if (!::FormatMessageW(
@@ -21,7 +21,7 @@ namespace WindowsUtils::Core
 			NULL,
 			errorCode,
 			0,
-			buffer,
+			(LPWSTR)&buffer,
 			0,
 			NULL
 		))
@@ -35,7 +35,7 @@ namespace WindowsUtils::Core
 
 	// Get-LastWin32Error
 	DWORD Utilities::GetFormattedWin32Error(
-		WuString& errorMessage		// The output message string.
+		WWuString& errorMessage		// The output message string.
 	)
 	{
 		LPWSTR buffer = NULL;
@@ -44,7 +44,7 @@ namespace WindowsUtils::Core
 			NULL,
 			GetLastError(),
 			0,
-			buffer,
+			(LPWSTR)&buffer,
 			0,
 			NULL
 		))
@@ -97,7 +97,7 @@ namespace WindowsUtils::Core
 	// Get-ResourceMessageTable
 	DWORD Utilities::GetResourceMessageTable(
 		wuvector<Utilities::WU_RESOURCE_MESSAGE_TABLE>* messageTableOut,	// A vector of resource message table objects.
-		const WuString& libName												// The resource path.
+		const WWuString& libName												// The resource path.
 	) {
 		DWORD result = ERROR_SUCCESS;
 
@@ -145,8 +145,8 @@ namespace WindowsUtils::Core
 
 	// Get-MsiProperties
 	DWORD Utilities::GetMsiProperties(
-		wumap<WuString, WuString>* propertyMap,		// A map with the properties and values from the MSI database.
-		const WuString& fileName					// The MSI file path.
+		wumap<WWuString, WWuString>* propertyMap,		// A map with the properties and values from the MSI database.
+		const WWuString& fileName					// The MSI file path.
 	)
 	{
 		DWORD result = ERROR_SUCCESS;
@@ -178,10 +178,13 @@ namespace WindowsUtils::Core
 
 			// \0
 			bufferSize++;
-			WuString property;
-			property.Initialize(bufferSize);
-			result = MsiRecordGetStringW(hRecord, 1, property.GetBuffer(), &bufferSize);
+			DWORD bytesNeeded = bufferSize * 2;
+			wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
+			
+			result = MsiRecordGetStringW(hRecord, 1, buffer.get(), &bufferSize);
 			DWERRORCHECKV(result);
+
+			WWuString property(buffer.get());
 
 			// Second column, value.
 			bufferSize = 0;
@@ -189,10 +192,13 @@ namespace WindowsUtils::Core
 			DWERRORCHECKV(result);
 
 			bufferSize++;
-			WuString value;
-			value.Initialize(bufferSize);
-			result = MsiRecordGetStringW(hRecord, 2, value.GetBuffer(), &bufferSize);
+			bytesNeeded = bufferSize * 2;
+			buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
+			
+			result = MsiRecordGetStringW(hRecord, 2, buffer.get(), &bufferSize);
 			DWERRORCHECKV(result);
+			
+			WWuString value(buffer.get());
 
 			// We are using 'emplace' here because both strings created in this iteration will
 			// be passed as parameter for the constructors from the strings inside the map.
@@ -210,7 +216,7 @@ namespace WindowsUtils::Core
 	==========================================*/
 
 	// Gets extended error information for Get-MsiProperties
-	DWORD Utilities::GetMsiExtendedError(WuString& errorMessage)
+	DWORD Utilities::GetMsiExtendedError(WWuString& errorMessage)
 	{
 		DWORD result = ERROR_SUCCESS;
 		DWORD bufferSize = 0;
@@ -224,15 +230,18 @@ namespace WindowsUtils::Core
 			return result;
 
 		bufferSize++;
-		errorMessage.Initialize(bufferSize);
+		DWORD bytesNeeded = bufferSize * 2;
+		wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
 
-		result = MsiFormatRecordW(NULL, hLastError, errorMessage.GetBuffer(), &bufferSize);
+		result = MsiFormatRecordW(NULL, hLastError, buffer.get(), &bufferSize);
+
+		errorMessage = buffer.get();
 
 		return result;
 	}
 
 	// Helper function to retrieve environment variables safely.
-	DWORD GetEnvVariable(const WuString& variableName, WuString& value)
+	DWORD GetEnvVariable(const WWuString& variableName, WWuString& value)
 	{
 		DWORD result = ERROR_SUCCESS;
 		size_t bufferSize = 0;
@@ -241,9 +250,12 @@ namespace WindowsUtils::Core
 		if (bufferSize == 0)
 			return ERROR_FILE_NOT_FOUND;
 
-		value.Initialize(bufferSize);
+		DWORD bytesNeeded = bufferSize * 2;
+		wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
 		
-		_wgetenv_s(&bufferSize, value.GetBuffer(), bufferSize, variableName.GetBuffer());
+		_wgetenv_s(&bufferSize, buffer.get(), bufferSize, variableName.GetBuffer());
+
+		value = buffer.get();
 
 		return result;
 	}

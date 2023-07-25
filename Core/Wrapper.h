@@ -55,8 +55,8 @@ namespace WindowsUtils::Core
 	{
 	public:
 		property Int32 SessionId { Int32 get() { return wrapper->SessionId; } }
-		property String^ UserName { String^ get() { return gcnew String(wrapper->UserName.GetWideBuffer()); } }
-		property String^ SessionName { String^ get() { return gcnew String(wrapper->SessionName.GetWideBuffer()); } }
+		property String^ UserName { String^ get() { return gcnew String(wrapper->UserName.GetBuffer()); } }
+		property String^ SessionName { String^ get() { return gcnew String(wrapper->SessionName.GetBuffer()); } }
 		property TimeSpan IdleTime {
 			TimeSpan get()
 			{
@@ -101,11 +101,11 @@ namespace WindowsUtils::Core
 	public ref class ObjectHandleBase
 	{
 	public:
-		property String^ InputObject { String^ get() { return gcnew String(wrapper->InputObject.GetWideBuffer()); } }
+		property String^ InputObject { String^ get() { return gcnew String(wrapper->InputObject.GetBuffer()); } }
 		property String^ Name {
 			String^ get() {
-				if (!WuString::IsNullOrEmpty(wrapper->Name))
-					return gcnew String(wrapper->Name.GetWideBuffer());
+				if (!WWuString::IsNullOrEmpty(wrapper->Name))
+					return gcnew String(wrapper->Name.GetBuffer());
 
 				return nullptr;
 			}
@@ -118,35 +118,27 @@ namespace WindowsUtils::Core
 				auto search = wrapper->VersionInfo.find(ProcessAndThread::FileDescription);
 				if (search != wrapper->VersionInfo.end())
 				{
-					if (!WuString::IsNullOrEmpty(search->second))
+					if (WWuString::IsNullOrEmpty(search->second))
 					{
-						if (!WuString::IsNullOrEmpty(wrapper->Name))
+						if (!WWuString::IsNullOrEmpty(wrapper->Name))
 						{
-							WuString name = wrapper->Name;
-							::PathStripPathW(name.GetWideBuffer());
+							WWuString name = wrapper->Name;
+							::PathStripPathW(name.GetBuffer());
 
-							return gcnew String(name.GetWideBuffer());
+							return gcnew String(name.GetBuffer());
 						}
 					}
 					else
-					{
-						if (!WuString::IsNullOrEmpty(wrapper->Name))
-						{
-							WuString name = wrapper->Name;
-							::PathStripPathW(name.GetWideBuffer());
-
-							return gcnew String(name.GetWideBuffer());
-						}
-					}
+						return gcnew String(search->second.GetBuffer());
 				}
 				else
 				{
-					if (!WuString::IsNullOrEmpty(wrapper->Name))
+					if (!WWuString::IsNullOrEmpty(wrapper->Name))
 					{
-						WuString name = wrapper->Name;
-						::PathStripPathW(name.GetWideBuffer());
+						WWuString name = wrapper->Name;
+						::PathStripPathW(name.GetBuffer());
 
-						return gcnew String(name.GetWideBuffer());
+						return gcnew String(name.GetBuffer());
 					}
 				}
 
@@ -159,8 +151,8 @@ namespace WindowsUtils::Core
 			{
 				auto search = wrapper->VersionInfo.find(ProcessAndThread::ProductName);
 				if (search != wrapper->VersionInfo.end())
-					if (!WuString::IsNullOrEmpty(search->second))
-						return gcnew String(search->second.GetWideBuffer());
+					if (!WWuString::IsNullOrEmpty(search->second))
+						return gcnew String(search->second.GetBuffer());
 
 				return nullptr;
 			}
@@ -171,8 +163,8 @@ namespace WindowsUtils::Core
 			{
 				auto search = wrapper->VersionInfo.find(ProcessAndThread::FileVersion);
 				if (search != wrapper->VersionInfo.end())
-					if (!WuString::IsNullOrEmpty(search->second))
-						return gcnew String(search->second.GetWideBuffer());
+					if (!WWuString::IsNullOrEmpty(search->second))
+						return gcnew String(search->second.GetBuffer());
 
 				return nullptr;
 			}
@@ -183,16 +175,16 @@ namespace WindowsUtils::Core
 			{
 				auto search = wrapper->VersionInfo.find(ProcessAndThread::CompanyName);
 				if (search != wrapper->VersionInfo.end())
-					if (!WuString::IsNullOrEmpty(search->second))
-						return gcnew String(search->second.GetWideBuffer());
+					if (!WWuString::IsNullOrEmpty(search->second))
+						return gcnew String(search->second.GetBuffer());
 
 				return nullptr;
 			}
 		}
 		property String^ ImagePath {
 			String^ get() {
-				if (!WuString::IsNullOrEmpty(wrapper->ImagePath))
-					return gcnew String(wrapper->ImagePath.GetWideBuffer());
+				if (!WWuString::IsNullOrEmpty(wrapper->ImagePath))
+					return gcnew String(wrapper->ImagePath.GetBuffer());
 
 				return nullptr;
 			}
@@ -214,7 +206,7 @@ namespace WindowsUtils::Core
 	{
 	public:
 		property Int64 Id { Int64 get() { return wrapper->Id; } }
-		property String^ Message { String^ get() { return (gcnew String(wrapper->Message.GetWideBuffer()))->Trim(); } }
+		property String^ Message { String^ get() { return (gcnew String(wrapper->Message.GetBuffer()))->Trim(); } }
 
 		ResourceMessageTableCore();
 		ResourceMessageTableCore(Utilities::WU_RESOURCE_MESSAGE_TABLE);
@@ -352,13 +344,13 @@ namespace WindowsUtils::Core
 		ProcessAndThread* patptr;
 		Containers* ctnptr;
 
-		Object^ GetRegistryValue(String^ computerName, String^ userName, WuString& password, RegistryHive hive, String^ subKey, String^ valueName);
-		array<Object^>^ GetRegistryValueList(String^ computerName, String^ userName, WuString& password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
-		array<String^>^ GetRegistrySubKeyNames(String^ computerName, String^ userName, WuString& password, RegistryHive hive, String^ subKey);
-		void LogonAndImpersonateUser(String^ userName, WuString& password);
+		Object^ GetRegistryValue(String^ computerName, String^ userName, WWuString& password, RegistryHive hive, String^ subKey, String^ valueName);
+		array<Object^>^ GetRegistryValueList(String^ computerName, String^ userName, WWuString& password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);
+		array<String^>^ GetRegistrySubKeyNames(String^ computerName, String^ userName, WWuString& password, RegistryHive hive, String^ subKey);
+		void LogonAndImpersonateUser(String^ userName, WWuString& password);
 	};
 
-	WuString GetWuStringFromSystemString(String^ string);
+	WWuString GetWideStringFromSystemString(String^ string);
 	Exception^ FDIErrorToException(FDIERROR err);
 
 	public ref class NativeExceptionBase : public Exception

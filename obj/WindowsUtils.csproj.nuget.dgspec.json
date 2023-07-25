@@ -1,24 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj": {}
+    "C:\\LocalRepositories\\WindowsUtils\\WindowsUtils.csproj": {}
   },
   "projects": {
-    "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj": {
+    "C:\\LocalRepositories\\WindowsUtils\\WindowsUtils.csproj": {
       "version": "1.6.2",
       "restore": {
-        "projectUniqueName": "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
+        "projectUniqueName": "C:\\LocalRepositories\\WindowsUtils\\WindowsUtils.csproj",
         "projectName": "WindowsUtils",
-        "projectPath": "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
+        "projectPath": "C:\\LocalRepositories\\WindowsUtils\\WindowsUtils.csproj",
         "packagesPath": "C:\\Users\\francisco.nabas\\.nuget\\packages\\",
-        "outputPath": "c:\\LocalRepositories\\.WindowsUtils\\obj\\",
+        "outputPath": "C:\\LocalRepositories\\WindowsUtils\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
           "C:\\Users\\francisco.nabas\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -38,9 +34,6 @@
           "warnAsError": [
             "NU1605"
           ]
-        },
-        "restoreAuditProperties": {
-          "enableAudit": "default"
         }
       },
       "frameworks": {
@@ -91,7 +84,12 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100-preview.6.23330.14\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.304\\RuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
         }
       }
     }

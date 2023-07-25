@@ -5,14 +5,14 @@
 namespace WindowsUtils::Core
 {
 	Notification::_MAPPED_PROGRESS_DATA::_MAPPED_PROGRESS_DATA(
-		const WuString& activity,
+		const WWuString& activity,
 		INT activityId,
-		const WuString& currOperation,
+		const WWuString& currOperation,
 		INT parentActId,
 		DWORD percentComplete,
 		PROGRESS_RECORD_TYPE recType,
 		INT secRemaining,
-		const WuString& status
+		const WWuString& status
 	) : Activity(activity), ActivityId(activityId), CurrentOperation(currOperation), ParentActivityId(parentActId),
 			PercentComplete(percentComplete), RecordType(recType), SecondsRemaining(secRemaining), StatusDescription(status)
 	{ }
@@ -33,7 +33,7 @@ namespace WindowsUtils::Core
 		}
 	}
 
-	void NativeWriteWarning(Notification::PNATIVE_CONTEXT context, const WuString& text)
+	void NativeWriteWarning(Notification::PNATIVE_CONTEXT context, const WWuString& text)
 	{
 		size_t textLen = text.Length() + 1;
 		LPVOID view = MapViewOfFile(context->MappedWarningFile, FILE_MAP_WRITE, 0, 0, textLen * 2);
