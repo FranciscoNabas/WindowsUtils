@@ -21,19 +21,17 @@
 
 // ------------------------------------------------------------------------
 //
-//  Copyright (c) Francisco Nabas.
+//  Copyright (c) Francisco Nabas 2023.
 //
 //  This code, and the WindowsUtils module are distributed under
 //  the MIT license. (are you sure you want to use this?)
-//
-//  There is no warranty that this is stable, optimized, or safe.
 //
 ///////////////////////////////////////////////////////////////////////////
 
 // These base structs were added so we can specialize other functionalities.
 
 template <class _char_type>
-struct _WChar_traits_ext : std::_WChar_traits<_char_type>
+struct _WChar_traits_ex : std::_WChar_traits<_char_type>
 {
     _NODISCARD static inline int comparenocase(_In_reads_(count) const _char_type* const left,
         _In_reads_(count) const _char_type* const right, const size_t count) noexcept {
@@ -87,13 +85,13 @@ template <class _char_type>
 struct char_traits : std::_Char_traits<_char_type, long> {};
 
 template <>
-struct char_traits<wchar_t> : _WChar_traits_ext<wchar_t> {};
+struct char_traits<wchar_t> : _WChar_traits_ex<wchar_t> {};
 
 template <>
 struct char_traits<char> : _Narrow_char_traits_ex<char, int> {};
 
 template <>
-struct char_traits<char16_t> : _WChar_traits_ext<char16_t> {};
+struct char_traits<char16_t> : _WChar_traits_ex<char16_t> {};
 
 template <>
 struct char_traits<char32_t> : std::_Char_traits<char32_t, unsigned int> {};
