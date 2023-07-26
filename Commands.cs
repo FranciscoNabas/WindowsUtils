@@ -8,6 +8,7 @@ using WindowsUtils.Attributes;
 using WindowsUtils.AccessControl;
 using WindowsUtils.TerminalServices;
 using WindowsUtils.ArgumentCompletion;
+using System.Security;
 
 #pragma warning disable CS8618
 namespace WindowsUtils.Commands
@@ -492,6 +493,9 @@ namespace WindowsUtils.Commands
 
         protected override void BeginProcessing()
         {
+            if (!Utils.IsAdministrator())
+                WriteWarning("This PowerShell process is not elevated. 'Get-ObjectHandle' might return incomplete results due the lack of privileges to open certain processes.");
+
             if (Force && !CloseHandle)
                 throw new ArgumentException("'Force' can only be used with 'CloseHandle'.");
         }
