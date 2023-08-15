@@ -185,7 +185,7 @@ public:
 
     // This function fills the buffer with zeroes, and deallocates it,
     // if deallocate = true. With deallocating only, there is no guarantee
-    // the contents of the string are going to be immediatelly overriten by
+    // the contents of the string are going to be immediately overwritten by
     // something else.
     inline void SecureErase(bool deallocate = true) {
         if (_buffer != NULL) {
@@ -486,7 +486,7 @@ public:
         bool already_inserted = false;
         const _char_type* found_index;
         std::vector<_char_type> buffer;
-        size_t to_repl_length = _traits::length(to_replace);
+        size_t to_replace_length = _traits::length(to_replace);
 
         // Every time the string is found in the buffer we replace it with [replace_with],
         // until _traits::find_str returns NULL.
@@ -501,7 +501,7 @@ public:
             // Adding each character from the start of the buffer to the [found_index] offset.
             for (size_t i = 0; i < output.Length(); i++) {
                 _char_type* current_offset = output._buffer + i + 1;
-                if (current_offset > found_index && current_offset <= found_index + to_repl_length) {
+                if (current_offset > found_index && current_offset <= found_index + to_replace_length) {
                     
                     // Since we are replacing a string with a character, we don't want to replace
                     // all [to_replace] characters with [replace_with].
@@ -534,8 +534,8 @@ public:
         bool already_inserted = false;
         const _char_type* found_index;
         std::vector<_char_type> buffer;
-        size_t to_repl_length = _traits::length(to_replace);
-        size_t repl_with_length = _traits::length(replace_with);
+        size_t to_replace_length = _traits::length(to_replace);
+        size_t replace_with_length = _traits::length(replace_with);
 
         // Every time the string is found in the buffer we replace it with [replace_with],
         // until _traits::find_str returns NULL.
@@ -550,11 +550,11 @@ public:
             // Adding each character from the start of the buffer to the [found_index] offset.
             for (size_t i = 0; i < output.Length(); i++) {
                 _char_type* current_offset = output._buffer + i + 1;
-                if (current_offset > found_index && current_offset <= found_index + to_repl_length) {
+                if (current_offset > found_index && current_offset <= found_index + to_replace_length) {
                     if (!already_inserted) {
 
                         // Same principle of before, but for every character from [replace_with].
-                        for (size_t j = 0; j < repl_with_length; j++) {
+                        for (size_t j = 0; j < replace_with_length; j++) {
                             buffer.push_back(replace_with[j]);
                         }
                         already_inserted = true;
@@ -584,8 +584,8 @@ public:
         bool already_inserted = false;
         const _char_type* found_index;
         std::vector<_char_type> buffer;
-        size_t to_repl_length = _traits::length(to_replace);
-        size_t repl_with_length = replace_with.Length();
+        size_t to_replace_length = _traits::length(to_replace);
+        size_t replace_with_length = replace_with.Length();
 
         // Every time the string is found in the buffer we replace it with [replace_with],
         // until _traits::find_str returns NULL.
@@ -600,11 +600,11 @@ public:
             // Adding each character from the start of the buffer to the [found_index] offset.
             for (size_t i = 0; i < output.Length(); i++) {
                 _char_type* current_offset = output._buffer + i + 1;
-                if (current_offset > found_index && current_offset <= found_index + to_repl_length) {
+                if (current_offset > found_index && current_offset <= found_index + to_replace_length) {
                     if (!already_inserted) {
 
                         // Same principle of before for every character from [replace_with].
-                        for (size_t j = 0; j < repl_with_length; j++) {
+                        for (size_t j = 0; j < replace_with_length; j++) {
                             buffer.push_back(replace_with[j]);
                         }
                         already_inserted = true;
@@ -634,7 +634,7 @@ public:
         bool already_inserted = false;
         const _char_type* found_index;
         std::vector<_char_type> buffer;
-        size_t to_repl_length = to_replace.Length();
+        size_t to_replace_length = to_replace.Length();
         do {
             found_index = _traits::find_str(output._buffer, to_replace._buffer);
             if (found_index == NULL)
@@ -644,7 +644,7 @@ public:
             buffer.clear();
             for (size_t i = 0; i < output.Length(); i++) {
                 _char_type* current_offset = output._buffer + i + 1;
-                if (current_offset > found_index && current_offset <= found_index + to_repl_length) {
+                if (current_offset > found_index && current_offset <= found_index + to_replace_length) {
                     if (!already_inserted) {
                         buffer.push_back(replace_with);
                         already_inserted = true;
@@ -674,8 +674,8 @@ public:
         bool already_inserted = false;
         const _char_type* found_index;
         std::vector<_char_type> buffer;
-        size_t to_repl_length = to_replace.Length();
-        size_t repl_with_length = _traits::length(replace_with);
+        size_t to_replace_length = to_replace.Length();
+        size_t replace_with_length = _traits::length(replace_with);
         do {
             found_index = _traits::find_str(output._buffer, to_replace._buffer);
             if (found_index == NULL)
@@ -685,9 +685,9 @@ public:
             buffer.clear();
             for (size_t i = 0; i < output.Length(); i++) {
                 _char_type* current_offset = output._buffer + i + 1;
-                if (current_offset > found_index && current_offset <= found_index + to_repl_length) {
+                if (current_offset > found_index && current_offset <= found_index + to_replace_length) {
                     if (!already_inserted) {
-                        for (size_t j = 0; j < repl_with_length; j++) {
+                        for (size_t j = 0; j < replace_with_length; j++) {
                             buffer.push_back(replace_with[j]);
                         }
                         already_inserted = true;
@@ -717,8 +717,8 @@ public:
         bool already_inserted = false;
         const _char_type* found_index;
         std::vector<_char_type> buffer;
-        size_t to_repl_length = to_replace.Length();
-        size_t repl_with_length = replace_with.Length();
+        size_t to_replace_length = to_replace.Length();
+        size_t replace_with_length = replace_with.Length();
         do {
             found_index = _traits::find_str(output._buffer, to_replace._buffer);
             if (found_index == NULL)
@@ -728,9 +728,9 @@ public:
             buffer.clear();
             for (size_t i = 0; i < output.Length(); i++) {
                 _char_type* current_offset = output._buffer + i + 1;
-                if (current_offset > found_index && current_offset <= found_index + to_repl_length) {
+                if (current_offset > found_index && current_offset <= found_index + to_replace_length) {
                     if (!already_inserted) {
-                        for (size_t j = 0; j < repl_with_length; j++) {
+                        for (size_t j = 0; j < replace_with_length; j++) {
                             buffer.push_back(replace_with._buffer[j]);
                         }
                         already_inserted = true;
@@ -817,7 +817,7 @@ public:
                     break;
             }
             else {
-                // Cecking if we are at the end of the string.
+                // Checking if we are at the end of the string.
                 if (current_offset >= _buffer + _char_count)
                     break;
 
@@ -878,7 +878,7 @@ public:
                     break;
             }
             else {
-                // Cecking if we are at the end of the string.
+                // Checking if we are at the end of the string.
                 if (current_offset >= _buffer + _char_count)
                     break;
 
