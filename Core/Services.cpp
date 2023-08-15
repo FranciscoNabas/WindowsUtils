@@ -359,9 +359,7 @@ namespace WindowsUtils::Core
 			return GetLastError();
 
 		WWuString displayName(dnameBuffer.get());
-
-		WWuString warningText;
-		warningText.Format(L"Waiting for service '%ws (%ws)' to stop...", displayName, serviceName.GetBuffer());
+		WWuString warningText = WWuString::Format(L"Waiting for service '%ws (%ws)' to stop...", displayName, serviceName.GetBuffer());
 
 		do
 		{
@@ -395,7 +393,7 @@ namespace WindowsUtils::Core
 				if (serviceStatus->dwCurrentState == SERVICE_STOPPED)
 					break;
 
-				warningText.Format(L"Failed to stop service '%ws (%ws)'. Service will be marked to deletion.", displayName, serviceName);
+				warningText = WWuString::Format(L"Failed to stop service '%ws (%ws)'. Service will be marked to deletion.", displayName, serviceName);
 				NativeWriteWarning(context, warningText);
 				break;
 			}

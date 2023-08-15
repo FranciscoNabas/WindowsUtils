@@ -40,6 +40,7 @@
 #pragma comment (lib, "AdvApi32.lib")
 #pragma comment (lib, "Shlwapi.lib")
 #pragma comment (lib, "Version.lib")
+#pragma comment (lib, "PathCch.lib")
 
 // Include list.
 #include <Windows.h>
@@ -61,5 +62,6 @@
 #include <psapi.h>
 #include <new>
 #include <system_error>
+#include <PathCch.h>
 
 #endif //PCH_H

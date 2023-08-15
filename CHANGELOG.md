@@ -12,11 +12,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implemented new system for writing information from unmanaged code.
   - A system using a delegate define in the Wrapper, defined in .NET, and cast to a function pointer in unmanaged code enables calling 'PSCmdlet' methods.
   - A new `CoreCommandBase` class, with a `CmdletContext` class will be responsible for carrying the context to unmanaged code. This is a very common practice in Microsoft's modules.
+- Added `constexpr` routing to vector, map, and smart pointers to make the code cleaner.
+- Added custom freer for smart pointers, allowing to allocate arbitrary sizes.
+- New string template class `WuBaseString`, including `WWuString` for wide strings, and `WuString` for narrow strings. This is probably not a good string implementation, nor does it have
+  a reason to exist, but I had fun. Plus it brings some functionalities from .NET's `System.String`.
 
 ### Changed
 
 - `Remove-Service`
   - When `Stop` is used, the Cmdlet doesn't time out anymore. Instead, it writes warnings, much like when using `Stop-Service.`
+- `Get-ObjectHandle`
+  - The Cmdlet shows a warning when the process running is not elevated. If the process is not elevated, some handle information
+    might be missing due lack of privileges to query certain processes.
+- Replaced all explicit memory allocations with smart pointers. It was about time.
+- Replaced all C-style strings with the new `WuString`, and its utility methods.
 
 ### Bugs
 

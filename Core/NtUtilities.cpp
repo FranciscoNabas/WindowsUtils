@@ -237,7 +237,7 @@ namespace WindowsUtils::Core
 		PSYSTEM_PROCESS_INFORMATION systemProcInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
 		do
 		{
-			if (systemProcInfo->UniqueProcessId == reinterpret_cast<HANDLE>(processId))
+			if (systemProcInfo->UniqueProcessId == reinterpret_cast<HANDLE>((UINT_PTR)processId))
 			{
 				size_t imgNameSize = wcslen(systemProcInfo->ImageName.Buffer) + 1;
 				if (imgNameSize > 1)

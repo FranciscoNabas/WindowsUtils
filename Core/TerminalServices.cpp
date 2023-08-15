@@ -238,7 +238,7 @@ namespace WindowsUtils::Core
 				computerSession->LastInputTime = infoBuffer->LastInputTime;
 
 			if (wcslen(infoBuffer->Domain) > 1)
-				computerSession->UserName.Format(L"%ws\\%ws", infoBuffer->Domain, infoBuffer->UserName);
+				computerSession->UserName = WWuString::Format(L"%ws\\%ws", infoBuffer->Domain, infoBuffer->UserName);
 			else
 				computerSession->UserName = infoBuffer->UserName;
 		}

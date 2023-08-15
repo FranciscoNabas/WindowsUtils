@@ -25,6 +25,10 @@ Debug/**
 */x64/**
 x64/**
 !Core/Release
+Core/DawnCache
+Core/Debug
+Core/GPUCache
+Core/debug.log
 
 # Package
 packages/

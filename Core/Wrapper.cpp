@@ -1041,6 +1041,13 @@ namespace WindowsUtils::Core
 		return _nativeContext;
 	}
 
+	UInt64 Wrapper::GetCabinetTotalUncompressedSize(String^ filePath) {
+		WWuString wrapped_path = GetWideStringFromSystemString(filePath);
+		WuCabinet cabinet(wrapped_path);
+
+		return cabinet.TotalUncompressedSize();
+	}
+
 	Exception^ FDIErrorToException(FDIERROR err)
 	{
 		switch (err)

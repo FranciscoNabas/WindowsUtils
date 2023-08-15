@@ -33,8 +33,12 @@ namespace WindowsUtils
     {
         internal string Name { get; set; }
         internal uint Id { get; set; }
-        protected Enumeration(uint id, string name) => (Id, Name) = (id, name);
-        
+        protected Enumeration(uint id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
+
         public override string ToString() => Name;
         
         internal static IEnumerable<T> GetAll<T>() where T: Enumeration =>
@@ -62,7 +66,7 @@ namespace WindowsUtils
 
         public override int GetHashCode()
         {
-            return (Name, Id).GetHashCode();
+            return Name.GetHashCode();
         }
 
         public int CompareTo(object? other)
@@ -288,13 +292,28 @@ namespace WindowsUtils
         public string ComputerName { get; }
 
         public DotNetVersionInfo(long minVersion, Version version, DotNetEditionInfo edition)
-            => (_release, Version, Edition, ComputerName) = (minVersion, version, edition, Environment.MachineName);
+        {
+            _release = minVersion;
+            Version = version;
+            Edition = edition;
+            ComputerName = Environment.MachineName;
+        }
 
         public DotNetVersionInfo(long minVersion, Version version, DotNetEditionInfo edition, string computerName)
-            => (_release, Version, Edition, ComputerName) = (minVersion, version, edition, computerName);
+        {
+            _release = minVersion;
+            Version = version;
+            Edition = edition;
+            ComputerName = Environment.MachineName;
+        }
 
         public DotNetVersionInfo(Version version, DotNetEditionInfo edition)
-            => (_release, Version, Edition, ComputerName) = (0, version, edition, Environment.MachineName);
+        {
+            _release = 0;
+            Version = version;
+            Edition = edition;
+            ComputerName = Environment.MachineName;
+        }
 
         public static DotNetVersionInfo GetInfoFromRelease(long release)
         {
@@ -350,9 +369,17 @@ namespace WindowsUtils
         public string ComputerName { get; }
 
         public DotNetInstalledUpdateInfo(string version, string[] installedUpdates)
-            => (ComputerName, Version, InstalledUpdates) = (Environment.MachineName, version, installedUpdates);
+        {
+            ComputerName = Environment.MachineName;
+            Version = version;
+            InstalledUpdates = installedUpdates;
+        }
 
         public DotNetInstalledUpdateInfo(string computerName, string version, string[] installedUpdates)
-            => (ComputerName, Version, InstalledUpdates) = (computerName, version, installedUpdates);
+        {
+            ComputerName = computerName;
+            Version = version;
+            InstalledUpdates = installedUpdates;
+        }
     }
 }

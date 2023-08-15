@@ -19,22 +19,22 @@ namespace WindowsUtils::Core
 		typedef struct _MAPPED_PROGRESS_DATA
 		{
 			WWuString Activity;
-			INT ActivityId;
+			int ActivityId;
 			WWuString CurrentOperation;
-			INT ParentActivityId;
-			DWORD PercentComplete;
+			int ParentActivityId;
+			WORD PercentComplete;
 			PROGRESS_RECORD_TYPE RecordType;
-			INT SecondsRemaining;
+			int SecondsRemaining;
 			WWuString StatusDescription;
 
 			_MAPPED_PROGRESS_DATA(
 				const WWuString& activity,
-				INT activityId,
+				int activityId,
 				const WWuString& currOperation,
-				INT parentActId,
-				DWORD percentComplete,
+				int parentActId,
+				WORD percentComplete,
 				PROGRESS_RECORD_TYPE recType,
-				INT secRemaining,
+				int secRemaining,
 				const WWuString& status
 			);
 

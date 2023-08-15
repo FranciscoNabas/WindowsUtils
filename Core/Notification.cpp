@@ -6,12 +6,12 @@ namespace WindowsUtils::Core
 {
 	Notification::_MAPPED_PROGRESS_DATA::_MAPPED_PROGRESS_DATA(
 		const WWuString& activity,
-		INT activityId,
+		int activityId,
 		const WWuString& currOperation,
-		INT parentActId,
-		DWORD percentComplete,
+		int parentActId,
+		WORD percentComplete,
 		PROGRESS_RECORD_TYPE recType,
-		INT secRemaining,
+		int secRemaining,
 		const WWuString& status
 	) : Activity(activity), ActivityId(activityId), CurrentOperation(currOperation), ParentActivityId(parentActId),
 			PercentComplete(percentComplete), RecordType(recType), SecondsRemaining(secRemaining), StatusDescription(status)

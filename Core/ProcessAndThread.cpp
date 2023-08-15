@@ -46,12 +46,25 @@ namespace WindowsUtils::Core
 					DWORD maxPath = MAX_PATH;
 					wuunique_ha_ptr<WCHAR> imgNameBuffer = make_wuunique_ha<WCHAR>(MAX_PATH * 2);
 
-					if (!QueryFullProcessImageName(hProcess, 0, imgNameBuffer.get(), &maxPath))
-						return GetLastError();
+					if (QueryFullProcessImageName(hProcess, 0, imgNameBuffer.get(), &maxPath)) {
+						objHandle->ImagePath = imgNameBuffer.get();
+						objHandle->Name = objHandle->ImagePath;
+						PathStripPathW(objHandle->Name.GetBuffer());
+
+						for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName }) {
+							WWuString value;
+							GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
+							objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
+						}
+					}
 
 					if (wcslen(imgNameBuffer.get()) == 0)
 					{
 						result = GetProcessImageName(objHandle->ProcessId, objHandle->Name);
+						if (result != 0) {
+							// Break here.
+							result;
+						}
 						if (objHandle->Name.Length() > 0)
 						{
 							objHandle->ImagePath = objHandle->Name;
@@ -128,6 +141,10 @@ namespace WindowsUtils::Core
 								objHandle->Name == L"Registry")
 							{
 								result = GetEnvVariable(L"windir", objHandle->ImagePath);
+								if (result != 0) {
+									// Break here.
+									result;
+								}
 								DWERRORCHECKV(result);
 
 								objHandle->ImagePath += L"\\System32\\ntoskrnl.exe";
@@ -193,8 +210,7 @@ namespace WindowsUtils::Core
 		if (!VerQueryValue(buffer.get(), L"\\VarFileInfo\\Translation", (LPVOID*)&codePage, &len))
 			return GetLastError();
 
-		WWuString text;
-		text.Format(L"\\StringFileInfo\\%04x%04x\\", codePage[0], codePage[1]);
+		WWuString text = WWuString::Format(L"\\StringFileInfo\\%04x%04x\\", codePage[0], codePage[1]);
 		text += propertyName;
 
 		if (VerQueryValue(buffer.get(), text.GetBuffer(), (LPVOID*)&desc, &len))

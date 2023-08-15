@@ -3,6 +3,8 @@
 
 namespace WindowsUtils::Core
 {
+	using __uint64 = unsigned __int64;
+
 	template <class T>
 	using wuvector = std::vector<T>;
 

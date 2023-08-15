@@ -22,14 +22,14 @@ Struct WindowsUtils.Core.Notification+_MAPPED_PROGRESS_DATA: AutoLayout, AnsiCla
   :System.ValueType
 Struct WindowsUtils.Core.Notification+_NATIVE_CONTEXT: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+Struct WindowsUtils.Core.IO: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
 Struct WindowsUtils.Core.Containers: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Containers+_ARCHIVE_FILE_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
   :System.Enum
   Fields:
     Int32 value__ : Public, SpecialName, RTSpecialName
-Struct WindowsUtils.Core.FileSystem: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
-  :System.ValueType
 Struct WindowsUtils.Core.ProcessAndThread: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.ProcessAndThread+_VERSION_INFO_PROPERTY: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
@@ -196,6 +196,7 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetStringArrayFromDoubleNullTerminatedCStyleArray(IntPtr, UInt32 IsLong): PrivateScope, Public, HideBySig
     GetStringArrayFromDoubleNullTerminatedCStyleArray(Char* IsConst IsConst, UInt32 IsLong): PrivateScope, Public, HideBySig
     LogonAndImpersonateUser(String, SecureString): PrivateScope, Public, HideBySig
+    GetCabinetTotalUncompressedSize(String): PrivateScope, Public, HideBySig
 Class WindowsUtils.Core.NativeExceptionBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
   :System.Exception
     Void .ctor(Int32, System.String, System.Exception): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName

@@ -335,6 +335,10 @@ namespace WindowsUtils::Core
 		array<String^>^ GetStringArrayFromDoubleNullTerminatedCStyleArray(IntPtr nativeArray, DWORD dwszBytes);
 		void LogonAndImpersonateUser(String^ userName, SecureString^ password);
 
+		// Containers
+		// Testing WuCabinet.
+		UInt64 GetCabinetTotalUncompressedSize(String^ filePath);
+
 	private:
 		Utilities* utlptr;
 		TerminalServices* wtsptr;

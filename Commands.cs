@@ -546,7 +546,7 @@ namespace WindowsUtils.Commands
                         if (result is not null)
                         {
                             WriteWarning("Failed to remove handles for the processes below.");
-                            result.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+                            result.OrderBy(p =>p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
                         }
                     }
                     catch (NativeExceptionBase ex)
@@ -560,7 +560,7 @@ namespace WindowsUtils.Commands
                 try
                 {
                     ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
-                    result?.ToList().ForEach(x => WriteObject((ObjectHandle)x));
+                    result?.OrderBy(p => p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
                 }
                 catch (NativeExceptionBase ex)
                 {

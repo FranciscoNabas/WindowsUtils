@@ -130,7 +130,7 @@ namespace WindowsUtils::Core
 						(DWORD)messageBlock[block].OffsetToEntries + offset);
 
 				tableEntryOut.Id = id;
-				tableEntryOut.Message.Format(L"%ws", tableEntry->Text);
+				tableEntryOut.Message = WWuString::Format(L"%ws", tableEntry->Text);
 
 				messageTableOut->push_back(tableEntryOut);
 				offset += tableEntry->Length;
@@ -250,7 +250,7 @@ namespace WindowsUtils::Core
 		if (bufferSize == 0)
 			return ERROR_FILE_NOT_FOUND;
 
-		DWORD bytesNeeded = bufferSize * 2;
+		size_t bytesNeeded = bufferSize * 2;
 		wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
 		
 		_wgetenv_s(&bufferSize, buffer.get(), bufferSize, variableName.GetBuffer());

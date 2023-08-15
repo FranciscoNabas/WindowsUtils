@@ -54,40 +54,34 @@ namespace WindowsUtils::Core
 	using wushared_ptr = std::shared_ptr<T>;
 
 	template <class T>
-	[[nodiscard]]
-	wuunique_ptr<T> make_wuunique() {
+	_NODISCARD wuunique_ptr<T> make_wuunique() {
 		return std::make_unique<T>();
 	}
-	
+
 	template <class T, class... Args>
-	[[nodiscard]]
-	wuunique_ptr<T> make_wuunique(Args&&... args) {
-		return std::make_unique<T>(args);
+	_NODISCARD wuunique_ptr<T> make_wuunique(Args&&... args) {
+		return std::make_unique<T>(std::forward<Args>(args)...);
 	}
-	
+
 	template <class T>
-	[[nodiscard]]
-	wuunique_ha_ptr<T> make_wuunique_ha(size_t size) noexcept
-	{
+	_NODISCARD wuunique_ha_ptr<T> make_wuunique_ha(size_t size) noexcept {
 		return wuunique_ha_ptr<T>{
 			static_cast<T*>(HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size))
 		};
 	}
 
 	template <class T, class... Args>
-	wushared_ptr<T> make_wushared(Args&&... args) {
-		return std::make_shared<T>(args);
+	_NODISCARD wushared_ptr<T> make_wushared(Args&&... args) {
+		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
 
 	template <class T>
-	wushared_ptr<T> make_wushared() {
+	_NODISCARD wushared_ptr<T> make_wushared() {
 		return std::make_shared<T>();
 	}
 
 	template <class T>
-	[[nodiscard]]
-	wushared_ptr<T> make_wushared_ha(size_t size) noexcept
-	{
+	_NODISCARD wushared_ptr<T> make_wushared_ha(size_t size) noexcept {
 		return wushared_ptr<T> {
 			std::shared_ptr<T>(
 				static_cast<T*>(HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size)),
