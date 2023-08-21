@@ -3003,14 +3003,19 @@
   "packageFolders": {
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\francisco.nabas\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.7.0",
     "restore": {
       "projectUniqueName": "C:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
+      "projectUniqueName": "C:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
       "projectName": "WindowsUtils",
       "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
+      "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
       "packagesPath": "C:\\Users\\francisco.nabas\\.nuget\\packages\\",
+      "outputPath": "C:\\LocalRepositories\\.WindowsUtils\\obj\\",
       "outputPath": "C:\\LocalRepositories\\.WindowsUtils\\obj\\",
       "projectStyle": "PackageReference",
       "crossTargeting": true,
@@ -3019,6 +3024,7 @@
       ],
       "configFilePaths": [
         "C:\\Users\\francisco.nabas\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -3044,6 +3050,9 @@
         "warnAsError": [
           "NU1605"
         ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "default"
       },
       "restoreAuditProperties": {
         "enableAudit": "default"
@@ -3146,11 +3155,7 @@
         "assetTargetFallback": true,
         "warn": true,
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100-preview.7.23376.3\\RuntimeIdentifierGraph.json"
-      }
-    },
-    "runtimes": {
-      "win-x64": {
-        "#import": []
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100-preview.7.23376.3\\RuntimeIdentifierGraph.json"
       }
     }
   }
