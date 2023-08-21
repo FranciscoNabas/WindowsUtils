@@ -1323,11 +1323,12 @@ namespace WindowsUtils.Commands
         }
     }
 
-    [Cmdlet(VerbsData.Expand, "ArchiveFile")]
-    public class ExpandArchiveFileCommand : CoreCommandBase
+    [Cmdlet(VerbsData.Expand, "Cabinet")]
+    public class ExpandCabinetCommand : CoreCommandBase
     {
         private readonly Wrapper _unwrapper = new();
         private readonly List<string> _validPaths = new();
+        private readonly List<string> _processedCabinetPaths = new();
         
         private string[] _path;
         private string _destination;
@@ -1422,7 +1423,14 @@ namespace WindowsUtils.Commands
                 return;
 
             foreach (string path in _validPaths)
-                _unwrapper.ExpandArchiveFile(path, Destination, ArchiveFileType.Cabinet, (CmdletContextBase)CmdletContext);
+            {
+                WuManagedCabinet cabinet = new(path, (CmdletContextBase)CmdletContext);
+                if (!_processedCabinetPaths.Contains(cabinet.BundleCabinetPaths[0]))
+                {
+                    _processedCabinetPaths.AddRange(cabinet.BundleCabinetPaths);
+                    _unwrapper.ExpandArchiveFile(cabinet, Destination, ArchiveFileType.Cabinet);
+                }
+            }
         }
     }
 }

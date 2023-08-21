@@ -67,6 +67,29 @@ namespace WindowsUtils::Core
 	ResourceMessageTableCore::~ResourceMessageTableCore() { delete wrapper; }
 	ResourceMessageTableCore::!ResourceMessageTableCore() { delete wrapper; }
 
+	// Managed cabinet wrapper
+	WuManagedCabinet::WuManagedCabinet(String^ filePath, CmdletContextBase^ context) {
+		_bundleCabinetPaths = gcnew List<String^>();
+		
+		WWuString wrappedFilePath = GetWideStringFromSystemString(filePath);
+		_nativeCabinet = new WuCabinet(wrappedFilePath, context->GetUnderlyingContext());
+
+		for (const CABINET_PROCESSING_INFO& cabInfo : _nativeCabinet->GetCabinetInfo()) {
+			_bundleCabinetPaths->Add(gcnew String(cabInfo.Path.GetBuffer()));
+		}
+	}
+
+	void WuManagedCabinet::ExpandCabinetFile(String^ destination) {
+		WWuString wrappedDestination = GetWideStringFromSystemString(destination);
+		
+		WuResult result = _nativeCabinet->ExpandCabinetFile(wrappedDestination);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
+	}
+
+	WuManagedCabinet::~WuManagedCabinet() { }
+	WuManagedCabinet::!WuManagedCabinet() { }
+
 	/*========================================
 	==		Wrapper function definition		==
 	==========================================*/
@@ -413,17 +436,6 @@ namespace WindowsUtils::Core
 		WWuString wuSddl = GetWideStringFromSystemString(sddl);
 
 		WuResult result = svcptr->SetServiceSecurity(wuServiceName, L"", wuSddl, audit, changeOwner);
-		if (result.Result != ERROR_SUCCESS)
-			throw gcnew NativeException(result);
-	}
-
-	// Expand-File
-	void Wrapper::ExpandFile(String^ fileFullName, String^ destination, ArchiveFileType fileType, CmdletContextBase^ context)
-	{
-		WWuString wrappedPath = GetWideStringFromSystemString(fileFullName);
-		WWuString wrappedDestination = GetWideStringFromSystemString(destination);
-
-		WuResult result = ctnptr->ExpandArchiveFile(wrappedPath, wrappedDestination, (Containers::ARCHIVE_FILE_TYPE)fileType, context->GetUnderlyingContext());
 		if (result.Result != ERROR_SUCCESS)
 			throw gcnew NativeException(result);
 	}
@@ -913,13 +925,14 @@ namespace WindowsUtils::Core
 		return output;
 	}
 
-	void Wrapper::ExpandArchiveFile(String^ filePath, String^ destination, ArchiveFileType fileType, CmdletContextBase^ context) {
-		WWuString wrappedPath = GetWideStringFromSystemString(filePath);
-		WWuString wrappedDestination = GetWideStringFromSystemString(destination);
-
-		WuResult result = ctnptr->ExpandArchiveFile(wrappedPath, wrappedDestination, (Containers::ARCHIVE_FILE_TYPE)fileType, context->GetUnderlyingContext());
-		if (result.Result != ERROR_SUCCESS)
-			throw gcnew NativeException(result);
+	void Wrapper::ExpandArchiveFile(Object^ archiveObject, String^ destination, ArchiveFileType fileType) {
+		switch (fileType) {
+			case WindowsUtils::Core::ArchiveFileType::Cabinet:
+			{
+				WuManagedCabinet^ cabinet = (WuManagedCabinet^)archiveObject;
+				cabinet->ExpandCabinetFile(destination);
+			} break;
+		}
 	}
 
 	// Utilities

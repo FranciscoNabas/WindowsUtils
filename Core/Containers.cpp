@@ -94,6 +94,10 @@ namespace WindowsUtils::Core {
 		return _isUnicode;
 	}
 
+	const wuvector<CABINET_PROCESSING_INFO>& WuCabinet::GetCabinetInfo() {
+		return _processedCabinet;
+	}
+
 	void WuCabinet::GetCabinetTotalUncompressedSize(const WWuString& filePath) {
 		__uint64 totalSize = 0;
 		HRESULT result = S_OK;
@@ -301,20 +305,6 @@ namespace WindowsUtils::Core {
 				return &cabInfo;
 
 		return NULL;
-	}
-
-	WuResult Containers::ExpandArchiveFile(const WWuString& filePath, const WWuString& destination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context) {
-		WuResult result;
-		
-		switch (fileType) {
-			case ARCHIVE_FILE_TYPE::Cabinet:
-			{
-				WuCabinet cabinet(filePath, context);
-				result = cabinet.ExpandCabinetFile(destination);
-			} break;
-		}
-
-		return result;
 	}
 
 	WuResult WuCabinet::ExpandCabinetFile(const WWuString& destination) {

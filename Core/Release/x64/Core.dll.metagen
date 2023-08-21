@@ -157,6 +157,16 @@ Class WindowsUtils.Core.TokenPrivilege: AutoLayout, AnsiClass, Class, Public, Be
     get_PrivilegeName(): PrivateScope, Public, HideBySig, SpecialName
     get_Attributes(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
+Class WindowsUtils.Core.WuManagedCabinet: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+    Void .ctor(System.String, WindowsUtils.Core.CmdletContextBase): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Interfaces:
+    System.IDisposable
+  Properties:
+    System.Collections.Generic.List`1[System.String] BundleCabinetPaths 'get ' : 
+  Methods:
+    get_BundleCabinetPaths(): PrivateScope, Public, HideBySig, SpecialName
+    ExpandCabinetFile(String): PrivateScope, Public, HideBySig
+    Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
 Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Methods:
@@ -177,7 +187,6 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetServiceSecurityDescriptorString(String, String, Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     SetServiceSecurity(String, String, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
     SetServiceSecurity(String, String, String, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal)): PrivateScope, Public, HideBySig
-    ExpandFile(String, String, ArchiveFileType, CmdletContextBase): PrivateScope, Public, HideBySig
     GetRegistryValue(IntPtr, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(RegistryHive, String, String): PrivateScope, Public, HideBySig
     GetRegistryValue(String, RegistryHive, String, String): PrivateScope, Public, HideBySig
@@ -196,7 +205,7 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetStringArrayFromDoubleNullTerminatedCStyleArray(IntPtr, UInt32 IsLong): PrivateScope, Public, HideBySig
     GetStringArrayFromDoubleNullTerminatedCStyleArray(Char* IsConst IsConst, UInt32 IsLong): PrivateScope, Public, HideBySig
     LogonAndImpersonateUser(String, SecureString): PrivateScope, Public, HideBySig
-    ExpandArchiveFile(String, String, ArchiveFileType, CmdletContextBase): PrivateScope, Public, HideBySig
+    ExpandArchiveFile(Object, String, ArchiveFileType): PrivateScope, Public, HideBySig
 Class WindowsUtils.NativeException: AutoLayout, AnsiClass, Class, Public, Serializable, BeforeFieldInit
   :System.Exception
     Void .ctor(Int32, System.String, System.Exception): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName

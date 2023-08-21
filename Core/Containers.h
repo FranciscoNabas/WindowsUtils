@@ -51,12 +51,9 @@ namespace WindowsUtils::Core {
 		/*=========================================
 		==		 Function identification		 ==
 		===========================================*/
-
-		// Expand-File
-		WuResult ExpandArchiveFile(const WWuString& filePath, const WWuString& destination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context);
 	};
 
-	// The original ideia was using this object as a singleton, but due
+	// The original idea was using this object as a singleton, but due
 	// the nature of the PowerShell process, this object would transcend
 	// across cmdlet calls.
 	// In this implementation we create it at function call, and pass it
@@ -67,6 +64,7 @@ namespace WindowsUtils::Core {
 	public:
 		const bool IsCurrentUnicode() const;
 		WuResult ExpandCabinetFile(const WWuString& destination);
+		const wuvector<CABINET_PROCESSING_INFO>& GetCabinetInfo();
 		INT_PTR NotifyCallback(FDINOTIFICATIONTYPE fdint, PFDINOTIFICATION pfdin);
 
 		WuCabinet(const WWuString& filePath, Notification::PNATIVE_CONTEXT context);

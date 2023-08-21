@@ -262,6 +262,27 @@ namespace WindowsUtils::Core
 	};
 	// END TEST
 
+	public ref class WuManagedCabinet {
+	public:
+		property List<String^>^ BundleCabinetPaths {
+			List<String^>^ get() {
+				return _bundleCabinetPaths;
+			}
+		}
+
+		void ExpandCabinetFile(String^ destination);
+
+		WuManagedCabinet(String^ filePath, CmdletContextBase^ context);
+		~WuManagedCabinet();
+
+	protected:
+		!WuManagedCabinet();
+
+	private:
+		List<String^>^ _bundleCabinetPaths;
+		WuCabinet* _nativeCabinet;
+	};
+
 	/*=========================================
 	==	  Wrapper function identification	 ==
 	===========================================*/
@@ -310,9 +331,6 @@ namespace WindowsUtils::Core
 		void SetServiceSecurity(String^ serviceName, String^ computerName, String^ sddl, bool audit, bool changeOwner);
 		void SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner);
 
-		// Expand-File
-		void ExpandFile(String^ fileFullName, String^ destination, ArchiveFileType fileType, CmdletContextBase^ context);
-
 		// Registry operation
 		Object^ GetRegistryValue(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName);
 		Object^ GetRegistryValue(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName);
@@ -338,7 +356,7 @@ namespace WindowsUtils::Core
 		void LogonAndImpersonateUser(String^ userName, SecureString^ password);
 
 		// Containers
-		void ExpandArchiveFile(String^ filePath, String^ destination, ArchiveFileType fileType, CmdletContextBase^ context);
+		void ExpandArchiveFile(Object^ archiveObject, String^ destination, ArchiveFileType fileType);
 
 	private:
 		Utilities* utlptr;
