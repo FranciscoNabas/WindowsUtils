@@ -9,7 +9,7 @@ namespace WindowsUtils::Core
 	==========================================*/
 
 	// Invoke-RemoteMessage
-	DWORD TerminalServices::SendMessage(
+	WuResult TerminalServices::SendMessage(
 		WWuString& title,													// The message box title.
 		WWuString& message,													// The message text.
 		DWORD style,														// A bitwise-or combination of UINT-defined MessageBox styles (See function MessageBox).
@@ -19,13 +19,13 @@ namespace WindowsUtils::Core
 		wuvector<TerminalServices::WU_MESSAGE_RESPONSE>* responseList,		// A vector to receive the message responses.
 		HANDLE hServer														// A handle to a WTS session.
 	) {
-		DWORD result = ERROR_SUCCESS;
+		DWORD dwResult = ERROR_SUCCESS;
 
 		for (DWORD dwSession : *sessionIdList)
 		{
 			WU_MESSAGE_RESPONSE response;
 
-			if (!::WTSSendMessageW(
+			if (!WTSSendMessageW(
 				hServer,
 				dwSession,
 				title.GetBuffer(),
@@ -38,17 +38,18 @@ namespace WindowsUtils::Core
 				wait
 			))
 			{
-				result = ::GetLastError();
+				dwResult = GetLastError();
+				
 				// We don't want to break if the session is not found, or cannot receive messages
-				if (ERROR_FILE_NOT_FOUND != result)
-					return result;
+				if (dwResult != ERROR_FILE_NOT_FOUND)
+					return WuResult(dwResult, __FILEW__, __LINE__);
 				else
-					result = ERROR_SUCCESS;
+					dwResult = ERROR_SUCCESS;
 			}
 			if (dwSession == WTS_CURRENT_SESSION)
 			{
 				DWORD sessid;
-				::ProcessIdToSessionId(GetCurrentProcessId(), &sessid);
+				ProcessIdToSessionId(GetCurrentProcessId(), &sessid);
 				response.SessionId = sessid;
 			}
 			else
@@ -57,10 +58,10 @@ namespace WindowsUtils::Core
 			responseList->push_back(response);
 		}
 		
-		return result;
+		return WuResult();
 	}
 
-	DWORD TerminalServices::SendMessage(
+	WuResult TerminalServices::SendMessage(
 		WWuString& title,													// The message box title.
 		WWuString& message,													// The message text.
 		DWORD style,														// A bitwise-or combination of UINT-defined MessageBox styles (See function MessageBox).
@@ -69,12 +70,12 @@ namespace WindowsUtils::Core
 		wuvector<TerminalServices::WU_MESSAGE_RESPONSE>* responseList,		// A vector to receive the message responses.
 		HANDLE hServer														// A handle to a WTS session.
 	) {
-		DWORD result = ERROR_SUCCESS;
+		DWORD dwResult = ERROR_SUCCESS;
 		DWORD sessionCount = 0;
 		PWTS_SESSION_INFOW sessionInfo;
 
-		if (!::WTSEnumerateSessionsW(hServer, 0, 1, &sessionInfo, &sessionCount))
-			return ::GetLastError();
+		if (!WTSEnumerateSessionsW(hServer, 0, 1, &sessionInfo, &sessionCount))
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 
 		for (DWORD i = 0; i < sessionCount; i++)
 		{
@@ -83,7 +84,7 @@ namespace WindowsUtils::Core
 			// Session 0 is not an interactive session
 			if (sessionInfo[i].SessionId != 0)
 			{
-				if (!::WTSSendMessageW(
+				if (!WTSSendMessageW(
 					hServer,
 					sessionInfo[i].SessionId,
 					title.GetBuffer(),
@@ -96,15 +97,16 @@ namespace WindowsUtils::Core
 					wait
 				))
 				{
-					result = ::GetLastError();
+					dwResult = GetLastError();
+					
 					// We don't want to break if the session is not found, or cannot receive messages
-					if (ERROR_FILE_NOT_FOUND != result)
+					if (dwResult != ERROR_FILE_NOT_FOUND)
 					{
 						WTSFreeMemory(sessionInfo);
-						return result;
+						return WuResult(dwResult, __FILEW__, __LINE__);
 					}
 					else
-						result = ERROR_SUCCESS;
+						dwResult = ERROR_SUCCESS;
 				}
 
 				response.SessionId = sessionInfo[i].SessionId;
@@ -114,23 +116,24 @@ namespace WindowsUtils::Core
 		
 		WTSFreeMemory(sessionInfo);
 
-		return result;
+		return WuResult();
 	}
 
 	// Get-ComputerSession
-	DWORD TerminalServices::GetEnumeratedSession(
+	WuResult TerminalServices::GetEnumeratedSession(
 		wuvector<TerminalServices::WU_COMPUTER_SESSION>* sessionInfoList,		// A vector with the output computer session data.
 		HANDLE hServer = WTS_CURRENT_SERVER_HANDLE,								// A handle to a WTS server session.
 		BOOL activeOnly = FALSE,												// Returns only sessions with SessionState = Active.
 		BOOL includeSystemSession = FALSE										// Includes sessions without an assigned user name.
 	)
 	{
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
+		DWORD dwResult = ERROR_SUCCESS;
 		PWTS_SESSION_INFOW sessionInfo;
 		DWORD sessionCount;
 
-		if (!::WTSEnumerateSessionsW(hServer, 0, 1, &sessionInfo, &sessionCount))
-			return GetLastError();
+		if (!WTSEnumerateSessionsW(hServer, 0, 1, &sessionInfo, &sessionCount))
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 
 		switch (activeOnly)
 		{
@@ -142,7 +145,7 @@ namespace WindowsUtils::Core
 					std::wstring tits = L"Huge titties.";
 					TerminalServices::WU_COMPUTER_SESSION computerSession;
 					result = GetSessionOutput(&computerSession, hServer, sessionInfo[i]);
-					if (ERROR_SUCCESS != result)
+					if (result.Result != ERROR_SUCCESS)
 						goto CLEANUP;
 
 					sessionInfoList->push_back(computerSession);
@@ -158,7 +161,7 @@ namespace WindowsUtils::Core
 				{
 					TerminalServices::WU_COMPUTER_SESSION computerSession;
 					result = GetSessionOutput(&computerSession, hServer, sessionInfo[i]);
-					if (ERROR_SUCCESS != result)
+					if (result.Result != ERROR_SUCCESS)
 						goto CLEANUP;
 
 					sessionInfoList->push_back(computerSession);
@@ -170,7 +173,7 @@ namespace WindowsUtils::Core
 				{
 					TerminalServices::WU_COMPUTER_SESSION computerSession;
 					result = GetSessionOutput(&computerSession, hServer, sessionInfo[i]);
-					if (ERROR_SUCCESS != result)
+					if (result.Result != ERROR_SUCCESS)
 						goto CLEANUP;
 
 					if (!WWuString::IsNullOrEmpty(computerSession.UserName))
@@ -188,16 +191,16 @@ namespace WindowsUtils::Core
 	}
 
 	// Disconnect-Session
-	DWORD TerminalServices::DisconnectSession(
+	WuResult TerminalServices::DisconnectSession(
 		HANDLE hServer = WTS_CURRENT_SERVER_HANDLE,		// A handle to a WTS server session.
 		DWORD sessionId = WTS_CURRENT_SESSION,			// The session to disconnect.
 		BOOL wait = FALSE								// Wait for the logoff operation to finish.
 	)
 	{
-		if (!::WTSLogoffSession(hServer, sessionId, wait))
-			return GetLastError();
+		if (!WTSLogoffSession(hServer, sessionId, wait))
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 
-		return ERROR_SUCCESS;
+		return WuResult();
 	}
 
 	/*========================================
@@ -208,14 +211,13 @@ namespace WindowsUtils::Core
 	* Helper function to get extra WTS session information.
 	* There is a known bug with 'WTSEnumerateSessionsEx', and 'WTSEnumerateSessions' does not bring all the information we want.
 	*/
-	DWORD GetSessionOutput(TerminalServices::PWU_COMPUTER_SESSION computerSession, HANDLE hServer, const WTS_SESSION_INFO& sessionInfo)
+	WuResult GetSessionOutput(TerminalServices::PWU_COMPUTER_SESSION computerSession, HANDLE hServer, const WTS_SESSION_INFO& sessionInfo)
 	{
-		DWORD result = ERROR_SUCCESS;
 		PWTSINFOW infoBuffer = NULL;
 		DWORD bytesNeeded;
 
-		if (!::WTSQuerySessionInformationW(hServer, sessionInfo.SessionId, WTSSessionInfo, (LPWSTR*)&infoBuffer, &bytesNeeded) || NULL == infoBuffer)
-			return ::GetLastError();
+		if (!WTSQuerySessionInformationW(hServer, sessionInfo.SessionId, WTSSessionInfo, (LPWSTR*)&infoBuffer, &bytesNeeded) || NULL == infoBuffer)
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 
 		computerSession->SessionName = infoBuffer->WinStationName;
 		computerSession->SessionId = sessionInfo.SessionId;
@@ -228,7 +230,7 @@ namespace WindowsUtils::Core
 			DWORD bufferSize = UNLEN;
 
 			if (FALSE == GetUserNameW(unameBuff.get(), &bufferSize))
-				return ::GetLastError();
+				return WuResult(GetLastError(), __FILEW__, __LINE__);
 
 			WWuString currentProcUser(unameBuff.get());
 
@@ -246,8 +248,8 @@ namespace WindowsUtils::Core
 			computerSession->LastInputTime = infoBuffer->LastInputTime;
 
 		if (NULL != infoBuffer)
-			::WTSFreeMemory(infoBuffer);
+			WTSFreeMemory(infoBuffer);
 
-		return result;
+		return WuResult();
 	}
 }

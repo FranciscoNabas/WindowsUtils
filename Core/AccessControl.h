@@ -1,6 +1,7 @@
 #pragma once
 #pragma unmanaged
 
+#include "Common.h"
 #include "String.h"
 #include "Expressions.h"
 #include "MemoryManagement.h"
@@ -14,7 +15,7 @@ namespace WindowsUtils::Core
     {
     public:
 
-        DWORD static GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES tokenPrivileges);
-        DWORD static AdjustCurrentTokenPrivilege(wuvector<WWuString>* spvlpPrivilegeNameList, const DWORD dwAttributes);
+        WuResult static GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES tokenPrivileges);
+        WuResult static AdjustCurrentTokenPrivilege(wuvector<WWuString>* spvlpPrivilegeNameList, const DWORD dwAttributes);
     };
 }

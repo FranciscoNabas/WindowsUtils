@@ -222,23 +222,29 @@ namespace WindowsUtils
 
     internal sealed class ProgressMappedShare : MemoryMappedShare
     {
-        private static readonly ProgressMappedShare? _instance;
+        private static ProgressMappedShare? _instance;
 
         private ProgressMappedShare()
             : base(409600, "WuProgressInfoShare") { }
 
         internal static ProgressMappedShare GetShare()
-            => _instance is null ? new() : _instance;
+        {
+            _instance ??= new();
+            return _instance;
+        }
     }
 
     internal sealed class WarningMappedShare : MemoryMappedShare
     {
-        private static readonly WarningMappedShare? _instance;
+        private static WarningMappedShare? _instance;
 
         private WarningMappedShare()
             : base(204800, "WuWarningInfoShare") { }
 
         internal static WarningMappedShare GetShare()
-            => _instance is null ? new() : _instance;
+        {
+            _instance ??= new();
+            return _instance;
+        }
     }
 }

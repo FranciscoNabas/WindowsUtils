@@ -18,28 +18,28 @@ namespace WindowsUtils::Core
 
 		typedef struct _MAPPED_PROGRESS_DATA
 		{
-			WWuString Activity;
+			LPWSTR Activity;
 			int ActivityId;
-			WWuString CurrentOperation;
+			LPWSTR CurrentOperation;
 			int ParentActivityId;
 			WORD PercentComplete;
 			PROGRESS_RECORD_TYPE RecordType;
 			int SecondsRemaining;
-			WWuString StatusDescription;
+			LPWSTR StatusDescription;
 
 			_MAPPED_PROGRESS_DATA(
-				const WWuString& activity,
+				const LPWSTR activity,
 				int activityId,
-				const WWuString& currOperation,
+				const LPWSTR currOperation,
 				int parentActId,
 				WORD percentComplete,
 				PROGRESS_RECORD_TYPE recType,
 				int secRemaining,
-				const WWuString& status
+				const LPWSTR status
 			);
 
 			_MAPPED_PROGRESS_DATA()
-				: Activity(), ActivityId(0), CurrentOperation(), ParentActivityId(-1), PercentComplete(0), RecordType(PROGRESS_RECORD_TYPE::Processing), SecondsRemaining(-1), StatusDescription()
+				: Activity(NULL), ActivityId(0), CurrentOperation(NULL), ParentActivityId(-1), PercentComplete(0), RecordType(PROGRESS_RECORD_TYPE::Processing), SecondsRemaining(-1), StatusDescription(NULL)
 			{ }
 
 			~_MAPPED_PROGRESS_DATA();

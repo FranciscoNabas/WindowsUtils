@@ -1,6 +1,7 @@
 #pragma once
 #pragma unmanaged
 
+#include "Common.h"
 #include "String.h"
 #include "Expressions.h"
 
@@ -52,14 +53,14 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		// Get-ComputerSession
-		DWORD GetEnumeratedSession(wuvector<WU_COMPUTER_SESSION>* sessionList, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
+		WuResult GetEnumeratedSession(wuvector<WU_COMPUTER_SESSION>* sessionList, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
 
 		// Invoke-RemoteMessage
-		DWORD SendMessage(WWuString& pTitle, WWuString& pMessage, DWORD style, DWORD timeout, BOOL wait, wuvector<DWORD>* sessionIdList, wuvector<WU_MESSAGE_RESPONSE>* responseList, HANDLE session);
-		DWORD SendMessage(WWuString& pTitle, WWuString& pMessage, DWORD style, DWORD timeout, BOOL bWait, wuvector<WU_MESSAGE_RESPONSE>* responseList, HANDLE session);
+		WuResult SendMessage(WWuString& pTitle, WWuString& pMessage, DWORD style, DWORD timeout, BOOL wait, wuvector<DWORD>* sessionIdList, wuvector<WU_MESSAGE_RESPONSE>* responseList, HANDLE session);
+		WuResult SendMessage(WWuString& pTitle, WWuString& pMessage, DWORD style, DWORD timeout, BOOL bWait, wuvector<WU_MESSAGE_RESPONSE>* responseList, HANDLE session);
 
 		// Disconnect-Session
-		DWORD DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);
+		WuResult DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);
 	};
 
 	/*========================================
@@ -67,5 +68,5 @@ namespace WindowsUtils::Core
 	==========================================*/
 
 	// Helper fuction used with GetEnumeratedSession.
-	DWORD GetSessionOutput(TerminalServices::PWU_COMPUTER_SESSION computerSession, HANDLE hServer, const WTS_SESSION_INFO& sessionInfo);
+	WuResult GetSessionOutput(TerminalServices::PWU_COMPUTER_SESSION computerSession, HANDLE hServer, const WTS_SESSION_INFO& sessionInfo);
 }

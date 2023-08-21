@@ -183,6 +183,14 @@ public:
         swap(first._buffer, second._buffer);
     }
 
+    // This function clears the contents from the buffer.
+    // We do not deallocate because most likely this string
+    // will be reused, so we just zero out.
+    inline void Clear() {
+        RtlZeroMemory(_buffer, _char_count * sizeof(_char_type));
+        _char_count = 0;
+    }
+
     // This function fills the buffer with zeroes, and deallocates it,
     // if deallocate = true. With deallocating only, there is no guarantee
     // the contents of the string are going to be immediately overwritten by
@@ -306,7 +314,7 @@ public:
     }
 
     // Removes [count] characters from the string, starting at [index].
-    void Remove(const size_t index, const size_t count) {
+    WuBaseString Remove(const size_t index, const size_t count) {
         if (count > _char_count)
             throw "Count can't be greater than the string length.";
 
@@ -324,13 +332,12 @@ public:
             }
         }
 
-        _allocator->deallocate(_buffer);
-        _buffer = new_buffer;
-        _char_count = new_count - 1;
+        WuBaseString output(new_buffer);
+        return output;
     }
 
     // Removes one character from the string, starting at [index].
-    void Remove(const size_t index) {
+    WuBaseString Remove(const size_t index) {
         if (index < 0 || index + 1 > _char_count - 1)
             throw "Index outside of string boundaries.";
 
@@ -346,9 +353,8 @@ public:
             }
         }
 
-        _allocator->deallocate(_buffer);
-        _buffer = new_buffer;
-        _char_count = new_count - 1;
+        WuBaseString output(new_buffer);
+        return output;
     }
 
     // Returns true if [t_char] is found in the string.
@@ -380,8 +386,22 @@ public:
         return false;
     }
 
+    // Returns true if the string starts with [t_char].
+    inline bool StartsWith(const _char_type t_char) {
+        if (_char_count == 0 || _buffer == NULL)
+            return false;
+
+        if (_buffer[0] == t_char)
+            return true;
+
+        return false;
+    }
+
     // Returns true if the string ends with [t_char].
     inline bool EndsWith(const _char_type t_char) const {
+        if (_char_count == 0 || _buffer == NULL)
+            return false;
+        
         // 0-based array plus /0.
         if (_buffer[_char_count - 2] == t_char)
             return true;
@@ -394,9 +414,12 @@ public:
         if (ptr == NULL)
             throw "Input string cannot be null.";
 
+        if (_char_count == 0 || _buffer == NULL)
+            return false;
+
         size_t input_len = _traits::length(ptr);
         if (input_len > this->Length())
-            throw "Input string cannot be bigger than the original.";
+            return false;
 
         if (ignore_case)
             return _traits::compare_no_case(_buffer + this->Length() - input_len, ptr, input_len) == 0;
@@ -408,7 +431,10 @@ public:
     inline bool EndsWith(const WuBaseString& str, bool ignore_case = false) const {
         size_t input_len = str.Length();
         if (str.Length() > this->Length())
-            throw "Input string cannot be bigger than the original.";
+            return false;
+
+        if (_char_count == 0 || _buffer == NULL)
+            return false;
 
         if (ignore_case)
             return _traits::compare_no_case(_buffer + this->Length() - input_len, str._buffer, input_len) == 0;
@@ -778,8 +804,98 @@ public:
         return output;
     }
 
+    // Splits the string into a vector of strings, at every occurrence of [split_on].
+    std::vector<WuBaseString> Split(const _char_type split_on) const {
+        std::vector<WuBaseString> output;
+        std::vector<_char_type> buffer;
+
+        // Adds every character to a buffer until the char is found.
+        // Then pushes the string to the vector, and cleans the buffer.
+        for (size_t i = 0; i < _char_count; i++) {
+            if (_buffer[i] == split_on) {
+                if (!buffer.empty()) {
+                    buffer.push_back('\0');
+                    output.push_back(buffer.data());
+                    buffer.clear();
+                }
+            }
+            else {
+                buffer.push_back(_buffer[i]);
+            }
+        }
+
+        // If there are characters after the last occurrence, they will be in the buffer.
+        if (!buffer.empty()) {
+            buffer.push_back('\0');
+            output.push_back(buffer.data());
+        }
+
+        return output;
+    }
+
     // Splits the string into a vector of strings, at every occurrence of the C-style string [split_on].
     std::vector<WuBaseString> Split(const _char_type* split_on) {
+        std::vector<WuBaseString> output;
+        if (split_on == NULL) {
+            output.push_back(_buffer);
+            return output;
+        }
+
+        const _char_type* found_offset;
+        std::vector<_char_type> buffer;
+        _char_type* current_offset = _buffer;
+        size_t split_on_length = _traits::length(split_on);
+
+        // Going through each occurrence. For each one we advance the
+        // [current_offset] to the occurrence offset, plus its length.
+        do {
+            found_offset = _traits::find_str(current_offset, split_on);
+            if (found_offset != NULL) {
+
+                // Pushing every character until we reach [found_offset].
+                buffer.clear();
+                while (current_offset < found_offset) {
+                    buffer.push_back(current_offset[0]);
+                    current_offset++;
+                }
+
+                // If [found_offset] is at the beginning of the string, and
+                // we don't check if the buffer is empty, we create an empty
+                // string entry in the output.
+                if (!buffer.empty()) {
+                    buffer.push_back('\0');
+                    output.push_back(buffer.data());
+                }
+
+                current_offset += split_on_length;
+                if (current_offset >= _buffer + _char_count)
+                    break;
+            }
+            else {
+                // Checking if we are at the end of the string.
+                if (current_offset >= _buffer + _char_count)
+                    break;
+
+                // Adding each char until the end of the string.
+                buffer.clear();
+                while (current_offset < _buffer + _char_count) {
+                    buffer.push_back(current_offset[0]);
+                    current_offset++;
+                }
+
+                buffer.push_back('\0');
+                output.push_back(buffer.data());
+
+                break;
+            }
+
+        } while (found_offset != NULL);
+
+        return output;
+    }
+
+    // Splits the string into a vector of strings, at every occurrence of the C-style string [split_on].
+    std::vector<WuBaseString> Split(const _char_type* split_on) const {
         std::vector<WuBaseString> output;
         if (split_on == NULL) {
             output.push_back(_buffer);
@@ -858,6 +974,67 @@ public:
             found_offset = _traits::find_str(current_offset, split_on._buffer);
             if (found_offset != NULL) {
                 
+                // Pushing every character until we reach [found_offset].
+                buffer.clear();
+                while (current_offset < found_offset) {
+                    buffer.push_back(current_offset[0]);
+                    current_offset++;
+                }
+
+                // If [found_offset] is at the beginning of the string, and
+                // we don't check if the buffer is empty, we create an empty
+                // string entry in the output.
+                if (!buffer.empty()) {
+                    buffer.push_back('\0');
+                    output.push_back(buffer.data());
+                }
+
+                current_offset += split_on_length;
+                if (current_offset >= _buffer + _char_count)
+                    break;
+            }
+            else {
+                // Checking if we are at the end of the string.
+                if (current_offset >= _buffer + _char_count)
+                    break;
+
+                // Adding each char until the end of the string.
+                buffer.clear();
+                while (current_offset < _buffer + _char_count) {
+                    buffer.push_back(current_offset[0]);
+                    current_offset++;
+                }
+
+                buffer.push_back('\0');
+                output.push_back(buffer.data());
+
+                break;
+            }
+
+        } while (found_offset != NULL);
+
+        return output;
+    }
+
+    // Splits the string into a vector of strings, at every occurrence of the string [split_on].
+    std::vector<WuBaseString> Split(const WuBaseString& split_on) const {
+        std::vector<WuBaseString> output;
+        if (split_on.Length() == 0) {
+            output.push_back(_buffer);
+            return output;
+        }
+
+        const _char_type* found_offset;
+        std::vector<_char_type> buffer;
+        _char_type* current_offset = _buffer;
+        size_t split_on_length = split_on.Length();
+
+        // Going through each occurrence. For each one we advance the
+        // [current_offset] to the occurrence offset, plus its length.
+        do {
+            found_offset = _traits::find_str(current_offset, split_on._buffer);
+            if (found_offset != NULL) {
+
                 // Pushing every character until we reach [found_offset].
                 buffer.clear();
                 while (current_offset < found_offset) {
@@ -1106,14 +1283,113 @@ _NODISCARD static WWuString WuStringToWide(const WuString& other) {
     return result;
 }
 
+_NODISCARD static WWuString WuStringToWide(const char* other) {
+    WuAllocator* allocator = new WuAllocator();
+
+    size_t other_size = strlen(other);
+    size_t bytes_count = other_size * 2;
+    size_t converted_count = 0;
+
+    wchar_t* new_buffer = static_cast<wchar_t*>(allocator->allocate(bytes_count + 2));
+
+    mbstate_t state = { 0 };
+
+    // Third argument is the size in words. Last is count of wide chars minus \0.
+    mbsrtowcs_s(&converted_count, new_buffer, other_size + 2, &other, other_size, &state);
+
+    WWuString result(new_buffer);
+    return result;
+}
+
+_NODISCARD static WWuString WuStringToWide(const char* other, DWORD code_page) {
+    WuAllocator* allocator = new WuAllocator();
+
+    size_t other_size = strlen(other);
+    size_t bytes_count = other_size * 2;
+    size_t converted_count = 0;
+
+    wchar_t* new_buffer = static_cast<wchar_t*>(allocator->allocate(bytes_count + 2));
+
+    MultiByteToWideChar(code_page, 0, other, -1, new_buffer, static_cast<int>(bytes_count + 2));
+
+    WWuString result(new_buffer);
+    return result;
+}
+
+_NODISCARD static WWuString WuStringToWide(const WuString& other, DWORD code_page) {
+    WuAllocator* allocator = new WuAllocator();
+
+    size_t other_size = other.Length();
+    size_t bytes_count = other_size * 2;
+    size_t converted_count = 0;
+
+    wchar_t* new_buffer = static_cast<wchar_t*>(allocator->allocate(bytes_count + 2));
+
+    MultiByteToWideChar(code_page, 0, other.GetBuffer(), -1, new_buffer, static_cast<int>(bytes_count + 2));
+
+    WWuString result(new_buffer);
+    return result;
+}
+
 _NODISCARD static WuString WWuStringToNarrow(const WWuString& other) {
     WuAllocator* allocator = new WuAllocator();
 
+    // Allocate two bytes in the multibyte output string for every wide
+    // character in the input string (including a wide character
+    // null). Because a multibyte character can be one or two bytes,
+    // you should allot two bytes for each character. Having extra
+    // space for the new string isn't an error, but having
+    // insufficient space is a potential security problem.
+    //
+    // https://learn.microsoft.com/en-us/cpp/text/how-to-convert-between-various-string-types?view=msvc-170
+    //
     size_t other_count = other.Length();
+    size_t new_size = (other_count + 1) * 2;
     size_t converted_count = 0;
-    char* new_buffer = static_cast<char*>(allocator->allocate(other_count + 1));
-    wcstombs_s(&converted_count, new_buffer, other_count + 1, other.GetBuffer(), other_count);
+    char* new_buffer = static_cast<char*>(allocator->allocate(new_size));
+    wcstombs_s(&converted_count, new_buffer, new_size, other.GetBuffer(), other_count);
 
     WuString result(new_buffer);
-    return result;
+    
+    return(result);
+}
+
+_NODISCARD static WuString WWuStringToNarrow(const wchar_t* other) {
+    WuAllocator* allocator = new WuAllocator();
+
+    size_t other_count = wcslen(other);
+    size_t new_size = (other_count + 1) * 2;
+    size_t converted_count = 0;
+    char* new_buffer = static_cast<char*>(allocator->allocate(new_size));
+    wcstombs_s(&converted_count, new_buffer, new_size, other, other_count);
+
+    WuString result(new_buffer);
+    
+    return(result);
+}
+
+_NODISCARD static WuString WWuStringToNarrow(const wchar_t* other, DWORD codePage) {
+    WuAllocator* allocator = new WuAllocator();
+
+    size_t other_count = wcslen(other);
+    size_t new_size = (other_count + 1) * 2;
+    char* new_buffer = static_cast<char*>(allocator->allocate(new_size));
+    WideCharToMultiByte(codePage, 0, other, -1, new_buffer, static_cast<int>(new_size), NULL, NULL);
+
+    WuString result(new_buffer);
+    
+    return(result);
+}
+
+_NODISCARD static WuString WWuStringToNarrow(const WWuString& other, DWORD codePage) {
+    WuAllocator* allocator = new WuAllocator();
+
+    size_t other_count = other.Length();
+    size_t new_size = (other_count + 1) * 2;
+    char* new_buffer = static_cast<char*>(allocator->allocate(new_size));
+    WideCharToMultiByte(codePage, 0, other.GetBuffer(), -1, new_buffer, static_cast<int>(new_size), NULL, NULL);
+
+    WuString result(new_buffer);
+
+    return(result);
 }

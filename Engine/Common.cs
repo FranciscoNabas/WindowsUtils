@@ -137,32 +137,6 @@ namespace WindowsUtils
         internal static string GetLastWin32Error(int errorCode) => unWrapper.GetFormattedError(errorCode);
     }
 
-    [Serializable()]
-    public partial class NativeException : Exception
-    {
-        private readonly int _native_error_number;
-
-        public int NativeErrorNumber => _native_error_number; 
-
-        protected NativeException() : base() { }
-
-        protected NativeException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-
-        public NativeException(int error_number)
-            : base(Utilities.GetLastWin32Error(error_number)) => _native_error_number = error_number;
-
-        public NativeException(int error_number, string message) :
-            base(message) => _native_error_number = error_number;
-
-        public NativeException(int error_number, string message, Exception inner_exception) :
-            base(message, inner_exception) => _native_error_number = error_number;
-
-        private NativeException(NativeExceptionBase ex)
-            : base(Utilities.GetLastWin32Error(ex.NativeErrorCode), ex.InnerException) => _native_error_number = ex.NativeErrorCode;
-
-        public static explicit operator NativeException(NativeExceptionBase ex) => new(ex);
-    }
-
     /// <summary>
     /// Object from Get-ResourceMessageTable
     /// </summary>

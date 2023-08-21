@@ -29,6 +29,8 @@ Core/DawnCache
 Core/Debug
 Core/GPUCache
 Core/debug.log
+Core/Release/x64/
+obj/Debug/
 
 # Package
 packages/

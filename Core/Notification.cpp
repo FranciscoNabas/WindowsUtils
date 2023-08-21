@@ -5,14 +5,14 @@
 namespace WindowsUtils::Core
 {
 	Notification::_MAPPED_PROGRESS_DATA::_MAPPED_PROGRESS_DATA(
-		const WWuString& activity,
+		const LPWSTR activity,
 		int activityId,
-		const WWuString& currOperation,
+		const LPWSTR currOperation,
 		int parentActId,
 		WORD percentComplete,
 		PROGRESS_RECORD_TYPE recType,
 		int secRemaining,
-		const WWuString& status
+		const LPWSTR status
 	) : Activity(activity), ActivityId(activityId), CurrentOperation(currOperation), ParentActivityId(parentActId),
 			PercentComplete(percentComplete), RecordType(recType), SecondsRemaining(secRemaining), StatusDescription(status)
 	{ }
@@ -21,13 +21,15 @@ namespace WindowsUtils::Core
 
 	void NativeWriteProgress(Notification::PNATIVE_CONTEXT context, Notification::PMAPPED_PROGRESS_DATA progData)
 	{
-		size_t dataSize = sizeof(*progData);
-		LPVOID view = MapViewOfFile(context->MappedProgressFile, FILE_MAP_WRITE, 0, 0, dataSize);
+		size_t dataSize = sizeof(Notification::MAPPED_PROGRESS_DATA);
+
+		// 'FILE_MAP_WRITE' is not enought.
+		LPVOID view = MapViewOfFile(context->MappedProgressFile, FILE_MAP_ALL_ACCESS, 0, 0, dataSize);
 		
 		// TODO: Handle exceptions
 		if (view != NULL)
 		{
-			memcpy(view, progData, dataSize);
+			RtlCopyMemory(view, progData, dataSize);
 			UnmapViewOfFile(view);
 			context->WriteProgressHook(dataSize);
 		}

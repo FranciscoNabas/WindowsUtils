@@ -2,21 +2,25 @@
 
 #include "String.h"
 
-class WuOsException {
+class WuResult {
 public:
-	long ErrorCode;
+	long Result;
 	WWuString Message;
+	WWuString CompactTrace;
 
-	WuOsException()
-		: ErrorCode(ERROR_SUCCESS) { }
+	WuResult()
+		: Result(ERROR_SUCCESS) { }
 
-	WuOsException(long errorCode, bool isNt = false)
-		: ErrorCode(errorCode) {
+	WuResult(long errorCode, LPWSTR fileName, DWORD lineNumber, bool isNt = false)
+		: Result(errorCode) {
 		Message = GetErrorMessage(errorCode, isNt);
+		CompactTrace = GetCompactTrace(fileName, lineNumber);
 	}
 
-	WuOsException(long errorCode, WWuString message)
-		: ErrorCode(errorCode), Message(message) { }
+	WuResult(long errorCode, const WWuString& message, LPWSTR fileName, DWORD lineNumber)
+		: Result(errorCode), Message(message) {
+		CompactTrace = GetCompactTrace(fileName, lineNumber);
+	}
 
 	_NODISCARD static WWuString GetErrorMessage(long errorCode, bool isNt) {
 		if (isNt) {
@@ -44,6 +48,65 @@ public:
 			LocalFree(buffer);
 
 			return output;
+		}
+	}
+
+	_NODISCARD static WWuString GetCompactTrace(LPWSTR fileName, DWORD lineNumber) {
+		WWuString wrappedName(fileName);
+		auto fileNameSplit = wrappedName.Split('\\');
+		WWuString relPath;
+		bool isProject = false;
+		for (WWuString fsItem : fileNameSplit) {
+			if (fsItem.EndsWith(L"WindowsUtils")) {
+				isProject = true;
+				continue;
+			}
+
+			if (isProject) {
+				relPath = WWuString::Format(L"%ws\\%ws", relPath.GetBuffer(), fsItem.GetBuffer());
+			}
+		}
+
+		return WWuString::Format(L"%ws:%d", relPath.GetBuffer(), lineNumber);
+	}
+
+	static WuResult GetResultFromFdiError(const FDIERROR& err, LPWSTR fileName, DWORD lineNumber) {
+		switch (err) {
+			case FDIERROR_CABINET_NOT_FOUND:
+				return WuResult(FDIERROR_CABINET_NOT_FOUND, L"Cabinet not found", fileName, lineNumber);
+
+			case FDIERROR_NOT_A_CABINET:
+				return WuResult(FDIERROR_NOT_A_CABINET, L"File is not a cabinet", fileName, lineNumber);
+
+			case FDIERROR_UNKNOWN_CABINET_VERSION:
+				return WuResult(FDIERROR_UNKNOWN_CABINET_VERSION, L"Unknown cabinet version", fileName, lineNumber);
+
+			case FDIERROR_CORRUPT_CABINET:
+				return WuResult(FDIERROR_CORRUPT_CABINET, L"Corrupt cabinet", fileName, lineNumber);
+
+			case FDIERROR_ALLOC_FAIL:
+				return WuResult(FDIERROR_ALLOC_FAIL, L"Memory allocation failed", fileName, lineNumber);
+
+			case FDIERROR_BAD_COMPR_TYPE:
+				return WuResult(FDIERROR_BAD_COMPR_TYPE, L"Unknown compression type", fileName, lineNumber);
+
+			case FDIERROR_MDI_FAIL:
+				return WuResult(FDIERROR_MDI_FAIL, L"Failure decompressing data", fileName, lineNumber);
+
+			case FDIERROR_TARGET_FILE:
+				return WuResult(FDIERROR_TARGET_FILE, L"Failure writing to target file", fileName, lineNumber);
+
+			case FDIERROR_RESERVE_MISMATCH:
+				return WuResult(FDIERROR_RESERVE_MISMATCH, L"Cabinets in set have different RESERVE sizes", fileName, lineNumber);
+
+			case FDIERROR_WRONG_CABINET:
+				return WuResult(FDIERROR_WRONG_CABINET, L"Cabinet returned on fdintNEXT_CABINET is incorrect", fileName, lineNumber);
+
+			case FDIERROR_USER_ABORT:
+				return WuResult(FDIERROR_USER_ABORT, L"Application aborted", fileName, lineNumber);
+
+			default:
+				return WuResult(err, L"Unknown error", fileName, lineNumber);
 		}
 	}
 };

@@ -23,6 +23,7 @@ namespace WindowsUtils.Commands
         ConfirmImpact = ConfirmImpact.High,
         DefaultParameterSetName = "NoWait"
     )]
+    [OutputType(typeof(MessageResponse))]
     public class SendRemoteMessageCommand : Cmdlet
     {
         private int _timeout = 0;
@@ -132,28 +133,14 @@ namespace WindowsUtils.Commands
                         "Sending message to all sessions on the current computer."
                         ))
                     {
-                        try
-                        {
-                            MessageResponseBase[] result = unWrapper.SendRemoteMessage(IntPtr.Zero, null, Title, Message, nativeStyle, Timeout, Wait);
-                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
-                        }
-                        catch (NativeExceptionBase ex)
-                        {
-                            throw (NativeException)ex;
-                        }
+                        MessageResponseBase[] result = unWrapper.SendRemoteMessage(IntPtr.Zero, null, Title, Message, nativeStyle, Timeout, Wait);
+                        result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                     }
                 }
                 else
                 {
-                    try
-                    {
-                        MessageResponseBase[] result = unWrapper.SendRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativeStyle, Timeout, Wait);
-                        result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
-                    }
-                    catch (NativeExceptionBase ex)
-                    {
-                        throw (NativeException)ex;
-                    }
+                    MessageResponseBase[] result = unWrapper.SendRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativeStyle, Timeout, Wait);
+                    result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                 }
             }
             else
@@ -167,15 +154,8 @@ namespace WindowsUtils.Commands
                         "Sending message to all sessions on computer \" + ComputerName + \"."
                         ))
                     {
-                        try
-                        {
-                            MessageResponseBase[] result = unWrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
-                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
-                        }
-                        catch (NativeExceptionBase ex)
-                        {
-                            throw (NativeException)ex;
-                        }
+                        MessageResponseBase[] result = unWrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
+                        result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                     }
                 }
                 else
@@ -188,28 +168,14 @@ namespace WindowsUtils.Commands
                         "Session '0' represent all sessions on the computer"
                         ))
                         {
-                            try
-                            {
-                                MessageResponseBase[] result = unWrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
-                                result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
-                            }
-                            catch (NativeExceptionBase ex)
-                            {
-                                throw (NativeException)ex;
-                            }
+                            MessageResponseBase[] result = unWrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
+                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                         }
                     }
                     else
                     {
-                        try
-                        {
-                            MessageResponseBase[] result = unWrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), SessionId, Title, Message, nativeStyle, Timeout, Wait);
-                            result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
-                        }
-                        catch (NativeExceptionBase ex)
-                        {
-                            throw (NativeException)ex;
-                        }
+                        MessageResponseBase[] result = unWrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), SessionId, Title, Message, nativeStyle, Timeout, Wait);
+                        result.Where(q => q is not null).ToList().ForEach(x => WriteObject((MessageResponse)x));
                     }
                 }
             }
@@ -221,6 +187,7 @@ namespace WindowsUtils.Commands
     /// <para type="description">This Cmdlet returns a list of options available to be used with the parameter 'Style', from Invoke-RemoteMessage.</para>
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "RemoteMessageOptions")]
+    [OutputType(typeof(MessageBoxOption[]))]
     public class GetRemoteMessageOptionsCommand : Cmdlet
     {
         protected override void ProcessRecord()
@@ -235,6 +202,7 @@ namespace WindowsUtils.Commands
     /// <para type="description">By default, only brings sessions that has an user name assigned.</para>
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "ComputerSession")]
+    [OutputType(typeof(ComputerSession))]
     public class GetComputerSessionCommand : Cmdlet
     {
         /// <summary>
@@ -264,23 +232,16 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             Wrapper unWrapper = new();
-            try
+            if (string.IsNullOrEmpty(ComputerName))
             {
-                if (string.IsNullOrEmpty(ComputerName))
-                {
-                    ComputerSessionBase[] result = unWrapper.GetComputerSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
-                    result.ToList().ForEach(x => WriteObject((ComputerSession)x));
-                }
-                else
-                {
-                    using WtsSession session = new(ComputerName);
-                    ComputerSessionBase[] result = unWrapper.GetComputerSession(ComputerName, session.SessionHandle.DangerousGetHandle(), ActiveOnly, IncludeSystemSession);
-                    result.ToList().ForEach(x => WriteObject((ComputerSession)x));
-                }
+                ComputerSessionBase[] result = unWrapper.GetComputerSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
+                result.ToList().ForEach(x => WriteObject((ComputerSession)x));
             }
-            catch (NativeExceptionBase ex)
+            else
             {
-                throw (NativeException)ex;
+                using WtsSession session = new(ComputerName);
+                ComputerSessionBase[] result = unWrapper.GetComputerSession(ComputerName, session.SessionHandle.DangerousGetHandle(), ActiveOnly, IncludeSystemSession);
+                result.ToList().ForEach(x => WriteObject((ComputerSession)x));
             }
         }
     }
@@ -295,14 +256,7 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             Wrapper unWrapper = new();
-            try
-            {
-                unWrapper.SendClick();
-            }
-            catch (NativeExceptionBase ex)
-            {
-                throw (NativeException)ex;
-            }
+            unWrapper.SendClick();
         }
     }
 
@@ -313,6 +267,7 @@ namespace WindowsUtils.Commands
     /// <para type="description">I.E.: on kernel32.dll are stored the Win32 system error messages.</para>
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "ResourceMessageTable")]
+    [OutputType(typeof(ResourceMessageTable))]
     public class GetResourceMessageTableCommand : Cmdlet
     {
         /// <summary>
@@ -330,15 +285,8 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             Wrapper unWrapper = new();
-            try
-            {
-                ResourceMessageTableCore[] result = unWrapper.GetResourceMessageTable(Path);
-                result.ToList().ForEach(x => WriteObject((ResourceMessageTable)x));
-            }
-            catch (NativeExceptionBase ex)
-            {
-                throw (NativeException)ex;
-            }
+            ResourceMessageTableCore[] result = unWrapper.GetResourceMessageTable(Path);
+            result.ToList().ForEach(x => WriteObject((ResourceMessageTable)x));
         }
     }
 
@@ -359,6 +307,7 @@ namespace WindowsUtils.Commands
     /// </example>
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "ErrorString")]
+    [OutputType(typeof(string))]
     public class GetErrorStringCommand : Cmdlet
     {
         /// <summary>
@@ -376,14 +325,7 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             Wrapper unWrapper = new();
-            try
-            {
-                WriteObject(unWrapper.GetFormattedError(ErrorCode));
-            }
-            catch (NativeExceptionBase ex)
-            {
-                throw (NativeException)ex;
-            }
+            WriteObject(unWrapper.GetFormattedError(ErrorCode));
         }
     }
 
@@ -392,19 +334,13 @@ namespace WindowsUtils.Commands
     /// <para type="description">This Cmdlet gets the last error thrown by the system, and returns the message string.</para>
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "LastWin32Error")]
+    [OutputType(typeof(string))]
     public class GetLastWin32ErrorCommand : Cmdlet
     {
         protected override void ProcessRecord()
         {
             Wrapper unWrapper = new();
-            try
-            {
-                WriteObject(unWrapper.GetLastWin32Error());
-            }
-            catch (NativeExceptionBase ex)
-            {
-                throw (NativeException)ex;
-            }
+            WriteObject(unWrapper.GetLastWin32Error());
         }
     }
 
@@ -432,6 +368,7 @@ namespace WindowsUtils.Commands
         SupportsShouldProcess = true,
         ConfirmImpact = ConfirmImpact.High
     )]
+    [OutputType(typeof(ObjectHandle))]
     [Alias("gethandle")]
     public class GetObjectHandleCommand : PSCmdlet
     {
@@ -539,33 +476,19 @@ namespace WindowsUtils.Commands
                     "ATTENTION! Closing handles can lead to system malfunction.\n"
                     ))
                 {
-                    try
+                    unWrapper.GetProcessObjectHandle(validPaths.ToArray(), true);
+                    ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
+                    if (result is not null)
                     {
-                        unWrapper.GetProcessObjectHandle(validPaths.ToArray(), true);
-                        ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
-                        if (result is not null)
-                        {
-                            WriteWarning("Failed to remove handles for the processes below.");
-                            result.OrderBy(p =>p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
-                        }
-                    }
-                    catch (NativeExceptionBase ex)
-                    {
-                        throw (NativeException)ex;
+                        WriteWarning("Failed to remove handles for the processes below.");
+                        result.OrderBy(p => p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
                     }
                 }
             }
             else
             {
-                try
-                {
-                    ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
-                    result?.OrderBy(p => p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
-                }
-                catch (NativeExceptionBase ex)
-                {
-                    throw (NativeException)ex;
-                }
+                ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
+                result?.OrderBy(p => p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
             }
         }
     }
@@ -576,6 +499,7 @@ namespace WindowsUtils.Commands
     /// <para type="description">Besides standard information, like Product Code, it brings vendor-specific information.</para>
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "MsiProperties")]
+    [OutputType(typeof(PSObject))]
     public class GetMsiPropertiesCommand : Cmdlet
     {
         /// <summary>
@@ -595,15 +519,8 @@ namespace WindowsUtils.Commands
         {
             Wrapper unWrapper = new();
             PSObject outObject = new();
-            try
-            {
-                foreach (KeyValuePair<string, string> item in unWrapper.GetMsiProperties(Path).OrderBy(x => x.Key))
-                    outObject.Members.Add(new PSNoteProperty(item.Key, item.Value));
-            }
-            catch (NativeExceptionBase ex)
-            {
-                throw (NativeException)ex;
-            }
+            foreach (KeyValuePair<string, string> item in unWrapper.GetMsiProperties(Path).OrderBy(x => x.Key))
+                outObject.Members.Add(new PSNoteProperty(item.Key, item.Value));
 
             WriteObject(outObject);
         }
@@ -690,16 +607,7 @@ namespace WindowsUtils.Commands
                     "Disconnecting current session from this computer.",
                     "Are you sure you want to disconnect the current session on this computer?",
                     "Disconnect session"))
-                    {
-                        try
-                        {
-                            unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
-                        }
-                        catch (NativeExceptionBase ex)
-                        {
-                            throw (NativeException)ex;
-                        }
-                    }
+                        unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
                 }
                 else
                 {
@@ -707,16 +615,7 @@ namespace WindowsUtils.Commands
                    "Disconnecting session ID " + SessionId + " from current computer.",
                    "Are you sure you want to disconnect sesion ID " + SessionId + " on the current computer?",
                    "Disconnect session"))
-                    {
-                        try
-                        {
-                            unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
-                        }
-                        catch (NativeExceptionBase ex)
-                        {
-                            throw (NativeException)ex;
-                        }
-                    }
+                        unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
                 }
             }
             else
@@ -726,16 +625,7 @@ namespace WindowsUtils.Commands
                    "Disconnecting session ID " + SessionId + " from computer " + ComputerName + ".",
                    "Are you sure you want to disconnect session ID " + SessionId + " on computer " + ComputerName + "?",
                    "Disconnect session"))
-                {
-                    try
-                    {
-                        unWrapper.DisconnectSession(session.SessionHandle.DangerousGetHandle(), SessionId, Wait);
-                    }
-                    catch (NativeExceptionBase ex)
-                    {
-                        throw (NativeException)ex;
-                    }
-                }
+                    unWrapper.DisconnectSession(session.SessionHandle.DangerousGetHandle(), SessionId, Wait);
             }
         }
     }
@@ -823,14 +713,7 @@ namespace WindowsUtils.Commands
             {
                 WriteVerbose($"Using service controller for service {InputObject.ServiceName}. Unsafe handle: {InputObject.ServiceHandle.DangerousGetHandle()}");
                 if (Force)
-                    try
-                    {
-                        unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
-                    }
-                    catch (NativeExceptionBase ex)
-                    {
-                        throw (NativeException)ex;
-                    }
+                    unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
                 else
                 {
                     if (InputObject.MachineName == ".")
@@ -839,14 +722,7 @@ namespace WindowsUtils.Commands
                            $"Removing service {InputObject.ServiceName} from the local computer.",
                            $"Are you sure you want to remove service {InputObject.ServiceName}?",
                            "Removing Service"))
-                            try
-                            {
-                                unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
-                            }
-                            catch (NativeExceptionBase ex)
-                            {
-                                throw (NativeException)ex;
-                            }
+                            unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
                     }
                     else
                     {
@@ -854,14 +730,7 @@ namespace WindowsUtils.Commands
                            $"Removing service {InputObject.ServiceName} on computer {InputObject.MachineName}",
                            $"Are you sure you want to remove service {InputObject.ServiceName} on {InputObject.MachineName}?",
                            "Removing Service"))
-                            try
-                            {
-                                unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
-                            }
-                            catch (NativeExceptionBase ex)
-                            {
-                                throw (NativeException)ex;
-                            }
+                            unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
                     }
                 }
 
@@ -879,41 +748,20 @@ namespace WindowsUtils.Commands
                            $"Removing service {Name} from the local computer.",
                            $"Are you sure you want to remove service {Name}?",
                            "Removing Service"))
-                            try
-                            {
-                                unWrapper.RemoveService(Name, Stop, (CmdletContextBase)CmdletContext);
-                            }
-                            catch (NativeExceptionBase ex)
-                            {
-                                throw (NativeException)ex;
-                            }
+                            unWrapper.RemoveService(Name, Stop, (CmdletContextBase)CmdletContext);
                     }
                 }
                 else
                 {
                     if (Force)
-                        try
-                        {
-                            unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext);
-                        }
-                        catch (NativeExceptionBase ex)
-                        {
-                            throw (NativeException)ex;
-                        }
+                        unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext);
                     else
                     {
                         if (ShouldProcess(
                            $"Removing service {Name} on computer {ComputerName}",
                            $"Are you sure you want to remove service {Name} on {ComputerName}?",
                            "Removing Service"))
-                            try
-                            {
-                                unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext);
-                            }
-                            catch (NativeExceptionBase ex)
-                            {
-                                throw (NativeException)ex;
-                            }
+                            unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext);
                     }
                 }
             }
@@ -948,6 +796,7 @@ namespace WindowsUtils.Commands
         VerbsCommon.Get, "ServiceSecurity",
         DefaultParameterSetName = "WithServiceName"
     )]
+    [OutputType(typeof(ServiceSecurity))]
     public class GetServiceSecurityCommand : ServiceCommandBase
     {
         /// <summary>
@@ -1046,6 +895,7 @@ namespace WindowsUtils.Commands
     /// </example>
     /// </summary>
     [Cmdlet(VerbsCommon.New, "ServiceAccessRule")]
+    [OutputType(typeof(ServiceAccessRule))]
     public class NewServiceAccessRuleCommand : PSCmdlet
     {
         private string _identityAsString;
@@ -1162,6 +1012,7 @@ namespace WindowsUtils.Commands
     /// </example>
     /// </summary>
     [Cmdlet(VerbsCommon.New, "ServiceAuditRule")]
+    [OutputType(typeof(ServiceAuditRule))]
     public class NewServiceSecurityCommand : PSCmdlet
     {
         private string _identityAsString;
@@ -1469,6 +1320,109 @@ namespace WindowsUtils.Commands
                 ))
                     _unWrapper.SetServiceSecurity(_serviceFinalName, ComputerName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
             }
+        }
+    }
+
+    [Cmdlet(VerbsData.Expand, "ArchiveFile")]
+    public class ExpandArchiveFileCommand : CoreCommandBase
+    {
+        private readonly Wrapper _unwrapper = new();
+        private readonly List<string> _validPaths = new();
+        
+        private string[] _path;
+        private string _destination;
+        private bool _shouldExpandWildcards = true;
+
+        /// <summary>
+        /// <para type="description">The object path.</para>
+        /// </summary>
+        [Parameter(
+            Position = 0,
+            ValueFromPipeline = true,
+            ValueFromPipelineByPropertyName = true,
+            ParameterSetName = "byPath",
+            HelpMessage = "The object(s) path."
+        )]
+        [ValidateNotNullOrEmpty]
+        [SupportsWildcards]
+        public string[] Path {
+            get { return _path; }
+            set { _path = value; }
+        }
+
+        /// <summary>
+        /// <para Type="description">Provider-aware file system object path.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            ValueFromPipeline = false,
+            ValueFromPipelineByPropertyName = true,
+            ParameterSetName = "byLiteral",
+            HelpMessage = "The object(s) literal path."
+        )]
+        [Alias("PSPath")]
+        [ValidateNotNullOrEmpty]
+        public string[] LiteralPath {
+            get { return _path; }
+            set {
+                _shouldExpandWildcards = false;
+                _path = value;
+            }
+        }
+
+        [Parameter(
+            Mandatory = true
+        )]
+        [ValidateNotNullOrEmpty]
+        public string Destination {
+            get { return _destination; }
+            set {
+                DirectoryInfo fsInfo = new(value);
+                if (!fsInfo.Exists)
+                    throw new ArgumentException($"Directory '{value}' not found.");
+
+                if ((fsInfo.Attributes & FileAttributes.Directory) != FileAttributes.Directory)
+                    throw new ArgumentException("Destination must be a directory.");
+
+                _destination = value;
+            }
+        }
+
+        protected override void ProcessRecord()
+        {
+            _path ??= new[] { ".\\*" };
+            List<string> resolvedPaths = new();
+
+            foreach (string path in _path)
+            {
+                ProviderInfo providerInfo;
+                if (_shouldExpandWildcards)
+                {
+                    resolvedPaths.AddRange(GetResolvedProviderPathFromPSPath(path, out providerInfo));
+                    if (providerInfo.Name != "FileSystem")
+                        throw new InvalidOperationException("Only the file system provider is allowed with this Cmdlet.");
+                }
+                else
+                {
+                    resolvedPaths.Add(SessionState.Path.GetUnresolvedProviderPathFromPSPath(path, out providerInfo, out _));
+                    if (providerInfo.Name != "FileSystem")
+                        throw new InvalidOperationException("Only the file system provider is allowed with this Cmdlet.");
+                }
+            }
+
+            foreach (string path in resolvedPaths)
+            {
+                if (File.Exists(path))
+                    _validPaths.Add(path);
+                else
+                    WriteWarning($"File '{path}' not found.");
+            }
+
+            if (_validPaths.Count == 0)
+                return;
+
+            foreach (string path in _validPaths)
+                _unwrapper.ExpandArchiveFile(path, Destination, ArchiveFileType.Cabinet, (CmdletContextBase)CmdletContext);
         }
     }
 }

@@ -12,10 +12,10 @@
 #define _WIN32_WINNT 0x0600
 
 // Utility definitions.
-#define DWERRORCHECKV(result) if (ERROR_SUCCESS != result) { return result; }
-#define DWERRORCHECKF(result) if (ERROR_SUCCESS != result) { return GetLastError(); }
-#define SharedVecPtr(T) std::shared_ptr<std::vector<T>>
-#define MakeVecPtr(T) std::make_shared<std::vector<T>>()
+#define DWERRORCHECKV(result) if (ERROR_SUCCESS != result) { return WuResult(result, __FILEW__, __LINE__); }
+#define DWERRORCHECKF(result) if (ERROR_SUCCESS != result) { return WuResult(GetLastError(), __FILEW__, __LINE__); }
+
+#define FILE_ATTRIBUTE_UTC_TIME 0x100
 
 // To avoid warning C4005. This definition is done via compiler command line.
 #undef __CLR_VER

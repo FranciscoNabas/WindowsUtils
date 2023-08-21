@@ -38,7 +38,8 @@
         'Get-ServiceSecurity',
         'New-ServiceAccessRule',
         'New-ServiceAuditRule',
-        'Set-ServiceSecurity'
+        'Set-ServiceSecurity',
+        'Expand-ArchiveFile'
     )
     AliasesToExport = @(
         'gethandle',

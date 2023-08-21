@@ -24,26 +24,22 @@ namespace WindowsUtils::Core
 	using wusshared_map = std::shared_ptr<std::map<T, U>>;
 
 	template <class T>
-	[[nodiscard]]
-	wusunique_vector<T> make_wusunique_vector() noexcept {
+	_NODISCARD wusunique_vector<T> make_wusunique_vector() noexcept {
 		return std::make_unique<std::vector<T>>();
 	}
 
 	template <class T>
-	[[nodiscard]]
-	wusshared_vector<T> make_wusshared_vector() noexcept {
+	_NODISCARD wusshared_vector<T> make_wusshared_vector() noexcept {
 		return std::make_shared<std::vector<T>>();
 	}
 
 	template <class T, class U>
-	[[nodiscard]]
-	wusunique_map<T, U> make_wusunique_map() noexcept {
+	_NODISCARD wusunique_map<T, U> make_wusunique_map() noexcept {
 		return std::make_unique<std::map<T, U>>();
 	}
 
 	template <class T, class U>
-	[[nodiscard]]
-	wusshared_map<T, U> make_wusshared_map() noexcept {
+	_NODISCARD wusshared_map<T, U> make_wusshared_map() noexcept {
 		return std::make_shared<std::map<T, U>>();
 	}
 }

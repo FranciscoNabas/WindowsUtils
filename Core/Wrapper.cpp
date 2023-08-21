@@ -74,7 +74,7 @@ namespace WindowsUtils::Core
 	// Invoke-RemoteMessage
 	array<MessageResponseBase^>^ Wrapper::SendRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait)
 	{
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
 		
 		wusunique_vector<TerminalServices::WU_MESSAGE_RESPONSE> responseList = make_wusunique_vector<TerminalServices::WU_MESSAGE_RESPONSE>();
 		wusunique_vector<DWORD> sessionIdList;
@@ -94,8 +94,8 @@ namespace WindowsUtils::Core
 			result = wtsptr->SendMessage(wuTitle, wuMessage, (DWORD)style, (DWORD)timeout, (BOOL)wait, sessionIdList.get(), responseList.get(), (HANDLE)session);
 		}
 
-		if (ERROR_SUCCESS != result)
-			throw gcnew NativeExceptionBase(result);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 
 		List<MessageResponseBase^>^ output = gcnew List<MessageResponseBase^>();
 		for(auto& response : *responseList)
@@ -109,9 +109,9 @@ namespace WindowsUtils::Core
 	array<ComputerSessionBase^>^ Wrapper::GetComputerSession(String^ computerName, IntPtr session, Boolean activeOnly, Boolean includeSystemSessions)
 	{
 		wusunique_vector<TerminalServices::WU_COMPUTER_SESSION> sessionList = make_wusunique_vector<TerminalServices::WU_COMPUTER_SESSION>();
-		DWORD result = wtsptr->GetEnumeratedSession(sessionList.get(), (HANDLE)session, activeOnly, includeSystemSessions);
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result);
+		WuResult result = wtsptr->GetEnumeratedSession(sessionList.get(), (HANDLE)session, activeOnly, includeSystemSessions);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 
 		List<ComputerSessionBase^>^ output = gcnew List<ComputerSessionBase^>((int)sessionList->size());
 
@@ -128,14 +128,14 @@ namespace WindowsUtils::Core
 	// Disconnect-Session
 	Void Wrapper::DisconnectSession(IntPtr session, UInt32^ sessionid, Boolean wait)
 	{
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
 		if (nullptr == sessionid)
 			result = wtsptr->DisconnectSession((HANDLE)session, NULL, wait);
 		else
 		{
 			result = wtsptr->DisconnectSession((HANDLE)session, (DWORD)sessionid, wait);
-			if (result != ERROR_SUCCESS)
-				throw gcnew NativeExceptionBase(result);
+			if (result.Result != ERROR_SUCCESS)
+				throw gcnew NativeException(result);
 		}
 	}
 
@@ -143,9 +143,9 @@ namespace WindowsUtils::Core
 	String^ Wrapper::GetFormattedError(Int32 errorCode)
 	{
 		WWuString errorMessage;
-		DWORD result = utlptr->GetFormattedError((DWORD)errorCode, errorMessage);
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result, String::Format("'GetFormattedError' failed with {0}", result));
+		WuResult result = utlptr->GetFormattedError((DWORD)errorCode, errorMessage);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result.Result, String::Format("'GetFormattedError' failed with {0}", result.Result));
 
 		return (gcnew String(errorMessage.GetBuffer()))->Trim();
 	}
@@ -153,9 +153,9 @@ namespace WindowsUtils::Core
 	String^ Wrapper::GetLastWin32Error()
 	{
 		WWuString errorMessage;
-		DWORD result = utlptr->GetFormattedWin32Error(errorMessage);
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result, String::Format("'GetFormattedError' failed with {0}", result));
+		WuResult result = utlptr->GetFormattedWin32Error(errorMessage);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result.Result, String::Format("'GetFormattedError' failed with {0}", result.Result));
 
 		return (gcnew String(errorMessage.GetBuffer()))->Trim();
 	}
@@ -172,9 +172,9 @@ namespace WindowsUtils::Core
 			reslist->push_back(wuName);
 		}
 
-		UINT result = patptr->GetProcessObjectHandle(ppOutput.get(), reslist.get(), closeHandle);
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result);
+		WuResult result = patptr->GetProcessObjectHandle(ppOutput.get(), reslist.get(), closeHandle);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 
 		if (ppOutput->size() == 0)
 			return nullptr;
@@ -192,9 +192,9 @@ namespace WindowsUtils::Core
 	// Send-Click
 	Void Wrapper::SendClick()
 	{
-		DWORD result = utlptr->SendClick();
-		if (ERROR_SUCCESS != result)
-			throw gcnew NativeExceptionBase(result);
+		WuResult result = utlptr->SendClick();
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	// Get-ResourceMessageTable
@@ -204,17 +204,17 @@ namespace WindowsUtils::Core
 		
 		WWuString wuLibPath = GetWideStringFromSystemString(libPath);
 		
-		DWORD result = utlptr->GetResourceMessageTable(messageTable.get(), wuLibPath);
-		if (result != ERROR_SUCCESS)
+		WuResult result = utlptr->GetResourceMessageTable(messageTable.get(), wuLibPath);
+		if (result.Result != ERROR_SUCCESS)
 		{
-			if (result == ERROR_BAD_EXE_FORMAT)
+			if (result.Result == ERROR_BAD_EXE_FORMAT)
 			{
 				PathStripPathW(wuLibPath.GetBuffer());
 				String^ errormsg = gcnew String(wuLibPath.GetBuffer());
-				throw gcnew NativeExceptionBase(result, errormsg + " is not a valid Win32 application.");
+				throw gcnew NativeException(result.Result, errormsg + " is not a valid Win32 application.");
 			}
 			else
-				throw gcnew NativeExceptionBase(result);
+				throw gcnew NativeException(result);
 		}
 
 		List<ResourceMessageTableCore^>^ output = gcnew List<ResourceMessageTableCore^>();
@@ -231,15 +231,15 @@ namespace WindowsUtils::Core
 		wusunique_map<WWuString, WWuString> propertyMap = make_wusunique_map<WWuString, WWuString>();
 		WWuString wuFileName = GetWideStringFromSystemString(filePath);
 
-		DWORD result = utlptr->GetMsiProperties(propertyMap.get(), wuFileName);
-		if (ERROR_SUCCESS != result && ERROR_NO_MORE_ITEMS != result)
+		WuResult result = utlptr->GetMsiProperties(propertyMap.get(), wuFileName);
+		if (result.Result != ERROR_SUCCESS && result.Result != ERROR_NO_MORE_ITEMS)
 		{
 			WWuString msiError;
-			DWORD inResult = utlptr->GetMsiExtendedError(msiError);
-			if (ERROR_SUCCESS == inResult)
-				throw gcnew NativeExceptionBase(result, GetFormattedError(result), gcnew SystemException(gcnew String(msiError.GetBuffer())));
+			WuResult inResult = utlptr->GetMsiExtendedError(msiError);
+			if (inResult.Result != ERROR_SUCCESS)
+				throw gcnew NativeException(result.Result, gcnew String(result.Message.GetBuffer()), gcnew SystemException(gcnew String(msiError.GetBuffer())));
 			else
-				throw gcnew NativeExceptionBase(result);
+				throw gcnew NativeException(result);
 		}
 
 		std::map<WWuString, WWuString>::iterator itr;
@@ -255,18 +255,18 @@ namespace WindowsUtils::Core
 		WWuString wuComputerName = GetWideStringFromSystemString(computerName);
 		WWuString wuServiceName = GetWideStringFromSystemString(serviceName);
 
-		DWORD result = svcptr->RemoveService(wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext());
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result);
+		WuResult result = svcptr->RemoveService(wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext());
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 	
 	void Wrapper::RemoveService(String^ serviceName, bool stopService, CmdletContextBase^ context)
 	{
 		WWuString wuServiceName = GetWideStringFromSystemString(serviceName);
 
-		DWORD result = svcptr->RemoveService(wuServiceName, L"", stopService, context->GetUnderlyingContext());
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result);
+		WuResult result = svcptr->RemoveService(wuServiceName, L"", stopService, context->GetUnderlyingContext());
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	void Wrapper::RemoveService(IntPtr hService, String^ serviceName, String^ computerName, bool stopService, CmdletContextBase^ context)
@@ -277,16 +277,16 @@ namespace WindowsUtils::Core
 
 		HANDLE wService = static_cast<HANDLE>(hService);
 		SC_HANDLE schService = static_cast<SC_HANDLE>(wService);
-		DWORD result = svcptr->RemoveService(schService, wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext());
+		WuResult result = svcptr->RemoveService(schService, wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext());
 
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	// Get-ServiceSecurity
 	String^ Wrapper::GetServiceSecurityDescriptorString(String^ serviceName, String^ computerName, bool audit)
 	{
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
 
 		WWuString wuServiceName = GetWideStringFromSystemString(computerName);
 		WWuString wuComputerName = GetWideStringFromSystemString(serviceName);
@@ -302,12 +302,12 @@ namespace WindowsUtils::Core
 		else
 			result = svcptr->GetServiceSecurity(wuServiceName, wuComputerName, svcSecurity, &size);
 
-		if (result != ERROR_SUCCESS)
+		if (result.Result != ERROR_SUCCESS)
 		{
 			if (svcSecurity != NULL)
 				LocalFree(svcSecurity);
 			
-			throw gcnew NativeExceptionBase(result);
+			throw gcnew NativeException(result);
 		}
 
 		LPWSTR sddl;
@@ -324,7 +324,7 @@ namespace WindowsUtils::Core
 
 	String^ Wrapper::GetServiceSecurityDescriptorString(String^ serviceName, bool audit)
 	{
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
 
 		WWuString wuServiceName = GetWideStringFromSystemString(serviceName);
 		
@@ -339,11 +339,11 @@ namespace WindowsUtils::Core
 		else
 			result = svcptr->GetServiceSecurity(wuServiceName, L"", svcSecurity, &size);
 
-		if (result != ERROR_SUCCESS)
+		if (result.Result != ERROR_SUCCESS)
 		{
 			if (svcSecurity != NULL)
 				LocalFree(svcSecurity);
-			throw gcnew NativeExceptionBase(result);
+			throw gcnew NativeException(result);
 		}
 
 		LPWSTR sddl;
@@ -360,7 +360,7 @@ namespace WindowsUtils::Core
 
 	String^ Wrapper::GetServiceSecurityDescriptorString(IntPtr hService, bool audit)
 	{
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
 		HANDLE phService = static_cast<HANDLE>(hService);
 		SC_HANDLE whService = static_cast<SC_HANDLE>(phService);
 
@@ -375,12 +375,12 @@ namespace WindowsUtils::Core
 		else
 			result = svcptr->GetServiceSecurity(whService, svcSecurity, &size);
 
-		if (result != ERROR_SUCCESS)
+		if (result.Result != ERROR_SUCCESS)
 		{
 			if (svcSecurity != NULL)
 				LocalFree(svcSecurity);
 
-			throw gcnew NativeExceptionBase(result);
+			throw gcnew NativeException(result);
 		}
 
 		LPWSTR sddl;
@@ -402,9 +402,9 @@ namespace WindowsUtils::Core
 		WWuString wuComputerName = GetWideStringFromSystemString(computerName);
 		WWuString wuSddl = GetWideStringFromSystemString(sddl);
 		
-		DWORD result = svcptr->SetServiceSecurity(wuServiceName, wuComputerName, wuSddl, audit, changeOwner);
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result);
+		WuResult result = svcptr->SetServiceSecurity(wuServiceName, wuComputerName, wuSddl, audit, changeOwner);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	void Wrapper::SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner)
@@ -412,21 +412,20 @@ namespace WindowsUtils::Core
 		WWuString wuServiceName = GetWideStringFromSystemString(serviceName);
 		WWuString wuSddl = GetWideStringFromSystemString(sddl);
 
-		DWORD result = svcptr->SetServiceSecurity(wuServiceName, L"", wuSddl, audit, changeOwner);
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result);
+		WuResult result = svcptr->SetServiceSecurity(wuServiceName, L"", wuSddl, audit, changeOwner);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	// Expand-File
 	void Wrapper::ExpandFile(String^ fileFullName, String^ destination, ArchiveFileType fileType, CmdletContextBase^ context)
 	{
-		LPSTR wFileName = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(Path::GetFileName(fileFullName)).ToPointer());
-		LPSTR wFilePath = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(Path::GetDirectoryName(fileFullName)).ToPointer());
-		LPSTR wDestination = static_cast<LPSTR>(Marshal::StringToHGlobalAnsi(destination).ToPointer());
+		WWuString wrappedPath = GetWideStringFromSystemString(fileFullName);
+		WWuString wrappedDestination = GetWideStringFromSystemString(destination);
 
-		DWORD result = ctnptr->ExpandArchiveFile(WuString(wFileName), WuString(wFilePath), wDestination, (Containers::ARCHIVE_FILE_TYPE)fileType, context->GetUnderlyingContext());
-		if (result != ERROR_SUCCESS)
-			throw FDIErrorToException((FDIERROR)result);
+		WuResult result = ctnptr->ExpandArchiveFile(wrappedPath, wrappedDestination, (Containers::ARCHIVE_FILE_TYPE)fileType, context->GetUnderlyingContext());
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	// Registry operations
@@ -464,9 +463,9 @@ namespace WindowsUtils::Core
 		WWuString wuValueName = GetWideStringFromSystemString(valueName);
 
 		HKEY whReg = (HKEY)hRegistry.ToPointer();
-		LSTATUS result = regptr->GetRegistryKeyValue(whReg, wuSubKey, wuValueName, dwValueType, data, dwBytesReturned);
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result);
+		WuResult result = regptr->GetRegistryKeyValue(whReg, wuSubKey, wuValueName, dwValueType, data, dwBytesReturned);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 
 		Object^ output;
 		switch (dwValueType)
@@ -491,14 +490,14 @@ namespace WindowsUtils::Core
 			LPCWSTR strData = reinterpret_cast<LPCWSTR>(data.get());
 			DWORD charCount = ExpandEnvironmentStrings(strData, NULL, 0);
 			if (charCount == 0)
-				throw gcnew NativeExceptionBase(GetLastError());
+				throw gcnew NativeException(GetLastError());
 
 			
 			DWORD bytesNeeded = charCount * 2;
 			wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
 			charCount = ExpandEnvironmentStrings(strData, buffer.get(), bytesNeeded);
 			if (charCount == 0)
-				throw gcnew NativeExceptionBase(GetLastError());
+				throw gcnew NativeException(GetLastError());
 
 			output = gcnew String(buffer.get());
 		}
@@ -554,11 +553,11 @@ namespace WindowsUtils::Core
 		WWuString wuSubKey = GetWideStringFromSystemString(subKey);
 		WWuString wuValueName = GetWideStringFromSystemString(valueName);
 
-		LSTATUS result = regptr->GetRegistryKeyValue(wuComputerName, (HKEY)hive, wuSubKey, wuValueName, dwValueType, data, dwBytesReturned);
-		if (result != ERROR_SUCCESS)
+		WuResult result = regptr->GetRegistryKeyValue(wuComputerName, (HKEY)hive, wuSubKey, wuValueName, dwValueType, data, dwBytesReturned);
+		if (result.Result != ERROR_SUCCESS)
 		{
 			RevertToSelf();
-			throw gcnew NativeExceptionBase(result);
+			throw gcnew NativeException(result);
 		}
 
 		Object^ output;
@@ -584,14 +583,14 @@ namespace WindowsUtils::Core
 			LPCWSTR strData = reinterpret_cast<LPCWSTR>(data.get());
 			DWORD charCount = ExpandEnvironmentStrings(strData, NULL, 0);
 			if (charCount == 0)
-				throw gcnew NativeExceptionBase(GetLastError());
+				throw gcnew NativeException(GetLastError());
 
 
 			DWORD bytesNeeded = charCount * 2;
 			wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
 			charCount = ExpandEnvironmentStrings(strData, buffer.get(), bytesNeeded);
 			if (charCount == 0)
-				throw gcnew NativeExceptionBase(GetLastError());
+				throw gcnew NativeException(GetLastError());
 
 			output = gcnew String(buffer.get());
 		}
@@ -652,15 +651,15 @@ namespace WindowsUtils::Core
 
 	array<String^>^ Wrapper::GetRegistrySubKeyNames(IntPtr hRegistry, String^ subKey)
 	{
-		LSTATUS result = ERROR_SUCCESS;
+		WuResult result;
 		wusunique_vector<WWuString> subkeyNameVec = make_wusunique_vector<WWuString>();
 
 		WWuString wuSubKey = GetWideStringFromSystemString(subKey);
 
 		HKEY whReg = (HKEY)hRegistry.ToPointer();
 		result = regptr->GetRegistrySubkeyNames(whReg, wuSubKey, 0, subkeyNameVec.get());
-		if (result != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(result);
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 
 		List<String^>^ output = gcnew List<String^>();
 		for (WWuString singleName : *subkeyNameVec)
@@ -673,7 +672,7 @@ namespace WindowsUtils::Core
 
 	array<String^>^ Wrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, WWuString& password, RegistryHive hive, String^ subKey)
 	{
-		LSTATUS result = ERROR_SUCCESS;
+		WuResult result;
 		wusunique_vector<WWuString> subkeyNameVec = make_wusunique_vector<WWuString>();
 
 		// Managing logon.
@@ -687,10 +686,10 @@ namespace WindowsUtils::Core
 		WWuString wuSubKey = GetWideStringFromSystemString(subKey);
 
 		result = regptr->GetRegistrySubkeyNames(wuComputerName, (HKEY)hive, wuSubKey, 0, subkeyNameVec.get());
-		if (result != ERROR_SUCCESS)
+		if (result.Result != ERROR_SUCCESS)
 		{
 			RevertToSelf();
-			throw gcnew NativeExceptionBase(result);
+			throw gcnew NativeException(result);
 		}
 
 		List<String^>^ output = gcnew List<String^>();
@@ -728,7 +727,7 @@ namespace WindowsUtils::Core
 
 	array<Object^>^ Wrapper::GetRegistryValueList(IntPtr hRegistry, String^ subKey, array<String^>^ valueNameList)
 	{
-		LSTATUS nativeResult;
+		WuResult nativeResult;
 		DWORD dwValCount = valueNameList->Length;
 		PVALENT pValList = new VALENT[valueNameList->Length];
 		WWuString* wuValueNames = new WWuString[valueNameList->Length];
@@ -744,8 +743,8 @@ namespace WindowsUtils::Core
 		
 		HKEY whReg = (HKEY)hRegistry.ToPointer();
 		nativeResult = regptr->GetRegistryKeyValueList(whReg, wuSubKey, pValList, dwValCount, buffer);
-		if (nativeResult != ERROR_SUCCESS)
-			throw gcnew NativeExceptionBase(nativeResult);
+		if (nativeResult.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(nativeResult);
 
 		array<Object^>^ output = gcnew array<Object^>(dwValCount);
 		for (DWORD i = 0; i < dwValCount; i++)
@@ -772,14 +771,14 @@ namespace WindowsUtils::Core
 				LPCWSTR strData = reinterpret_cast<LPCWSTR>((LPCWSTR)pvData);
 				DWORD charCount = ExpandEnvironmentStrings(strData, NULL, 0);
 				if (charCount == 0)
-					throw gcnew NativeExceptionBase(GetLastError());
+					throw gcnew NativeException(GetLastError());
 
 
 				DWORD bytesNeeded = charCount * 2;
 				wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
 				charCount = ExpandEnvironmentStrings(strData, buffer.get(), bytesNeeded);
 				if (charCount == 0)
-					throw gcnew NativeExceptionBase(GetLastError());
+					throw gcnew NativeException(GetLastError());
 
 				output[i] = gcnew String(buffer.get());
 			}
@@ -814,7 +813,7 @@ namespace WindowsUtils::Core
 
 	array<Object^>^ Wrapper::GetRegistryValueList(String^ computerName, String^ userName, WWuString& password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		LSTATUS nativeResult;
+		WuResult nativeResult;
 		DWORD dwValCount = valueNameList->Length;
 		PVALENT pValList = new VALENT[valueNameList->Length];
 		WWuString* wuValueNames = new WWuString[valueNameList->Length];
@@ -837,10 +836,10 @@ namespace WindowsUtils::Core
 		}
 
 		nativeResult = regptr->GetRegistryKeyValueList(wuComputerName, (HKEY)hive, wuSubKey, pValList, dwValCount, buffer);
-		if (nativeResult != ERROR_SUCCESS)
+		if (nativeResult.Result != ERROR_SUCCESS)
 		{
 			RevertToSelf();
-			throw gcnew NativeExceptionBase(nativeResult);
+			throw gcnew NativeException(nativeResult);
 		}
 
 		array<Object^>^ output = gcnew array<Object^>(dwValCount);
@@ -868,14 +867,14 @@ namespace WindowsUtils::Core
 				LPCWSTR strData = reinterpret_cast<LPCWSTR>((LPCWSTR)pvData);
 				DWORD charCount = ExpandEnvironmentStrings(strData, NULL, 0);
 				if (charCount == 0)
-					throw gcnew NativeExceptionBase(GetLastError());
+					throw gcnew NativeException(GetLastError());
 
 
 				DWORD bytesNeeded = charCount * 2;
 				wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
 				charCount = ExpandEnvironmentStrings(strData, buffer.get(), bytesNeeded);
 				if (charCount == 0)
-					throw gcnew NativeExceptionBase(GetLastError());
+					throw gcnew NativeException(GetLastError());
 
 				output[i] = gcnew String(buffer.get());
 			}
@@ -912,6 +911,15 @@ namespace WindowsUtils::Core
 		RevertToSelf();
 
 		return output;
+	}
+
+	void Wrapper::ExpandArchiveFile(String^ filePath, String^ destination, ArchiveFileType fileType, CmdletContextBase^ context) {
+		WWuString wrappedPath = GetWideStringFromSystemString(filePath);
+		WWuString wrappedDestination = GetWideStringFromSystemString(destination);
+
+		WuResult result = ctnptr->ExpandArchiveFile(wrappedPath, wrappedDestination, (Containers::ARCHIVE_FILE_TYPE)fileType, context->GetUnderlyingContext());
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	// Utilities
@@ -986,7 +994,7 @@ namespace WindowsUtils::Core
 			if (!LogonUser(wuUserName.GetBuffer(), wuDomain.GetBuffer(), password.GetBuffer(), LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &hToken))
 			{
 				password.SecureErase();
-				throw gcnew NativeExceptionBase(GetLastError());
+				throw gcnew NativeException(GetLastError());
 			}
 
 			if (!ImpersonateLoggedOnUser(hToken))
@@ -994,7 +1002,7 @@ namespace WindowsUtils::Core
 				password.SecureErase();
 				CloseHandle(hToken);
 
-				throw gcnew NativeExceptionBase(GetLastError());
+				throw gcnew NativeException(GetLastError());
 			}
 
 			// Zeroing the memory here instead of Marshal::ZeroFreeGlobalAllocUnicode
@@ -1039,54 +1047,5 @@ namespace WindowsUtils::Core
 	Notification::PNATIVE_CONTEXT CmdletContextBase::GetUnderlyingContext()
 	{
 		return _nativeContext;
-	}
-
-	UInt64 Wrapper::GetCabinetTotalUncompressedSize(String^ filePath) {
-		WWuString wrapped_path = GetWideStringFromSystemString(filePath);
-		WuCabinet cabinet(wrapped_path);
-
-		return cabinet.TotalUncompressedSize();
-	}
-
-	Exception^ FDIErrorToException(FDIERROR err)
-	{
-		switch (err)
-		{
-		case FDIERROR_CABINET_NOT_FOUND:
-			return gcnew FileNotFoundException("Cabinet not found");
-
-		case FDIERROR_NOT_A_CABINET:
-			return gcnew ArgumentException("File is not a cabinet");
-
-		case FDIERROR_UNKNOWN_CABINET_VERSION:
-			return gcnew ArgumentException("Unknown cabinet version");
-
-		case FDIERROR_CORRUPT_CABINET:
-			return gcnew ArgumentException("Corrupt cabinet");
-
-		case FDIERROR_ALLOC_FAIL:
-			return gcnew OutOfMemoryException("Memory allocation failed");
-
-		case FDIERROR_BAD_COMPR_TYPE:
-			return gcnew ArgumentException("Unknown compression type");
-
-		case FDIERROR_MDI_FAIL:
-			return gcnew ApplicationException("Failure decompressing data");
-
-		case FDIERROR_TARGET_FILE:
-			return gcnew ApplicationException("Failure writing to target file");
-
-		case FDIERROR_RESERVE_MISMATCH:
-			return gcnew ArgumentException("Cabinets in set have different RESERVE sizes");
-
-		case FDIERROR_WRONG_CABINET:
-			return gcnew InvalidOperationException("Cabinet returned on fdintNEXT_CABINET is incorrect");
-
-		case FDIERROR_USER_ABORT:
-			return gcnew OperationCanceledException("Application aborted");
-
-		default:
-			return gcnew SystemException("Unknown error");
-		}
 	}
 }

@@ -4,14 +4,14 @@
 
 namespace WindowsUtils::Core
 {
-    LSTATUS Registry::GetRegistryKeyValue(
+    WuResult Registry::GetRegistryKeyValue(
         const WWuString& computerName,  // The computer name to get the value from.
-        const HKEY hRootKey,           // The hive.
+        const HKEY hRootKey,            // The hive.
         const WWuString& subKey,        // The subkey path.
         const WWuString& valueName,     // The key value name, or property name.
-        DWORD type,                    // The return data type.
-        wuunique_ha_ptr<void>& data,   // The pointer that receives the data.
-        DWORD bytesReturned            // The number of bytes returned.
+        DWORD type,                     // The return data type.
+        wuunique_ha_ptr<void>& data,    // The pointer that receives the data.
+        DWORD bytesReturned             // The number of bytes returned.
     ) {
         LSTATUS result = ERROR_SUCCESS;
         HKEY hRegistry;
@@ -25,7 +25,7 @@ namespace WindowsUtils::Core
             if (result != ERROR_MORE_DATA)
             {
                 RegCloseKey(hRegistry);
-                return result;
+                return WuResult(result, __FILEW__, __LINE__);
             }
         }
 
@@ -33,25 +33,27 @@ namespace WindowsUtils::Core
         result = RegGetValue(hRegistry, subKey.GetBuffer(), valueName.GetBuffer(), RRF_RT_ANY, &type, data.get(), &bytesReturned);
 
         RegCloseKey(hRegistry);
-        return result;
+        
+        return WuResult();
     }
 
-    LSTATUS Registry::GetRegistryKeyValue(HKEY hRegistry, const WWuString& subKey, const WWuString& valueName, DWORD dwType, wuunique_ha_ptr<void>& data, DWORD bytesReturned)
+    WuResult Registry::GetRegistryKeyValue(HKEY hRegistry, const WWuString& subKey, const WWuString& valueName, DWORD dwType, wuunique_ha_ptr<void>& data, DWORD bytesReturned)
     {
         LSTATUS result = ERROR_SUCCESS;
 
         result = RegGetValue(hRegistry, subKey.GetBuffer(), valueName.GetBuffer(), RRF_RT_ANY, &dwType, NULL, &bytesReturned);
-        if (result != ERROR_SUCCESS)
-            return result;
+        DWERRORCHECKV(result);
 
         data = make_wuunique_ha<void>(bytesReturned);
         result = RegGetValue(hRegistry, subKey.GetBuffer(), valueName.GetBuffer(), RRF_RT_ANY, &dwType, data.get(), &bytesReturned);
+        DWERRORCHECKV(result);
 
         RegCloseKey(hRegistry);
-        return result;
+
+        return WuResult();
     }
 
-    LSTATUS Registry::GetRegistrySubkeyNames(
+    WuResult Registry::GetRegistrySubkeyNames(
         const WWuString& computerName,         // The computer name to get the value from.
         const HKEY hRootKey,                  // The hive.
         const WWuString& subKey,               // The subkey path.
@@ -71,7 +73,7 @@ namespace WindowsUtils::Core
         if (result != ERROR_SUCCESS)
         {
             RegCloseKey(hRegistry);
-            return result;
+            return WuResult(result, __FILEW__, __LINE__);
         }
 
         std::unique_ptr<BYTE[]> buffer;
@@ -86,7 +88,7 @@ namespace WindowsUtils::Core
             {
                 RegCloseKey(hSubKey);
                 RegCloseKey(hRegistry);
-                return result;
+                return WuResult(result, __FILEW__, __LINE__);
             }
 
             if (result == ERROR_NO_MORE_ITEMS)
@@ -102,10 +104,10 @@ namespace WindowsUtils::Core
         RegCloseKey(hSubKey);
         RegCloseKey(hRegistry);
 
-        return result;
+        return WuResult();
     }
 
-    LSTATUS Registry::GetRegistrySubkeyNames(HKEY hRegistry, const WWuString& subKey, DWORD options, wuvector<WWuString>* subkeyNames)
+    WuResult Registry::GetRegistrySubkeyNames(HKEY hRegistry, const WWuString& subKey, DWORD options, wuvector<WWuString>* subkeyNames)
     {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwSubkeyNameSz = MAX_KEY_LENGTH;
@@ -113,8 +115,7 @@ namespace WindowsUtils::Core
         HKEY hSubKey;
 
         result = RegOpenKeyEx(hRegistry, subKey.GetBuffer(), options, KEY_READ, &hSubKey);
-        if (result != ERROR_SUCCESS)
-            return result;
+        DWERRORCHECKV(result);
 
         std::unique_ptr<BYTE[]> buffer;
         DWORD currentIndex = 0;
@@ -127,7 +128,7 @@ namespace WindowsUtils::Core
             if (result != ERROR_SUCCESS && result != ERROR_NO_MORE_ITEMS)
             {
                 RegCloseKey(hSubKey);
-                return result;
+                return WuResult(result, __FILEW__, __LINE__);
             }
 
             if (result == ERROR_NO_MORE_ITEMS)
@@ -142,10 +143,10 @@ namespace WindowsUtils::Core
         if (result == ERROR_NO_MORE_ITEMS) { result = ERROR_SUCCESS; }
         RegCloseKey(hSubKey);
 
-        return result;
+        return WuResult();
     }
 
-    LSTATUS Registry::GetRegistryKeyValueList(
+    WuResult Registry::GetRegistryKeyValueList(
         const WWuString& computerName,      // The computer name.
         const HKEY hRootKey,               // The hive.
         const WWuString& subKey,            // The subkey path.
@@ -166,7 +167,7 @@ namespace WindowsUtils::Core
         {
             RegCloseKey(hSubKey);
             RegCloseKey(hRegistry);
-            return result;
+            return WuResult(result, __FILEW__, __LINE__);
         }
 
         result = RegQueryMultipleValues(hSubKey, valArray, valCount, NULL, &dwBuffSize);
@@ -176,7 +177,7 @@ namespace WindowsUtils::Core
             {
                 RegCloseKey(hSubKey);
                 RegCloseKey(hRegistry);
-                return result;
+                return WuResult(result, __FILEW__, __LINE__);
             }
         }
 
@@ -186,18 +187,17 @@ namespace WindowsUtils::Core
         RegCloseKey(hSubKey);
         RegCloseKey(hRegistry);
 
-        return result;
+        return WuResult();
     }
 
-    LSTATUS Registry::GetRegistryKeyValueList(HKEY hRegistry, const WWuString& subKey, PVALENT valArray, DWORD valCount, wuunique_ha_ptr<void>& dataBuffer)
+    WuResult Registry::GetRegistryKeyValueList(HKEY hRegistry, const WWuString& subKey, PVALENT valArray, DWORD valCount, wuunique_ha_ptr<void>& dataBuffer)
     {
         LSTATUS result = ERROR_SUCCESS;
         DWORD dwBuffSize = 0;
         HKEY hSubKey;
 
         result = RegOpenKeyEx(hRegistry, subKey.GetBuffer(), KEY_QUERY_VALUE, KEY_READ, &hSubKey);
-        if (result != ERROR_SUCCESS)
-            return result;
+        DWERRORCHECKV(result);
 
         result = RegQueryMultipleValues(hSubKey, valArray, valCount, NULL, &dwBuffSize);
         if (result != ERROR_SUCCESS)
@@ -205,7 +205,7 @@ namespace WindowsUtils::Core
             if (result != ERROR_MORE_DATA)
             {
                 RegCloseKey(hSubKey);
-                return result;
+                return WuResult(result, __FILEW__, __LINE__);
             }
         }
 
@@ -214,6 +214,6 @@ namespace WindowsUtils::Core
 
         RegCloseKey(hSubKey);
 
-        return result;
+        return WuResult();
     }
 }

@@ -3,14 +3,13 @@
 
 namespace WindowsUtils::Core
 {
-	DWORD Services::RemoveService(
+	WuResult Services::RemoveService(
 		const WWuString& serviceName,					// The service name.
 		const WWuString& computerName,					// Optional computer name.
 		BOOL stopService,								// Stops the service, if it's running.
 		Notification::PNATIVE_CONTEXT context			// A native representation of the Cmdlet context.
 	)
 	{
-		DWORD result = ERROR_SUCCESS;
 		SC_HANDLE hScm;
 		SC_HANDLE hService;
 		DWORD desiredAccess;
@@ -22,104 +21,114 @@ namespace WindowsUtils::Core
 		else
 			desiredAccess = DELETE;
 
-		hScm = ::OpenSCManagerW(computerName.GetBuffer(), SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
+		hScm = OpenSCManagerW(computerName.GetBuffer(), SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
 		if (NULL == hScm)
-			return ::GetLastError();
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 
-		hService = ::OpenServiceW(hScm, serviceName.GetBuffer(), desiredAccess);
+		hService = OpenServiceW(hScm, serviceName.GetBuffer(), desiredAccess);
 		if (NULL == hService)
 		{
-			result = ::GetLastError();
-			goto CLEANUP;
+			CloseServiceHandle(hScm);
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 		}
 
 		if (stopService == TRUE)
 		{
 			serviceStatus = std::make_shared<SERVICE_STATUS>();
 
-			if (!::QueryServiceStatus(hService, serviceStatus.get()))
+			if (!QueryServiceStatus(hService, serviceStatus.get()))
 			{
-				result = ::GetLastError();
-				goto CLEANUP;
+				CloseServiceHandle(hService);
+				CloseServiceHandle(hScm);
+				return WuResult(GetLastError(), __FILEW__, __LINE__);
 			}
 
 			if (serviceStatus.get()->dwCurrentState != SERVICE_STOPPED && serviceStatus.get()->dwCurrentState != SERVICE_STOP_PENDING)
 			{
-				result = StopDependentServices(hScm, hService, L"", context);
-				if (result != ERROR_SUCCESS)
-					goto CLEANUP;
+				WuResult result = StopDependentServices(hScm, hService, L"", context);
+				if (result.Result != ERROR_SUCCESS) {
+					CloseServiceHandle(hService);
+					CloseServiceHandle(hScm);
+					return result;
+				}
 
 				result = StopServiceWithWarning(hService, hScm, serviceName, serviceStatus.get(), context);
-				if (result != ERROR_SUCCESS)
-					goto CLEANUP;
+				if (result.Result != ERROR_SUCCESS) {
+					CloseServiceHandle(hService);
+					CloseServiceHandle(hScm);
+					return result;
+				}
 			}
 		}
 
-		if (!::DeleteService(hService))
-			result = ::GetLastError();
-
-	CLEANUP:
+		if (!DeleteService(hService)) {
+			CloseServiceHandle(hService);
+			CloseServiceHandle(hScm);
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
+		}
 
 		if (NULL != hScm)
-			::CloseServiceHandle(hScm);
+			CloseServiceHandle(hScm);
 		if (NULL != hService)
-			::CloseServiceHandle(hService);
+			CloseServiceHandle(hService);
 
-		return result;
+		return WuResult();
 	}
 
-	DWORD Services::RemoveService(SC_HANDLE hService, const WWuString& serviceName, const WWuString& computerName, BOOL stopService, Notification::PNATIVE_CONTEXT context)
+	WuResult Services::RemoveService(SC_HANDLE hService, const WWuString& serviceName, const WWuString& computerName, BOOL stopService, Notification::PNATIVE_CONTEXT context)
 	{
-		DWORD result = ERROR_SUCCESS;
 		SC_HANDLE hScm = NULL;
 
-		hScm = ::OpenSCManager(computerName.GetBuffer(), SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
+		hScm = OpenSCManager(computerName.GetBuffer(), SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
 		if (hScm == NULL)
-			return ::GetLastError();
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 
 		std::shared_ptr<SERVICE_STATUS> serviceStatus;
 		if (stopService)
 		{
 			serviceStatus = std::make_shared<SERVICE_STATUS>();
-			if (!::QueryServiceStatus(hService, serviceStatus.get()))
+			if (!QueryServiceStatus(hService, serviceStatus.get()))
 			{
-				result = GetLastError();
-				goto CLEANUP;
+				CloseServiceHandle(hScm);
+				return WuResult(GetLastError(), __FILEW__, __LINE__);
 			}
 
 			if (serviceStatus.get()->dwCurrentState != SERVICE_STOPPED && serviceStatus.get()->dwCurrentState != SERVICE_STOP_PENDING)
 			{
-				DWORD waittime = 0;
-
-				result = StopDependentServices(hScm, hService, computerName, context);
-				if (result != ERROR_SUCCESS)
-					goto CLEANUP;
+				WuResult result = StopDependentServices(hScm, hService, computerName, context);
+				if (result.Result != ERROR_SUCCESS) {
+					CloseServiceHandle(hScm);
+					return result;
+				}
 
 				result = StopServiceWithWarning(hService, hScm, serviceName, serviceStatus.get(), context);
-				if (result != ERROR_SUCCESS)
-					goto CLEANUP;
+				if (result.Result != ERROR_SUCCESS) {
+					CloseServiceHandle(hScm);
+					return result;
+				}
 			}
 		}
 
-		if (!::DeleteService(hService))
-			result = ::GetLastError();
+		if (!DeleteService(hService)) {
+			CloseServiceHandle(hScm);
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
+		}
 
-	CLEANUP:
 
-		if (NULL != hService)
-			::CloseServiceHandle(hService);
+		if (NULL != hScm)
+			CloseServiceHandle(hScm);
 
-		return result;
+		return WuResult();
 	}
 
-	DWORD Services::GetServiceSecurity(
+	WuResult Services::GetServiceSecurity(
 		const WWuString& serviceName,
 		const WWuString& computerName,
 		PSECURITY_DESCRIPTOR pSvcSecurity,
 		LPDWORD pdwSize,
 		BOOL bAudit
 	) {
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
 		wusunique_vector<SC_HANDLE> sc_handles = make_wusunique_vector<SC_HANDLE>();
 		wusunique_vector<WWuString> privilegeList = make_wusunique_vector<WWuString>();
 		
@@ -131,46 +140,48 @@ namespace WindowsUtils::Core
 			privilegeList->push_back(SE_SECURITY_NAME);
 			
 			result = AccessControl::AdjustCurrentTokenPrivilege(privilegeList.get(), SE_PRIVILEGE_ENABLED);
-			if (result != ERROR_SUCCESS)
+			if (result.Result != ERROR_SUCCESS)
 				return result;
 
 			dwServiceAccess |= ACCESS_SYSTEM_SECURITY;
 		}
 
 		SC_HANDLE hScm = ::OpenSCManager(computerName.GetBuffer(), SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
-		if (hScm == NULL)
-			return ::GetLastError();
+		if (hScm == NULL) {
+			result = WuResult(GetLastError(), __FILEW__, __LINE__);
+			goto CLEANUP;
+		}
 		sc_handles->push_back(hScm);
 
 		SC_HANDLE hService = ::OpenServiceW(hScm, serviceName.GetBuffer(), dwServiceAccess);
 		if (hService == NULL)
 		{
-			result = ::GetLastError();
+			result = WuResult(GetLastError(), __FILEW__, __LINE__);
 			goto CLEANUP;
 		}
 		sc_handles->push_back(hService);
 
-		result = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &pSvcSecurity);
-		if (result != ERROR_SUCCESS)
-			goto CLEANUP;
+		DWORD dwResult = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &pSvcSecurity);
+		if (dwResult != ERROR_SUCCESS)
+			result = WuResult(dwResult, __FILEW__, __LINE__);
 
 	CLEANUP:
 		if (bAudit)
 			AccessControl::AdjustCurrentTokenPrivilege(privilegeList.get(), SE_PRIVILEGE_DISABLED);
 
 		for (SC_HANDLE handle : *sc_handles)
-			::CloseServiceHandle(handle);
+			CloseServiceHandle(handle);
 
 		return result;
 	}
 
-	DWORD Services::GetServiceSecurity(
+	WuResult Services::GetServiceSecurity(
 		SC_HANDLE hService,
 		PSECURITY_DESCRIPTOR pSvcSecurity,
 		LPDWORD pdwSize,
 		BOOL bAudit
 	) {
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
 		DWORD bytesNeeded = 0;
 		wusunique_vector<WWuString> privilegeList = make_wusunique_vector<WWuString>();
 
@@ -182,15 +193,15 @@ namespace WindowsUtils::Core
 			privilegeList->push_back(SE_SECURITY_NAME);
 			
 			result = AccessControl::AdjustCurrentTokenPrivilege(privilegeList.get(), SE_PRIVILEGE_ENABLED);
-			if (result != ERROR_SUCCESS)
+			if (result.Result != ERROR_SUCCESS)
 				return result;
 
 			dwServiceAccess |= ACCESS_SYSTEM_SECURITY;
 		}
 
-		result = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &pSvcSecurity);
-		if (result != ERROR_SUCCESS)
-			return result;
+		DWORD dwResult = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &pSvcSecurity);
+		if (dwResult != ERROR_SUCCESS)
+			result = WuResult(dwResult, __FILEW__, __LINE__);
 
 		if (bAudit)
 			result = AccessControl::AdjustCurrentTokenPrivilege(privilegeList.get(), SE_PRIVILEGE_DISABLED);
@@ -198,14 +209,14 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD Services::SetServiceSecurity(
+	WuResult Services::SetServiceSecurity(
 		const WWuString& serviceName,		// The service name.
 		const WWuString& computerName,		// The computer name where to set the service security.
 		const WWuString& sddl,				// The SDDL representation of the security descriptor to set.
 		BOOL changeAudit,					// TRUE to change SACL.
 		BOOL changeOwner					// TRUE to change the owner.
 	) {
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
 		DWORD dwSzSecDesc;
 		PSECURITY_DESCRIPTOR pSecDesc;
 		
@@ -213,7 +224,7 @@ namespace WindowsUtils::Core
 		wusunique_vector<WWuString> privilegeList = make_wusunique_vector<WWuString>();
 
 		if (!ConvertStringSecurityDescriptorToSecurityDescriptor(sddl.GetBuffer(), SDDL_REVISION_1, &pSecDesc, &dwSzSecDesc))
-			return GetLastError();
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 
 		DWORD dwSvcAccess = WRITE_DAC | WRITE_OWNER;
 		DWORD dwSecInfo = DACL_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION;
@@ -228,12 +239,14 @@ namespace WindowsUtils::Core
 			dwSvcAccess |= ACCESS_SYSTEM_SECURITY;
 			dwSecInfo |= SACL_SECURITY_INFORMATION;
 		}
-		AccessControl::AdjustCurrentTokenPrivilege(privilegeList.get(), SE_PRIVILEGE_ENABLED);
+		result = AccessControl::AdjustCurrentTokenPrivilege(privilegeList.get(), SE_PRIVILEGE_ENABLED);
+		if (result.Result != ERROR_SUCCESS)
+			return result;
 
 		SC_HANDLE hScm = OpenSCManager(computerName.GetBuffer(), SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
 		if (hScm == NULL)
 		{
-			result = GetLastError();
+			result = WuResult(GetLastError(), __FILEW__, __LINE__);
 			goto CLEANUP;
 		}
 		scHandles->push_back(hScm);
@@ -241,13 +254,13 @@ namespace WindowsUtils::Core
 		SC_HANDLE hService = OpenService(hScm, serviceName.GetBuffer(), dwSvcAccess);
 		if (hService == NULL)
 		{
-			result = GetLastError();
+			result = WuResult(GetLastError(), __FILEW__, __LINE__);
 			goto CLEANUP;
 		}
 		scHandles->push_back(hService);
 
 		if (!SetServiceObjectSecurity(hService, dwSecInfo, pSecDesc))
-			result = GetLastError();
+			result = WuResult(GetLastError(), __FILEW__, __LINE__);
 
 	CLEANUP:
 		if (pSecDesc != NULL)
@@ -265,14 +278,14 @@ namespace WindowsUtils::Core
 	===========================================*/
 
 	// Queries and stops services dependent of a given service.
-	DWORD StopDependentServices(
+	WuResult StopDependentServices(
 		SC_HANDLE hScm,								// Handle to the Service Control Manager. Used to open dependent services.
 		SC_HANDLE hService,							// Handle to the service we want to query dependence.
 		const WWuString& computerName,				// Computer name. In cases where we inherit the service handle from the pipeline.
 		Notification::PNATIVE_CONTEXT context		// A native representation of the Cmdlet context.
 	)
 	{
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
 		DWORD bytesNeeded;
 		DWORD serviceCount;
 		BOOL localScm = FALSE;
@@ -291,7 +304,7 @@ namespace WindowsUtils::Core
 		{
 			hScm = OpenSCManager(computerName.GetBuffer(), SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT);
 			if (hScm == NULL)
-				return GetLastError();
+				return WuResult(GetLastError(), __FILEW__, __LINE__);
 			
 			localScm = TRUE;
 		}
@@ -302,7 +315,7 @@ namespace WindowsUtils::Core
 		if (!EnumDependentServices(hService, SERVICE_ACTIVE, serviceList.get(), bytesNeeded, &bytesNeeded, &serviceCount))
 		{
 			CloseServiceHandle(hScm);
-			return GetLastError();
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 		}
 
 		// Going through the service array and closing them.
@@ -315,14 +328,14 @@ namespace WindowsUtils::Core
 			if (currentService == NULL)
 			{
 				CloseServiceHandle(hScm);
-				return GetLastError();
+				return WuResult(GetLastError(), __FILEW__, __LINE__);
 			}
 
 			result = StopServiceWithWarning(currentService, hScm, serviceList.get()[i].lpServiceName, serviceStatus.get(), context);
-			if (result == ERROR_SERVICE_NOT_ACTIVE)
-				result = ERROR_SUCCESS;
+			if (result.Result == ERROR_SERVICE_NOT_ACTIVE)
+				result = WuResult();
 			
-			if (result != ERROR_SUCCESS)
+			if (result.Result != ERROR_SUCCESS)
 			{
 				CloseServiceHandle(currentService);
 				CloseServiceHandle(hScm);
@@ -338,25 +351,26 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
-	DWORD StopServiceWithWarning(SC_HANDLE hService, SC_HANDLE hScm, const WWuString& serviceName, LPSERVICE_STATUS serviceStatus, Notification::PNATIVE_CONTEXT context)
+	WuResult StopServiceWithWarning(SC_HANDLE hService, SC_HANDLE hScm, const WWuString& serviceName, LPSERVICE_STATUS serviceStatus, Notification::PNATIVE_CONTEXT context)
 	{
-		DWORD result = ERROR_SUCCESS;
+		WuResult result;
+		DWORD dwResult;
 		DWORD dwChars = 0;
 
 		if (!GetServiceDisplayName(hScm, serviceName.GetBuffer(), NULL, &dwChars))
 		{
-			result = GetLastError();
-			if (result != ERROR_INSUFFICIENT_BUFFER)
-				return result;
+			dwResult = GetLastError();
+			if (dwResult != ERROR_INSUFFICIENT_BUFFER)
+				return WuResult(dwResult, __FILEW__, __LINE__);
 			else
-				result = ERROR_SUCCESS;
+				dwResult = ERROR_SUCCESS;
 		}
 
 		dwChars += 1;
 		DWORD bytesNeeded = dwChars * 2;
 		wuunique_ha_ptr<WCHAR> dnameBuffer = make_wuunique_ha<WCHAR>(bytesNeeded);
 		if (!GetServiceDisplayName(hScm, serviceName.GetBuffer(), dnameBuffer.get(), &dwChars))
-			return GetLastError();
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
 
 		WWuString displayName(dnameBuffer.get());
 		WWuString warningText = WWuString::Format(L"Waiting for service '%ws (%ws)' to stop...", displayName, serviceName.GetBuffer());
@@ -365,26 +379,28 @@ namespace WindowsUtils::Core
 		{
 			if (serviceStatus->dwCurrentState != SERVICE_STOP_PENDING && serviceStatus->dwCurrentState != SERVICE_START_PENDING && serviceStatus->dwCurrentState != SERVICE_STOPPED)
 			{
-				if (!::ControlService(hService, SERVICE_CONTROL_STOP, serviceStatus))
+				if (!ControlService(hService, SERVICE_CONTROL_STOP, serviceStatus))
 				{
-					result = GetLastError();
+					dwResult = GetLastError();
 
 					// Checking if the service is already stopped.
-					if (result == ERROR_SERVICE_NOT_ACTIVE)
+					if (dwResult == ERROR_SERVICE_NOT_ACTIVE)
 						break;
 
-					if (result != ERROR_SERVICE_CANNOT_ACCEPT_CTRL)
-						return result;
+					if (dwResult != ERROR_SERVICE_CANNOT_ACCEPT_CTRL)
+						return WuResult(dwResult, __FILEW__, __LINE__);;
 				}
 			}
 
 			if (serviceStatus->dwCurrentState == SERVICE_STOP_PENDING)
 			{
-				::Sleep(2145);
+				// '2145' is the closes I could get to the waiting warning in
+				// 'Stop-Service' without getting into the code.
+				Sleep(2145);
 				NativeWriteWarning(context, warningText);
 				if (!QueryServiceStatus(hService, serviceStatus))
 				{
-					result = GetLastError();
+					result = WuResult(GetLastError(), __FILEW__, __LINE__);
 					break;
 				}
 			}

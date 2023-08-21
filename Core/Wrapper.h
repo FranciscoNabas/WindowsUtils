@@ -2,6 +2,7 @@
 #pragma unmanaged
 
 #include "String.h"
+#include "Common.h"
 #include "Registry.h"
 #include "Services.h"
 #include "Utilities.h"
@@ -18,6 +19,7 @@ using namespace System;
 using namespace System::IO;
 using namespace System::Security;
 using namespace System::Collections::Generic;
+using namespace System::Runtime::Serialization;
 using namespace System::Runtime::InteropServices;
 using namespace Microsoft::Win32;
 
@@ -336,8 +338,7 @@ namespace WindowsUtils::Core
 		void LogonAndImpersonateUser(String^ userName, SecureString^ password);
 
 		// Containers
-		// Testing WuCabinet.
-		UInt64 GetCabinetTotalUncompressedSize(String^ filePath);
+		void ExpandArchiveFile(String^ filePath, String^ destination, ArchiveFileType fileType, CmdletContextBase^ context);
 
 	private:
 		Utilities* utlptr;
@@ -356,39 +357,47 @@ namespace WindowsUtils::Core
 
 	WWuString GetWideStringFromSystemString(String^ string);
 	Exception^ FDIErrorToException(FDIERROR err);
+}
 
-	public ref class NativeExceptionBase : public Exception
-	{
+namespace WindowsUtils 	{
+	[Serializable()]
+	public ref class NativeException : public Exception {
 	public:
+		property Int32 ErrorCode { Int32 get() { return _errorCode; } }
+		
+#if defined(_DEBUG)
+		property String^ CompactTrace { String^ get() { return _compactTrace; } }
 
-		property int NativeErrorCode {
-			int get() {
-				return _nativeErrorCode;
-			}
-		}
+		NativeException(WuResult& result)
+			: Exception(gcnew String(result.Message.GetBuffer())),
+			_errorCode(result.Result),
+			_compactTrace(gcnew String(result.CompactTrace.GetBuffer())) { }
+#else
+		NativeException(WuResult& result)
+			: Exception(gcnew String(result.Message.GetBuffer())),
+			_errorCode(result.Result) { }
+#endif
+		NativeException(Int32 errorCode)
+			: Exception((gcnew String(WuResult::GetErrorMessage(errorCode, false).GetBuffer()))->Trim()),
+			_errorCode(errorCode) { }
 
-		NativeExceptionBase() : Exception() { }
+		NativeException(Int32 errorCode, String^ message)
+			: Exception(message), _errorCode(errorCode) { }
 
-		NativeExceptionBase(int nativeErrorCode)
-			: Exception(wrapper->GetFormattedError(nativeErrorCode)) {
+		NativeException(Int32 errorCode, String^ message, Exception^ inner_exception)
+			: Exception(message, inner_exception), _errorCode(errorCode) { }
 
-			_nativeErrorCode = nativeErrorCode;
-		}
+	protected:
+		NativeException()
+			: Exception() { }
 
-		NativeExceptionBase(int nativeErrorCode, String^ message)
-			: Exception(message) {
-
-			_nativeErrorCode = nativeErrorCode;
-		}
-
-		NativeExceptionBase(int nativeErrorCode, String^ message, Exception^ innerException)
-			: Exception(message, innerException) {
-
-			_nativeErrorCode = nativeErrorCode;
-		}
+		NativeException(SerializationInfo^ info, StreamingContext context)
+			: Exception(info, context) { }
 
 	private:
-		int _nativeErrorCode;
-		Wrapper^ wrapper = gcnew Wrapper();
+		Int32 _errorCode;
+#if defined(_DEBUG)
+		String^ _compactTrace;
+#endif
 	};
 }

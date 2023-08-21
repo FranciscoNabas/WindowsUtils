@@ -1,6 +1,7 @@
 #pragma once
 #pragma unmanaged
 
+#include "Common.h"
 #include "String.h"
 
 #define STATUS_SUCCESS ERROR_SUCCESS
@@ -205,8 +206,8 @@ namespace WindowsUtils::Core
 	==		 Function identification		==
 	==========================================*/
 
-	NTSTATUS GetNtProcessUsingFile(const WWuString& fileName, wuunique_ha_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION>& procUsingFileInfo);
-	DWORD NtQueryObjectRaw(LPVOID param);
-	NTSTATUS NtQueryObjectWithTimeout(HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass, PVOID objectInfo, ULONG timeout);
-	NTSTATUS GetProcessImageName(DWORD processId, WWuString& imageName);
+	WuResult GetNtProcessUsingFile(const WWuString& fileName, wuunique_ha_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION>& procUsingFileInfo);
+	DWORD WINAPI NtQueryObjectRaw(LPVOID param);
+	WuResult NtQueryObjectWithTimeout(HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass, PVOID objectInfo, ULONG timeout);
+	WuResult GetProcessImageName(DWORD processId, WWuString& imageName);
 }

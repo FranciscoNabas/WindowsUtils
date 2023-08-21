@@ -5,14 +5,14 @@
 namespace WindowsUtils::Core
 {
     // Caller needs to call 'LocalFree'.
-    DWORD AccessControl::GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES tokenPrivileges)
+    WuResult AccessControl::GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES tokenPrivileges)
     {
-        DWORD result = ERROR_SUCCESS;
+        DWORD result;
         HANDLE hToken;
         DWORD dwBytesNeeded;
 
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_QUERY_SOURCE, &hToken))
-            return GetLastError();
+            return WuResult(GetLastError(), __FILEW__, __LINE__);
 
         if (!GetTokenInformation(hToken, TokenPrivileges, NULL, NULL, &dwBytesNeeded))
         {
@@ -20,7 +20,7 @@ namespace WindowsUtils::Core
             if (result != ERROR_INSUFFICIENT_BUFFER)
             {
                 CloseHandle(hToken);
-                return result;
+                return WuResult(result, __FILEW__, __LINE__);
             }
             
             result = ERROR_SUCCESS;
@@ -30,19 +30,18 @@ namespace WindowsUtils::Core
         if (!GetTokenInformation(hToken, TokenPrivileges, (LPVOID)tokenPrivileges, dwBytesNeeded, &dwBytesNeeded))
         {
             CloseHandle(hToken);
-            return GetLastError();
+            return WuResult(GetLastError(), __FILEW__, __LINE__);
         }
 
-        return result;
+        return WuResult();
     }
 
-    DWORD AccessControl::AdjustCurrentTokenPrivilege(wuvector<WWuString>* spvlpPrivilegeNameList, const DWORD dwAttributes)
+    WuResult AccessControl::AdjustCurrentTokenPrivilege(wuvector<WWuString>* spvlpPrivilegeNameList, const DWORD dwAttributes)
     {
-        DWORD result = ERROR_SUCCESS;
         HANDLE hToken;
 
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken))
-            return GetLastError();
+            return WuResult(GetLastError(), __FILEW__, __LINE__);
 
         DWORD privilegeCount = static_cast<DWORD>(spvlpPrivilegeNameList->size());
         LUID_AND_ATTRIBUTES* luidAndAttr = new LUID_AND_ATTRIBUTES[privilegeCount];
@@ -54,17 +53,21 @@ namespace WindowsUtils::Core
         for (size_t i = 0; i < privilegeCount; i++)
         {
             if (!LookupPrivilegeValueW(NULL, spvlpPrivilegeNameList->at(i).GetBuffer(), &privileges.Privileges[i].Luid))
-                return GetLastError();
+                return WuResult(GetLastError(), __FILEW__, __LINE__);
             
             privileges.Privileges[i].Attributes = dwAttributes;
         }
 
-        if (!AdjustTokenPrivileges(hToken, FALSE, &privileges, 0, NULL, NULL))
-            result = GetLastError();
+        if (!AdjustTokenPrivileges(hToken, FALSE, &privileges, 0, NULL, NULL)) {
+            delete[] luidAndAttr;
+            CloseHandle(hToken);
+            
+            return WuResult(GetLastError(), __FILEW__, __LINE__);
+        }
 
         delete[] luidAndAttr;
         CloseHandle(hToken);
 
-        return result;
+        return WuResult();
     }
 }

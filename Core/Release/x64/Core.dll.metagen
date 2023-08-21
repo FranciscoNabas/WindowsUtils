@@ -196,17 +196,17 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetStringArrayFromDoubleNullTerminatedCStyleArray(IntPtr, UInt32 IsLong): PrivateScope, Public, HideBySig
     GetStringArrayFromDoubleNullTerminatedCStyleArray(Char* IsConst IsConst, UInt32 IsLong): PrivateScope, Public, HideBySig
     LogonAndImpersonateUser(String, SecureString): PrivateScope, Public, HideBySig
-    GetCabinetTotalUncompressedSize(String): PrivateScope, Public, HideBySig
-Class WindowsUtils.Core.NativeExceptionBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+    ExpandArchiveFile(String, String, ArchiveFileType, CmdletContextBase): PrivateScope, Public, HideBySig
+Class WindowsUtils.NativeException: AutoLayout, AnsiClass, Class, Public, Serializable, BeforeFieldInit
   :System.Exception
     Void .ctor(Int32, System.String, System.Exception): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(Int32, System.String): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(Int32): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
-    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+    Void .ctor(WuResult*): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Properties:
-    Int32 NativeErrorCode 'get ' : 
+    Int32 ErrorCode 'get ' : 
   Methods:
-    get_NativeErrorCode(): PrivateScope, Public, HideBySig, SpecialName
+    get_ErrorCode(): PrivateScope, Public, HideBySig, SpecialName
 Struct WindowsUtils.Core.ArchiveFileType: AutoLayout, AnsiClass, Class, Public, Sealed, BeforeFieldInit
   :System.Enum
   Fields:

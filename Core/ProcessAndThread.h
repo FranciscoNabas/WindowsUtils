@@ -49,13 +49,13 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		// Get-ObjectHandle
-		DWORD GetProcessObjectHandle(wuvector<WU_OBJECT_HANDLE>* objectHandleList, wuvector<WWuString>* resList, BOOL closeHandle);
+		WuResult GetProcessObjectHandle(wuvector<WU_OBJECT_HANDLE>* objectHandleList, wuvector<WWuString>* resList, BOOL closeHandle);
 	};
 
 	/*=========================================
 	==			 Utility functions			 ==
 	===========================================*/
 
-	DWORD GetProccessVersionInfo(const WWuString& imagePath, ProcessAndThread::VERSION_INFO_PROPERTY propertyName, WWuString& value);
-	DWORD CloseExtProcessHandle(HANDLE sourceProcess, const WWuString& objectName);
+	WuResult GetProccessVersionInfo(const WWuString& imagePath, ProcessAndThread::VERSION_INFO_PROPERTY propertyName, WWuString& value);
+	WuResult CloseExtProcessHandle(HANDLE sourceProcess, const WWuString& objectName);
 }

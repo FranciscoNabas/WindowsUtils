@@ -14,7 +14,7 @@ public abstract class CoreCommandBase : PSCmdlet, IDynamicParameters
     private bool _force;
     private object? _dynamicParameters;
 
-    internal virtual CmdletContext CmdletContext
+    internal virtual CmdletNativeContext CmdletContext
     {
         get
         {
@@ -37,12 +37,12 @@ public abstract class CoreCommandBase : PSCmdlet, IDynamicParameters
         set { _force = value; }
     }
 
-    internal virtual object? GetDynamicParameters(CmdletContext context)
+    internal virtual object? GetDynamicParameters(CmdletNativeContext context)
         => null;
 
     public object? GetDynamicParameters()
     {
-        CmdletContext cmdletContext = CmdletContext;
+        CmdletNativeContext cmdletContext = CmdletContext;
 		cmdletContext.PassThru = false;
         try
 		{
@@ -65,12 +65,12 @@ public abstract class CoreCommandBase : PSCmdlet, IDynamicParameters
     }
 }
 
-internal sealed class CmdletContext
+internal sealed class CmdletNativeContext : IDisposable
 {
-    private static readonly ProgressMappedShare _progressShare
+    private static ProgressMappedShare _progressShare
         = ProgressMappedShare.GetShare();
 
-    private static readonly WarningMappedShare _warningShare
+    private static WarningMappedShare _warningShare
         = WarningMappedShare.GetShare();
 
     private readonly PSCmdlet _command;
@@ -120,7 +120,7 @@ internal sealed class CmdletContext
     internal bool Stopping { get; private set; }
 
     // Constructors.
-    internal CmdletContext(PSCmdlet command)
+    internal CmdletNativeContext(PSCmdlet command)
     {
         _command = command;
         _streamErrors = true;
@@ -129,7 +129,7 @@ internal sealed class CmdletContext
     }
     
     // Operators
-    public static explicit operator CmdletContextBase(CmdletContext context)
+    public static explicit operator CmdletContextBase(CmdletNativeContext context)
     {
         return new CmdletContextBase(
             new CmdletContextBase.WriteProgressWrapper(context.NativeWriteProgress),
@@ -137,6 +137,26 @@ internal sealed class CmdletContext
             _progressShare.DangerousGetMappedFileHandle(),
             _warningShare.DangerousGetMappedFileHandle()
         );
+    }
+
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _progressShare.Dispose();
+            _warningShare.Dispose();
+
+#pragma warning disable CS8625
+            _progressShare = null;
+            _warningShare = null;
+#pragma warning restore CS8625
+        }
     }
 
     // Default Cmdlet methods.

@@ -1,6 +1,7 @@
 #pragma once
 #pragma unmanaged
 
+#include "Common.h"
 #include "String.h"
 #include "Expressions.h"
 
@@ -36,20 +37,20 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		//Get-ResourceMessageTable
-		DWORD GetResourceMessageTable(wuvector<WU_RESOURCE_MESSAGE_TABLE>* messageTable, const WWuString& libName);
+		WuResult GetResourceMessageTable(wuvector<WU_RESOURCE_MESSAGE_TABLE>* messageTable, const WWuString& libName);
 
 		// Get-LastWin32Error
-		DWORD GetFormattedWin32Error(WWuString& errorMessage);
+		WuResult GetFormattedWin32Error(WWuString& errorMessage);
 		
 		// Get-FormattedError
-		DWORD GetFormattedError(DWORD errorCode, WWuString& errorMessage);
+		WuResult GetFormattedError(DWORD errorCode, WWuString& errorMessage);
 
 		// Get-MsiProperties
-		DWORD GetMsiProperties(wumap<WWuString, WWuString>* propertyMap, const WWuString& fileName);
-		DWORD GetMsiExtendedError(WWuString& errorMessage);
+		WuResult GetMsiProperties(wumap<WWuString, WWuString>* propertyMap, const WWuString& fileName);
+		WuResult GetMsiExtendedError(WWuString& errorMessage);
 
 		// Send-Click
-		DWORD SendClick();
+		WuResult SendClick();
 	};
 
 	/*
@@ -64,5 +65,5 @@ namespace WindowsUtils::Core
 
 	}LOAD_MODULE_ERROR_INFO, * PLOAD_MODULE_ERROR_INFO;
 
-	DWORD GetEnvVariable(const WWuString& variableName, WWuString& value);
+	WuResult GetEnvVariable(const WWuString& variableName, WWuString& value);
 }

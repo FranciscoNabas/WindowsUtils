@@ -3,86 +3,26 @@
 #include "Containers.h"
 
 namespace WindowsUtils::Core {
-	DWORD Containers::ExpandArchiveFile(WuString& fileName, WuString& filePath, const WuString& destination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context) {
-		DWORD result = ERROR_SUCCESS;
-		switch (fileType) {
-			case ARCHIVE_FILE_TYPE::Cabinet:
-				// result = ExpandCabinetFile(fileName, filePath, destination, context);
-				break;
-		}
-
-		return result;
-	}
-
-	DWORD WuCabinet::ExpandCabinetFile(const WuString& destination, Notification::PNATIVE_CONTEXT context) {
-		DWORD result = ERROR_SUCCESS;
-		ERF erfError;
-		HFDI hContext;
-
-		hContext = FDICreate(
-			(PFNALLOC)FdiAlloc,
-			(PFNFREE)FdiFree,
-			(PFNOPEN)FdiOpen,
-			(PFNREAD)FdiRead,
-			(PFNWRITE)FdiWrite,
-			(PFNCLOSE)FdiClose,
-			(PFNSEEK)FdiSeek,
-			cpuUNKNOWN,
-			&erfError
-		);
-
-		if (hContext == NULL)
-			return (DWORD)erfError.erfOper;
-
-		/*
-		*	TODO:
-		*
-		*	Set up progress notification thread first!
-		*
-		*	Call 'FDIIsCabinet' to get cabinet information to set up the progress.
-		*	Values like cabinet name, and path will be filled by the notification callback.
-		*
-		*	Use the 'hasnext' property from 'FDICABINETINFO' to determine how many cabinets are there.
-		*	Call 'FDIIsCabinet' on each one to determine the complete number of files to extract, thus
-		*	having an accurate progress bar.
-		*/
-
-		WuString filePath = _filePath;
-		WuString fileName = filePath;
-		PathStripPathA(fileName.GetBuffer());
-
-		if (!FDICopy(hContext, fileName.GetBuffer(), filePath.GetBuffer(), 0, FdiNotify, NULL, NULL)) {
-			if (hContext != NULL)
-				FDIDestroy(hContext);
-
-			return (DWORD)erfError.erfOper;
-		}
-
-		if (hContext != NULL)
-			FDIDestroy(hContext);
-
-		return result;
-	}
-
 	// WuCabinet
 
 	WuCabinet::WuCabinet(const WWuString& filePath, Notification::PNATIVE_CONTEXT context) {
 		// Checking if the path is a valid file.
 		if (!PathFileExists(filePath.GetBuffer())) {
-			throw WuOsException(ERROR_FILE_NOT_FOUND);
+			throw WuResult(ERROR_FILE_NOT_FOUND, __FILEW__, __LINE__);
 		}
 
 		// Getting directory name.
-		_directory = WWuStringToNarrow(filePath);
-		HRESULT result = PathCchRemoveFileSpec((PWSTR)_directory.GetBuffer(), _directory.Length());
+		WWuString wideDir = WWuString(filePath);
+		HRESULT result = PathCchRemoveFileSpec(wideDir.GetBuffer(), wideDir.Length());
 		if (result != S_OK) {
 			if (result == S_FALSE) {
-				throw WuOsException(ERROR_FILE_NOT_FOUND, L"Path missing file name.");
+				throw WuResult(ERROR_FILE_NOT_FOUND, L"Path missing file name.", __FILEW__, __LINE__);
 			}
 			else {
-				throw WuOsException(result);
+				throw WuResult(result, __FILEW__, __LINE__);
 			}
 		}
+		_directory = WWuStringToNarrow(wideDir);
 
 		GetCabinetTotalUncompressedSize(filePath);
 
@@ -91,105 +31,67 @@ namespace WindowsUtils::Core {
 		_progressInfo.CompletedCabinetCount = 0;
 		_progressInfo.CompletedSize = 0;
 		_progressInfo.CurrentUncompressedSize = 0;
+
+		_context = context;
+		_isUnicode = false;
+		_instance = this;
 	}
 
-	WuCabinet* WuCabinet::GetWuCabinet(const WWuString& filePath, Notification::PNATIVE_CONTEXT context) {
-		if (_instance == nullptr) {
-			_instance = new WuCabinet(filePath, context);
+	WuCabinet::~WuCabinet() { }
+
+	WuCabinet* WuCabinet::_instance { nullptr };
+
+	void* __cdecl WuCabinet::FdiAlloc(UINT cb) {
+		return HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, cb);
+	}
+
+	void __cdecl WuCabinet::FdiFree(void* pv) {
+		HeapFree(GetProcessHeap(), NULL, pv);
+	}
+
+	INT_PTR __cdecl WuCabinet::FdiOpen(char* pszFile, int oflag, int pmode) {
+		int fileHandle;
+
+		if (_instance->IsCurrentUnicode()) {
+			WWuString wideName = WuStringToWide(pszFile, CP_UTF8);
+
+			if (oflag & _O_CREAT)
+				SetFileAttributes(wideName.GetBuffer(), FILE_ATTRIBUTE_NORMAL);
+
+			_wsopen_s(&fileHandle, wideName.GetBuffer(), oflag, _SH_DENYNO, pmode);
 		}
-		
-		return _instance;
-	}
+		else {
+			if (oflag & _O_CREAT)
+				SetFileAttributesA(pszFile, FILE_ATTRIBUTE_NORMAL);
 
-	WuCabinet* WuCabinet::GetWuCabinet() {
-		if (_instance == nullptr) {
-			throw WuOsException(0x80004003, L"WuCabinet instance was not initialized.");
+			_sopen_s(&fileHandle, pszFile, oflag, _SH_DENYNO, pmode);
 		}
 
-		return _instance;
+		return fileHandle;
 	}
 
-	INT_PTR WuCabinet::NotifyCallback(FDINOTIFICATIONTYPE fdint, PFDINOTIFICATION pfdin) {
-		switch (fdint) {
-			// Called once for each cabinet opened by FDICopy, this includes
-			// continuation cabinets opened due to files spanning cabinet boundaries.
-			// Information:
-			//	psz1: The name of the next cabinet, excluding path information.
-			//	psz2: The name of the next disk.
-			//	psz3: The cabinet path name.
-			//	setID: The set ID of the current cabinet.
-			//	iCabinet: The cabinet number within the cabinet set.
-			case fdintCABINET_INFO:
-				OnCabinetInfo(WuString(pfdin->psz3));
-				break;
-
-			// Called only if 'fdintCOPY_FILE' is instructed to copy a file which
-			// is continued from a subsequent cabinet.
-			// Information:
-			//	psz1: The name of the next cabinet on which the current file is continued.
-			//	psz2: The file handle originated from 'fdintCOPY_FILE'.
-			//	psz3: The cabinet path information.
-			//	fdie: Error or success value.
-			// Necessary actions:
-			//	- Validate the next cabinet path.
-			//	- Validate if the file exists and can be read.
-			//	- Set setID and iCabinet to the correct next cabinet.
-			case fdintNEXT_CABINET:
-				break;
-
-			// Called for each file that starts within the current cabinet.
-			// Information:
-			//	cb: The uncompressed file size.
-			//	psz1: The name of the file in the cabinet.
-			//	date: The 16-bit MS-DOS date
-			//	time: The 16-bit MS-DOS time
-			//	attribs: The 16-bit MS-DOS attributes.
-			// Necessary actions:
-			//	- Set progress information.
-			//	- Create folder tree in the destination.
-			//	- Call FDIOpen function.
-			//	- Return the file handle where to write the file. it must be compatible
-			//	  with the function defined for FDIClose.
-			case fdintCOPY_FILE:
-				OnCopyFile(pfdin);
-				break;
-
-			// Called after all of the data has ben written to the targeting file.
-			// Information:
-			//	psz1: The name of the file in the cabinet.
-			//	hf: The file handle originated from 'fdintCOPY_FILE'.
-			//	date: The 16-bit MS-DOS date
-			//	time: The 16-bit MS-DOS time
-			//	attribs: The 16-bit MS-DOS attributes.
-			//	cb: 0 or 1. 1 indicates the file should be executed after extract. Where not going to implement this.
-			// Necessary actions:
-			//	- Replace '/' with '\\'.
-			//	- Close the file with 'FDIClose' provided fn. -FIRST-
-			//	- Set attributes and datetime. -AFTER-
-			case fdintCLOSE_FILE_INFO:
-				OnCloseFileInfo(pfdin);
-				break;
-
-			// Do nothing.
-			default:
-				break;
-		}
-		
-		return 0;
+	UINT __cdecl WuCabinet::FdiRead(INT_PTR hf, void* pv, UINT cb) {
+		return _read(static_cast<int>(hf), pv, cb);
 	}
 
-	void WuCabinet::OnCabinetInfo(const WuString& cabName) {
-		_progressInfo.CabinetName = cabName;
-		_progressInfo.CompletedCabinetCount++;
-		_progressInfo.Notify(_context);
+	UINT __cdecl WuCabinet::FdiWrite(INT_PTR hf, void* pv, UINT cb) {
+		return _write(static_cast<int>(hf), pv, cb);
 	}
 
-	void WuCabinet::OnCopyFile(PFDINOTIFICATION cabInfo) {
-
+	int __cdecl WuCabinet::FdiClose(INT_PTR hf) {
+		return _close(static_cast<int>(hf));
 	}
 
-	void WuCabinet::OnCloseFileInfo(PFDINOTIFICATION cabInfo) {
+	long __cdecl WuCabinet::FdiSeek(INT_PTR hf, long dist, int seektype) {
+		return _lseek(static_cast<int>(hf), dist, seektype);
+	}
 
+	INT_PTR __cdecl WuCabinet::FdiNotify(FDINOTIFICATIONTYPE fdint, PFDINOTIFICATION pfdin) {
+		return _instance->NotifyCallback(fdint, pfdin);
+	}
+
+	const bool WuCabinet::IsCurrentUnicode() const {
+		return _isUnicode;
 	}
 
 	void WuCabinet::GetCabinetTotalUncompressedSize(const WWuString& filePath) {
@@ -207,25 +109,25 @@ namespace WindowsUtils::Core {
 			if (currentCabInfo == NULL) {
 				MemoryMappedFile mappedFile(currentPath);
 				buffer = make_wuunique<CABINET_PROCESSING_INFO>();
-				
+
 				GetCabinetInformation(mappedFile, buffer.get());
 				buffer->Path = currentPath;
 				buffer->Name = currentPath;
 				PathStripPath(buffer->Name.GetBuffer());
-				
+
 				_processedCabinet.push_back(*buffer.get());
 				currentCabInfo = buffer.get();
 			}
 
 			if (!WuString::IsNullOrEmpty(currentCabInfo->PreviousCabinet)) {
 				hasPrevious = true;
-				
+
 				// Dir size + file name size + possible '\' + \0
 				size_t pathBufSize = _directory.Length() + currentCabInfo->PreviousCabinet.Length() + 2;
 				auto pathBuffer = make_wuunique<WCHAR[]>(pathBufSize);
 				result = PathCchCombine(pathBuffer.get(), pathBufSize, WuStringToWide(_directory).GetBuffer(), WuStringToWide(currentCabInfo->PreviousCabinet).GetBuffer());
 				if (result != S_OK) {
-					throw WuOsException(result);
+					throw WuResult(result, __FILEW__, __LINE__);
 				}
 
 				currentPath = pathBuffer.get();
@@ -236,6 +138,9 @@ namespace WindowsUtils::Core {
 			}
 
 		} while (hasPrevious);
+
+		// At this point this is the first cab.
+		_filePath = currentCabInfo->Path;
 
 		// Processing each cabinet until there is no next.
 		bool hasNext;
@@ -250,7 +155,7 @@ namespace WindowsUtils::Core {
 				currentCabInfo = GetInfoByPath(currentPath);
 				if (currentCabInfo == NULL) {
 					buffer = make_wuunique<CABINET_PROCESSING_INFO>();
-					
+
 					GetCabinetInformation(mappedFile, buffer.get());
 					buffer->Path = currentPath;
 					buffer->Name = currentPath;
@@ -296,7 +201,7 @@ namespace WindowsUtils::Core {
 					auto pathBuffer = make_wuunique<WCHAR[]>(pathBufSize);
 					result = PathCchCombine(pathBuffer.get(), pathBufSize, WuStringToWide(_directory).GetBuffer(), WuStringToWide(currentCabInfo->NextCabinet).GetBuffer());
 					if (result != S_OK) {
-						throw WuOsException(result);
+						throw WuResult(result, __FILEW__, __LINE__);
 					}
 
 					currentPath = pathBuffer.get();
@@ -306,8 +211,8 @@ namespace WindowsUtils::Core {
 					break;
 				}
 			}
-			catch (const WuOsException& ex) {
-				throw WuOsException(ex.ErrorCode, WWuString::Format(L"Failed getting size information for next cabinet. %ws", ex.Message));
+			catch (const WuResult& ex) {
+				throw WuResult(ex.Result, WWuString::Format(L"Failed getting size information for next cabinet. %ws", ex.Message), __FILEW__, __LINE__);
 			}
 
 		} while (hasNext);
@@ -317,11 +222,11 @@ namespace WindowsUtils::Core {
 
 	void WuCabinet::GetCabinetInformation(const MemoryMappedFile& mappedFile, CABINET_PROCESSING_INFO* cabInfo) {
 		__uint64 filePointer = 0;
-		
+
 		CHAR signature[5] = { 0 };
 		RtlCopyMemory(signature, mappedFile.data(), 4);
 		if (strcmp(signature, "MSCF") != 0)
-			throw WuOsException(ERROR_BAD_FORMAT, L"File is not a cabinet.");
+			throw WuResult(ERROR_BAD_FORMAT, L"File is not a cabinet.", __FILEW__, __LINE__);
 
 		filePointer += 16;
 		cabInfo->CFFileOffset = *reinterpret_cast<LPDWORD>((BYTE*)mappedFile.data() + filePointer);
@@ -340,7 +245,7 @@ namespace WindowsUtils::Core {
 			WORD cbSize = *reinterpret_cast<LPWORD>((BYTE*)mappedFile.data() + filePointer);
 			filePointer = filePointer + cbSize + 2;
 		}
-		
+
 		wusunique_vector<CHAR> buffer;
 		if ((flags & cfhdrPREV_CABINET) > 0) {
 			buffer = make_wusunique_vector<CHAR>();
@@ -389,19 +294,240 @@ namespace WindowsUtils::Core {
 
 		return NULL;
 	}
+
+	_NODISCARD CABINET_PROCESSING_INFO* WuCabinet::GetInfoByName(const WWuString& cabName) {
+		for (CABINET_PROCESSING_INFO& cabInfo : _processedCabinet)
+			if (cabInfo.Name == cabName)
+				return &cabInfo;
+
+		return NULL;
+	}
+
+	WuResult Containers::ExpandArchiveFile(const WWuString& filePath, const WWuString& destination, ARCHIVE_FILE_TYPE fileType, Notification::PNATIVE_CONTEXT context) {
+		WuResult result;
+		
+		switch (fileType) {
+			case ARCHIVE_FILE_TYPE::Cabinet:
+			{
+				WuCabinet cabinet(filePath, context);
+				result = cabinet.ExpandCabinetFile(destination);
+			} break;
+		}
+
+		return result;
+	}
+
+	WuResult WuCabinet::ExpandCabinetFile(const WWuString& destination) {
+		ERF erfError = { 0 };
+		HFDI hContext;
+
+		hContext = FDICreate(
+			(PFNALLOC)FdiAlloc,
+			(PFNFREE)FdiFree,
+			(PFNOPEN)FdiOpen,
+			(PFNREAD)FdiRead,
+			(PFNWRITE)FdiWrite,
+			(PFNCLOSE)FdiClose,
+			(PFNSEEK)FdiSeek,
+			cpuUNKNOWN,
+			&erfError
+		);
+
+		if (hContext == NULL)
+			return WuResult::GetResultFromFdiError((FDIERROR)erfError.erfOper, __FILEW__, __LINE__);
+
+		if (!PathIsDirectory(destination.GetBuffer()))
+			return WuResult(ERROR_FILE_NOT_FOUND, __FILEW__, __LINE__);
+
+		// FDICopy does not manage trailing path separator. It just concatenates
+		// file name and file path.
+		_destination = destination;
+		if (!_directory.EndsWith('\\')) {
+			_directory += "\\";
+		}
+
+		WuString filePath = WWuStringToNarrow(_filePath);
+		WuString fileName = filePath;
+		PathStripPathA(fileName.GetBuffer());
+
+		do {
+			_nextCabinet.Clear();
+			_progressInfo.CabinetName = WuStringToWide(fileName);
+			
+			if (!FDICopy(hContext, fileName.GetBuffer(), _directory.GetBuffer(), 0, (PFNFDINOTIFY)FdiNotify, NULL, NULL)) {
+				if (hContext != NULL)
+					FDIDestroy(hContext);
+
+				return WuResult::GetResultFromFdiError((FDIERROR)erfError.erfOper, __FILEW__, __LINE__);
+			}
+
+			if (_nextCabinet.Length() == 0)
+				break;
+
+			CABINET_PROCESSING_INFO* nextCabInfo = GetInfoByName(_nextCabinet);
+			if (nextCabInfo == NULL)
+				return WuResult(ERROR_FILE_NOT_FOUND, __FILEW__, __LINE__);
+
+			filePath = WWuStringToNarrow(nextCabInfo->Path);
+			fileName = WWuStringToNarrow(nextCabInfo->Path);
+			PathStripPathA(fileName.GetBuffer());
+
+		} while (_nextCabinet.Length() != 0);
+		
+		if (hContext != NULL)
+			FDIDestroy(hContext);
+
+		return WuResult();
+	}
+
+	INT_PTR WuCabinet::NotifyCallback(FDINOTIFICATIONTYPE fdint, PFDINOTIFICATION pfdin) {
+		switch (fdint) {
+			// Called once for each cabinet opened by FDICopy, this includes
+			// continuation cabinets opened due to files spanning cabinet boundaries.
+			// Information:
+			//	psz1: The name of the next cabinet, excluding path information.
+			//	psz2: The name of the next disk.
+			//	psz3: The cabinet path name.
+			//	setID: The set ID of the current cabinet.
+			//	iCabinet: The cabinet number within the cabinet set.
+			case fdintCABINET_INFO:
+				return OnCabinetInfo();
+
+			// Called for each file that starts within the current cabinet.
+			// Information:
+			//	cb: The uncompressed file size.
+			//	psz1: The name of the file in the cabinet.
+			//	date: The 16-bit MS-DOS date
+			//	time: The 16-bit MS-DOS time
+			//	attribs: The 16-bit MS-DOS attributes.
+			// Necessary actions:
+			//	- Set progress information.
+			//	- Create folder tree in the destination.
+			//	- Call FDIOpen function.
+			//	- Return the file handle where to write the file. it must be compatible
+			//	  with the function defined for FDIClose.
+			case fdintCOPY_FILE:
+				return OnCopyFile(pfdin);
+
+			// Called after all of the data has ben written to the targeting file.
+			// Information:
+			//	psz1: The name of the file in the cabinet.
+			//	hf: The file handle originated from 'fdintCOPY_FILE'.
+			//	date: The 16-bit MS-DOS date
+			//	time: The 16-bit MS-DOS time
+			//	attribs: The 16-bit MS-DOS attributes.
+			//	cb: 0 or 1. 1 indicates the file should be executed after extract. Where not going to implement this.
+			// Necessary actions:
+			//	- Replace '/' with '\\'.
+			//	- Close the file with 'FDIClose' provided fn. -FIRST-
+			//	- Set attributes and datetime. -AFTER-
+			case fdintCLOSE_FILE_INFO:
+				return OnCloseFileInfo(pfdin);
+
+			// Called only if 'fdintCOPY_FILE' is instructed to copy a file which
+			// is continued from a subsequent cabinet.
+			// Information:
+			//	psz1: The name of the next cabinet on which the current file is continued.
+			//	psz2: The file handle originated from 'fdintCOPY_FILE'.
+			//	psz3: The cabinet path information.
+			//	fdie: Error or success value.
+			// Necessary actions:
+			//	- Validate the next cabinet path.
+			//	- Validate if the file exists and can be read.
+			//	- Set setID and iCabinet to the correct next cabinet.
+			case fdintNEXT_CABINET:
+				_nextCabinet = WuStringToWide(pfdin->psz1);
+				return 0;
+
+			// Do nothing.
+			default:
+				break;
+		}
+		
+		return 0;
+	}
+
+	INT_PTR WuCabinet::OnCabinetInfo() {
+		_progressInfo.CompletedCabinetCount++;
+		
+#ifndef _DEBUG
+		_progressInfo.Notify(_context);
+#endif
+
+		return 0;
+	}
+
+	INT_PTR WuCabinet::OnCopyFile(PFDINOTIFICATION cabInfo) {
+		DWORD codePage = (cabInfo->attribs & _A_NAME_IS_UTF) ? CP_UTF8 : 1252;
+		WWuString relativePath = WuStringToWide(cabInfo->psz1, codePage).Replace('/', '\\');
+
+		if (codePage == CP_UTF8)
+			_isUnicode = true;
+		else
+			_isUnicode = false;
+
+		auto splitPath = relativePath.Split('\\');
+
+		splitPath.insert(splitPath.begin(), _destination);
+		
+		wuvector<WWuString> splitDir(splitPath);
+		splitDir.pop_back();
+
+		WWuString targetDir;
+		WWuString targetFullName;
+
+		IO::CreatePath(splitDir, targetDir);
+		IO::CreatePath(splitPath, targetFullName);
+
+		IO::CreateFolderTree(targetDir);
+
+		WuString narrowFullName = WWuStringToNarrow(targetFullName, codePage);
+		INT_PTR hFile = FdiOpen(narrowFullName.GetBuffer(), _O_TRUNC | _O_BINARY | _O_CREAT | _O_WRONLY | _O_SEQUENTIAL, _S_IREAD | _S_IWRITE);
+		if (hFile <= 0)
+			throw WuResult::GetResultFromFdiError(cabInfo->fdie, __FILEW__, __LINE__);
+
+		_progressInfo.CurrentFile = relativePath;
+		_progressInfo.CurrentUncompressedSize = cabInfo->cb;
+		_progressInfo.CompletedSize += cabInfo->cb;
+
+#ifndef _DEBUG
+		_progressInfo.Notify(_context);
+#endif
+
+		return hFile;
+	}
+
+	INT_PTR WuCabinet::OnCloseFileInfo(PFDINOTIFICATION cabInfo) {
+		DWORD codePage = (cabInfo->attribs & _A_NAME_IS_UTF) ? CP_UTF8 : 1252;
+		WWuString relativePath = WuStringToWide(cabInfo->psz1, codePage).Replace('/', '\\');
+		
+		wuvector<WWuString> splitPath;
+		splitPath.push_back(_destination);
+		splitPath.push_back(relativePath);
+
+		WWuString targetFullName;
+		IO::CreatePath(splitPath, targetFullName);
+
+		FdiClose(cabInfo->hf);
+		IO::SetFileAttributesAndDate(targetFullName, cabInfo->date, cabInfo->time, cabInfo->attribs);
+
+		return TRUE;
+	}
 	
 	// FDI Notification definition.
 
-	FDI_PROGRESS::_FDI_PROGRESS() { }
+	_FDI_PROGRESS::_FDI_PROGRESS() { }
 
-	FDI_PROGRESS::~_FDI_PROGRESS() { }
+	_FDI_PROGRESS::~_FDI_PROGRESS() { }
 
-	void FDI_PROGRESS::Notify(Notification::PNATIVE_CONTEXT context) {
-		WORD percentComplete = (CompletedSize / TotalUncompressedSize) * 100;
-		WWuString status = WWuString::Format(L"Cabinet %d/%d: %ws. File: %ws. %ld/%ld", CompletedCabinetCount, CabinetSetCount, CabinetName, CurrentFile, CompletedSize, TotalUncompressedSize);
+	void _FDI_PROGRESS::Notify(Notification::PNATIVE_CONTEXT context) {
+		float floatPercent = (static_cast<float>(CompletedSize) / TotalUncompressedSize);
+		floatPercent *= 100;
+		long percentComplete = lround(floatPercent);
+		WWuString status = WWuString::Format(L"Cabinet %d/%d: %ws. File: %ws. %ld/%ld", CompletedCabinetCount, CabinetSetCount, CabinetName.GetBuffer(), CurrentFile.GetBuffer(), CompletedSize, TotalUncompressedSize);
 		
 		Notification::MAPPED_PROGRESS_DATA progressData(
-			L"Expanding cabinet", 0, NULL, -1, percentComplete, Notification::PROGRESS_RECORD_TYPE::Processing, -1, status
+			L"Expanding cabinet...", 0, NULL, -1, static_cast<WORD>(percentComplete), Notification::PROGRESS_RECORD_TYPE::Processing, -1, status.GetBuffer()
 		);
 
 		NativeWriteProgress(context, &progressData);
