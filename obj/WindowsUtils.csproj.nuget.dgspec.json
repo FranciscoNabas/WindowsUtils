@@ -1,27 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj": {}
+    "C:\\Repositories\\.WindowsUtils\\WindowsUtils.csproj": {}
   },
   "projects": {
-    "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj": {
+    "C:\\Repositories\\.WindowsUtils\\WindowsUtils.csproj": {
       "version": "1.6.2",
       "restore": {
-        "projectUniqueName": "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
+        "projectUniqueName": "C:\\Repositories\\.WindowsUtils\\WindowsUtils.csproj",
         "projectName": "WindowsUtils",
-        "projectPath": "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
+        "projectPath": "C:\\Repositories\\.WindowsUtils\\WindowsUtils.csproj",
         "packagesPath": "C:\\Users\\francisco.nabas\\.nuget\\packages\\",
-        "outputPath": "c:\\LocalRepositories\\.WindowsUtils\\obj\\",
+        "outputPath": "C:\\Repositories\\.WindowsUtils\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
           "C:\\Users\\francisco.nabas\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
+          "net472",
           "netstandard2.0"
         ],
         "sources": {
@@ -29,6 +27,10 @@
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
+          "net472": {
+            "targetAlias": "net472",
+            "projectReferences": {}
+          },
           "netstandard2.0": {
             "targetAlias": "netstandard2.0",
             "projectReferences": {}
@@ -44,9 +46,53 @@
         }
       },
       "frameworks": {
+        "net472": {
+          "targetAlias": "net472",
+          "dependencies": {
+            "Microsoft.Win32.Primitives": {
+              "target": "Package",
+              "version": "[4.3.0, )"
+            },
+            "Microsoft.Win32.Registry": {
+              "target": "Package",
+              "version": "[5.0.0, )"
+            },
+            "PowerShellStandard.Library": {
+              "target": "Package",
+              "version": "[5.1.1, )"
+            },
+            "System.Security.AccessControl": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "System.Security.Principal.Windows": {
+              "target": "Package",
+              "version": "[5.0.0, )"
+            },
+            "System.ServiceProcess.ServiceController": {
+              "target": "Package",
+              "version": "[7.0.1, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[7.0.3, )"
+            },
+            "XmlDoc2CmdletDoc": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[0.3.0, )"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100-preview.7.23376.3\\RuntimeIdentifierGraph.json"
+        },
         "netstandard2.0": {
           "targetAlias": "netstandard2.0",
           "dependencies": {
+            "Microsoft.Win32.Primitives": {
+              "target": "Package",
+              "version": "[4.3.0, )"
+            },
             "Microsoft.Win32.Registry": {
               "target": "Package",
               "version": "[5.0.0, )"
@@ -65,9 +111,17 @@
               "target": "Package",
               "version": "[6.0.0, )"
             },
+            "System.Security.Principal.Windows": {
+              "target": "Package",
+              "version": "[5.0.0, )"
+            },
             "System.ServiceProcess.ServiceController": {
               "target": "Package",
               "version": "[7.0.1, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[7.0.3, )"
             },
             "XmlDoc2CmdletDoc": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
@@ -87,7 +141,12 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100-preview.7.23376.3\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.304\\RuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
         }
       }
     }

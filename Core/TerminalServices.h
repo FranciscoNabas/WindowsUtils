@@ -1,7 +1,9 @@
 #pragma once
 #pragma unmanaged
 
-#include "pch.h"
+#include "Common.h"
+#include "String.h"
+#include "Expressions.h"
 
 namespace WindowsUtils::Core
 {
@@ -16,16 +18,20 @@ namespace WindowsUtils::Core
 		typedef struct _WU_COMPUTER_SESSION
 		{
 			INT						SessionId;		// Session ID.
-			LPWSTR					UserName;		// User name, on the format 'Domain\Username'.
-			LPWSTR					SessionName;	// Session name.
+			WWuString				UserName;		// User name, on the format 'Domain\Username'.
+			WWuString				SessionName;	// Session name.
 			LARGE_INTEGER			LastInputTime;	// Last input time.
 			LARGE_INTEGER			LogonTime;		// User logon time.
 			WTS_CONNECTSTATE_CLASS	SessionState;	// Session state.
 
 			_WU_COMPUTER_SESSION() { }
-			_WU_COMPUTER_SESSION(INT sessid, LPWSTR usrname, LPWSTR sessname, LARGE_INTEGER linptime, LARGE_INTEGER lgtime, WTS_CONNECTSTATE_CLASS sesstate)
-				: SessionId(sessid), UserName(usrname), SessionName(sessname), LastInputTime(linptime), LogonTime(lgtime), SessionState(sesstate) { }
-		}WU_COMPUTER_SESSION, * PWU_COMPUTER_SESSION;
+			_WU_COMPUTER_SESSION(INT sessionId, const WWuString& userName, const WWuString& sessionName, LARGE_INTEGER lastInpTime, LARGE_INTEGER logonTime, WTS_CONNECTSTATE_CLASS sessionState)
+				: SessionId(sessionId), UserName(userName), SessionName(sessionName), LastInputTime(lastInpTime), LogonTime(logonTime), SessionState(sessionState)
+			{ }
+
+			~_WU_COMPUTER_SESSION() { }
+
+		} WU_COMPUTER_SESSION, *PWU_COMPUTER_SESSION;
 
 		// Invoke-RemoteMessage
 		typedef struct _WU_MESSAGE_RESPONSE
@@ -34,22 +40,27 @@ namespace WindowsUtils::Core
 			DWORD	SessionId;	// Session ID from where the response came.
 			DWORD	Response;	// Response. Later mapped as a WindowsUtils::MessageBoxReturn.
 
-			_WU_MESSAGE_RESPONSE() { }
-			_WU_MESSAGE_RESPONSE(DWORD sessid, DWORD resp) : SessionId(sessid), Response(resp) { }
-		}WU_MESSAGE_RESPONSE, * PWU_MESSAGE_RESPONSE;
+			_WU_MESSAGE_RESPONSE()
+				: SessionId(0), Response(0) { }
+			
+			_WU_MESSAGE_RESPONSE(DWORD sessid, DWORD resp)
+				: SessionId(sessid), Response(resp) { }
+
+		} WU_MESSAGE_RESPONSE, *PWU_MESSAGE_RESPONSE;
 
 		/*=========================================
 		==		 Function identification		 ==
 		===========================================*/
 
 		// Get-ComputerSession
-		DWORD GetEnumeratedSession(std::vector<WU_COMPUTER_SESSION>& ppOutVec, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
+		WuResult GetEnumeratedSession(wuvector<WU_COMPUTER_SESSION>* sessionList, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
 
 		// Invoke-RemoteMessage
-		DWORD InvokeMessage(LPWSTR pTitle, LPWSTR pMessage, DWORD style, DWORD timeout, BOOL bWait, std::vector<DWORD>& sessionId, std::vector<WU_MESSAGE_RESPONSE>& pvecres, HANDLE session);
+		WuResult SendMessage(WWuString& pTitle, WWuString& pMessage, DWORD style, DWORD timeout, BOOL wait, wuvector<DWORD>* sessionIdList, wuvector<WU_MESSAGE_RESPONSE>* responseList, HANDLE session);
+		WuResult SendMessage(WWuString& pTitle, WWuString& pMessage, DWORD style, DWORD timeout, BOOL bWait, wuvector<WU_MESSAGE_RESPONSE>* responseList, HANDLE session);
 
 		// Disconnect-Session
-		DWORD DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);
+		WuResult DisconnectSession(HANDLE session, DWORD sessionid, BOOL wait);
 	};
 
 	/*========================================
@@ -57,5 +68,5 @@ namespace WindowsUtils::Core
 	==========================================*/
 
 	// Helper fuction used with GetEnumeratedSession.
-	DWORD GetSessionOutput(TerminalServices::WU_COMPUTER_SESSION& rwucompsess, HANDLE hserversession, WTS_SESSION_INFO wtssessinfo);
+	WuResult GetSessionOutput(TerminalServices::PWU_COMPUTER_SESSION computerSession, HANDLE hServer, const WTS_SESSION_INFO& sessionInfo);
 }

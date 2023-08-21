@@ -1,6 +1,10 @@
 #pragma once
 #pragma unmanaged
 
+#include "Utilities.h"
+#include "Notification.h"
+#include "AccessControl.h"
+
 namespace WindowsUtils::Core
 {
 	extern "C" public class __declspec(dllexport) Services
@@ -12,17 +16,17 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		// Remove-Service
-		DWORD RemoveService(const LPWSTR& servicename, const LPWSTR& computername, BOOL stopservice);
-		DWORD RemoveService(SC_HANDLE& hservice, const LPWSTR& computername, BOOL stopservice);
+		WuResult RemoveService(const WWuString& servicename, const WWuString& computername, BOOL stopservice, Notification::PNATIVE_CONTEXT context);
+		WuResult RemoveService(SC_HANDLE hservice, const WWuString& servicename, const WWuString& computername, BOOL stopservice, Notification::PNATIVE_CONTEXT context);
 
 		// Get-ServiceSecurity
-		DWORD GetServiceSecurity(const LPWSTR& serviceName, const LPWSTR& computerName, PSECURITY_DESCRIPTOR& pSvcSecurity, LPDWORD pdwSize, BOOL bAudit = FALSE);
-		DWORD GetServiceSecurity(SC_HANDLE& serviceName, PSECURITY_DESCRIPTOR& pSvcSecurity, LPDWORD pdwSize, BOOL bAudit = FALSE);
+		WuResult GetServiceSecurity(const WWuString& serviceName, const WWuString& computerName, WWuString& sddl, LPDWORD pdwSize, BOOL bAudit = FALSE);
+		WuResult GetServiceSecurity(SC_HANDLE serviceName, WWuString& sddl, LPDWORD pdwSize, BOOL bAudit = FALSE);
 
 		// Set-ServiceSecurity
-		DWORD SetServiceSecurity(const LPWSTR& lpszServiceName, const LPWSTR& lpszComputerName, const LPWSTR& lpszSddl, BOOL bChangeAudit, BOOL bChangeOwner);
+		WuResult SetServiceSecurity(const WWuString& lpszServiceName, const WWuString& lpszComputerName, const WWuString& lpszSddl, BOOL bChangeAudit, BOOL bChangeOwner);
 	};
 
-	DWORD StopDependentServices(SC_HANDLE& scm, SC_HANDLE& hservice, const LPWSTR& computername);
-	DWORD StopServiceWithTimeout(SC_HANDLE& hservice, LPSERVICE_STATUS lpsvcstatus);
+	WuResult StopDependentServices(SC_HANDLE scm, SC_HANDLE hservice, const WWuString& computername, Notification::PNATIVE_CONTEXT context);
+	WuResult StopServiceWithWarning(SC_HANDLE hservice, SC_HANDLE scm, const WWuString& lpszSvcName, LPSERVICE_STATUS lpsvcstatus, Notification::PNATIVE_CONTEXT context);
 }

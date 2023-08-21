@@ -61,76 +61,42 @@ namespace WindowsUtils.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to .
+        ///   Looks up a localized string similar to [
+        ///  {
+        ///    &quot;MinimumVersion&quot;: 378389,
+        ///    &quot;Version&quot;: &quot;4.5&quot;,
+        ///    &quot;Edition&quot;: 0
+        ///  },
+        ///  {
+        ///    &quot;MinimumVersion&quot;: 378675,
+        ///    &quot;Version&quot;: &quot;4.5.1&quot;,
+        ///    &quot;Edition&quot;: 0
+        ///  },
+        ///  {
+        ///    &quot;MinimumVersion&quot;: 379893,
+        ///    &quot;Version&quot;: &quot;4.5.2&quot;,
+        ///    &quot;Edition&quot;: 0
+        ///  },
+        ///  {
+        ///    &quot;MinimumVersion&quot;: 393295,
+        ///    &quot;Version&quot;: &quot;4.6&quot;,
+        ///    &quot;Edition&quot;: 0
+        ///  },
+        ///  {
+        ///    &quot;MinimumVersion&quot;: 394254,
+        ///    &quot;Version&quot;: &quot;4.6.1&quot;,
+        ///    &quot;Edition&quot;: 0
+        ///  },
+        ///  {
+        ///    &quot;MinimumVersion&quot;: 394802,
+        ///    &quot;Version&quot;: &quot;4.6.2&quot;,
+        ///    &quot;Edition&quot;: 0
+        ///  },
+        ///  { [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string DisconnectWMessageCleanRegPS1 {
+        internal static string DotNetFrameworkVersionTable {
             get {
-                return ResourceManager.GetString("DisconnectWMessageCleanRegPS1", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-16&quot;?&gt;
-        ///&lt;Task version=&quot;1.2&quot; xmlns=&quot;http://schemas.microsoft.com/windows/2004/02/mit/task&quot;&gt;
-        ///    &lt;RegistrationInfo /&gt;
-        ///    &lt;Principals&gt;
-        ///        &lt;Principal&gt;
-        ///            &lt;UserId&gt;S-1-5-18&lt;/UserId&gt;
-        ///            &lt;RunLevel&gt;HighestAvailable&lt;/RunLevel&gt;
-        ///        &lt;/Principal&gt;
-        ///    &lt;/Principals&gt;
-        ///    &lt;Settings&gt;
-        ///        &lt;AllowStartOnDemand&gt;false&lt;/AllowStartOnDemand&gt;
-        ///        &lt;DisallowStartIfOnBatteries&gt;false&lt;/DisallowStartIfOnBatteries&gt;
-        ///        &lt;StopIfGoingOnBatteries&gt;true&lt;/StopIfGoi [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string DisconnectWMessageCleanRegTask {
-            get {
-                return ResourceManager.GetString("DisconnectWMessageCleanRegTask", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Set-ExecutionPolicy Unrestricted -Scope &apos;Process&apos;
-        ///Add-Type -MemberDefinition @&apos;
-        ///[DllImport(&quot;Wtsapi32.dll&quot;, CharSet = CharSet.Unicode, SetLastError = true)]
-        ///public static extern bool WTSSendMessageW(
-        ///    IntPtr hserver
-        ///    ,uint sessionid
-        ///    ,string title
-        ///    ,uint titlelength
-        ///    ,string message
-        ///    ,uint messagelength
-        ///    ,uint style
-        ///    ,uint timeout
-        ///    ,out uint response
-        ///    ,bool wait
-        ///);
-        ///[DllImport(&quot;Wtsapi32.dll&quot;, CharSet = CharSet.Unicode, SetLastError = true)]
-        ///public static extern bo [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string DisconnectWMessagePwshP1 {
-            get {
-                return ResourceManager.GetString("DisconnectWMessagePwshP1", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to $errorcanceledbyuser = 1223
-        ///$start = Get-Date
-        ///[System.UInt32]$response = 0
-        ///if ($allowcancel) {
-        ///    [CiscoWonders.Interop]::WTSSendMessageW(0, $sessionid, &apos;Disconnecting session.&apos;, 44, $Message, $Message.Length * 2, 4145, ([System.Int32]$Timeout * 60), [ref]$response, $true)
-        ///    switch ($response.Response) {
-        ///        1 {
-        ///            $elapsed = [math]::Ceiling(((Get-Date) - $start).TotalSeconds)
-        ///            $remaining = [math]::Ceiling(([System.Int32]$Timeout * 60) - $elapsed)
-        ///
-        ///            Start-Slee [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string DisconnectWMessagePwshP2 {
-            get {
-                return ResourceManager.GetString("DisconnectWMessagePwshP2", resourceCulture);
+                return ResourceManager.GetString("DotNetFrameworkVersionTable", resourceCulture);
             }
         }
     }

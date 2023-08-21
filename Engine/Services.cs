@@ -51,19 +51,12 @@ namespace WindowsUtils.Services
 
     public abstract class ServiceCommandBase : PSCmdlet
     {
-        private readonly WrapperFunctions _unwrapper = new();
+        private readonly Wrapper _unwrapper = new();
 
         internal ServiceSecurity GetServiceObjectSecurity(string serviceName, bool getAudit)
         {
             string sddl;
-            try
-            {
-                sddl = _unwrapper.GetServiceSecurityDescriptorString(serviceName, getAudit);
-            }
-            catch (Core.NativeException ex)
-            {
-                throw (NativeException)ex;
-            }
+            sddl = _unwrapper.GetServiceSecurityDescriptorString(serviceName, getAudit);
 
             return new ServiceSecurity(sddl, serviceName);
         }
@@ -71,14 +64,7 @@ namespace WindowsUtils.Services
         internal ServiceSecurity GetServiceObjectSecurity(ServiceController service, bool getAudit)
         {
             string sddl;
-            try
-            {
-                sddl = _unwrapper.GetServiceSecurityDescriptorString(service.ServiceHandle.DangerousGetHandle(), getAudit);
-            }
-            catch (Core.NativeException ex)
-            {
-                throw (NativeException)ex;
-            }
+            sddl = _unwrapper.GetServiceSecurityDescriptorString(service.ServiceHandle.DangerousGetHandle(), getAudit);
 
             return new ServiceSecurity(sddl, service.ServiceName);
         }

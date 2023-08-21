@@ -3,6 +3,81 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
   
+## [1.7.0] - 2023-08-21
+
+The version 1.7.0 marks a turning point into this project. A lot of important things were added, and changed.
+From the changes, these deserve to be highlighted.
+
+- WindowsUtils string.
+  
+  This feature was one of many that came to support the `Expand-Cabinet` Cmdlet. It is a simple template string class
+  based on the C++ `std::basic_string`, and the .NET `System.String`.
+  I know, why create yet another string class with so many more reliable options?
+  Because I wanted to, plus I got the chance to optimize it for this project. Since most allocations in the project are for strings,
+  this class allows me to apply RAII to them, and manipulate them more easily.
+  With this in mind, **this is probably not a good string implementation, nor does it have a reason to exist**.
+
+- Memory allocation.
+  
+  A lot changed in memory allocation. With the new string class we don't need to explicitly allocate memory for strings nomo.
+  The `WuMemoryManager` is also gone, all explicit allocations (where possible) where replaced with smart pointers (about damn time eh?).
+  A new template expression was implemented, so we can create smart pointers with custom allocation sizes. With this I hope to reduce
+  memory-related bugs from now to new versions.
+
+- WuResult
+  
+  Up to version 1.6*, almost all unmanaged functions returned a `DWORD` value, much like Windows API functions.
+  This was replaced (where applicable) by a new object called `WuResult`. I've implemented something similar
+  in another module [LibSnitcher](https://github.com/FranciscoNabas/LibSnitcher) (that you DEFINITELY need to check out).
+  I was reluctant about this kind of implementation, but the debugging benefits, and exception handling made it worth it.
+
+- Native PSCmdlet method support.
+  
+  Alright, this new thing is perty damn cool. Using a system of delegates, Cmdlet context, and memory mapped IO I've implemented
+  a way of calling `PSCmdlet.WriteWarning` and `PSCmdlet.WriteProgress` from 100% unmanaged code. This is also expansible for
+  the other methods like `PSCmdlet.WriteError`.
+
+  A custom command base class, inheriting from `PSCmdlet` implements native versions of `WriteWarning` and `WriteProgress`.
+  This abstract class wraps a Core class which exposes the delegates that will serve as a bridge between both worlds.
+  Data is exchanged between these worlds using a memory mapped file. This idea came from a video from the great **Pavel Yosifovich**
+  on the subject. This approach solved all issues with string marshaling I was having before. You can find the video [here](https://www.youtube.com/watch?v=zdZdtg1f9lA).
+
+  Unmanaged code calls a native function that maps a view of the file, writes the data, and calls a function pointer. This function pointer is
+  the delegate from the Cmdlet context base class. When we wrap the command base into the C++/CLI context base, we pass our methods "casted" as
+  these delegates. These methods also creates a view of the file, reads the data and calls the actual PSCmdlet methods.
+
+### Added
+
+- New `Expand-Cabinet` Cmdlet.
+- New `Get-InstalledDotnet` function.
+- Implemented `WindowsUtils.MemoryMappedShare` to exchange information between managed .NET and unmanaged C++.
+- Implemented new system for writing information from unmanaged code.
+  - A system using a delegate define in the Wrapper, defined in .NET, and cast to a function pointer in unmanaged code enables calling 'PSCmdlet' methods.
+  - A new `CoreCommandBase` class, with a `CmdletContext` class will be responsible for carrying the context to unmanaged code. This is a very common practice in Microsoft's modules.
+- Added `constexpr` routing to vector, map, and smart pointers to make the code cleaner.
+- Added custom freer for smart pointers, allowing to allocate arbitrary sizes.
+- New string template class `WuBaseString`, including `WWuString` for wide strings, and `WuString` for narrow strings. This is probably not a good string implementation, nor does it have
+  a reason to exist, but I had fun. Plus it brings some functionalities from .NET's `System.String`.
+- The new `WuResult`, and `NativeException` have a new property called `CompactTrace` exposed only in the Debug version. This contains the file name, and line where the error occurred.
+
+### Changed
+
+- `Remove-Service`
+  - When `Stop` is used, the Cmdlet doesn't time out anymore. Instead, it writes warnings, much like when using `Stop-Service.`
+- `Get-ObjectHandle`
+  - The Cmdlet shows a warning when the process running is not elevated. If the process is not elevated, some handle information
+    might be missing due lack of privileges to query certain processes.
+- Replaced all explicit memory allocations with smart pointers. It was about time.
+- Replaced all C-style strings with the new `WuString`, and its utility methods.
+- `Get-FormattedMessage` changed to `Get-ErrorText`.
+- `NativeException` moved to C++/CLI completely. This allowed me from removing the `NativeExceptionBase`, and creating
+  exceptions from the new `WuResult` object.
+
+### Bugs
+
+- Calling `Get-ObjectHandle` with insufficient privileges to an object caused access violation. The function was not parsing the `NTSTATUS` from the subroutine.
+- `Get-ServiceSecurity` failing to get the SDDL from a "cross-function" SECURITY_DESCRIPTOR pointer. Moved the SDDL formation to the native function.
+
 ## [1.6.2] - 2023-06-22
 
 ### Added
@@ -125,7 +200,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Version 1.3.4 improves interoperability between existing WTS *Cmdlets*.  
   
-## Changed Features
+### Changed Features
   
 - `Get-ComputerSession` had an additional property on its output object. `ComputerName` returns a value when the *Cmdlet* is run for a remote computer.  
   This allows the output to be passed to Disconnect-Session.  
