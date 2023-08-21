@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "BOHogY/ufI3Zu2xZh3gZOtFlPAmvkCg5qVFyaqGu//4oxI1h5hYcL4UGC71LYwouqsGI7I7siNh47wPFqheGdw==",
+  "dgSpecHash": "O8Gme1bCwGu8LTSaH17W2nim2q+f526eYWfzD3o7+ddfXu5ONLICQqP/KCD380wpT6uFuh89GR/5S+J71ZKRqQ==",
   "success": true,
-  "projectFilePath": "C:\\Repositories\\.WindowsUtils\\WindowsUtils.csproj",
+  "projectFilePath": "c:\\LocalRepositories\\.WindowsUtils\\WindowsUtils.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\microsoft.win32.registry\\5.0.0\\microsoft.win32.registry.5.0.0.nupkg.sha512",
