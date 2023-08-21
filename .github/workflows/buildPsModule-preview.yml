@@ -22,10 +22,10 @@ jobs:
       run: |
         .\Tools\Helpers\BuildPreview.ps1 -psgsec "$env:PSGAL_APIKEY"
     - name: Automatic Releases
-      uses: marvinpinto/action-automatic-releases@latest
+      uses: marvinpinto/action-automatic-releases@v1.2.1
       with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "Preview"
-          prerelease: true
-          title: "Preview - WindowsUtils PowerShell Module"
+          prerelease: false
+          title: "WindowsUtils PowerShell Module"
           files: WindowsUtils.zip
