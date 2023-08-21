@@ -124,7 +124,7 @@ namespace WindowsUtils::Core
 	WuResult Services::GetServiceSecurity(
 		const WWuString& serviceName,
 		const WWuString& computerName,
-		PSECURITY_DESCRIPTOR pSvcSecurity,
+		WWuString& sddl,
 		LPDWORD pdwSize,
 		BOOL bAudit
 	) {
@@ -161,9 +161,18 @@ namespace WindowsUtils::Core
 		}
 		sc_handles->push_back(hService);
 
-		DWORD dwResult = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &pSvcSecurity);
+		PSECURITY_DESCRIPTOR secDesc;
+		DWORD dwResult = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &secDesc);
 		if (dwResult != ERROR_SUCCESS)
 			result = WuResult(dwResult, __FILEW__, __LINE__);
+
+		LPWSTR cSddl;
+		ULONG len;
+		ConvertSecurityDescriptorToStringSecurityDescriptorW(secDesc, SDDL_REVISION_1, secInfo, &cSddl, &len);
+
+		sddl = WWuString(cSddl);
+		LocalFree(secDesc);
+		LocalFree(cSddl);
 
 	CLEANUP:
 		if (bAudit)
@@ -177,7 +186,7 @@ namespace WindowsUtils::Core
 
 	WuResult Services::GetServiceSecurity(
 		SC_HANDLE hService,
-		PSECURITY_DESCRIPTOR pSvcSecurity,
+		WWuString& sddl,
 		LPDWORD pdwSize,
 		BOOL bAudit
 	) {
@@ -199,12 +208,21 @@ namespace WindowsUtils::Core
 			dwServiceAccess |= ACCESS_SYSTEM_SECURITY;
 		}
 
-		DWORD dwResult = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &pSvcSecurity);
+		PSECURITY_DESCRIPTOR secDesc;
+		DWORD dwResult = GetSecurityInfo(hService, SE_SERVICE, secInfo, NULL, NULL, NULL, NULL, &secDesc);
 		if (dwResult != ERROR_SUCCESS)
 			result = WuResult(dwResult, __FILEW__, __LINE__);
 
+		LPWSTR cSddl;
+		ULONG len;
+		ConvertSecurityDescriptorToStringSecurityDescriptorW(secDesc, SDDL_REVISION_1, secInfo, &cSddl, &len);
+
+		sddl = WWuString(cSddl);
+		LocalFree(secDesc);
+		LocalFree(cSddl);
+
 		if (bAudit)
-			result = AccessControl::AdjustCurrentTokenPrivilege(privilegeList.get(), SE_PRIVILEGE_DISABLED);
+			AccessControl::AdjustCurrentTokenPrivilege(privilegeList.get(), SE_PRIVILEGE_DISABLED);
 
 		return result;
 	}

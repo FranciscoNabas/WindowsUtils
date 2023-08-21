@@ -15,7 +15,7 @@ namespace WindowsUtils::Core
     {
     public:
 
-        WuResult static GetCurrentTokenPrivileges(PTOKEN_PRIVILEGES tokenPrivileges);
+        WuResult static GetCurrentTokenPrivileges(wuunique_ha_ptr<TOKEN_PRIVILEGES>& tokenPrivileges);
         WuResult static AdjustCurrentTokenPrivilege(wuvector<WWuString>* spvlpPrivilegeNameList, const DWORD dwAttributes);
     };
 }

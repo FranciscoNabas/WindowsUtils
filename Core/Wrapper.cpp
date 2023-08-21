@@ -318,29 +318,17 @@ namespace WindowsUtils::Core
 		if (audit)
 			secInfo |= SACL_SECURITY_INFORMATION;
 
-		PSECURITY_DESCRIPTOR svcSecurity = NULL;
+		WWuString sddl;
 		DWORD size = 0;
 		if (audit)
-			result = svcptr->GetServiceSecurity(wuServiceName, wuComputerName, svcSecurity, &size, TRUE);
+			result = svcptr->GetServiceSecurity(wuServiceName, wuComputerName, sddl, &size, TRUE);
 		else
-			result = svcptr->GetServiceSecurity(wuServiceName, wuComputerName, svcSecurity, &size);
+			result = svcptr->GetServiceSecurity(wuServiceName, wuComputerName, sddl, &size);
 
 		if (result.Result != ERROR_SUCCESS)
-		{
-			if (svcSecurity != NULL)
-				LocalFree(svcSecurity);
-			
 			throw gcnew NativeException(result);
-		}
 
-		LPWSTR sddl;
-		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
-
-		if (svcSecurity != NULL)
-			LocalFree(svcSecurity);
-
-		String^ manSddl = gcnew String(sddl);
-		LocalFree(sddl);
+		String^ manSddl = gcnew String(sddl.GetBuffer());
 
 		return manSddl;
 	}
@@ -355,28 +343,17 @@ namespace WindowsUtils::Core
 		if (audit)
 			secInfo |= SACL_SECURITY_INFORMATION;
 
-		PSECURITY_DESCRIPTOR svcSecurity = NULL;
+		WWuString sddl;
 		DWORD size = 0;
 		if (audit)
-			result = svcptr->GetServiceSecurity(wuServiceName, L"", svcSecurity, &size, TRUE);
+			result = svcptr->GetServiceSecurity(wuServiceName, L"", sddl, &size, TRUE);
 		else
-			result = svcptr->GetServiceSecurity(wuServiceName, L"", svcSecurity, &size);
+			result = svcptr->GetServiceSecurity(wuServiceName, L"", sddl, &size);
 
 		if (result.Result != ERROR_SUCCESS)
-		{
-			if (svcSecurity != NULL)
-				LocalFree(svcSecurity);
 			throw gcnew NativeException(result);
-		}
 
-		LPWSTR sddl;
-		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
-		
-		if (svcSecurity != NULL)
-			LocalFree(svcSecurity);
-
-		String^ manSddl = gcnew String(sddl);
-		LocalFree(sddl);
+		String^ manSddl = gcnew String(sddl.GetBuffer());
 
 		return manSddl;
 	}
@@ -391,29 +368,17 @@ namespace WindowsUtils::Core
 		if (audit)
 			secInfo |= SACL_SECURITY_INFORMATION;
 
-		PSECURITY_DESCRIPTOR svcSecurity = NULL;
+		WWuString sddl;
 		DWORD size = 0;
 		if (audit)
-			result = svcptr->GetServiceSecurity(whService, svcSecurity, &size, TRUE);
+			result = svcptr->GetServiceSecurity(whService, sddl, &size, TRUE);
 		else
-			result = svcptr->GetServiceSecurity(whService, svcSecurity, &size);
+			result = svcptr->GetServiceSecurity(whService, sddl, &size);
 
 		if (result.Result != ERROR_SUCCESS)
-		{
-			if (svcSecurity != NULL)
-				LocalFree(svcSecurity);
-
 			throw gcnew NativeException(result);
-		}
 
-		LPWSTR sddl;
-		ConvertSecurityDescriptorToStringSecurityDescriptorW(svcSecurity, SDDL_REVISION_1, secInfo, &sddl, NULL);
-
-		if (svcSecurity != NULL)
-			LocalFree(svcSecurity);
-
-		String^ manSddl = gcnew String(sddl);
-		LocalFree(sddl);
+		String^ manSddl = gcnew String(sddl.GetBuffer());
 
 		return manSddl;
 	}

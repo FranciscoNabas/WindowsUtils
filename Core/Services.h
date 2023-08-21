@@ -20,8 +20,8 @@ namespace WindowsUtils::Core
 		WuResult RemoveService(SC_HANDLE hservice, const WWuString& servicename, const WWuString& computername, BOOL stopservice, Notification::PNATIVE_CONTEXT context);
 
 		// Get-ServiceSecurity
-		WuResult GetServiceSecurity(const WWuString& serviceName, const WWuString& computerName, PSECURITY_DESCRIPTOR pSvcSecurity, LPDWORD pdwSize, BOOL bAudit = FALSE);
-		WuResult GetServiceSecurity(SC_HANDLE serviceName, PSECURITY_DESCRIPTOR pSvcSecurity, LPDWORD pdwSize, BOOL bAudit = FALSE);
+		WuResult GetServiceSecurity(const WWuString& serviceName, const WWuString& computerName, WWuString& sddl, LPDWORD pdwSize, BOOL bAudit = FALSE);
+		WuResult GetServiceSecurity(SC_HANDLE serviceName, WWuString& sddl, LPDWORD pdwSize, BOOL bAudit = FALSE);
 
 		// Set-ServiceSecurity
 		WuResult SetServiceSecurity(const WWuString& lpszServiceName, const WWuString& lpszComputerName, const WWuString& lpszSddl, BOOL bChangeAudit, BOOL bChangeOwner);

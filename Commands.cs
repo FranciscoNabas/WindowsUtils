@@ -1323,6 +1323,25 @@ namespace WindowsUtils.Commands
         }
     }
 
+    /// <summary>
+    /// <para type="synopsis">Extracts files from a cabinet file.</para>
+    /// <para type="description">This Cmdlet extracts files from one or multiple cabinet files.</para>
+    /// <para type="description">It also manages automatically files that spans through multiple cabinet files.</para>
+    /// <para type="description">The Cmdlet creates the same folder structure from within the cabinet, relatively to the destination.</para>
+    /// <para type="description">If a file with the same name already exists it's ovewritten by default.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Expand-Cabinet -Path "$env:SystemDrive\Path\To\Cabinet.cab" -Destination "$env:SystemDrive\Path\To\Destination"</code>
+    ///     <para>Extracts files from 'Cabinet.cab' to the 'Destination' folder.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-ChildItem -Path 'C:\CabinetSource\MultipleCab*' | Expand-Cabinet -Destination 'C:\Path\To\Destination'</code>
+    ///     <para>Extract files from all cabinet files from 'C:\CabinetSource' that matches 'MultipleCab*'.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
     [Cmdlet(VerbsData.Expand, "Cabinet")]
     public class ExpandCabinetCommand : CoreCommandBase
     {
@@ -1352,7 +1371,7 @@ namespace WindowsUtils.Commands
         }
 
         /// <summary>
-        /// <para Type="description">Provider-aware file system object path.</para>
+        /// <para type="description">Provider-aware file system object path.</para>
         /// </summary>
         [Parameter(
             Mandatory = true,
@@ -1371,8 +1390,12 @@ namespace WindowsUtils.Commands
             }
         }
 
+        /// <summary>
+        /// <para type="description">The destination folder.</para>
+        /// </summary>
         [Parameter(
-            Mandatory = true
+            Mandatory = true,
+            Position = 1
         )]
         [ValidateNotNullOrEmpty]
         public string Destination {

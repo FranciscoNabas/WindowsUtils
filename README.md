@@ -17,6 +17,12 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [Get-ObjectHandle](#get-objecthandle)
     - [Get-MsiProperties](#get-msiproperties)
     - [Disconnect-Session](#disconnect-session)
+    - [Remove-Service](#remove-service)
+    - [Get-ServiceSecurity](#get-servicesecurity)
+    - [New-ServiceAccessRule](#new-serviceaccessrule)
+    - [New-ServiceAuditRule](#new-serviceauditrule)
+    - [Set-ServiceSecurity](#set-servicesecurity)
+    - [Expand-Cabinet](#expand-cabinet)
   - [Changelog](#changelog)
   - [Support](#support)
   
@@ -139,6 +145,127 @@ It disconnects based on the **SessionId**, which can be obtained with **Get-Comp
   
 ```powershell
 Disconnect-Session -ComputerName 'MYQUANTUMCOMPUTER.contoso.com' -SessionId 3 -Wait
+```
+
+### Remove-Service
+
+This Cmdlet deletes a service installed in the current or remote computer.
+You can choose to stop the service, and its dependents to make sure the service is deleted as soon as possible.
+To remove a service is ultimately to mark it to deletion. The removal might not be instantaneous.
+
+```powershell
+# Removes the service 'MyCoolService'.
+Remove-Service -Name 'MyCoolService'
+
+# Stops the service, and its dependents, and remove it. 'Force' skips confirmation.
+Remove-Service -Name 'MyCoolService' -Stop -Force
+```
+
+### Get-ServiceSecurity
+
+This Cmdlet gets the security attributes for a service. These include the DACL, and optionally the SACL.
+It was designed to be familiar with the '*-Acl' Cmdlet series, like `Get-Acl`. In fact, the objects where
+created based on the same objects.
+
+```powershell-console
+Get-ServiceSecurity wuauserv | Format-List *
+
+Name                    : wuauserv
+AccessToString          : NT AUTHORITY\Authenticated Users Allow Start, GenericRead
+                          NT AUTHORITY\SYSTEM Allow AllAccess
+                          BUILTIN\Administrators Allow AllAccess
+AuditToString           :
+Access                  : {WindowsUtils.AccessControl.ServiceAccessRule, WindowsUtils.AccessControl.ServiceAccessRule, WindowsUtils.AccessControl.ServiceAccessRule}
+Audit                   : {}
+AccessRightType         : WindowsUtils.Services.ServiceRights
+AccessRuleType          : WindowsUtils.AccessControl.ServiceAccessRule
+AuditRuleType           : WindowsUtils.AccessControl.ServiceAuditRule
+Owner                   : NT AUTHORITY\SYSTEM
+Group                   : NT AUTHORITY\SYSTEM
+Sddl                    : O:SYG:SYD:(A;;CCLCSWRPLORC;;;AU)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)
+AreAccessRulesProtected : False
+AreAuditRulesProtected  : False
+AreAccessRulesCanonical : True
+AreAuditRulesCanonical  : True
+```
+
+```powershell-console
+Get-ServiceSecurity wuauserv -Audit | Format-List *
+
+Name                    : wuauserv
+AccessToString          : NT AUTHORITY\Authenticated Users Allow Start, GenericRead
+                          NT AUTHORITY\SYSTEM Allow AllAccess
+                          BUILTIN\Administrators Allow AllAccess
+AuditToString           : Everyone Failure ChangeConfig, Start, Stop, PauseContinue, Delete, GenericRead, WriteDac, WriteOwner
+Access                  : {WindowsUtils.AccessControl.ServiceAccessRule, WindowsUtils.AccessControl.ServiceAccessRule, WindowsUtils.AccessControl.ServiceAccessRule}
+Audit                   : {WindowsUtils.AccessControl.ServiceAuditRule}
+AccessRightType         : WindowsUtils.Services.ServiceRights
+AccessRuleType          : WindowsUtils.AccessControl.ServiceAccessRule
+AuditRuleType           : WindowsUtils.AccessControl.ServiceAuditRule
+Owner                   : NT AUTHORITY\SYSTEM
+Group                   : NT AUTHORITY\SYSTEM
+Sddl                    : O:SYG:SYD:(A;;CCLCSWRPLORC;;;AU)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)S:(AU;FA;CCDCLCSWRPWPDTLOSDRCWDWO;;;WD)
+AreAccessRulesProtected : False
+AreAuditRulesProtected  : False
+AreAccessRulesCanonical : True
+AreAuditRulesCanonical  : True
+```
+
+### New-ServiceAccessRule
+
+This Cmdlet creates a service access rule (DACL) used to change service security.
+You can use the new access rule with `Set-ServiceSecurity`.
+
+```powershell-console
+New-ServiceAccessRule -Identity 'NT AUTHORITY\SYSTEM' -Rights 'ChangeConfig' -Type 'Allow' -InheritanceFlags 'ObjectInherit' -PropagationFlags 'InheritOnly'
+
+ServiceRights     : ChangeConfig
+AccessControlType : Allow
+IdentityReference : NT AUTHORITY\SYSTEM
+IsInherited       : False
+InheritanceFlags  : ObjectInherit
+PropagationFlags  : InheritOnly
+```
+
+### New-ServiceAuditRule
+
+This Cmdlet creates a service audit rule (SACL) used to change service security.
+You can use the new audit rule with `Set-ServiceSecurity`.
+
+```powershell-console
+New-ServiceAuditRule -Identity 'NT AUTHORITY\SYSTEM' -Rights 'EnumerateDependents' -Flags 'Failure'
+
+ServiceRights     : EnumerateDependents
+AuditFlags        : Failure
+IdentityReference : NT AUTHORITY\SYSTEM
+IsInherited       : False
+InheritanceFlags  : None
+PropagationFlags  : None
+```
+
+### Set-ServiceSecurity
+
+This Cmdlet changes service security. It was designed to work like the `Set-Acl` Cmdlet.
+You typically use this Cmdlet with the other service security commands.
+
+```powershell
+$serviceSecurity = Get-ServiceSecurity -Name test_service
+$newRule = New-ServiceAccessRule -Identity 'CONTOSO\User' -Rights 'EnumerateDependents' -Type 'Allow'
+$serviceSecurity.AddAccessRule($newRule)
+Set-ServiceSecurity -Name test_service -SecurityObject $serviceSecurity
+```
+
+### Expand-Cabinet
+
+This Cmdlet extracts files from a cabinet file.
+This Cmdlet is provider-aware.
+
+```powershell
+# Extracts files from 'Cabinet.cab' to the 'Destination' folder.
+Expand-Cabinet -Path "$env:SystemDrive\Path\To\Cabinet.cab" -Destination "$env:SystemDrive\Path\To\Destination"
+
+# Extract files from all cabinet files from 'C:\CabinetSource' that matches 'MultipleCab*'.
+Get-ChildItem -Path 'C:\CabinetSource\MultipleCab*' | Expand-Cabinet -Destination 'C:\Path\To\Destination'
 ```
 
 ## Changelog
