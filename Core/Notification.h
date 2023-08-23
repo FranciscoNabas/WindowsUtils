@@ -10,6 +10,11 @@ namespace WindowsUtils::Core
 	extern "C" public class __declspec(dllexport) Notification
 	{
 	public:
+		typedef enum _WRITE_TEXT_TYPE {
+			Information,
+			Warning
+		} WRITE_TEXT_TYPE;
+
 		typedef enum _PROGRESS_RECORD_TYPE
 		{
 			Processing,
@@ -46,22 +51,42 @@ namespace WindowsUtils::Core
 
 		} MAPPED_PROGRESS_DATA, *PMAPPED_PROGRESS_DATA;
 
+		typedef struct _MAPPED_INFORMATION_DATA {
+			LPWSTR Computer;
+			DWORD NativeThreadId;
+			LPWSTR Text;
+			LPWSTR Source;
+			LPWSTR* Tags;
+			DWORD TagCount;
+			time_t TimeGenerated;
+			LPWSTR User;
+
+			_MAPPED_INFORMATION_DATA();
+			_MAPPED_INFORMATION_DATA(const LPWSTR computer, DWORD natThreadId, LPWSTR text, const LPWSTR source, LPWSTR* tags, DWORD tagCount, time_t timestamp, LPWSTR user);
+			~_MAPPED_INFORMATION_DATA();
+
+		} MAPPED_INFORMATION_DATA, *PMAPPED_INFORMATION_DATA;
+
 		typedef void(__stdcall* UnmanagedWriteProgress)(size_t dataSize);
 		typedef void(__stdcall* UnmanagedWriteWarning)(size_t dataSize);
+		typedef void(__stdcall* UnmanagedWriteInformation)(size_t dataSize);
 
 		typedef struct _NATIVE_CONTEXT
 		{
 			UnmanagedWriteProgress WriteProgressHook;
 			UnmanagedWriteWarning WriteWarningHook;
+			UnmanagedWriteInformation WriteInformationHook;
 			HANDLE MappedProgressFile;
 			HANDLE MappedWarningFile;
+			HANDLE MappedInformationFile;
 
-			_NATIVE_CONTEXT(UnmanagedWriteProgress progPtr, UnmanagedWriteWarning warnPtr, HANDLE hMappedProg, HANDLE hMappedWarn)
-				: WriteProgressHook(progPtr), WriteWarningHook(warnPtr), MappedProgressFile(hMappedProg), MappedWarningFile(hMappedWarn) { }
+			_NATIVE_CONTEXT(UnmanagedWriteProgress progPtr, UnmanagedWriteWarning warnPtr, UnmanagedWriteInformation infoPtr, HANDLE hMappedProg, HANDLE hMappedWarn, HANDLE hMappedInfo)
+				: WriteProgressHook(progPtr), WriteWarningHook(warnPtr), WriteInformationHook(infoPtr), MappedProgressFile(hMappedProg), MappedWarningFile(hMappedWarn), MappedInformationFile(hMappedInfo) { }
 
 		} NATIVE_CONTEXT, *PNATIVE_CONTEXT;
 	};
 
 	void NativeWriteProgress(Notification::PNATIVE_CONTEXT context, Notification::PMAPPED_PROGRESS_DATA progData);
 	void NativeWriteWarning(Notification::PNATIVE_CONTEXT context, const WWuString& text);
+	void NativeWriteInformation(Notification::PNATIVE_CONTEXT context, Notification::PMAPPED_INFORMATION_DATA infoData);
 }

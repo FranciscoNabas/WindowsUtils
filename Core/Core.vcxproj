@@ -175,6 +175,7 @@
     <ClInclude Include="Expressions.h" />
     <ClInclude Include="IO.h" />
     <ClInclude Include="MemoryManagement.h" />
+    <ClInclude Include="Network.h" />
     <ClInclude Include="Notification.h" />
     <ClInclude Include="NtUtilities.h" />
     <ClInclude Include="pch.h" />
@@ -192,6 +193,7 @@
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="Containers.cpp" />
     <ClCompile Include="IO.cpp" />
+    <ClCompile Include="Network.cpp" />
     <ClCompile Include="Notification.cpp" />
     <ClCompile Include="NtUtilities.cpp" />
     <ClCompile Include="pch.cpp">

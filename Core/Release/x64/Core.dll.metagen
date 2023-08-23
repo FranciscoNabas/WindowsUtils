@@ -14,11 +14,17 @@ Struct WindowsUtils.Core.Utilities+_WU_RESOURCE_MESSAGE_TABLE: AutoLayout, AnsiC
     <MarshalDestroy>(_WU_RESOURCE_MESSAGE_TABLE*): PrivateScope, Public, Static, SpecialName
 Struct WindowsUtils.Core.Notification: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+Struct WindowsUtils.Core.Notification+_WRITE_TEXT_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
 Struct WindowsUtils.Core.Notification+_PROGRESS_RECORD_TYPE: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
   :System.Enum
   Fields:
     Int32 value__ : Public, SpecialName, RTSpecialName
 Struct WindowsUtils.Core.Notification+_MAPPED_PROGRESS_DATA: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct WindowsUtils.Core.Notification+_MAPPED_INFORMATION_DATA: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.Notification+_NATIVE_CONTEXT: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
@@ -30,6 +36,20 @@ Struct WindowsUtils.Core.Containers+_ARCHIVE_FILE_TYPE: AutoLayout, AnsiClass, C
   :System.Enum
   Fields:
     Int32 value__ : Public, SpecialName, RTSpecialName
+Struct WindowsUtils.Core.Network: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct WindowsUtils.Core.Network+_PREFERRED_IP_PROTOCOL: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
+Struct WindowsUtils.Core.Network+_TCPING_SUPPORTED_HTTP_METHOD: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    Int32 value__ : Public, SpecialName, RTSpecialName
+Struct WindowsUtils.Core.Network+EphemeralSocket: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
+Struct WindowsUtils.Core.Network+TcpingForm: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
+  :System.ValueType
 Struct WindowsUtils.Core.ProcessAndThread: AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
 Struct WindowsUtils.Core.ProcessAndThread+_VERSION_INFO_PROPERTY: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
@@ -126,7 +146,7 @@ Class WindowsUtils.Core.ResourceMessageTableCore: AutoLayout, AnsiClass, Class, 
     get_Message(): PrivateScope, Public, HideBySig, SpecialName
     Dispose(): PrivateScope, Public, Final, Virtual, HideBySig
 Class WindowsUtils.Core.CmdletContextBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
-    Void .ctor(WriteProgressWrapper, WriteWarningWrapper, IntPtr, IntPtr): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+    Void .ctor(WriteProgressWrapper, WriteWarningWrapper, WriteInformationWrapper, IntPtr, IntPtr, IntPtr): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
   Interfaces:
     System.IDisposable
   Methods:
@@ -140,6 +160,13 @@ Class WindowsUtils.Core.CmdletContextBase+WriteProgressWrapper: AutoLayout, Ansi
     BeginInvoke(UInt64, AsyncCallback, Object): PrivateScope, Public, Final, Virtual, VtableLayoutMask
     EndInvoke(IAsyncResult): PrivateScope, Public, Final, Virtual, VtableLayoutMask
 Class WindowsUtils.Core.CmdletContextBase+WriteWarningWrapper: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
+  :System.MulticastDelegate
+    Void .ctor(System.Object, IntPtr): PrivateScope, Public, SpecialName, RTSpecialName
+  Methods:
+    Invoke(UInt64): PrivateScope, Public, Final, Virtual, VtableLayoutMask
+    BeginInvoke(UInt64, AsyncCallback, Object): PrivateScope, Public, Final, Virtual, VtableLayoutMask
+    EndInvoke(IAsyncResult): PrivateScope, Public, Final, Virtual, VtableLayoutMask
+Class WindowsUtils.Core.CmdletContextBase+WriteInformationWrapper: AutoLayout, AnsiClass, Class, NestedPublic, Sealed, BeforeFieldInit
   :System.MulticastDelegate
     Void .ctor(System.Object, IntPtr): PrivateScope, Public, SpecialName, RTSpecialName
   Methods:
@@ -206,6 +233,7 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetStringArrayFromDoubleNullTerminatedCStyleArray(Char* IsConst IsConst, UInt32 IsLong): PrivateScope, Public, HideBySig
     LogonAndImpersonateUser(String, SecureString): PrivateScope, Public, HideBySig
     ExpandArchiveFile(Object, String, ArchiveFileType): PrivateScope, Public, HideBySig
+    StartTcpPing(String, UInt32, CmdletContextBase): PrivateScope, Public, HideBySig
 Class WindowsUtils.NativeException: AutoLayout, AnsiClass, Class, Public, Serializable, BeforeFieldInit
   :System.Exception
     Void .ctor(Int32, System.String, System.Exception): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName

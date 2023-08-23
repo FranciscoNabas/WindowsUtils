@@ -84,6 +84,29 @@ namespace WindowsUtils.Interop
         internal string StatusDescription;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal unsafe struct MAPPED_INFORMATION_DATA
+    {
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string Computer;
+        internal uint NativeThreadId;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string Text;
+        
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string Source;
+        
+        // To avoid problems with string marshaling, and to keep it as simple
+        // as possible, we're going pointer.
+        internal IntPtr* Tags;
+        internal uint TagCount;
+        internal ulong TimeGenerated;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string User;
+    }
+
     internal partial class NativeFunctions
     {
         [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CreateFileMappingW")]
@@ -242,6 +265,20 @@ namespace WindowsUtils
             : base(204800, "WuWarningInfoShare") { }
 
         internal static WarningMappedShare GetShare()
+        {
+            _instance ??= new();
+            return _instance;
+        }
+    }
+
+    internal sealed class InformationMappedShare : MemoryMappedShare
+    {
+        private static InformationMappedShare? _instance;
+
+        private InformationMappedShare()
+            : base(409600, "WuInformationInfoShare") { }
+
+        internal static InformationMappedShare GetShare()
         {
             _instance ??= new();
             return _instance;

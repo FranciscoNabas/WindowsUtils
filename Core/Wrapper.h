@@ -3,6 +3,7 @@
 
 #include "String.h"
 #include "Common.h"
+#include "Network.h"
 #include "Registry.h"
 #include "Services.h"
 #include "Utilities.h"
@@ -227,8 +228,9 @@ namespace WindowsUtils::Core
 	public:
 		delegate void WriteProgressWrapper(UInt64 dataSize);
 		delegate void WriteWarningWrapper(UInt64 dataSize);
+		delegate void WriteInformationWrapper(UInt64 dataSize);
 
-		CmdletContextBase(WriteProgressWrapper^ progWrapper, WriteWarningWrapper^ warnWrapper, IntPtr mappedProgData, IntPtr mappedWarnData);
+		CmdletContextBase(WriteProgressWrapper^ progWrapper, WriteWarningWrapper^ warnWrapper, WriteInformationWrapper^ infoWrapper, IntPtr mappedProgData, IntPtr mappedWarnData, IntPtr mappedInfoData);
 		~CmdletContextBase();
 
 		Notification::PNATIVE_CONTEXT GetUnderlyingContext();
@@ -240,6 +242,7 @@ namespace WindowsUtils::Core
 		Notification::PNATIVE_CONTEXT _nativeContext;
 		GCHandle _progressGcHandle;
 		GCHandle _warningGcHandle;
+		GCHandle _informationGcHandle;
 	};
 
 	// TEST ONLY
@@ -358,6 +361,9 @@ namespace WindowsUtils::Core
 		// Containers
 		void ExpandArchiveFile(Object^ archiveObject, String^ destination, ArchiveFileType fileType);
 
+		// Start-Tcping
+		void StartTcpPing(String^ destination, UInt32 port, CmdletContextBase^ context);
+
 	private:
 		Utilities* utlptr;
 		TerminalServices* wtsptr;
@@ -366,6 +372,7 @@ namespace WindowsUtils::Core
 		Registry* regptr;
 		ProcessAndThread* patptr;
 		Containers* ctnptr;
+		Network* ntwptr;
 
 		Object^ GetRegistryValue(String^ computerName, String^ userName, WWuString& password, RegistryHive hive, String^ subKey, String^ valueName);
 		array<Object^>^ GetRegistryValueList(String^ computerName, String^ userName, WWuString& password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList);

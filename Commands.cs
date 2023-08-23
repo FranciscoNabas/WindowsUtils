@@ -1456,4 +1456,21 @@ namespace WindowsUtils.Commands
             }
         }
     }
+
+    [Cmdlet(VerbsCommunications.Send, "Tcping")]
+    public class SendTcpingCommand : CoreCommandBase
+    {
+        private readonly Wrapper _unwrapper = new();
+
+        [Parameter(Mandatory = true)]
+        public string Destination { get; set; }
+
+        [Parameter(Mandatory = true)]
+        public uint Port { get; set; }
+
+        protected override void ProcessRecord()
+        {
+            _unwrapper.StartTcpPing(Destination, Port, (CmdletContextBase)CmdletContext);
+        }
+    }
 }

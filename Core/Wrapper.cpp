@@ -890,6 +890,7 @@ namespace WindowsUtils::Core
 		return output;
 	}
 
+	// Expand-Cabinet
 	void Wrapper::ExpandArchiveFile(Object^ archiveObject, String^ destination, ArchiveFileType fileType) {
 		switch (fileType) {
 			case WindowsUtils::Core::ArchiveFileType::Cabinet:
@@ -898,6 +899,14 @@ namespace WindowsUtils::Core
 				cabinet->ExpandCabinetFile(destination);
 			} break;
 		}
+	}
+
+	// Start-Tcping
+	void Wrapper::StartTcpPing(String^ destination, UInt32 port, CmdletContextBase^ context)
+	{
+		WWuString wrappedDest = GetWideStringFromSystemString(destination);
+		Network::TcpingForm form(wrappedDest, port, 10, 1, Network::IPv4, 10, false, true, false, false, true, false, NULL, false, false, false, Network::GET);
+		WuResult result = ntwptr->StartTcpPinging(form, context->GetUnderlyingContext());
 	}
 
 	// Utilities
@@ -991,17 +1000,21 @@ namespace WindowsUtils::Core
 		}
 	}
 
-	CmdletContextBase::CmdletContextBase(WriteProgressWrapper^ progWrapper, WriteWarningWrapper^ warnWrapper, IntPtr mappedProgFile, IntPtr mappedWarnFile)
+	CmdletContextBase::CmdletContextBase(WriteProgressWrapper^ progWrapper, WriteWarningWrapper^ warnWrapper, WriteInformationWrapper^ infoWrapper, IntPtr mappedProgData, IntPtr mappedWarnData, IntPtr mappedInfoData)
 	{
 		_progressGcHandle = GCHandle::Alloc(progWrapper);
 		IntPtr progressDelegatePtr = Marshal::GetFunctionPointerForDelegate(progWrapper);
 		auto progressPtr = static_cast<Notification::UnmanagedWriteProgress>(progressDelegatePtr.ToPointer());
 
 		_warningGcHandle = GCHandle::Alloc(warnWrapper);
-		IntPtr WarningDelegatePtr = Marshal::GetFunctionPointerForDelegate(warnWrapper);
-		auto warningPtr = static_cast<Notification::UnmanagedWriteWarning>(WarningDelegatePtr.ToPointer());
+		IntPtr warningDelegatePtr = Marshal::GetFunctionPointerForDelegate(warnWrapper);
+		auto warningPtr = static_cast<Notification::UnmanagedWriteWarning>(warningDelegatePtr.ToPointer());
 
-		_nativeContext = new Notification::NATIVE_CONTEXT(progressPtr, warningPtr, (HANDLE)mappedProgFile.ToPointer(), (HANDLE)mappedWarnFile.ToPointer());
+		_informationGcHandle = GCHandle::Alloc(infoWrapper);
+		IntPtr informationDelegatePtr = Marshal::GetFunctionPointerForDelegate(infoWrapper);
+		auto infoPtr = static_cast<Notification::UnmanagedWriteInformation>(informationDelegatePtr.ToPointer());
+
+		_nativeContext = new Notification::NATIVE_CONTEXT(progressPtr, warningPtr, infoPtr, (HANDLE)mappedProgData.ToPointer(), (HANDLE)mappedWarnData.ToPointer(), (HANDLE)mappedInfoData);
 	}
 	CmdletContextBase::~CmdletContextBase()
 	{

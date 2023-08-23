@@ -31,6 +31,9 @@
 #define UNLEN 256
 #endif
 
+// Globals.
+bool _CtrlCHit_ = false;
+
 // Library imports.
 #pragma comment (lib, "Cabinet.lib")
 #pragma comment (lib, "Ole32.lib")
@@ -41,6 +44,9 @@
 #pragma comment (lib, "Shlwapi.lib")
 #pragma comment (lib, "Version.lib")
 #pragma comment (lib, "PathCch.lib")
+#pragma comment (lib, "Ws2_32.lib")
+#pragma comment (lib, "Mswsock.lib")
+#pragma comment (lib, "AdvApi32.lib")
 
 // Include list.
 #include <Windows.h>
@@ -63,5 +69,7 @@
 #include <new>
 #include <system_error>
 #include <PathCch.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 
 #endif //PCH_H

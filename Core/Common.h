@@ -22,6 +22,11 @@ public:
 		CompactTrace = GetCompactTrace(fileName, lineNumber);
 	}
 
+	~WuResult()
+	{
+		wprintf(Message.GetBuffer());
+	}
+
 	_NODISCARD static WWuString GetErrorMessage(long errorCode, bool isNt) {
 		if (isNt) {
 			HMODULE hModule = GetModuleHandle(L"ntdll.dll");
@@ -108,5 +113,247 @@ public:
 			default:
 				return WuResult(err, L"Unknown error", fileName, lineNumber);
 		}
+	}
+};
+
+// This handler is called when the user presses one of
+// the control key combinations.
+// Not sure if I want to use this yet.
+//BOOL WINAPI CtrlHandlerRoutine(DWORD fdwCtrlType)
+//{
+//	switch (fdwCtrlType) {
+//		case CTRL_C_EVENT:
+//		{
+//
+//		} break;
+//
+//		default:
+//			return FALSE;
+//	}
+//}
+
+////////////////////////////////////////////////////
+//
+//		~ Thou shalt not reinvent the wheel ~		
+//
+//	- System.TimeSpan
+//	- System.Diagnostics.StopWatch
+//
+//	Everything... Even the variable names.
+//
+////////////////////////////////////////////////////
+
+struct WuTimeSpan
+{
+	const __int64 TicksPerDay = 864000000000LL;
+	const __int64 TicksPerHour = 36000000000LL;
+	const __int64 TicksPerMinute = 600000000LL;
+	const __int64 TicksPerSecond = 10000000LL;
+	const __int64 TicksPerMillisecond = 10000LL;
+
+	int Days;
+	int Hours;
+	int Minutes;
+	int Seconds;
+	int Milliseconds;
+
+	double TotalDays;
+	double TotalHours;
+	double TotalMinutes;
+	double TotalSeconds;
+	double TotalMilliseconds;
+	double TotalMicroseconds;
+	double TotalNanoseconds;
+
+	WuTimeSpan(__int64 ticks)
+	{
+		_ticks = ticks;
+		SetValues();
+	}
+	WuTimeSpan(int hours, int minutes, int seconds)
+	{
+		__int64 ticks = TimeToTicks(hours, minutes, seconds);
+		SetValues();
+	}
+	WuTimeSpan(int days, int hours, int minutes, int seconds)
+	{
+		__int64 num = (static_cast<__int64>(days) * 3600L * 24 + static_cast<__int64>(hours) * 3600L + static_cast<__int64>(minutes) * 60L + seconds) * 1000;
+		if (num > 922337203685477L || num < -922337203685477L) {
+			throw "TimeSpan to long";
+		}
+		_ticks = num * 10000;
+		SetValues();
+	}
+	WuTimeSpan(int days, int hours, int minutes, int seconds, int milliseconds)
+	{
+		__int64 num = (static_cast<__int64>(days) * 3600L * 24 + static_cast<__int64>(hours) * 3600L + static_cast<__int64>(minutes) * 60L + seconds) * 1000 + milliseconds;
+		if (num > 922337203685477L || num < -922337203685477L) {
+			throw "TimeSpan to long";
+		}
+		_ticks = num * 10000;
+		SetValues();
+	}
+
+	~WuTimeSpan() { }
+
+	const __int64 Ticks() { return _ticks; }
+	const WuTimeSpan Zero() { return WuTimeSpan(0LL); }
+	const WuTimeSpan MaxValue() { return WuTimeSpan(9223372036854775807); }
+	const WuTimeSpan MinValue() { return WuTimeSpan(-static_cast<__int64>(9223372036854775808)); }
+
+	WuTimeSpan Add(const WuTimeSpan other)
+	{
+		__int64 ticks = other._ticks;
+		if (_ticks > ticks) {
+			return 1;
+		}
+		if (_ticks < ticks) {
+			return -1;
+		}
+		return 0;
+	}
+
+private:
+	__int64 _ticks;
+
+	inline static const __int64 TimeToTicks(int hour, int minute, int second)
+	{
+		__int64 num = static_cast<__int64>(hour) * 3600L + static_cast<__int64>(minute) * 60L + second;
+		if (num > 922337203685L || num < -922337203685L) {
+			throw "TimeSpan to long";
+		}
+		num *= -10000000;
+
+		return num;
+	}
+
+	inline void SetValues()
+	{
+		Days = std::lround(static_cast<double>(_ticks) / 864000000000L);
+		Hours = static_cast<int>(_ticks / 36000000000L % 24);
+		Minutes = static_cast<int>(_ticks / 600000000 % 60);
+		Seconds = static_cast<int>(_ticks / 10000000 % 60);
+		Milliseconds = static_cast<int>(_ticks / 10000 % 1000);
+
+		TotalDays = static_cast<double>(_ticks) / 864000000000.0;
+		TotalHours = static_cast<double>(_ticks) / 36000000000.0;
+		TotalMinutes = static_cast<double>(_ticks) / 600000000.0;
+		TotalSeconds = static_cast<double>(_ticks) / 10000000.0;
+		TotalMicroseconds = static_cast<double>(_ticks) / 10.0;
+		TotalNanoseconds = static_cast<double>(_ticks) * 100.0;
+
+		double num = static_cast<double>(_ticks) / 10000.0;
+		if (num > 922337203685477.0)
+			TotalMilliseconds = 922337203685477.0;
+		else if (num < -922337203685477.0)
+			TotalMilliseconds = -922337203685477.0;
+		else
+			TotalMilliseconds = num;
+	}
+};
+
+class WuStopWatch
+{
+public:
+	WuStopWatch()
+	{
+		// From tcping.exe.
+		// apparently... QueryPerformanceCounter isn't thread safe unless we do this
+		SetThreadAffinityMask(GetCurrentThread(), 1);
+		Reset();
+	}
+
+	void Start()
+	{
+		if (!_isRunning) {
+			_startTimeStamp = GetTimestamp();
+			_isRunning = true;
+		}
+	}
+
+	WuStopWatch StartNew()
+	{
+		WuStopWatch spw;
+		spw.Start();
+
+		return spw;
+	}
+
+	void Stop()
+	{
+		if (_isRunning) {
+			__int64 timestamp = GetTimestamp();
+			__int64 num = timestamp - _startTimeStamp;
+			_elapsed += num;
+			_isRunning = false;
+			if (_elapsed < 0)
+				_elapsed = 0LL;
+		}
+	}
+
+	void Reset()
+	{
+		_elapsed = 0L;
+		_isRunning = false;
+		_startTimeStamp = 0LL;
+	}
+
+	void Restart()
+	{
+		_elapsed = 0L;
+		_startTimeStamp = GetTimestamp();
+		_isRunning = true;
+	}
+
+	static __int64 GetTimestamp()
+	{
+		return GetPerformanceCounter();
+	}
+
+	const bool IsRunning() const
+	{
+		return _isRunning;
+	}
+
+	const __int64 ElapsedTicks() const
+	{
+		__int64 num = _elapsed;
+		if (_isRunning) {
+			__int64 timestamp = GetTimestamp();
+			__int64 num2 = timestamp - _startTimeStamp;
+			num += num2;
+		}
+
+		return num;
+	}
+
+	const WuTimeSpan Elapsed() const
+	{
+		__int64 elapsedDateTimeTicks = static_cast<__int64>(static_cast<double>(ElapsedTicks() * _tickFrequency));
+		return WuTimeSpan(elapsedDateTimeTicks);
+	}
+
+private:
+	__int64 _elapsed;
+	__int64 _startTimeStamp;
+	bool _isRunning;
+
+	__int64 _frequency = GetPerformanceFrequency();
+	double _tickFrequency = 10000000.0 / static_cast<double>(_frequency);
+
+	static __int64 GetPerformanceFrequency()
+	{
+		LARGE_INTEGER frequency;
+		QueryPerformanceFrequency(&frequency);
+
+		return frequency.QuadPart;
+	}
+
+	static __int64 GetPerformanceCounter()
+	{
+		LARGE_INTEGER counter;
+		QueryPerformanceCounter(&counter);
+
+		return counter.QuadPart;
 	}
 };

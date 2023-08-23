@@ -39,7 +39,8 @@
         'New-ServiceAccessRule',
         'New-ServiceAuditRule',
         'Set-ServiceSecurity',
-        'Expand-Cabinet'
+        'Expand-Cabinet',
+        'Start-Tcping'
     )
     AliasesToExport = @(
         'gethandle',

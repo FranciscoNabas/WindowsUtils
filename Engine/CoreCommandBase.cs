@@ -1,4 +1,5 @@
-﻿using System.Management.Automation;
+﻿using System.Diagnostics;
+using System.Management.Automation;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Management.Automation.Provider;
@@ -73,6 +74,9 @@ internal sealed class CmdletNativeContext : IDisposable
     private static WarningMappedShare _warningShare
         = WarningMappedShare.GetShare();
 
+    private static InformationMappedShare _informationShare
+        = InformationMappedShare.GetShare();
+
     private readonly PSCmdlet _command;
     private readonly bool _streamErrors;
     private readonly PSCredential _credential = PSCredential.Empty;
@@ -134,8 +138,10 @@ internal sealed class CmdletNativeContext : IDisposable
         return new CmdletContextBase(
             new CmdletContextBase.WriteProgressWrapper(context.NativeWriteProgress),
             new CmdletContextBase.WriteWarningWrapper(context.NativeWriteWarning),
+            new CmdletContextBase.WriteInformationWrapper(context.NativeWriteInformation),
             _progressShare.DangerousGetMappedFileHandle(),
-            _warningShare.DangerousGetMappedFileHandle()
+            _warningShare.DangerousGetMappedFileHandle(),
+            _informationShare.DangerousGetMappedFileHandle()
         );
     }
 
@@ -232,6 +238,36 @@ internal sealed class CmdletNativeContext : IDisposable
 
         _command.WriteWarning(text);
         _warningShare.UnmapView(viewId);
+    }
+
+    private void NativeWriteInformation(ulong dataSize)
+    {
+        SafeMemoryMappedViewHandle view = _informationShare.MapView(
+            out Guid viewId,
+            FileMapAccess.FILE_MAP_READ,
+            new LARGE_UINTEGER(0),
+            dataSize
+        );
+
+        MAPPED_INFORMATION_DATA data = (MAPPED_INFORMATION_DATA)Marshal.PtrToStructure(view.DangerousGetHandle(), typeof(MAPPED_INFORMATION_DATA));
+        InformationRecord record = new(data.Text, data.Source) {
+            Computer = data.Computer,
+            ManagedThreadId = (uint)Thread.CurrentThread.ManagedThreadId,
+            NativeThreadId = data.NativeThreadId,
+            ProcessId = (uint)Process.GetCurrentProcess().Id,
+            TimeGenerated = DateTime.FromFileTime((long)data.TimeGenerated),
+            User = data.User
+        };
+
+        unsafe
+        {
+            if (data.Tags != null && data.TagCount > 0)
+                for (uint i = 0; i < data.TagCount; i++)
+                    record.Tags.Add(Marshal.PtrToStringUni(data.Tags[i]));
+        }
+
+        _command.WriteInformation(record);
+        _informationShare.UnmapView(viewId);
     }
     
     internal bool HasErrors()

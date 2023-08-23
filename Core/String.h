@@ -110,6 +110,7 @@ private:
     _char_type* _buffer;        // The C-style array of characters backing up the string.
     size_t _char_count;         // The '_char_type' count NOT including '\0'.
     WuAllocator* _allocator;    // The allocator used for allocating/deallocating memory.
+    bool _isAllocated;          // True if an allocation was made for this string;
 
 public:
 
@@ -118,6 +119,7 @@ public:
         _allocator = new WuAllocator();
         _char_count = 0;
         _buffer = static_cast<_char_type*>(_allocator->allocate(sizeof(_char_type)));
+        _isAllocated = true;
     }
 
     // Creates a string from a raw pointer.
@@ -137,6 +139,8 @@ public:
 
             _traits::copy(_buffer, ptr, _char_count);
         }
+
+        _isAllocated = true;
     }
 
     // Copy constructor. Creates a string from another.
@@ -156,6 +160,8 @@ public:
 
             _traits::copy(_buffer, other._buffer, _char_count);
         }
+
+        _isAllocated = true;
     }
 
     // Move constructor. Moves the other string to this.
@@ -166,7 +172,7 @@ public:
 
     // Destructor. Deallocates the buffer, and deletes the allocator.
     ~WuBaseString() {
-        if (_buffer != NULL)
+        if (_buffer != NULL && _isAllocated)
             _allocator->deallocate(static_cast<void*>(_buffer));
 
         _buffer = NULL;
