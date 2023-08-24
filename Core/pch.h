@@ -31,9 +31,6 @@
 #define UNLEN 256
 #endif
 
-// Globals.
-bool _CtrlCHit_ = false;
-
 // Library imports.
 #pragma comment (lib, "Cabinet.lib")
 #pragma comment (lib, "Ole32.lib")

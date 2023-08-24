@@ -74,6 +74,16 @@ Struct WindowsUtils.Core.TerminalServices+_WU_COMPUTER_SESSION: AutoLayout, Ansi
     <MarshalDestroy>(_WU_COMPUTER_SESSION*): PrivateScope, Public, Static, SpecialName
 Struct WindowsUtils.Core.TerminalServices+_WU_MESSAGE_RESPONSE: AutoLayout, AnsiClass, Class, NestedPublic, SequentialLayout, Sealed, BeforeFieldInit
   :System.ValueType
+Class WindowsUtils.NativeException: AutoLayout, AnsiClass, Class, Public, Serializable, BeforeFieldInit
+  :System.Exception
+    Void .ctor(Int32, System.String, System.Exception): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+    Void .ctor(Int32, System.String): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+    Void .ctor(Int32): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+    Void .ctor(WuResult*): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Properties:
+    Int32 ErrorCode 'get ' : 
+  Methods:
+    get_ErrorCode(): PrivateScope, Public, HideBySig, SpecialName
 Class WindowsUtils.Core.MessageResponseBase: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
     Void .ctor(_WU_MESSAGE_RESPONSE): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
     Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
@@ -233,17 +243,21 @@ Class WindowsUtils.Core.Wrapper: AutoLayout, AnsiClass, Class, Public, BeforeFie
     GetStringArrayFromDoubleNullTerminatedCStyleArray(Char* IsConst IsConst, UInt32 IsLong): PrivateScope, Public, HideBySig
     LogonAndImpersonateUser(String, SecureString): PrivateScope, Public, HideBySig
     ExpandArchiveFile(Object, String, ArchiveFileType): PrivateScope, Public, HideBySig
-    StartTcpPing(String, UInt32, CmdletContextBase): PrivateScope, Public, HideBySig
-Class WindowsUtils.NativeException: AutoLayout, AnsiClass, Class, Public, Serializable, BeforeFieldInit
-  :System.Exception
-    Void .ctor(Int32, System.String, System.Exception): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
-    Void .ctor(Int32, System.String): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
-    Void .ctor(Int32): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
-    Void .ctor(WuResult*): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
-  Properties:
-    Int32 ErrorCode 'get ' : 
-  Methods:
-    get_ErrorCode(): PrivateScope, Public, HideBySig, SpecialName
+    StartTcpPing(String, Int32, Int32, Int32, Int32, PreferredIpProtocol, Int32, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal), Boolean(HasFieldMarshal), Boolean(HasFieldMarshal), Boolean(HasFieldMarshal), String, Boolean(HasFieldMarshal), Boolean(HasFieldMarshal), Boolean(HasFieldMarshal), TcpingSupportedHttpMethod, CmdletContextBase): PrivateScope, Public, HideBySig
+Struct WindowsUtils.PreferredIpProtocol: AutoLayout, AnsiClass, Class, Public, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    UInt16 value__ : Public, SpecialName, RTSpecialName
+    WindowsUtils.PreferredIpProtocol None = 0 : Public, Static, Literal, HasDefault
+    WindowsUtils.PreferredIpProtocol IPv4 = 1 : Public, Static, Literal, HasDefault
+    WindowsUtils.PreferredIpProtocol IPv6 = 2 : Public, Static, Literal, HasDefault
+Struct WindowsUtils.TcpingSupportedHttpMethod: AutoLayout, AnsiClass, Class, Public, Sealed, BeforeFieldInit
+  :System.Enum
+  Fields:
+    UInt16 value__ : Public, SpecialName, RTSpecialName
+    WindowsUtils.TcpingSupportedHttpMethod GET = 0 : Public, Static, Literal, HasDefault
+    WindowsUtils.TcpingSupportedHttpMethod POST = 1 : Public, Static, Literal, HasDefault
+    WindowsUtils.TcpingSupportedHttpMethod HEAD = 2 : Public, Static, Literal, HasDefault
 Struct WindowsUtils.Core.ArchiveFileType: AutoLayout, AnsiClass, Class, Public, Sealed, BeforeFieldInit
   :System.Enum
   Fields:

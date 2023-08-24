@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pch.h"
+
 #include "String.h"
 
 class WuResult {
@@ -22,10 +24,7 @@ public:
 		CompactTrace = GetCompactTrace(fileName, lineNumber);
 	}
 
-	~WuResult()
-	{
-		wprintf(Message.GetBuffer());
-	}
+	~WuResult() { }
 
 	_NODISCARD static WWuString GetErrorMessage(long errorCode, bool isNt) {
 		if (isNt) {
@@ -115,22 +114,6 @@ public:
 		}
 	}
 };
-
-// This handler is called when the user presses one of
-// the control key combinations.
-// Not sure if I want to use this yet.
-//BOOL WINAPI CtrlHandlerRoutine(DWORD fdwCtrlType)
-//{
-//	switch (fdwCtrlType) {
-//		case CTRL_C_EVENT:
-//		{
-//
-//		} break;
-//
-//		default:
-//			return FALSE;
-//	}
-//}
 
 ////////////////////////////////////////////////////
 //

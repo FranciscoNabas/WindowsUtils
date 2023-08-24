@@ -1457,20 +1457,119 @@ namespace WindowsUtils.Commands
         }
     }
 
-    [Cmdlet(VerbsCommunications.Send, "Tcping")]
-    public class SendTcpingCommand : CoreCommandBase
+    [Cmdlet(VerbsLifecycle.Start, "Tcping")]
+    public class StartTcpingCommand : CoreCommandBase
     {
         private readonly Wrapper _unwrapper = new();
+        private int _count = 4;
+        private int _failedThreshold = -1;
+
+        private string _outputFile;
+        private bool _append = false;
 
         [Parameter(Mandatory = true)]
         public string Destination { get; set; }
 
         [Parameter(Mandatory = true)]
-        public uint Port { get; set; }
+        [Alias("p")]
+        [ValidateRange(1, 65535)]
+        public int Port { get; set; } = 80;
+
+        [Parameter()]
+        [Alias("n")]
+        [ValidateRange(1, int.MaxValue)]
+        public int Count {
+            get { return _count; }
+            set { _count = value; }
+        }
+
+        [Parameter()]
+        [Alias("w")]
+        [ValidateRange(1, int.MaxValue)]
+        public int Timeout { get; set; } = 2;
+
+        [Parameter()]
+        [Alias("i")]
+        [ValidateRange(1, int.MaxValue)]
+        public int Interval { get; set; } = 1;
+
+        [Parameter()]
+        [Alias("ipv")]
+        public PreferredIpProtocol PreferredIpProtocol { get; set; } = PreferredIpProtocol.None;
+
+        [Parameter()]
+        [Alias("g")]
+        public int FailedThreshold {
+            get {
+                if (_failedThreshold == -1)
+                    return _count;
+
+                return _failedThreshold;
+            }
+            set {
+                if (value <= 0 || value > _count)
+                    throw new ArgumentOutOfRangeException("'FailedThreshold' cannot be smaller or equal to zero, or bigger than 'Count'.");
+
+                _failedThreshold = value;
+            }
+        }
+
+        [Parameter()]
+        [Alias("t")]
+        public SwitchParameter Continuous { get; set; }
+
+        [Parameter()]
+        [Alias("j")]
+        public SwitchParameter IncludeJitter { get; set; }
+
+        [Parameter()]
+        [Alias("d")]
+        public SwitchParameter IncludeDate { get; set; }
+
+        [Parameter()]
+        [Alias("fqdn")]
+        public SwitchParameter PrintFqdn { get; set; }
+
+        // File parameters
+
+        [Parameter()]
+        [Parameter(ParameterSetName = "withOutFile")]
+        [Alias("o")]
+        [ValidateNotNullOrEmpty]
+        public string OutputFile {
+            get { return _outputFile; }
+            set {
+                if (!_append && File.Exists(value))
+                    throw new InvalidOperationException($"The file '{value}' exists, and 'Append' was not used.");
+
+                if (!Directory.Exists(Path.GetDirectoryName(value)))
+                    throw new FileNotFoundException($"Folder '{value}' not found.");
+
+                _outputFile = value;
+            }
+        }
+
+        [Parameter(ParameterSetName = "withOutFile")]
+        public SwitchParameter Append { get; set; }
+
+        // HTTP parameters
+
+        [Parameter()]
+        [Alias("http")]
+        public SwitchParameter UseHttp { get; set; }
+        
+        [Parameter()]
+        [Alias("url")]
+        public SwitchParameter PrintUrl { get; set; }
+
+        [Parameter()]
+        public TcpingSupportedHttpMethod HttpMethod { get; set; } = TcpingSupportedHttpMethod.GET;
+
 
         protected override void ProcessRecord()
         {
-            _unwrapper.StartTcpPing(Destination, Port, (CmdletContextBase)CmdletContext);
+            _unwrapper.StartTcpPing(Destination, Port, Count, Timeout, Interval, PreferredIpProtocol, FailedThreshold, Continuous,
+                IncludeJitter, IncludeDate, PrintFqdn, Force, OutputFile, Append, UseHttp, PrintUrl, HttpMethod, (CmdletContextBase)CmdletContext);
         }
     }
 }

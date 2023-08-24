@@ -24,6 +24,72 @@ using namespace System::Runtime::Serialization;
 using namespace System::Runtime::InteropServices;
 using namespace Microsoft::Win32;
 
+namespace WindowsUtils
+{
+	public enum class PreferredIpProtocol : UInt16
+	{
+		None,
+		IPv4,
+		IPv6
+	};
+
+	public enum class TcpingSupportedHttpMethod : UInt16
+	{
+		GET,
+		POST,
+		HEAD
+	};
+
+	[Serializable()]
+	public ref class NativeException : public Exception
+	{
+	public:
+		property Int32 ErrorCode { Int32 get() { return _errorCode; } }
+
+#if defined(_DEBUG)
+		property String^ CompactTrace { String^ get() { return _compactTrace; } }
+
+		NativeException(WuResult& result)
+			: Exception(gcnew String(result.Message.GetBuffer())),
+			_errorCode(result.Result),
+			_compactTrace(gcnew String(result.CompactTrace.GetBuffer()))
+		{ }
+#else
+		NativeException(WuResult& result)
+			: Exception(gcnew String(result.Message.GetBuffer())),
+			_errorCode(result.Result)
+		{ }
+#endif
+		NativeException(Int32 errorCode)
+			: Exception((gcnew String(WuResult::GetErrorMessage(errorCode, false).GetBuffer()))->Trim()),
+			_errorCode(errorCode)
+		{ }
+
+		NativeException(Int32 errorCode, String^ message)
+			: Exception(message), _errorCode(errorCode)
+		{ }
+
+		NativeException(Int32 errorCode, String^ message, Exception^ inner_exception)
+			: Exception(message, inner_exception), _errorCode(errorCode)
+		{ }
+
+	protected:
+		NativeException()
+			: Exception()
+		{ }
+
+		NativeException(SerializationInfo^ info, StreamingContext context)
+			: Exception(info, context)
+		{ }
+
+	private:
+		Int32 _errorCode;
+#if defined(_DEBUG)
+		String^ _compactTrace;
+#endif
+	};
+}
+
 namespace WindowsUtils::Core
 {
 	/*========================================
@@ -65,8 +131,7 @@ namespace WindowsUtils::Core
 			{
 				if (wrapper->LastInputTime.QuadPart == 0)
 					return TimeSpan::Zero;
-				else
-				{
+				else {
 					::FILETIME datePivot;
 					datePivot.dwLowDateTime = wrapper->LastInputTime.LowPart;
 					datePivot.dwHighDateTime = wrapper->LastInputTime.HighPart;
@@ -77,7 +142,8 @@ namespace WindowsUtils::Core
 			}
 		}
 		property DateTime^ LogonTime {
-			DateTime^ get() {
+			DateTime^ get()
+			{
 				if (wrapper->LogonTime.QuadPart == 0)
 					return nullptr;
 
@@ -106,7 +172,8 @@ namespace WindowsUtils::Core
 	public:
 		property String^ InputObject { String^ get() { return gcnew String(wrapper->InputObject.GetBuffer()); } }
 		property String^ Name {
-			String^ get() {
+			String^ get()
+			{
 				if (!WWuString::IsNullOrEmpty(wrapper->Name))
 					return gcnew String(wrapper->Name.GetBuffer());
 
@@ -119,12 +186,9 @@ namespace WindowsUtils::Core
 			String^ get()
 			{
 				auto search = wrapper->VersionInfo.find(ProcessAndThread::FileDescription);
-				if (search != wrapper->VersionInfo.end())
-				{
-					if (WWuString::IsNullOrEmpty(search->second))
-					{
-						if (!WWuString::IsNullOrEmpty(wrapper->Name))
-						{
+				if (search != wrapper->VersionInfo.end()) {
+					if (WWuString::IsNullOrEmpty(search->second)) {
+						if (!WWuString::IsNullOrEmpty(wrapper->Name)) {
 							WWuString name = wrapper->Name;
 							::PathStripPathW(name.GetBuffer());
 
@@ -134,10 +198,8 @@ namespace WindowsUtils::Core
 					else
 						return gcnew String(search->second.GetBuffer());
 				}
-				else
-				{
-					if (!WWuString::IsNullOrEmpty(wrapper->Name))
-					{
+				else {
+					if (!WWuString::IsNullOrEmpty(wrapper->Name)) {
 						WWuString name = wrapper->Name;
 						::PathStripPathW(name.GetBuffer());
 
@@ -185,7 +247,8 @@ namespace WindowsUtils::Core
 			}
 		}
 		property String^ ImagePath {
-			String^ get() {
+			String^ get()
+			{
 				if (!WWuString::IsNullOrEmpty(wrapper->ImagePath))
 					return gcnew String(wrapper->ImagePath.GetBuffer());
 
@@ -253,9 +316,10 @@ namespace WindowsUtils::Core
 		property Int32 Attributes { Int32 get() { return _attr; } }
 
 		TokenPrivilege(String^ privilege, Int32 attr)
-			: _privName(privilege), _attr(attr) { }
+			: _privName(privilege), _attr(attr)
+		{ }
 		~TokenPrivilege() { }
-		
+
 	protected:
 		!TokenPrivilege() { }
 
@@ -265,10 +329,12 @@ namespace WindowsUtils::Core
 	};
 	// END TEST
 
-	public ref class WuManagedCabinet {
+	public ref class WuManagedCabinet
+	{
 	public:
 		property List<String^>^ BundleCabinetPaths {
-			List<String^>^ get() {
+			List<String^>^ get()
+			{
 				return _bundleCabinetPaths;
 			}
 		}
@@ -319,7 +385,7 @@ namespace WindowsUtils::Core
 
 		// Get-MsiProperties
 		Dictionary<String^, String^>^ GetMsiProperties(String^ filepath);
-		
+
 		// Remove-Service
 		void RemoveService(String^ servicename, String^ computerName, bool stopservice, CmdletContextBase^ context);
 		void RemoveService(IntPtr hservice, String^ servicename, String^ computername, bool stopservice, CmdletContextBase^ context);
@@ -362,7 +428,8 @@ namespace WindowsUtils::Core
 		void ExpandArchiveFile(Object^ archiveObject, String^ destination, ArchiveFileType fileType);
 
 		// Start-Tcping
-		void StartTcpPing(String^ destination, UInt32 port, CmdletContextBase^ context);
+		void StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, PreferredIpProtocol ipProt, Int32 failThreshold, bool continuous,
+			bool jitter, bool dateTime, bool fqdn, bool force, String^ outFile, bool append, bool http, bool url, TcpingSupportedHttpMethod httpMethod, CmdletContextBase^ context);
 
 	private:
 		Utilities* utlptr;
@@ -382,47 +449,4 @@ namespace WindowsUtils::Core
 
 	WWuString GetWideStringFromSystemString(String^ string);
 	Exception^ FDIErrorToException(FDIERROR err);
-}
-
-namespace WindowsUtils 	{
-	[Serializable()]
-	public ref class NativeException : public Exception {
-	public:
-		property Int32 ErrorCode { Int32 get() { return _errorCode; } }
-		
-#if defined(_DEBUG)
-		property String^ CompactTrace { String^ get() { return _compactTrace; } }
-
-		NativeException(WuResult& result)
-			: Exception(gcnew String(result.Message.GetBuffer())),
-			_errorCode(result.Result),
-			_compactTrace(gcnew String(result.CompactTrace.GetBuffer())) { }
-#else
-		NativeException(WuResult& result)
-			: Exception(gcnew String(result.Message.GetBuffer())),
-			_errorCode(result.Result) { }
-#endif
-		NativeException(Int32 errorCode)
-			: Exception((gcnew String(WuResult::GetErrorMessage(errorCode, false).GetBuffer()))->Trim()),
-			_errorCode(errorCode) { }
-
-		NativeException(Int32 errorCode, String^ message)
-			: Exception(message), _errorCode(errorCode) { }
-
-		NativeException(Int32 errorCode, String^ message, Exception^ inner_exception)
-			: Exception(message, inner_exception), _errorCode(errorCode) { }
-
-	protected:
-		NativeException()
-			: Exception() { }
-
-		NativeException(SerializationInfo^ info, StreamingContext context)
-			: Exception(info, context) { }
-
-	private:
-		Int32 _errorCode;
-#if defined(_DEBUG)
-		String^ _compactTrace;
-#endif
-	};
 }

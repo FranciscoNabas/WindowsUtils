@@ -7,6 +7,8 @@
 #include "Expressions.h"
 #include "Notification.h"
 
+#define CHECKIFCTRLC if (Network::TcpingForm::IsCtrlCHit()) { return WuResult(ERROR_CANCELLED, __FILEW__, __LINE__); }
+
 namespace WindowsUtils::Core
 {
 	extern "C" public class __declspec(dllexport) Network
@@ -30,7 +32,8 @@ namespace WindowsUtils::Core
 		{
 		public:
 			const SOCKET GetSocket() const;
-			const WuResult& Result() const;
+			const WuResult& ConnectResult() const;
+			WuResult TrySend(bool force);
 
 			EphemeralSocket(ADDRINFO* addressInfo);
 			~EphemeralSocket();
@@ -38,9 +41,7 @@ namespace WindowsUtils::Core
 		private:
 			SOCKET _underlyingSocket;
 			ADDRINFO* _addressInfo;
-			WuResult _connectSendResult;
-
-			WuResult ConnectSend();
+			WuResult _connectResult;
 		};
 
 		// This class represents a Tcping job request. It contains the data necessary
@@ -50,11 +51,15 @@ namespace WindowsUtils::Core
 		class TcpingForm
 		{
 		public:
+			static inline BOOL WINAPI CtrlHandlerRoutine(DWORD fdwCtrlType);
+			static inline const bool IsCtrlCHit();
+			
 			inline WuStopWatch& StopWatch();
 			inline PCSTR PortAsString() const;
 
 			inline const WWuString& Destination() const;					// The destination. Either an IP or hostname.
 			inline const DWORD Count() const;								// The ping count, analogous to '-n'. Default is 4.
+			inline const DWORD Timeout() const;								// The timeout in seconds. Default is 2.
 			inline const DWORD SecondsInterval() const;						// Interval between each ping in seconds. Default is 1.
 			inline const PREFERRED_IP_PROTOCOL PreferredIpProtocol() const;	// Preferred IP protocol.
 			inline const int FailedCountThreshold() const;					// Number of failing attempts before giving up. Default is the same as 'count'.
@@ -77,6 +82,7 @@ namespace WindowsUtils::Core
 				const WWuString& destination,
 				DWORD port,
 				DWORD count,
+				DWORD timeoout,
 				DWORD secondsInterval,
 				PREFERRED_IP_PROTOCOL ipProt,
 				DWORD failedThres,
@@ -96,12 +102,17 @@ namespace WindowsUtils::Core
 			~TcpingForm();
 
 		private:
+			static TcpingForm* _instance;
+			bool _ctrlCHit;
+			int _ctrlCHitCount;
+
 			WuStopWatch _stopwatch;
 			wuvector<EphemeralSocket> _sockets;
 			CHAR _portString[6];
 
 			WWuString _destination;
 			DWORD _count;
+			DWORD _timeout;
 			DWORD _secondsInterval;
 			PREFERRED_IP_PROTOCOL _preferredIpProtocol;
 			int _failedCountThreshold;
@@ -119,6 +130,8 @@ namespace WindowsUtils::Core
 			bool _httpMode;
 			bool _printUrl;
 			TCPING_SUPPORTED_HTTP_METHOD _httpMethod;
+
+			static TcpingForm* GetForm();
 		};
 
 		////////////////////////////////////////////////////////////////////////////////////////
@@ -138,5 +151,6 @@ namespace WindowsUtils::Core
 		WuResult StartTcpPinging(TcpingForm& workForm, Notification::PNATIVE_CONTEXT context);
 	};
 
+	WuResult PerformSocketConnectSend(ADDRINFO* addressInfo, Network::TcpingForm* workForm);
 	WuString FormatIp(ADDRINFO* address);
 }

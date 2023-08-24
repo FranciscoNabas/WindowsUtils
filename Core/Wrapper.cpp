@@ -902,11 +902,25 @@ namespace WindowsUtils::Core
 	}
 
 	// Start-Tcping
-	void Wrapper::StartTcpPing(String^ destination, UInt32 port, CmdletContextBase^ context)
+	void Wrapper::StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, PreferredIpProtocol ipProt, Int32 failThreshold, bool continuous,
+		bool jitter, bool dateTime, bool fqdn, bool force, String^ outFile, bool append, bool http, bool url, TcpingSupportedHttpMethod httpMethod, CmdletContextBase^ context)
 	{
+		WWuString wrappedOutFile;
+		if (!String::IsNullOrEmpty(outFile))
+			wrappedOutFile = GetWideStringFromSystemString(outFile);
+		
 		WWuString wrappedDest = GetWideStringFromSystemString(destination);
-		Network::TcpingForm form(wrappedDest, port, 10, 1, Network::IPv4, 10, false, true, false, false, true, false, NULL, false, false, false, Network::GET);
-		WuResult result = ntwptr->StartTcpPinging(form, context->GetUnderlyingContext());
+
+		bool isFile = false;
+		if (wrappedOutFile.Length() > 0)
+			isFile = true;
+
+		wuunique_ptr<Network::TcpingForm> form = make_wuunique<Network::TcpingForm>(wrappedDest, port, count, timeout, interval, (Network::PREFERRED_IP_PROTOCOL)ipProt, failThreshold,
+			continuous, jitter, dateTime, fqdn, force, isFile, wrappedOutFile, append, http, url, (Network::TCPING_SUPPORTED_HTTP_METHOD)httpMethod);
+		
+		WuResult result = ntwptr->StartTcpPinging(*form, context->GetUnderlyingContext());
+		if (result.Result != ERROR_SUCCESS && result.Result != ERROR_CANCELLED)
+			throw gcnew NativeException(result);
 	}
 
 	// Utilities
