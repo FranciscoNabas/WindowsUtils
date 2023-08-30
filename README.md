@@ -22,7 +22,9 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [New-ServiceAccessRule](#new-serviceaccessrule)
     - [New-ServiceAuditRule](#new-serviceauditrule)
     - [Set-ServiceSecurity](#set-servicesecurity)
+    - [Get-InstalledDotnet](#get-installeddotnet)
     - [Expand-Cabinet](#expand-cabinet)
+    - [Start-Tcping](#start-tcping)
   - [Changelog](#changelog)
   - [Support](#support)
   
@@ -255,6 +257,28 @@ $serviceSecurity.AddAccessRule($newRule)
 Set-ServiceSecurity -Name test_service -SecurityObject $serviceSecurity
 ```
 
+### Get-InstalledDotnet
+
+This Cmdlet returns all .NET versions installed in the computer. Additionally, you can return
+the installed patches for .NET.
+
+```powershell-console
+Get-InstalledDotnet
+
+Version        Edition ComputerName
+-------        ------- ------------
+4.8.9032 FullFramework MYCOMPUTERNAME
+```
+
+```powershell-console
+Get-InstalledDotnet -InlcudeUpdate | Select-Object -ExpandProperty InstalledUpdates
+
+Version                                   InstalledUpdates                                ComputerName
+-------                                   ----------------                                ------------
+Microsoft .NET Framework 4 Client Profile {KB2468871, KB2468871v2, KB2478063, KB2533523…} MYCOMPUTERNAME
+Microsoft .NET Framework 4 Extended       {KB2468871, KB2468871v2, KB2478063, KB2533523…} MYCOMPUTERNAME
+```
+
 ### Expand-Cabinet
 
 This Cmdlet extracts files from a cabinet file.
@@ -266,6 +290,49 @@ Expand-Cabinet -Path "$env:SystemDrive\Path\To\Cabinet.cab" -Destination "$env:S
 
 # Extract files from all cabinet files from 'C:\CabinetSource' that matches 'MultipleCab*'.
 Get-ChildItem -Path 'C:\CabinetSource\MultipleCab*' | Expand-Cabinet -Destination 'C:\Path\To\Destination'
+```
+
+### Start-Tcping
+
+This Cmdlet attempts to measure network statistics while connecting to a destination using TCP.
+It works similarly as well-known tools like 'ping.exe', or 'tcping.exe'.
+The parameters contain aliases that mimic the parameter in those applications.
+
+```powershell-console
+Start-Tcping -Destination learn.microsoft.com  -Port 443 -IncludeJitter
+
+Probing learn.microsoft.com [2600:1419:6200:284::3544] on port 443:
+2600:1419:6200:284::3544 - TCP:443 - Port is open - time=10.84ms
+2600:1419:6200:284::3544 - TCP:443 - Port is open - time=9.54ms jitter=1.31ms
+2600:1419:6200:284::3544 - TCP:443 - Port is open - time=11.33ms jitter=1.14ms
+2600:1419:6200:284::3544 - TCP:443 - Port is open - time=11.07ms jitter=0.51ms
+
+Pinging statistics for 2600:1419:6200:284::3544:
+        Packets: Sent = 4, Successful = 4, Failed = 0 (0%),
+Approximate round trip times in milli-seconds:
+        Minimum = 9.54ms, Maximum = 11.33ms, Average = 10.70ms,
+Approximate jitter in milli-seconds:
+        Minimum = 0.51ms, Maximum = 1.31ms, Average = 0.98m
+```
+
+```powershell-console
+Start-Tcping learn.microsoft.com -j -d -t
+
+Probing learn.microsoft.com [2600:1419:6200:289::3544] continuously on port 80 (press Ctrl + C to stop):
+2023-8-29 23:44:52.751 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=6.43ms
+2023-8-29 23:44:53.772 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=12.59ms jitter=6.16ms
+2023-8-29 23:44:54.794 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=12.74ms jitter=3.23ms
+2023-8-29 23:44:55.817 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=8.51ms jitter=2.07ms
+2023-8-29 23:44:56.842 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=12.45ms jitter=2.38ms
+2023-8-29 23:44:57.866 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=11.35ms jitter=0.80ms
+2023-8-29 23:44:58.889 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=8.79ms jitter=1.89ms
+
+Pinging statistics for 2600:1419:6200:289::3544:
+        Packets: Sent = 7, Successful = 7, Failed = 0 (0%),
+Approximate round trip times in milli-seconds:
+        Minimum = 8.51ms, Maximum = 12.74ms, Average = 10.41ms,
+Approximate jitter in milli-seconds:
+        Minimum = 0.80ms, Maximum = 6.16ms, Average = 2.76ms
 ```
 
 ## Changelog

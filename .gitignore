@@ -21,16 +21,18 @@ Release/
 Release/*
 Preview/*
 Preview/
-Debug/**
+src/Debug/**
 */x64/**
-x64/**
-!Core/Release
-Core/DawnCache
-Core/Debug
-Core/GPUCache
-Core/debug.log
-Core/Release/x64/
-obj/Debug/
+src/x64/**
+!src/WuCore/Release
+src/WuCore/DawnCache
+src/WuCore/Debug
+src/WuCore/GPUCache
+src/WuCore/debug.log
+src/WuCore/Release/x64/
+src/obj/Debug/
+src/bin/
+x64/
 
 # Package
 packages/
