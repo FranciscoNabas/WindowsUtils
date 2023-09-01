@@ -2,8 +2,6 @@
 .vs/*
 .vscode/
 .vscode/*
-Properties/
-Properties/*
 
 # Local History for Visual Studio Code
 .history/
