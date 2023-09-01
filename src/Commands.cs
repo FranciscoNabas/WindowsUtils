@@ -8,6 +8,7 @@ using WindowsUtils.Attributes;
 using WindowsUtils.AccessControl;
 using WindowsUtils.TerminalServices;
 using WindowsUtils.ArgumentCompletion;
+using System.Security;
 
 #pragma warning disable CS8618
 namespace WindowsUtils.Commands
@@ -1475,12 +1476,19 @@ namespace WindowsUtils.Commands
     /// </example>
     /// <example>
     ///     <para></para>
-    ///     <code>Start-Tcping 'learn.microsoft.com' -n 10 -d -j -o 'C:\SuperTcpTest.txt'</code>
-    ///     <para>Measure statistics to 'learn.microsoft.com' on port 80, with jitter and timestamp, saving the output in a file.</para>
+    ///     <code>Start-Tcping 'learn.microsoft.com' -n 10 -j -o 'C:\SuperTcpTest.txt'</code>
+    ///     <para>Measure statistics to 'learn.microsoft.com' on port 80, with jitter and saving the output in a file.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Start-Tcping 'learn.microsoft.com', 'google.com' -p 80, 443 -s</code>
+    ///     <para>Measure statistics to 'learn.microsoft.com' and 'google.com' on port 80 and 443, with a single probe.</para>
     ///     <para></para>
     /// </example>
     /// </summary>
     [Cmdlet(VerbsLifecycle.Start, "Tcping")]
+    [OutputType(typeof(TcpingProbeInfo), typeof(TcpingStatistics))]
     public class StartTcpingCommand : CoreCommandBase
     {
         private readonly Wrapper _unwrapper = new();
@@ -1489,6 +1497,10 @@ namespace WindowsUtils.Commands
 
         private string _outputFile;
         private bool _append = false;
+        private bool _continuous;
+        private bool _single;
+
+        private bool _ignoreSingle = false;
 
         /// <summary>
         /// <para type="description">The destination.</para>
@@ -1497,7 +1509,7 @@ namespace WindowsUtils.Commands
             Mandatory = true,
             Position = 0
         )]
-        public string Destination { get; set; }
+        public string[] Destination { get; set; }
 
         /// <summary>
         /// <para type="description">The port.</para>
@@ -1505,7 +1517,7 @@ namespace WindowsUtils.Commands
         [Parameter(Position = 1)]
         [Alias("p")]
         [ValidateRange(1, 65535)]
-        public int Port { get; set; } = 80;
+        public int[] Port { get; set; } = new int[] { 80 };
 
         /// <summary>
         /// <para type="description">The number of tests to perform.</para>
@@ -1522,7 +1534,21 @@ namespace WindowsUtils.Commands
             }
             set {
                 if (this.Continuous.IsPresent)
-                    WriteWarning("'-Count' was used with '-Continuous'. Count will be ignored.");
+                {
+                    if (this.Single.IsPresent)
+                    {
+                        WriteWarning("'-Continuous' was used with '-Count' and '-Single'. Count and Single will be ignored.");
+                        _ignoreSingle = true;
+                    }
+                    else
+                        WriteWarning("'-Count' was used with '-Continuous'. Count will be ignored.");
+                }
+                else
+                    if (this.Single.IsPresent)
+                    {
+                        WriteWarning("'-Count' was used with '-Single'. Count will be ignored.");
+                        _ignoreSingle = true;
+                    }
 
                 _count = value;
             }
@@ -1581,7 +1607,18 @@ namespace WindowsUtils.Commands
         /// </summary>
         [Parameter()]
         [Alias("t")]
-        public SwitchParameter Continuous { get; set; }
+        public SwitchParameter Continuous {
+            get { return _continuous; }
+            set {
+                if (this.Single.IsPresent)
+                {
+                    WriteWarning("'-Continuous' was used with '-Single'. Single will be ignored");
+                    _ignoreSingle = true;
+                }
+
+                _continuous = value;
+            }
+        }
 
         /// <summary>
         /// <para type="description">Include jitter.</para>
@@ -1591,18 +1628,21 @@ namespace WindowsUtils.Commands
         public SwitchParameter IncludeJitter { get; set; }
 
         /// <summary>
-        /// <para type="description">Includes date and time to the output.</para>
-        /// </summary>
-        [Parameter()]
-        [Alias("d")]
-        public SwitchParameter IncludeDate { get; set; }
-
-        /// <summary>
         /// <para type="description">Attempts to resolve the ip to a FQDN and print in the output.</para>
         /// </summary>
         [Parameter()]
         [Alias("fqdn")]
         public SwitchParameter PrintFqdn { get; set; }
+
+        /// <summary>
+        /// <para type="description">Sends only a single probe. Does not print statistics.</para>
+        /// </summary>
+        [Parameter()]
+        [Alias("s")]
+        public SwitchParameter Single {
+            get { return _single; }
+            set { _single = value; }
+        }
 
         // File parameters
 
@@ -1633,8 +1673,126 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            _unwrapper.StartTcpPing(Destination, Port, Count, Timeout, Interval, PreferredIpProtocol, FailedThreshold, Continuous,
-                IncludeJitter, IncludeDate, PrintFqdn, Force, OutputFile, Append, (CmdletContextBase)CmdletContext);
+            bool isCancel;
+            bool isFirst = true;
+            foreach (string server in Destination)
+            {
+                foreach (int singlePort in Port)
+                {
+                    if ((Destination.Length > 0 || Port.Length > 0) && !isFirst)
+                        _append = true;
+
+                    if (_ignoreSingle)
+                        _unwrapper.StartTcpPing(server, singlePort, Count, Timeout, Interval, PreferredIpProtocol, FailedThreshold, Continuous,
+                            IncludeJitter, PrintFqdn, Force, false, OutputFile, Append, (CmdletContextBase)CmdletContext, out isCancel);
+                    else
+                        _unwrapper.StartTcpPing(server, singlePort, Count, Timeout, Interval, PreferredIpProtocol, FailedThreshold, Continuous,
+                            IncludeJitter, PrintFqdn, Force, Single, OutputFile, Append, (CmdletContextBase)CmdletContext, out isCancel);
+
+                    if (isCancel)
+                        return;
+
+                    if (isFirst)
+                        isFirst = false;
+                }
+            }
         }
     }
-}
+
+    [Cmdlet(
+        VerbsLifecycle.Start, "ProcessAsUser",
+        DefaultParameterSetName = "withUserName"
+    )]
+    [Alias("runas")]
+    public class StartProcessAsUserCommand : PSCmdlet
+    {
+        private Wrapper _unwrapper = new();
+        
+        private string _userName;
+        private string _domain;
+        private SecureString _password;
+
+        private string _titleBar;
+
+        [Parameter(
+            Mandatory = true,
+            Position = 0,
+            ParameterSetName = "withUserName"
+        )]
+        [ValidateNotNullOrEmpty]
+        public string UserName { get; set; }
+
+        [Parameter(
+            Mandatory = true,
+            Position = 1,
+            ParameterSetName = "withUserName"
+        )]
+        [Parameter(
+            Mandatory = true,
+            Position = 1,
+            ParameterSetName = "withCredentials"
+        )]
+        [ValidateNotNullOrEmpty]
+        public string CommandLine { get; set; }
+
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "withCredentials"
+        )]
+        public PSCredential Credential { get; set; }
+
+        protected override void BeginProcessing()
+        {
+            if (ParameterSetName == "withUserName")
+            {
+                Console.Write($"Enter the password for {UserName}: ");
+                _password = Utils.ReadPassword();
+                _titleBar = $"{CommandLine} running as ({UserName})";
+                
+                if (UserName.Contains('\\'))
+                {
+                    var userSplit = UserName.Split('\\');
+                    _domain = userSplit[0];
+                    _userName = userSplit[1];
+                }
+                else if (UserName.Contains('@'))
+                {
+                    var userSplit = UserName.Split('@');
+                    _domain = userSplit[0].Split('.')[0];
+                    _userName = userSplit[1];
+                }
+                else
+                {
+                    _userName = UserName;
+                    _domain = string.Empty;
+                }
+            }
+            else
+            {
+                _password = Credential.Password;
+                _titleBar = $"{CommandLine} running as ({Credential.UserName})";
+
+                if (Credential.UserName.Contains('\\'))
+                {
+                    var userSplit = Credential.UserName.Split('\\');
+                    _domain = userSplit[0];
+                    _userName = userSplit[1];
+                }
+                else if (Credential.UserName.Contains('@'))
+                {
+                    var userSplit = Credential.UserName.Split('@');
+                    _domain = userSplit[0].Split('.')[0];
+                    _userName = userSplit[1];
+                }
+                else
+                {
+                    _userName = Credential.UserName;
+                    _domain = string.Empty;
+                }
+            }
+        }
+
+        protected override void ProcessRecord()
+            => _unwrapper.StartProcessAsUser(_userName, _domain, _password, CommandLine, _titleBar);
+    }
+} 

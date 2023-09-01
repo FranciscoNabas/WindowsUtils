@@ -107,6 +107,40 @@ namespace WindowsUtils.Interop
         internal string User;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct TCPING_OUTPUT
+    {
+        internal long Timestamp;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string Destination;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string DestAddress;
+        
+        internal uint Port;
+        internal TcpingStatus Status;
+        internal double RoundTripTime;
+        internal double Jitter;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TCPING_STATISTICS
+    {
+        internal uint Sent;
+        internal uint Successful;
+        internal uint Failed;
+        internal double FailedPercent;
+        internal double MinRtt;
+        internal double MaxRtt;
+        internal double AvgRtt;
+        internal double MinJitter;
+        internal double MaxJitter;
+        internal double AvgJitter;
+        internal double TotalJitter;
+        internal double TotalMilliseconds;
+    }
+
     internal partial class NativeFunctions
     {
         [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CreateFileMappingW")]

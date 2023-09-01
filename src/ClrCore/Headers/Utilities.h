@@ -51,6 +51,9 @@ namespace WindowsUtils::Core
 
 		// Send-Click
 		WuResult SendClick();
+
+		// Start-ProcessAsUser
+		WuResult RunAs(const WWuString& userName, const WWuString& domain, WWuString& password, WWuString& commandLine, WWuString& titleBar);
 	};
 
 	/*

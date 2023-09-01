@@ -42,15 +42,15 @@ namespace WindowsUtils::Core
 		DWORD failedThreshold,
 		bool continuous,
 		bool includeJitter,
-		bool includeDateTime,
 		bool printFqdn,
 		bool force,
+		bool single,
 		bool outputFile,
 		const WWuString& filePath,
 		bool append
 	) :Destination(destination.GetBuffer()), Port(port), Count(count), Timeout(timeout), SecondsInterval(secondsInterval), PreferredIpProtocol(ipProt),
-			FailedCountThreshold(failedThreshold), IsContinuous(continuous), IncludeJitter(includeJitter), IncludeDateTime(includeDateTime), PrintFqdn(printFqdn),
-				IsForce(force), OutputToFile(outputFile), Append(append)
+			FailedCountThreshold(failedThreshold), IsContinuous(continuous), IncludeJitter(includeJitter), PrintFqdn(printFqdn),
+				IsForce(force), Single(single), OutputToFile(outputFile), Append(append)
 	{
 		WSADATA wsaData;
 		WORD reqVersion = MAKEWORD(2, 2);
@@ -131,7 +131,7 @@ namespace WindowsUtils::Core
 		}
 	}
 
-	inline const bool Network::TcpingForm::IsCtrlCHit() {
+	const bool Network::TcpingForm::IsCtrlCHit() {
 		Network::TcpingForm* instance = GetForm();
 		if (instance == nullptr)
 			return false;
@@ -158,6 +158,9 @@ namespace WindowsUtils::Core
 		WWuString header;
 		WWuString displayName;
 		WWuString destText;
+
+		if (workForm.Single)
+			workForm.Count = 1;
 
 		// Using a variable here, cause if the user goes Ctrl + C we can set
 		// up the error to 'ERROR_CANCELLED'.
@@ -215,7 +218,8 @@ namespace WindowsUtils::Core
 			displayName = destText;
 
 		// Header
-		PrintHeader(&workForm, displayName, context);
+		if (workForm.OutputToFile)
+			PrintHeader(&workForm, displayName, context);
 
 		// Main loop. Here the 'ping' will happen for 'count' times.
 		if (workForm.IsContinuous) {
@@ -252,7 +256,8 @@ namespace WindowsUtils::Core
 		}
 
 	END:
-		ProcessStatistics(&statistics, displayName, &workForm, context);
+		if (!workForm.Single)
+			ProcessStatistics(&statistics, displayName, &workForm, context);
 	};
 
 	//////////////////////////////////////////////////////////////////////
@@ -272,26 +277,12 @@ namespace WindowsUtils::Core
 		DWORD sendResult = ERROR_SUCCESS;
 		WWuString outputText;
 		WuStopWatch timeoutSpw;
+		FILETIME timestamp;
 
 
 		wuunique_ptr<Network::EphemeralSocket> ephSocket;
 		
 		CHECKIFCTRLC;
-
-		if (workForm->IncludeDateTime) {
-			SYSTEMTIME dateTime;
-			GetLocalTime(&dateTime);
-			
-			outputText = WWuString::Format(
-				L"%d-%d-%d %d:%d:%d.%d - ",
-				dateTime.wYear,
-				dateTime.wMonth,
-				dateTime.wDay,
-				dateTime.wHour,
-				dateTime.wMinute,
-				dateTime.wSecond,
-				dateTime.wMilliseconds);
-		}
 
 		workForm->StopWatch.Restart();
 		bool timedOut = false;
@@ -392,12 +383,25 @@ namespace WindowsUtils::Core
 #if defined(_TCPING_TEST)
 				wprintf(L"%ws\n", outputText.GetBuffer());
 #else
-				LPWSTR tags[1] = { L"PSHOST" };
+				GetSystemTimeAsFileTime(&timestamp);
+				Network::TCPING_OUTPUT tcpingOut(
+					timestamp,
+					(LPWSTR)workForm->Destination.GetBuffer(),
+					(LPWSTR)displayName.GetBuffer(),
+					workForm->Port,
+					Network::TCPING_STATUS::Timeout,
+					static_cast<double>(workForm->Timeout * 1000),
+					-1.00
+				);
+
+				context->NativeWriteObject<Network::TCPING_OUTPUT>(&tcpingOut, Notification::TCPING_OUTPUT);
+				
+				/*LPWSTR tags[1] = { L"PSHOST" };
 				Notification::MAPPED_INFORMATION_DATA report(
 					(LPWSTR)NULL, GetCurrentThreadId(), outputText.GetBuffer(), L"Start-Tcping", tags, 1, 0, (LPWSTR)NULL
 				);
 
-				context->NativeWriteInformation(&report);
+				context->NativeWriteInformation(&report);*/
 #endif
 			}
 
@@ -419,7 +423,7 @@ namespace WindowsUtils::Core
 		else if (currentMilliseconds < statistics->MinRtt || statistics->MinRtt == 0)
 			statistics->MinRtt = currentMilliseconds;
 
-		double currentJitter = 0.00;
+		double currentJitter = -1.00;
 		if (workForm->IncludeJitter && statistics->Successful >= 1) {
 			currentJitter = currentMilliseconds - (statistics->TotalMilliseconds / statistics->Successful);
 			currentJitter = abs(currentJitter);
@@ -484,12 +488,25 @@ namespace WindowsUtils::Core
 #if defined(_TCPING_TEST)
 			wprintf(L"%ws\n", outputText.GetBuffer());
 #else
-			LPWSTR tags[1] = { L"PSHOST" };
+			GetSystemTimeAsFileTime(&timestamp);
+			Network::TCPING_OUTPUT tcpingOut(
+				timestamp,
+				(LPWSTR)workForm->Destination.GetBuffer(),
+				(LPWSTR)displayName.GetBuffer(),
+				workForm->Port,
+				Network::TCPING_STATUS::Open,
+				currentMilliseconds,
+				currentJitter
+			);
+
+			context->NativeWriteObject<Network::TCPING_OUTPUT>(&tcpingOut, Notification::TCPING_OUTPUT);
+
+			/*LPWSTR tags[1] = { L"PSHOST" };
 			Notification::MAPPED_INFORMATION_DATA report(
 				(LPWSTR)NULL, GetCurrentThreadId(), outputText.GetBuffer(), L"Start-Tcping", tags, 1, 0, (LPWSTR)NULL
 			);
 
-			context->NativeWriteInformation(&report);
+			context->NativeWriteInformation(&report);*/
 #endif
 		}
 
@@ -500,7 +517,7 @@ namespace WindowsUtils::Core
 
 	void ProcessStatistics(const Network::PTCPING_STATISTICS statistics, const WWuString& displayName, Network::TcpingForm* workForm, WuNativeContext* context)
 	{
-		statistics->FailedPercent = std::lround((static_cast<double>(statistics->Failed) / statistics->Sent) * 100);
+		statistics->FailedPercent = (static_cast<double>(statistics->Failed) / statistics->Sent) * 100.00;
 		
 		if (statistics->TotalMilliseconds == 0)
 			statistics->AvgRtt = 0.00;
@@ -509,7 +526,7 @@ namespace WindowsUtils::Core
 
 		// Yes, this can be done better, but my ADHD doesn't wanna think right now.
 		WWuString output = WWuString::Format(
-			L"\nPinging statistics for %ws:\n\tPackets: Sent = %d, Successful = %d, Failed = %d (%d%%),\n",
+			L"\nPinging statistics for %ws:\n\tPackets: Sent = %d, Successful = %d, Failed = %d (%.2f%%),\n",
 			displayName.GetBuffer(),
 			statistics->Sent,
 			statistics->Successful,
@@ -536,19 +553,21 @@ namespace WindowsUtils::Core
 			);
 		}
 
-#if defined(_TCPING_TEST)
 		if (workForm->OutputToFile)
 			IO::AppendTextToFile(workForm->File, WWuString::Format(L"%ws\n", output.GetBuffer()));
-		else
-			// Testing before using 'NativeWriteInformation'.
+		else {
+#if defined(_TCPING_TEST)
 			wprintf(L"%ws\n", output.GetBuffer());
 #else
-		LPWSTR tags[1] = { L"PSHOST" };
-		Notification::MAPPED_INFORMATION_DATA report(
-			(LPWSTR)NULL, GetCurrentThreadId(), output.GetBuffer(), L"Start-Tcping", tags, 1, 0, (LPWSTR)NULL
-		);
+			context->NativeWriteObject<Network::TCPING_STATISTICS>(statistics, Notification::TCPING_STATISTICS);
 
-		context->NativeWriteInformation(&report);
+			/*LPWSTR tags[1] = { L"PSHOST" };
+			Notification::MAPPED_INFORMATION_DATA report(
+				(LPWSTR)NULL, GetCurrentThreadId(), output.GetBuffer(), L"Start-Tcping", tags, 1, 0, (LPWSTR)NULL
+			);
+
+			context->NativeWriteInformation(&report);*/
+		}
 #endif
 	}
 

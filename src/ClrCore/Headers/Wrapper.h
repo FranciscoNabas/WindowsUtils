@@ -33,11 +33,10 @@ namespace WindowsUtils
 		IPv6
 	};
 
-	public enum class TcpingSupportedHttpMethod : UInt16
+	public enum class WriteOutputType : UInt32
 	{
-		GET,
-		POST,
-		HEAD
+		TCPING_OUTPUT,
+		TCPING_STATISTICS
 	};
 
 	[Serializable()]
@@ -303,14 +302,17 @@ namespace WindowsUtils::Core
 		delegate void WriteProgressWrapper();
 		delegate void WriteWarningWrapper();
 		delegate void WriteInformationWrapper();
+		delegate void WriteObjectWrapper(WriteOutputType type);
 
 		CmdletContextBase(
 			WriteProgressWrapper^ progWrapper,
 			WriteWarningWrapper^ warnWrapper,
 			WriteInformationWrapper^ infoWrapper,
+			WriteObjectWrapper^objWrapper,
 			Byte* progressBuffer,
 			Byte* warningBuffer,
-			Byte* infoBuffer
+			Byte* infoBuffer,
+			Byte* objBuffer
 		);
 
 		~CmdletContextBase();
@@ -325,6 +327,7 @@ namespace WindowsUtils::Core
 		GCHandle _progressGcHandle;
 		GCHandle _warningGcHandle;
 		GCHandle _informationGcHandle;
+		GCHandle _objectGcHandle;
 	};
 
 	// TEST ONLY
@@ -448,7 +451,10 @@ namespace WindowsUtils::Core
 
 		// Start-Tcping
 		void StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, PreferredIpProtocol ipProt, Int32 failThreshold, bool continuous,
-			bool jitter, bool dateTime, bool fqdn, bool force, String^ outFile, bool append, CmdletContextBase^ context);
+			bool jitter, bool fqdn, bool force, bool single, String^ outFile, bool append, CmdletContextBase^ context, [Out] bool% isCancel);
+
+		// Start-ProcessAsUser
+		void StartProcessAsUser(String^ userName, String^ domain, SecureString^ password, String^ commandLine, String^ titleBar);
 
 	private:
 		Utilities* utlptr;

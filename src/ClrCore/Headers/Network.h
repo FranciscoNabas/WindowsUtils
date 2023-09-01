@@ -10,7 +10,7 @@
 
 #define CHECKIFCTRLC if (Network::TcpingForm::IsCtrlCHit()) { finalResult = ERROR_CANCELLED; goto END; }
 
-#define _TCPING_TEST
+// #define _TCPING_TEST
 
 namespace WindowsUtils::Core
 {
@@ -24,12 +24,19 @@ namespace WindowsUtils::Core
 			IPv6
 		} PREFERRED_IP_PROTOCOL;
 
+		typedef enum _TCPING_STATUS : WORD
+		{
+			Open,
+			Closed,
+			Timeout
+		} TCPING_STATUS;
+
 		typedef struct _TCPING_STATISTICS
 		{
 			DWORD Sent;
 			DWORD Successful;
 			DWORD Failed;
-			DWORD FailedPercent;
+			double FailedPercent;
 			double MinRtt;
 			double MaxRtt;
 			double AvgRtt;
@@ -44,6 +51,49 @@ namespace WindowsUtils::Core
 					MinJitter(0.00), MaxJitter(0.00), AvgJitter(0.00), TotalJitter(0.00), TotalMilliseconds(0.00) { }
 
 		} TCPING_STATISTICS, *PTCPING_STATISTICS;
+
+		typedef struct _TCPING_OUTPUT
+		{
+			FILETIME Timestamp;
+			LPWSTR Destination;
+			LPWSTR DestAddress;
+			DWORD Port;
+			TCPING_STATUS Status;
+			double RoundTripTime;
+			double Jitter;
+
+			_TCPING_OUTPUT(FILETIME timestamp, const LPWSTR dest, LPWSTR destAddr, DWORD port, TCPING_STATUS stat, double rtt, double jitter)
+				: Timestamp(timestamp), Port(port), Status(stat), RoundTripTime(rtt), Jitter(jitter)
+			{
+				if (dest != NULL) {
+					size_t destLen = wcslen(dest) + 1;
+					Destination = new WCHAR[destLen];
+					wcscpy_s(Destination, destLen, dest);
+				}
+				else
+					Destination = NULL;
+
+				if (destAddr != NULL) {
+					size_t destAddrLen = wcslen(destAddr) + 1;
+					DestAddress = new WCHAR[destAddrLen];
+					wcscpy_s(DestAddress, destAddrLen, destAddr);
+				}
+				else
+					DestAddress = NULL;
+			}
+
+			~_TCPING_OUTPUT()
+			{
+				if (Destination != NULL) {
+					delete[] Destination;
+				}
+
+				if (DestAddress != NULL) {
+					delete[] DestAddress;
+				}
+			}
+
+		} TCPING_OUTPUT, *PTCPING_OUTPUT;
 
 		class EphemeralSocket
 		{
@@ -62,7 +112,7 @@ namespace WindowsUtils::Core
 		{
 		public:
 			static inline BOOL WINAPI CtrlHandlerRoutine(DWORD fdwCtrlType);
-			static inline const bool IsCtrlCHit();
+			static const bool IsCtrlCHit();
 			
 			WuStopWatch StopWatch;
 			CHAR PortAsString[6] = { 0 };
@@ -76,9 +126,9 @@ namespace WindowsUtils::Core
 			DWORD Port;									// TCP port. Default is 80.
 			bool IsContinuous;							// Pings continuously. Analogous to '-t'
 			bool IncludeJitter;							// Include jitter test results.
-			bool IncludeDateTime;						// Includes date and time on each line.
 			bool PrintFqdn;								// Prints the Fully Qualified Domain Name on each line, when available.
 			bool IsForce;								// Forces sending 4 bytes.
+			bool Single;								// Sends only one probe, and do not display statistics.
 
 			bool OutputToFile;							// Output result to a file. Must include the file name.
 			HANDLE File;								// The file name. Only works with 'outputToFile'.
@@ -94,9 +144,9 @@ namespace WindowsUtils::Core
 				DWORD failedThres,
 				bool continuous,
 				bool includeJitter,
-				bool includeDateTime,
 				bool printFqdn,
 				bool force,
+				bool single,
 				bool outputFile,
 				const WWuString& filePath,
 				bool append

@@ -13,7 +13,7 @@
     NestedModules = @('WindowsUtils.psm1')
     RequiredAssemblies = @(
         'WindowsUtils.dll',
-        'Core.dll',
+        'WuCore.dll',
         'System.Security.Principal.Windows.dll',
         'System.Security.AccessControl.dll',
         'System.ServiceProcess.ServiceController.dll'
@@ -41,6 +41,7 @@
         'Set-ServiceSecurity',
         'Expand-Cabinet',
         'Start-Tcping'
+        'Start-ProcessAsUser'
     )
     AliasesToExport = @(
         'gethandle',

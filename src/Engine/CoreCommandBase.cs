@@ -3,7 +3,6 @@ using System.Management.Automation;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Management.Automation.Provider;
-using Microsoft.Win32.SafeHandles;
 using WindowsUtils.Core;
 using WindowsUtils.Interop;
 
@@ -71,10 +70,12 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
     private UnmanagedMemoryStream _progressStream;
     private UnmanagedMemoryStream _warningStream;
     private UnmanagedMemoryStream _informationStream;
+    private UnmanagedMemoryStream _objectStream;
 
     private IntPtr _progressBuffer;
     private IntPtr _warningBuffer;
     private IntPtr _informationBuffer;
+    private IntPtr _objectBuffer;
 
     private readonly PSCmdlet _command;
     private readonly bool _streamErrors;
@@ -133,10 +134,12 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
         _progressBuffer = Marshal.AllocHGlobal(128);
         _warningBuffer = Marshal.AllocHGlobal(128);
         _informationBuffer = Marshal.AllocHGlobal(128);
+        _objectBuffer = Marshal.AllocHGlobal(128);
 
         _progressStream = new((byte*)_progressBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
         _warningStream = new((byte*)_warningBuffer.ToPointer(),128, 128, FileAccess.ReadWrite);
         _informationStream = new((byte*)_informationBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
+        _objectStream = new((byte*)_informationBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
     }
     
     // Operators
@@ -146,9 +149,11 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
             new CmdletContextBase.WriteProgressWrapper(context.NativeWriteProgress),
             new CmdletContextBase.WriteWarningWrapper(context.NativeWriteWarning),
             new CmdletContextBase.WriteInformationWrapper(context.NativeWriteInformation),
+            new CmdletContextBase.WriteObjectWrapper(context.NativeWriteObject),
             context._progressStream.PositionPointer,
             context._warningStream.PositionPointer,
-            context._informationStream.PositionPointer
+            context._informationStream.PositionPointer,
+            context._objectStream.PositionPointer
         );
     }
 
@@ -250,6 +255,28 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
         }
 
         _command.WriteInformation(record);
+    }
+
+    private void NativeWriteObject(WriteOutputType objectType)
+    {
+        object output;
+        switch (objectType)
+        {
+            case WriteOutputType.TCPING_OUTPUT:
+                TCPING_OUTPUT nativeObject = (TCPING_OUTPUT)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(TCPING_OUTPUT));
+                output = new TcpingProbeInfo(nativeObject);
+                break;
+
+            case WriteOutputType.TCPING_STATISTICS:
+                TCPING_STATISTICS nativeStats = (TCPING_STATISTICS)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(TCPING_STATISTICS));
+                output = new TcpingStatistics(nativeStats);
+                break;
+
+            default:
+                return;
+        }
+
+        _command.WriteObject(output);
     }
     
     internal bool HasErrors()

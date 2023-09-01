@@ -16,6 +16,12 @@ namespace WindowsUtils::Core
 			Completed
 		} PROGRESS_RECORD_TYPE;
 
+		typedef enum _WRITE_OUTPUT_TYPE : DWORD
+		{
+			TCPING_OUTPUT,
+			TCPING_STATISTICS
+		} WRITE_OUTPUT_TYPE;
+
 		typedef struct _MAPPED_PROGRESS_DATA
 		{
 			LPWSTR Activity;
@@ -65,6 +71,7 @@ namespace WindowsUtils::Core
 		typedef void(__stdcall* UnmanagedWriteProgress)();
 		typedef void(__stdcall* UnmanagedWriteWarning)();
 		typedef void(__stdcall* UnmanagedWriteInformation)();
+		typedef void(__stdcall* UnmanagedWriteObject)(WRITE_OUTPUT_TYPE objType);
 
 		typedef struct _NATIVE_CONTEXT
 		{
@@ -111,24 +118,28 @@ namespace WindowsUtils::Core
 	//						  +-------------+	|					 +-------------+	+----------+ //
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 
-	extern "C" public class __declspec(dllexport) WuNativeContext
+	extern "C++" public class __declspec(dllexport) WuNativeContext
 	{
 	private:
 		Notification::UnmanagedWriteProgress m_WriteProgressHook;
 		Notification::UnmanagedWriteWarning m_WriteWarningHook;
 		Notification::UnmanagedWriteInformation m_WriteInformationHook;
+		Notification::UnmanagedWriteObject m_WriteObjectHook;
 		BYTE* m_ProgressBuffer;
 		BYTE* m_WarningBuffer;
 		BYTE* m_InformationBuffer;
+		BYTE* m_objectBuffer;
 
 	public:
 		WuNativeContext(
 			Notification::UnmanagedWriteProgress progPtr,
 			Notification::UnmanagedWriteWarning warnPtr,
 			Notification::UnmanagedWriteInformation infoPtr,
+			Notification::UnmanagedWriteObject objPtr,
 			BYTE* progBuffer,
 			BYTE* warningBuffer,
-			BYTE* informationBuffer
+			BYTE* informationBuffer,
+			BYTE* objectBuffer
 		);
 		
 		~WuNativeContext();
@@ -136,5 +147,17 @@ namespace WindowsUtils::Core
 		void NativeWriteWarning(const WWuString& text);
 		void NativeWriteProgress(const Notification::PMAPPED_PROGRESS_DATA progData);
 		void NativeWriteInformation(const Notification::PMAPPED_INFORMATION_DATA infoData);
+		
+		// If I declare this here and define in the .cpp file an unresolved external error
+		// pops up. Fuck if I know why.
+		template <class T>
+		void NativeWriteObject(T* objData, Notification::WRITE_OUTPUT_TYPE type)
+		{
+			size_t dataSize = sizeof(T);
+
+			RtlZeroMemory(m_objectBuffer, 128);
+			RtlCopyMemory(m_objectBuffer, objData, dataSize);
+			m_WriteObjectHook(type);
+		}
 	};
 }

@@ -13,7 +13,8 @@ namespace WindowsUtils::Core
 	WuResult Utilities::GetFormattedError(
 		DWORD errorCode,				// The Win32 error code.
 		WWuString& errorMessage			// The output message string.
-	) {
+	)
+	{
 		LPWSTR buffer = NULL;
 		if (!::FormatMessageW(
 			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
@@ -62,7 +63,7 @@ namespace WindowsUtils::Core
 		UINT usendin = 0;
 		UINT utries = 0;
 		POINT pointpos = { 0 };
-		LPINPUT pinput = new INPUT[2]{ 0 };
+		LPINPUT pinput = new INPUT[2] { 0 };
 
 		if (!GetCursorPos(&pointpos))
 			return WuResult(GetLastError(), __FILEW__, __LINE__);
@@ -75,8 +76,7 @@ namespace WindowsUtils::Core
 		pinput[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
 		pinput[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
 
-		do
-		{
+		do {
 			usendin = ::SendInput(2, pinput, sizeof(INPUT));
 			if (usendin != 0)
 				break;
@@ -97,7 +97,8 @@ namespace WindowsUtils::Core
 	WuResult Utilities::GetResourceMessageTable(
 		wuvector<Utilities::WU_RESOURCE_MESSAGE_TABLE>* messageTableOut,	// A vector of resource message table objects.
 		const WWuString& libName												// The resource path.
-	) {
+	)
+	{
 		HMODULE hModule = ::LoadLibraryExW(libName.GetBuffer(), NULL, LOAD_LIBRARY_AS_DATAFILE);
 		if (NULL == hModule)
 			return WuResult(GetLastError(), __FILEW__, __LINE__);
@@ -114,12 +115,10 @@ namespace WindowsUtils::Core
 		DWORD blockNumber = ((PMESSAGE_RESOURCE_DATA)messageTable)->NumberOfBlocks;
 		PMESSAGE_RESOURCE_BLOCK messageBlock = ((PMESSAGE_RESOURCE_DATA)messageTable)->Blocks;
 
-		for (DWORD block = 0; block < blockNumber; block++)
-		{
+		for (DWORD block = 0; block < blockNumber; block++) {
 			DWORD offset = 0;
 
-			for (DWORD id = messageBlock[block].LowId; id <= messageBlock[block].HighId; id++)
-			{
+			for (DWORD id = messageBlock[block].LowId; id <= messageBlock[block].HighId; id++) {
 				WU_RESOURCE_MESSAGE_TABLE tableEntryOut;
 
 				PMESSAGE_RESOURCE_ENTRY tableEntry =
@@ -161,8 +160,7 @@ namespace WindowsUtils::Core
 		dwResult = MsiViewExecute(hView, NULL);
 		DWERRORCHECKV(dwResult);
 
-		do
-		{
+		do {
 			dwResult = MsiViewFetch(hView, &hRecord);
 			DWERRORCHECKV(dwResult);
 
@@ -177,7 +175,7 @@ namespace WindowsUtils::Core
 			bufferSize++;
 			DWORD bytesNeeded = bufferSize * 2;
 			wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
-			
+
 			dwResult = MsiRecordGetStringW(hRecord, 1, buffer.get(), &bufferSize);
 			DWERRORCHECKV(dwResult);
 
@@ -191,10 +189,10 @@ namespace WindowsUtils::Core
 			bufferSize++;
 			bytesNeeded = bufferSize * 2;
 			buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
-			
+
 			dwResult = MsiRecordGetStringW(hRecord, 2, buffer.get(), &bufferSize);
 			DWERRORCHECKV(dwResult);
-			
+
 			WWuString value(buffer.get());
 
 			// We are using 'emplace' here because both strings created in this iteration will
@@ -207,7 +205,107 @@ namespace WindowsUtils::Core
 
 		return WuResult();
 	}
-	
+
+
+	//////////////////////////////////////////////////////
+	//
+	// ~ Start-ProcessAsUser
+	//
+	// For this function I tried reverse engineering
+	// 'runas.exe' to the best of my ability (which is
+	// not much).
+	//
+	//////////////////////////////////////////////////////
+
+	WuResult Utilities::RunAs(const WWuString& userName, const WWuString& domain, WWuString& password, WWuString& commandLine, WWuString& titleBar)
+	{
+		WORD processorArch;
+		size_t bytesNeeded;
+		SYSTEM_INFO sysInfo;
+		
+		LPPROC_THREAD_ATTRIBUTE_LIST attrList;
+
+		wuunique_ptr<STARTUPINFOEX>startupInfo = make_wuunique<STARTUPINFOEX>();
+		wuunique_ptr<PROCESS_INFORMATION>procInfo = make_wuunique<PROCESS_INFORMATION>();
+
+		GetNativeSystemInfo(&sysInfo);
+		switch (sysInfo.wProcessorArchitecture) {
+			case 9:
+				processorArch = -31132;
+				break;
+			case 5:
+				processorArch = 452;
+				break;
+			case 12:
+				processorArch = -21916;
+				break;
+			case 0:
+				processorArch = 332;
+				break;
+			default:
+				processorArch = 0xFFFF;
+				break;
+		}
+
+		if (!InitializeProcThreadAttributeList(NULL, 1, 0, &bytesNeeded)) {
+			DWORD lastError = GetLastError();
+			if (lastError != ERROR_INSUFFICIENT_BUFFER) {
+				password.SecureErase();
+				return WuResult(lastError, __FILEW__, __LINE__);
+			}
+		}
+
+		// This is an opaque structure, working with smart pointers would be a hassle.
+		attrList = (LPPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, bytesNeeded);
+		if (attrList == NULL) {
+			password.SecureErase();
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
+		}
+
+		if (!InitializeProcThreadAttributeList(attrList, 1, 0, &bytesNeeded)) {
+			password.SecureErase();
+			DeleteProcThreadAttributeList(attrList);
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
+		}
+			
+
+		if (!UpdateProcThreadAttribute(attrList, 0, 0x00020019, &processorArch, 2, NULL, NULL)) {
+			password.SecureErase();
+			DeleteProcThreadAttributeList(attrList);
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
+		}
+
+		WCHAR currentPath[MAX_PATH] = { 0 };
+		GetCurrentDirectoryW(MAX_PATH, currentPath);
+
+		startupInfo->lpAttributeList = attrList;
+		startupInfo->StartupInfo.cb = 112;
+		startupInfo->StartupInfo.lpTitle = titleBar.GetBuffer();
+
+		if (!CreateProcessWithLogonW(
+			userName.GetBuffer(),
+			domain.GetBuffer(),
+			password.GetBuffer(),
+			LOGON_NETCREDENTIALS_ONLY,
+			NULL,
+			commandLine.GetBuffer(),
+			CREATE_UNICODE_ENVIRONMENT,
+			NULL,
+			currentPath,
+			&startupInfo->StartupInfo,
+			procInfo.get()
+		)) {
+			password.SecureErase();
+			DeleteProcThreadAttributeList(attrList);
+			return WuResult(GetLastError(), __FILEW__, __LINE__);
+		}
+
+		DeleteProcThreadAttributeList(attrList);
+		password.SecureErase();
+
+		return WuResult();
+	}
+
 	/*========================================
 	==		Utility function definition		==
 	==========================================*/
@@ -247,7 +345,7 @@ namespace WindowsUtils::Core
 
 		size_t bytesNeeded = bufferSize * 2;
 		wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
-		
+
 		_wgetenv_s(&bufferSize, buffer.get(), bufferSize, variableName.GetBuffer());
 
 		value = buffer.get();

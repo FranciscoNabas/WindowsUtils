@@ -1,9 +1,9 @@
 using System.Net;
 using System.Text.Json;
 using System.Reflection;
-using System.Runtime.Serialization;
 using WindowsUtils.Core;
 using WindowsUtils.Commands;
+using WindowsUtils.Interop;
 
 namespace WindowsUtils
 {
@@ -27,6 +27,13 @@ namespace WindowsUtils
         FullFramework,
         Core,
         Clr
+    }
+
+    public enum TcpingStatus : ushort
+    {
+        Open,
+        Closed,
+        Timeout
     }
 
     public abstract class Enumeration : IComparable
@@ -354,6 +361,58 @@ namespace WindowsUtils
             ComputerName = computerName;
             Version = version;
             InstalledUpdates = installedUpdates;
+        }
+    }
+
+    public sealed class TcpingProbeInfo
+    {
+        public string Destination { get; }
+        public string DestinationAddress { get; }
+        public DateTime Timestamp { get; }
+        public uint Port { get; }
+        public TcpingStatus Status { get; }
+        public double RoundTripTime { get; }
+        public double Jitter { get; }
+
+        internal TcpingProbeInfo(TCPING_OUTPUT nativeInfo)
+        {
+            Destination = nativeInfo.Destination;
+            DestinationAddress = nativeInfo.DestAddress;
+            Timestamp = DateTime.FromFileTime(nativeInfo.Timestamp);
+            Port = nativeInfo.Port;
+            Status = nativeInfo.Status;
+            RoundTripTime = nativeInfo.RoundTripTime;
+            Jitter = nativeInfo.Jitter;
+        }
+    }
+
+    public sealed class TcpingStatistics
+    {
+        public uint Sent { get; }
+        public uint Succeeded { get; }
+        public uint Failed { get; }
+        public double MinRtt { get; }
+        public double MaxRtt { get; }
+        public double AvgRtt { get; }
+        public double MinJitter { get; }
+        public double MaxJitter { get; }
+        public double AvgJitter { get; }
+        public double TotalMilliseconds { get; }
+        public double TotalJitter { get; }
+
+        internal TcpingStatistics(TCPING_STATISTICS nativeStatistics)
+        {
+            Sent = nativeStatistics.Sent;
+            Succeeded = nativeStatistics.Successful;
+            Failed = nativeStatistics.Failed;
+            MinRtt = nativeStatistics.MinRtt;
+            MaxRtt = nativeStatistics.MaxRtt;
+            AvgRtt = nativeStatistics.AvgRtt;
+            MinJitter = nativeStatistics.MinJitter;
+            MaxJitter = nativeStatistics.MaxJitter;
+            AvgJitter = nativeStatistics.AvgJitter;
+            TotalMilliseconds = nativeStatistics.TotalMilliseconds;
+            TotalJitter = nativeStatistics.TotalJitter;
         }
     }
 }

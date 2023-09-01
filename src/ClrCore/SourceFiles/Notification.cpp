@@ -144,12 +144,14 @@ namespace WindowsUtils::Core
 		Notification::UnmanagedWriteProgress progPtr,
 		Notification::UnmanagedWriteWarning warnPtr,
 		Notification::UnmanagedWriteInformation infoPtr,
+		Notification::UnmanagedWriteObject objPtr,
 		BYTE* progBuffer,
 		BYTE* warningBuffer,
-		BYTE* informationBuffer
+		BYTE* informationBuffer,
+		BYTE* objectBuffer
 
-	) : m_WriteProgressHook(progPtr), m_WriteWarningHook(warnPtr), m_WriteInformationHook(infoPtr),
-			m_ProgressBuffer(progBuffer), m_WarningBuffer(warningBuffer), m_InformationBuffer(informationBuffer)
+	) : m_WriteProgressHook(progPtr), m_WriteWarningHook(warnPtr), m_WriteInformationHook(infoPtr), m_WriteObjectHook(objPtr),
+			m_ProgressBuffer(progBuffer), m_WarningBuffer(warningBuffer), m_InformationBuffer(informationBuffer), m_objectBuffer(objectBuffer)
 	{ }
 
 	WuNativeContext::~WuNativeContext() { }

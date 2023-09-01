@@ -889,7 +889,7 @@ namespace WindowsUtils::Core
 
 	// Start-Tcping
 	void Wrapper::StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, PreferredIpProtocol ipProt, Int32 failThreshold, bool continuous,
-		bool jitter, bool dateTime, bool fqdn, bool force, String^ outFile, bool append, CmdletContextBase^ context)
+		bool jitter, bool fqdn, bool force, bool single, String^ outFile, bool append, CmdletContextBase^ context, [Out] bool% isCancel)
 	{
 		bool isFile = false;
 		WWuString wrappedOutFile;
@@ -901,7 +901,7 @@ namespace WindowsUtils::Core
 		WWuString wrappedDest = GetWideStringFromSystemString(destination);
 
 		wuunique_ptr<Network::TcpingForm> form = make_wuunique<Network::TcpingForm>(wrappedDest, port, count, timeout, interval, (Network::PREFERRED_IP_PROTOCOL)ipProt, failThreshold,
-			continuous, jitter, dateTime, fqdn, force, isFile, wrappedOutFile, append);
+			continuous, jitter, fqdn, force, single, isFile, wrappedOutFile, append);
 
 		try {
 			ntwptr->StartTcpPing(*form, context->GetUnderlyingContext());
@@ -910,16 +910,36 @@ namespace WindowsUtils::Core
 			if (ex.ErrorCode() != ERROR_CANCELLED)
 				throw gcnew NativeException(ex);
 		}
+
+		isCancel = form->IsCtrlCHit();
+	}
+
+	// Start-ProcessAsUser
+	void Wrapper::StartProcessAsUser(String^ userName, String^ domain, SecureString^ password, String^ commandLine, String^ titleBar)
+	{
+		WWuString wrappedUser = GetWideStringFromSystemString(userName);
+		WWuString wrappedDomain = GetWideStringFromSystemString(domain);
+		WWuString wrappedCommandLine = GetWideStringFromSystemString(commandLine);
+		WWuString wrappedTitleBar = GetWideStringFromSystemString(titleBar);
+
+		// This string will be erased by the native function.
+		WWuString wrappedPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
+
+		WuResult result = utlptr->RunAs(wrappedUser, wrappedDomain, wrappedPass, wrappedCommandLine, wrappedTitleBar);
+		
+		password->Clear();
+		if (result.Result != ERROR_SUCCESS)
+			throw gcnew NativeException(result);
 	}
 
 	// Utilities
 	array<String^>^ Wrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray(const LPWSTR pvNativeArray, DWORD dwszBytes)
 	{
 		List<String^>^ stringList = gcnew List<String^>();
-		LPWSTR lpszNativeArray = pvNativeArray;
+		LPWSTR nativeArray = pvNativeArray;
 		DWORD offset = 0;
 		while (true) {
-			String^ current = gcnew String(lpszNativeArray);
+			String^ current = gcnew String(nativeArray);
 			stringList->Add(current);
 
 			offset += current->Length + 1;
@@ -927,7 +947,7 @@ namespace WindowsUtils::Core
 			if (remaining <= 4)
 				break;
 
-			lpszNativeArray += current->Length + 1;
+			nativeArray += current->Length + 1;
 		}
 
 		return stringList->ToArray();
@@ -1002,9 +1022,11 @@ namespace WindowsUtils::Core
 		WriteProgressWrapper^ progWrapper,
 		WriteWarningWrapper^ warnWrapper,
 		WriteInformationWrapper^ infoWrapper,
+		WriteObjectWrapper^ objWrapper,
 		Byte* progressBuffer,
 		Byte* warningBuffer,
-		Byte* infoBuffer
+		Byte* infoBuffer,
+		Byte* objBuffer
 	) {
 		_progressGcHandle = GCHandle::Alloc(progWrapper);
 		IntPtr progressDelegatePtr = Marshal::GetFunctionPointerForDelegate(progWrapper);
@@ -1018,13 +1040,19 @@ namespace WindowsUtils::Core
 		IntPtr informationDelegatePtr = Marshal::GetFunctionPointerForDelegate(infoWrapper);
 		auto infoPtr = static_cast<Notification::UnmanagedWriteInformation>(informationDelegatePtr.ToPointer());
 
+		_objectGcHandle = GCHandle::Alloc(objWrapper);
+		IntPtr objectDelegatePtr = Marshal::GetFunctionPointerForDelegate(objWrapper);
+		auto objPtr = static_cast<Notification::UnmanagedWriteObject>(objectDelegatePtr.ToPointer());
+
 		_nativeContext = new WuNativeContext(
 			progressPtr,
 			warningPtr,
 			infoPtr,
+			objPtr,
 			progressBuffer,
 			warningBuffer,
-			infoBuffer
+			infoBuffer,
+			objBuffer
 		);
 	}
 	CmdletContextBase::~CmdletContextBase()

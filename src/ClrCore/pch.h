@@ -31,20 +31,23 @@
 #define UNLEN 256
 #endif
 
+// Warnings
+#pragma warning(disable : 4793)			// 'function_name': function compiled as native: Found an intrinsic not supported in managed code
+
 // Library imports.
-#pragma comment (lib, "Cabinet.lib")
-#pragma comment (lib, "Ole32.lib")
-#pragma comment (lib, "Msi.lib")
-#pragma comment (lib, "User32.lib")
-#pragma comment (lib, "WtsApi32.lib")
-#pragma comment (lib, "AdvApi32.lib")
-#pragma comment (lib, "Shlwapi.lib")
-#pragma comment (lib, "Version.lib")
-#pragma comment (lib, "PathCch.lib")
-#pragma comment (lib, "Ws2_32.lib")
-#pragma comment (lib, "Mswsock.lib")
-#pragma comment (lib, "AdvApi32.lib")
-#pragma comment (lib, "Dnsapi.lib")
+#pragma comment(lib, "Cabinet.lib")
+#pragma comment(lib, "Ole32.lib")
+#pragma comment(lib, "Msi.lib")
+#pragma comment(lib, "User32.lib")
+#pragma comment(lib, "WtsApi32.lib")
+#pragma comment(lib, "AdvApi32.lib")
+#pragma comment(lib, "Shlwapi.lib")
+#pragma comment(lib, "Version.lib")
+#pragma comment(lib, "PathCch.lib")
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Mswsock.lib")
+#pragma comment(lib, "AdvApi32.lib")
+#pragma comment(lib, "Dnsapi.lib")
 #pragma comment(lib, "Psapi")
 
 // Include list.
@@ -72,5 +75,7 @@
 #include <ws2tcpip.h>
 #include <time.h>
 #include <windns.h>
+#include <sysinfoapi.h>
+#include <processthreadsapi.h>
 
 #endif //PCH_H
