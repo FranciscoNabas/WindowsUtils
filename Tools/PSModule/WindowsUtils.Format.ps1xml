@@ -33,5 +33,51 @@
                  </TableRowEntries>
             </TableControl>
         </View>
+        <View>
+            <Name>WindowsUtils.TcpingProbeInfo</Name>
+            <ViewSelectedBy>
+                <TypeName>WindowsUtils.TcpingProbeInfo</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                        <Width>30</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Width>5</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Width>7</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>Times</Label>
+                        <Width>40</Width>
+                    </TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>Destination</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Port</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Status</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>
+                                    if ($_.Jitter -ge 0) {
+                                        return "Rtt: $($_.RoundTripTime.ToString('F2')), Jitter: $($_.Jitter.ToString('F2'))"
+                                    }
+                                    return "Rtt: $($_.RoundTripTime.ToString('F2'))"
+                                </ScriptBlock>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
     </ViewDefinitions>
 </Configuration>

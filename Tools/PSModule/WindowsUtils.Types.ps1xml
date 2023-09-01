@@ -108,4 +108,59 @@
       </MemberSet>
     </Members>
   </Type>
+  <Type>
+    <Name>WindowsUtils.TcpingStatistics</Name>
+    <Members>
+      <ScriptProperty>
+        <Name>FailedPercent</Name>
+        <GetScriptBlock>
+          return "$(([double](($this.Failed / $this.Sent) * 100)).ToString('F2'))%"
+        </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>MinTimes</Name>
+        <GetScriptBlock>
+          if ($this.MinJitter -ge 0) {
+              return "Rtt: $($this.MinRtt.ToString('F2')), Jitter: $($this.MinJitter.ToString('F2'))"
+          }
+          return "Rtt: $($this.MinRtt.ToString('F2'))"
+        </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>MaxTimes</Name>
+        <GetScriptBlock>
+          if ($this.MaxJitter -ge 0) {
+              return "Rtt: $($this.MaxRtt.ToString('F2')), Jitter: $($this.MaxJitter.ToString('F2'))"
+          }
+          return "Rtt: $($this.MaxRtt.ToString('F2'))"
+        </GetScriptBlock>
+      </ScriptProperty>
+      <ScriptProperty>
+        <Name>AvgTimes</Name>
+        <GetScriptBlock>
+          if ($this.AvgJitter -ge 0) {
+              return "Rtt: $($this.AvgRtt.ToString('F2')), Jitter: $($this.AvgJitter.ToString('F2'))"
+          }
+          return "Rtt: $($this.AvgRtt.ToString('F2'))"
+        </GetScriptBlock>
+      </ScriptProperty>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Sent</Name>
+              <Name>Succeeded</Name>
+              <Name>Failed</Name>
+              <Name>FailedPercent</Name>
+              <Name>MinTimes</Name>
+              <Name>AvgTimes</Name>
+              <Name>MaxTimes</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+    </Members>
+  </Type>
 </Types>

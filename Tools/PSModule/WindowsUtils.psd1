@@ -1,6 +1,6 @@
 @{
     GUID = 'C5F7B91E-668D-46AC-9F0E-23B0A74ABCBA'
-    ModuleVersion = '1.7.0'
+    ModuleVersion = '1.8.0'
     RootModule = 'WindowsUtils.dll'
     CompatiblePSEditions = @(
         'Desktop',
@@ -13,7 +13,7 @@
     NestedModules = @('WindowsUtils.psm1')
     RequiredAssemblies = @(
         'WindowsUtils.dll',
-        'Core.dll',
+        'WuCore.dll',
         'System.Security.Principal.Windows.dll',
         'System.Security.AccessControl.dll',
         'System.ServiceProcess.ServiceController.dll'
@@ -39,7 +39,9 @@
         'New-ServiceAccessRule',
         'New-ServiceAuditRule',
         'Set-ServiceSecurity',
-        'Expand-Cabinet'
+        'Expand-Cabinet',
+        'Start-Tcping'
+        'Start-ProcessAsUser'
     )
     AliasesToExport = @(
         'gethandle',
