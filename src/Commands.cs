@@ -1489,6 +1489,7 @@ namespace WindowsUtils.Commands
     /// </summary>
     [Cmdlet(VerbsLifecycle.Start, "Tcping")]
     [OutputType(typeof(TcpingProbeInfo), typeof(TcpingStatistics))]
+    [Alias("tcping")]
     public class StartTcpingCommand : CoreCommandBase
     {
         private readonly Wrapper _unwrapper = new();
