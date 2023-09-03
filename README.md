@@ -25,6 +25,7 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [Get-InstalledDotnet](#get-installeddotnet)
     - [Expand-Cabinet](#expand-cabinet)
     - [Start-Tcping](#start-tcping)
+    - [Start-ProcessAsUser](#start-processasuser)
   - [Changelog](#changelog)
   - [Support](#support)
   
@@ -301,38 +302,48 @@ The parameters contain aliases that mimic the parameter in those applications.
 ```powershell-console
 Start-Tcping -Destination learn.microsoft.com  -Port 443 -IncludeJitter
 
-Probing learn.microsoft.com [2600:1419:6200:284::3544] on port 443:
-2600:1419:6200:284::3544 - TCP:443 - Port is open - time=10.84ms
-2600:1419:6200:284::3544 - TCP:443 - Port is open - time=9.54ms jitter=1.31ms
-2600:1419:6200:284::3544 - TCP:443 - Port is open - time=11.33ms jitter=1.14ms
-2600:1419:6200:284::3544 - TCP:443 - Port is open - time=11.07ms jitter=0.51ms
+Destination                    Port  Status  Times
+-----------                    ----  ------  -----
+learn.microsoft.com            443   Open    Rtt: 7.14
+learn.microsoft.com            443   Open    Rtt: 8.50, Jitter: 1.36
+learn.microsoft.com            443   Open    Rtt: 9.50, Jitter: 1.68
+learn.microsoft.com            443   Open    Rtt: 7.59, Jitter: 0.79
 
-Pinging statistics for 2600:1419:6200:284::3544:
-        Packets: Sent = 4, Successful = 4, Failed = 0 (0%),
-Approximate round trip times in milli-seconds:
-        Minimum = 9.54ms, Maximum = 11.33ms, Average = 10.70ms,
-Approximate jitter in milli-seconds:
-        Minimum = 0.51ms, Maximum = 1.31ms, Average = 0.98m
+Sent          : 4
+Succeeded     : 4
+Failed        : 0
+FailedPercent : 0.00%
+MinTimes      : Rtt: 7.59, Jitter: 0.79
+AvgTimes      : Rtt: 8.18, Jitter: 1.28
+MaxTimes      : Rtt: 9.50, Jitter: 1.68
 ```
 
 ```powershell-console
-Start-Tcping learn.microsoft.com -j -d -t
+tcping learn.microsoft.com, google.com -Port 80, 443 -s
 
-Probing learn.microsoft.com [2600:1419:6200:289::3544] continuously on port 80 (press Ctrl + C to stop):
-2023-8-29 23:44:52.751 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=6.43ms
-2023-8-29 23:44:53.772 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=12.59ms jitter=6.16ms
-2023-8-29 23:44:54.794 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=12.74ms jitter=3.23ms
-2023-8-29 23:44:55.817 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=8.51ms jitter=2.07ms
-2023-8-29 23:44:56.842 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=12.45ms jitter=2.38ms
-2023-8-29 23:44:57.866 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=11.35ms jitter=0.80ms
-2023-8-29 23:44:58.889 - 2600:1419:6200:289::3544 - TCP:80 - Port is open - time=8.79ms jitter=1.89ms
+Destination                    Port  Status  Times
+-----------                    ----  ------  -----
+learn.microsoft.com            80    Open    Rtt: 8.32
+learn.microsoft.com            443   Open    Rtt: 19.91
+google.com                     80    Open    Rtt: 9.57
+google.com                     443   Open    Rtt: 7.01
+```
 
-Pinging statistics for 2600:1419:6200:289::3544:
-        Packets: Sent = 7, Successful = 7, Failed = 0 (0%),
-Approximate round trip times in milli-seconds:
-        Minimum = 8.51ms, Maximum = 12.74ms, Average = 10.41ms,
-Approximate jitter in milli-seconds:
-        Minimum = 0.80ms, Maximum = 6.16ms, Average = 2.76ms
+### Start-ProcessAsUser
+
+This Cmdlet logs in a user and starts a process with it.
+This is my terrible attempt to reverse engineer 'runas.exe'.
+It works by typing the credentials in the go, like 'runas.exe', or using
+a `PSCredential`.
+
+```powershell
+Start-ProcessAsUser CONTOSO\francisco.nabas powershell
+```
+
+Of course we have an alias for it.
+
+```powershell
+runas -CommandLine powershell -Credential (Get-Credential)
 ```
 
 ## Changelog

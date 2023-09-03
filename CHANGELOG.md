@@ -2,7 +2,48 @@
   
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
-  
+
+## [1.8.2] - 2023-09-03
+
+### Added
+
+- Get-ObjectHandle.
+  Proudly announce that `Get-ObjectHandle` now returns handles opened for registry keys, with full
+  provider awareness.
+
+### Changed
+
+- Get-ObjectHandle.
+  Improved the provider awareness both to support registry keys, and handle unsupported PS providers.
+
+## [1.8.1] - 2023-09-01
+
+### Added
+
+- Start-Tcping.
+  Added alias 'tcping'.
+
+## [1.8.0] - 2023-09-01
+
+### Added
+
+- Start-Tcping.
+  - New cmdlet that 'pings' a destination server(s) in the specified port(s).
+- WuStdException.
+  - Implementing `Start-Tcping` brought a lot of challenges, the most noticeable one was the performance while
+    returning from functions. `WuStdException` is a C++ `std::exception` based class to slowly shift from 
+    return codes to proper error handling.
+
+### Changed
+
+- NATIVE_CONTEXT -> WuNativeContext.
+  - `WuNativeContext` is an improved version of the old `NATIVE_CONTEXT`, again to make the whole process more
+  efficient and reliable.
+- Shared Memory.
+  - The shared memory scheme changed from using memory mapped IO to using `System.IO.UnmanagedMemoryStream`,
+    which is basically a memory space to be used between Managed/Unmanaged code.
+ 
+
 ## [1.7.0] - 2023-08-21
 
 The version 1.7.0 marks a turning point into this project. A lot of important things were added, and changed.
