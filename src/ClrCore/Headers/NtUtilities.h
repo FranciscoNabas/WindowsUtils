@@ -3,6 +3,7 @@
 
 #include "Common.h"
 #include "String.h"
+#include "Expressions.h"
 
 #define STATUS_SUCCESS ERROR_SUCCESS
 #define STATUS_BUFFER_TOO_SMALL 0xC0000023L
@@ -84,7 +85,7 @@ namespace WindowsUtils::Core
 	typedef struct _THREAD_FUNC_ARGUMENTS {
 		HANDLE						ObjectHandle;
 		OBJECT_INFORMATION_CLASS	ObjectInformationClass;
-		PVOID						ObjectInfo;
+		wuunique_ptr<BYTE[]>&		ObjectInfo;
 	}THREAD_FUNC_ARGUMENTS, * PTHREAD_FUNC_ARGUMENTS;
 
 	typedef struct _PROCESS_HANDLE_TABLE_ENTRY_INFO
@@ -208,8 +209,10 @@ namespace WindowsUtils::Core
 	==		 Function identification		==
 	==========================================*/
 
-	WuResult GetNtProcessUsingFile(const WWuString& fileName, wuunique_ha_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION>& procUsingFileInfo);
+	void GetProcessUsingFile(const WWuString& fileName, wuvector<DWORD>& processIdList);
+	void GetProcessUsingObject(const WWuString& objectName, wuvector<DWORD>& processIdList, bool closeHandle);
+	void GetRunnningProcessIdList(wuvector<DWORD>& procIdList);
 	DWORD WINAPI NtQueryObjectRaw(LPVOID param);
-	WuResult NtQueryObjectWithTimeout(HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass, PVOID objectInfo, ULONG timeout);
-	WuResult GetProcessImageName(DWORD processId, WWuString& imageName);
+	void NtQueryObjectWithTimeout(HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass, wuunique_ptr<BYTE[]>& objectInfo, ULONG timeout);
+	void GetProcessImageName(DWORD processId, WWuString& imageName);
 }

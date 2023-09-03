@@ -163,6 +163,7 @@ namespace WindowsUtils
     /// </summary>
     public class ObjectHandle
     {
+        public ObjectHandleType Type => wrapper.Type;
         public string InputObject => wrapper.InputObject;
         public string Name => wrapper.Name;
         public uint ProcessId => wrapper.ProcessId;

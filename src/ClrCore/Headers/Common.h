@@ -62,7 +62,7 @@ private:
 	int m_windowsError;
 	WWuString m_message;
 	WWuString m_compactTrace;
-	
+
 	void SetMessage(bool isNt)
 	{
 		LPWSTR buffer = NULL;
@@ -100,7 +100,7 @@ private:
 	{
 		switch (m_windowsError) {
 			case FDIERROR_CABINET_NOT_FOUND:
-				 m_message = L"Cabinet not found";
+				m_message = L"Cabinet not found";
 
 			case FDIERROR_NOT_A_CABINET:
 				m_message = L"File is not a cabinet";
@@ -138,29 +138,34 @@ private:
 	}
 };
 
-class WuResult {
+class WuResult
+{
 public:
 	long Result;
 	WWuString Message;
 	WWuString CompactTrace;
 
 	WuResult()
-		: Result(ERROR_SUCCESS) { }
+		: Result(ERROR_SUCCESS)
+	{ }
 
 	WuResult(long errorCode, LPWSTR fileName, DWORD lineNumber, bool isNt = false)
-		: Result(errorCode) {
+		: Result(errorCode)
+	{
 		Message = GetErrorMessage(errorCode, isNt);
 		CompactTrace = GetCompactTrace(fileName, lineNumber);
 	}
 
 	WuResult(long errorCode, const WWuString& message, LPWSTR fileName, DWORD lineNumber)
-		: Result(errorCode), Message(message) {
+		: Result(errorCode), Message(message)
+	{
 		CompactTrace = GetCompactTrace(fileName, lineNumber);
 	}
 
 	~WuResult() { }
 
-	_NODISCARD static WWuString GetErrorMessage(long errorCode, bool isNt) {
+	_NODISCARD static WWuString GetErrorMessage(long errorCode, bool isNt)
+	{
 		if (isNt) {
 			HMODULE hModule = GetModuleHandle(L"ntdll.dll");
 			if (hModule == NULL)
@@ -189,7 +194,8 @@ public:
 		}
 	}
 
-	_NODISCARD static WWuString GetCompactTrace(LPWSTR fileName, DWORD lineNumber) {
+	_NODISCARD static WWuString GetCompactTrace(LPWSTR fileName, DWORD lineNumber)
+	{
 		WWuString wrappedName(fileName);
 		auto fileNameSplit = wrappedName.Split('\\');
 		WWuString relPath;
@@ -208,7 +214,8 @@ public:
 		return WWuString::Format(L"%ws:%d", relPath.GetBuffer(), lineNumber);
 	}
 
-	static WuResult GetResultFromFdiError(const FDIERROR& err, LPWSTR fileName, DWORD lineNumber) {
+	static WuResult GetResultFromFdiError(const FDIERROR& err, LPWSTR fileName, DWORD lineNumber)
+	{
 		switch (err) {
 			case FDIERROR_CABINET_NOT_FOUND:
 				return WuResult(FDIERROR_CABINET_NOT_FOUND, L"Cabinet not found", fileName, lineNumber);

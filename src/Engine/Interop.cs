@@ -4,6 +4,21 @@ using Microsoft.Win32.SafeHandles;
 
 namespace WindowsUtils.Interop
 {
+    internal enum KEY_INFORMATION_CLASS
+    {
+        KeyBasicInformation,
+        KeyNodeInformation,
+        KeyFullInformation,
+        KeyNameInformation,
+        KeyCachedInformation,
+        KeyFlagsInformation,
+        KeyVirtualizationInformation,
+        KeyHandleTagsInformation,
+        KeyTrustInformation,
+        KeyLayerInformation,
+        MaxKeyInfoClass
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct LARGE_INTEGER
     {
@@ -46,6 +61,15 @@ namespace WindowsUtils.Interop
                 ((uint)(quadPart & 0xFFFFFFFF), (uint)(quadPart & 0xFFFFFFFF00000000), quadPart);
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct KEY_NAME_INFORMATION
+    {
+        internal uint NameLength;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string Name;
+    }
+
     public class SafeSystemHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeSystemHandle() : base(true) { }
@@ -76,8 +100,17 @@ namespace WindowsUtils.Interop
 
     internal partial class NativeFunctions
     {
+        [DllImport("ntdll.dll", SetLastError = true)]
+        internal static extern int NtQueryKey(
+            IntPtr KeyHandle,
+            KEY_INFORMATION_CLASS KeyInformationClass,
+            IntPtr KeyInformation,
+            int Length,
+            out int ResultLength
+        );
+
         [DllImport("kernel32", SetLastError = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        internal extern static bool CloseHandle(IntPtr handle);
+        internal static extern bool CloseHandle(IntPtr handle);
     }
 }

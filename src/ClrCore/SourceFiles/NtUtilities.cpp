@@ -3,20 +3,18 @@
 
 namespace WindowsUtils::Core
 {
-	WuResult GetNtProcessUsingFile(
-		const WWuString& fileName,													// File full name.
-		wuunique_ha_ptr<FILE_PROCESS_IDS_USING_FILE_INFORMATION>& procUsingFileInfo	// Output with a list of process IDs with handles to the file.
-	) {
+	void GetProcessUsingFile(const WWuString& fileName, wuvector<DWORD>& processIdList)
+	{
 		NTSTATUS statusResult = STATUS_SUCCESS;
 		IO_STATUS_BLOCK ioStatusBlock = { 0 };
 
 		HMODULE hModule = GetModuleHandleW(L"ntdll.dll");
 		if (INVALID_HANDLE_VALUE == hModule || 0 == hModule)
-			return WuResult(GetLastError(), __FILEW__, __LINE__);
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
 
 		_NtQueryInformationFile NtQueryInformationFile = (_NtQueryInformationFile)GetProcAddress(hModule, "NtQueryInformationFile");
 		if (NULL == NtQueryInformationFile)
-			return WuResult(GetLastError(), __FILEW__, __LINE__);
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
 
 		HANDLE hFile = CreateFileW(
 			fileName.GetBuffer(),
@@ -28,7 +26,7 @@ namespace WindowsUtils::Core
 			NULL
 		);
 		if (INVALID_HANDLE_VALUE == hFile)
-			return WuResult(GetLastError(), __FILEW__, __LINE__);
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
 
 		ULONG bufferSize = 1 << 10;
 		std::unique_ptr<BYTE[]> buffer;
@@ -40,45 +38,140 @@ namespace WindowsUtils::Core
 				break;
 
 			if (statusResult != STATUS_INFO_LENGTH_MISMATCH)
-				return WuResult(statusResult, __FILEW__, __LINE__, true);
+				throw WuStdException(statusResult, __FILEW__, __LINE__, NtError);
 
 			bufferSize = (ULONG)ioStatusBlock.Information;
 
 		} while (statusResult == STATUS_INFO_LENGTH_MISMATCH);
 
-		procUsingFileInfo = make_wuunique_ha<FILE_PROCESS_IDS_USING_FILE_INFORMATION>(ioStatusBlock.Information);
-		RtlCopyMemory(procUsingFileInfo.get(), reinterpret_cast<PFILE_PROCESS_IDS_USING_FILE_INFORMATION>(buffer.get()), (ULONG)ioStatusBlock.Information);
-
+		auto info = reinterpret_cast<PFILE_PROCESS_IDS_USING_FILE_INFORMATION>(buffer.get());
+		for (ULONG i = 0; i < info->NumberOfProcessIdsInList; i++)
+			processIdList.push_back(static_cast<DWORD>(info->ProcessIdList[i]));
+		
 		CloseHandle(hFile);
-
-		return WuResult();
 	}
 
-	DWORD WINAPI NtQueryObjectRaw(LPVOID lpparam)
+	void GetProcessUsingObject(
+		const WWuString& objectName,		// Object name here needs to be the same as the object name from 'NtQueryObject'.
+		wuvector<DWORD>& processIdList,		// The list of process IDs that have a handle opened to the object.
+		bool closeHandle
+	)
+	{
+		NTSTATUS status = STATUS_SUCCESS;
+		ULONG bytesNeeded;
+
+		wuvector<DWORD> procIdList;
+		GetRunnningProcessIdList(procIdList);
+
+		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
+		if (hNtdll == NULL) {
+			hNtdll = LoadLibrary(L"ntdll.dll");
+			if (hNtdll == NULL)
+				throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		}
+
+		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hNtdll, "NtQueryObject");
+		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
+
+		for (DWORD pid : procIdList) {
+			HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_DUP_HANDLE, FALSE, pid);
+			if (hProcess == NULL)
+				continue;
+
+			// Getting the initial size needed.
+			NtQueryInformationProcess(hProcess, ProcessHandleInformation, NULL, 0, &bytesNeeded);
+			
+			wuunique_ptr<BYTE[]> buffer;
+			bool succeeded = true;
+			do {
+				// By the second call time more handles might be opened.
+				bytesNeeded += 64;
+				buffer = make_wuunique<BYTE[]>(bytesNeeded);
+
+				status = NtQueryInformationProcess(hProcess, ProcessHandleInformation, buffer.get(), bytesNeeded, &bytesNeeded);
+				if (status != STATUS_SUCCESS && status != STATUS_INFO_LENGTH_MISMATCH) {
+					succeeded = false;
+					break;
+				}
+
+				if (status == STATUS_SUCCESS)
+					break;
+
+			} while (status == STATUS_INFO_LENGTH_MISMATCH);
+
+			if (!succeeded)
+				continue;
+
+			auto procSnapshotInfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
+
+			// Iterating through each handle.
+			for (size_t i = 0; i < procSnapshotInfo->NumberOfHandles; i++) {
+				HANDLE hTarget;
+				if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
+					continue;
+
+				wuunique_ptr<BYTE[]> nameBuffer;
+				NtQueryObjectWithTimeout(hTarget, ObjectNameInformation, nameBuffer, 200);
+				CloseHandle(hTarget);
+
+				auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(nameBuffer.get());
+				WWuString test(nameInfo->Name.Buffer);
+
+				if (nameInfo->Name.Buffer != NULL)
+					if (_wcsnicmp(objectName.GetBuffer(), nameInfo->Name.Buffer, objectName.Length())) {
+						if (closeHandle) {
+							if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
+								throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+							CloseHandle(hTarget);
+						}
+						
+						processIdList.push_back(pid);
+						break;
+					}
+			}
+		}
+	}
+
+	void GetRunnningProcessIdList(wuvector<DWORD>& procIdList)
+	{
+		HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+		if (hSnapshot == INVALID_HANDLE_VALUE)
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+		PROCESSENTRY32 procEntry = { 0 };
+		procEntry.dwSize = sizeof(procEntry);
+
+		// Skip the idle process.
+		Process32First(hSnapshot, &procEntry);
+		while (Process32Next(hSnapshot, &procEntry))
+			procIdList.push_back(procEntry.th32ProcessID);
+
+		CloseHandle(hSnapshot);
+	}
+
+	DWORD WINAPI NtQueryObjectRaw(LPVOID parameters)
 	{
 		NTSTATUS result = STATUS_SUCCESS;
-		PTHREAD_FUNC_ARGUMENTS tfuncargs = reinterpret_cast<PTHREAD_FUNC_ARGUMENTS>(lpparam);
+		PTHREAD_FUNC_ARGUMENTS threadArgs = reinterpret_cast<PTHREAD_FUNC_ARGUMENTS>(parameters);
 
-		HMODULE hmodule = GetModuleHandleW(L"ntdll.dll");
-		if (INVALID_HANDLE_VALUE == hmodule || 0 == hmodule)
-			return result;
+		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
+		if (hNtdll == NULL) {
+			hNtdll = LoadLibrary(L"ntdll.dll");
+			if (hNtdll == NULL)
+				throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		}
 
-		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hmodule, "NtQueryObject");
-		if (NULL == NtQueryObject)
-			return GetLastError();
+		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hNtdll, "NtQueryObject");
 
-		if (tfuncargs->ObjectInformationClass == ObjectNameInformation)
+		if (threadArgs->ObjectInformationClass == ObjectNameInformation)
 		{
-			ULONG szbuffneeded = 0;
-			ULONG szbuffer = (ULONG)sizeof(OBJECT_NAME_INFORMATION);
-
-			tfuncargs->ObjectInfo = (POBJECT_NAME_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(OBJECT_NAME_INFORMATION));
-			if (NULL == tfuncargs->ObjectInfo)
-				return ERROR_NOT_ENOUGH_MEMORY;
-
+			ULONG bufferSize = static_cast<ULONG>(sizeof(OBJECT_NAME_INFORMATION));
 			do
 			{
-				result = NtQueryObject(tfuncargs->ObjectHandle, ObjectNameInformation, tfuncargs->ObjectInfo, szbuffer, &szbuffneeded);
+				threadArgs->ObjectInfo = make_wuunique<BYTE[]>(bufferSize);
+
+				result = NtQueryObject(threadArgs->ObjectHandle, ObjectNameInformation, threadArgs->ObjectInfo.get(), bufferSize, &bufferSize);
 				if (STATUS_SUCCESS != result
 					&& STATUS_INFO_LENGTH_MISMATCH != result
 					&& result != STATUS_BUFFER_OVERFLOW
@@ -87,28 +180,17 @@ namespace WindowsUtils::Core
 
 				if (STATUS_SUCCESS == result)
 					break;
-
-				szbuffer = szbuffneeded;
-				HeapFree(GetProcessHeap(), NULL, tfuncargs->ObjectInfo);
-
-				tfuncargs->ObjectInfo = (POBJECT_NAME_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, szbuffer);
-				if (NULL == tfuncargs->ObjectInfo)
-					return ERROR_NOT_ENOUGH_MEMORY;
 
 			} while (result == STATUS_BUFFER_TOO_SMALL || result == STATUS_BUFFER_OVERFLOW || result == STATUS_INFO_LENGTH_MISMATCH);
 		}
 		else
 		{
-			ULONG szbuffneeded = 0;
-			ULONG szbuffer = (ULONG)sizeof(POBJECT_TYPE_INFORMATION);
-
-			tfuncargs->ObjectInfo = (POBJECT_TYPE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(POBJECT_TYPE_INFORMATION));
-			if (NULL == tfuncargs->ObjectInfo)
-				return ERROR_NOT_ENOUGH_MEMORY;
-
+			ULONG bufferSize = static_cast<ULONG>(sizeof(OBJECT_TYPE_INFORMATION));
 			do
 			{
-				result = NtQueryObject(tfuncargs->ObjectHandle, ObjectNameInformation, tfuncargs->ObjectInfo, szbuffer, &szbuffneeded);
+				threadArgs->ObjectInfo = make_wuunique<BYTE[]>(bufferSize);
+
+				result = NtQueryObject(threadArgs->ObjectHandle, ObjectTypeInformation, threadArgs->ObjectInfo.get(), bufferSize, &bufferSize);
 				if (STATUS_SUCCESS != result
 					&& STATUS_INFO_LENGTH_MISMATCH != result
 					&& result != STATUS_BUFFER_OVERFLOW
@@ -117,13 +199,6 @@ namespace WindowsUtils::Core
 
 				if (STATUS_SUCCESS == result)
 					break;
-
-				szbuffer = szbuffneeded;
-				HeapFree(GetProcessHeap(), NULL, tfuncargs->ObjectInfo);
-
-				tfuncargs->ObjectInfo = (POBJECT_TYPE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, szbuffer);
-				if (NULL == tfuncargs->ObjectInfo)
-					return ERROR_NOT_ENOUGH_MEMORY;
 
 			} while (result == STATUS_BUFFER_TOO_SMALL || result == STATUS_BUFFER_OVERFLOW || result == STATUS_INFO_LENGTH_MISMATCH);
 		}
@@ -136,74 +211,41 @@ namespace WindowsUtils::Core
 	* There isn't a pattern, nor documentation on this behavior.
 	* We use a separate thread that gets terminated after a timeout.
 	*/
-	WuResult WINAPI NtQueryObjectWithTimeout(
-		HANDLE hobject,								// A valid handle to the object.
-		OBJECT_INFORMATION_CLASS objinfoclass,		// One of the OBJECT_INFORMATION_CLASS enumerations.
-		PVOID pobjinfo,								// Object containing the queried information. The type of object depends on the object information class.
-		ULONG mstimeout								// Maximum timeout in milliseconds.
+	void WINAPI NtQueryObjectWithTimeout(
+		HANDLE hObject,								// A valid handle to the object.
+		OBJECT_INFORMATION_CLASS objInfoClass,		// One of the OBJECT_INFORMATION_CLASS enumerations.
+		wuunique_ptr<BYTE[]>& objInfo,				// Object containing the queried information. The type of object depends on the object information class.
+		ULONG timeout								// Maximum timeout in milliseconds.
 	) {
-		PTHREAD_FUNC_ARGUMENTS threadcallargs = new THREAD_FUNC_ARGUMENTS;
-		DWORD dwthreadid = 0;
-		DWORD dwthexitcode = STATUS_SUCCESS;
-		HANDLE hthread = NULL;
+		DWORD threadId = 0;
+		DWORD threadExitCode = STATUS_SUCCESS;
+		HANDLE hThread = NULL;
 
-		threadcallargs->ObjectHandle = hobject;
-		threadcallargs->ObjectInformationClass = objinfoclass;
+		THREAD_FUNC_ARGUMENTS threadCallArgs = {
+			hObject,
+			objInfoClass,
+			objInfo
+		};
 
-		hthread = CreateThread(NULL, 0, NtQueryObjectRaw, threadcallargs, 0, &dwthreadid);
-		if (NULL == hthread)
-			return WuResult(GetLastError(), __FILEW__, __LINE__);
+		hThread = CreateThread(NULL, 0, NtQueryObjectRaw, &threadCallArgs, 0, &threadId);
+		if (NULL == hThread)
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
 
-		DWORD wait = WaitForSingleObject(hthread, mstimeout);
+		DWORD wait = WaitForSingleObject(hThread, timeout);
 		if (wait != WAIT_OBJECT_0)
-			TerminateThread(hthread, 0);
+			TerminateThread(hThread, 0);
 		else
 		{
-			GetExitCodeThread(hthread, &dwthexitcode);
-			CloseHandle(hthread);
+			GetExitCodeThread(hThread, &threadExitCode);
+			CloseHandle(hThread);
 		}
-
-		size_t szbuffer = 0;
-		size_t szpobjinfo = 0;
-		if (objinfoclass == ObjectNameInformation)
-		{
-			szbuffer = sizeof(*reinterpret_cast<POBJECT_NAME_INFORMATION>(threadcallargs->ObjectInfo));
-			szpobjinfo = sizeof(*reinterpret_cast<POBJECT_NAME_INFORMATION>(threadcallargs->ObjectInfo));
-
-			if (szbuffer > szpobjinfo)
-			{
-				HeapFree(GetProcessHeap(), NULL, pobjinfo);
-				pobjinfo = (POBJECT_NAME_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, szbuffer);
-				if (NULL == pobjinfo)
-					return WuResult(ERROR_NOT_ENOUGH_MEMORY, __FILEW__, __LINE__);
-			}
-
-			CopyMemory(pobjinfo, threadcallargs->ObjectInfo, szbuffer);
-		}
-		else
-		{
-			szbuffer = sizeof(*reinterpret_cast<POBJECT_TYPE_INFORMATION>(threadcallargs->ObjectInfo));
-			szpobjinfo = sizeof(*reinterpret_cast<POBJECT_TYPE_INFORMATION>(threadcallargs->ObjectInfo));
-
-			if (szbuffer > szpobjinfo)
-			{
-				HeapFree(GetProcessHeap(), NULL, pobjinfo);
-				pobjinfo = (POBJECT_TYPE_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, szbuffer);
-				if (NULL == pobjinfo)
-					return WuResult(ERROR_NOT_ENOUGH_MEMORY, __FILEW__, __LINE__);
-			}
-
-			CopyMemory(pobjinfo, threadcallargs->ObjectInfo, szbuffer);
-		}
-
-		return WuResult();
 	}
 
 	/*
 	* Alternative to QueryFullProcessImageNameW.
 	* This function returns names from processes like, System, Registry or Secure System.
 	*/
-	WuResult WINAPI GetProcessImageName(DWORD processId, WWuString& imageName)
+	void WINAPI GetProcessImageName(DWORD processId, WWuString& imageName)
 	{
 		NTSTATUS statusResult = STATUS_SUCCESS;
 		ULONG bufferSize = 1 << 12;
@@ -211,7 +253,7 @@ namespace WindowsUtils::Core
 
 		HMODULE hModule = GetModuleHandleW(L"ntdll.dll");
 		if (INVALID_HANDLE_VALUE == hModule || NULL == hModule)
-			return WuResult(GetLastError(), __FILEW__, __LINE__);
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
 
 		_NtQuerySystemInformation NtQuerySystemInformation = (_NtQuerySystemInformation)GetProcAddress(hModule, "NtQuerySystemInformation");
 
@@ -224,7 +266,7 @@ namespace WindowsUtils::Core
 				&& STATUS_INFO_LENGTH_MISMATCH != statusResult
 				&& statusResult != STATUS_BUFFER_OVERFLOW
 				&& statusResult != STATUS_BUFFER_TOO_SMALL)
-				return WuResult(statusResult, __FILEW__, __LINE__, true);
+				throw WuStdException(GetLastError(), __FILEW__, __LINE__);
 
 			if (STATUS_SUCCESS == statusResult)
 				break;
@@ -247,7 +289,5 @@ namespace WindowsUtils::Core
 			systemProcInfo = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)systemProcInfo + systemProcInfo->NextEntryOffset);
 
 		} while (systemProcInfo->NextEntryOffset != 0);
-
-		return WuResult();
 	}
 }
