@@ -372,7 +372,8 @@ namespace WindowsUtils.Commands
     [Alias("gethandle")]
     public class GetObjectHandleCommand : PSCmdlet
     {
-        private List<string> validPaths = new();
+        private readonly List<ObjectHandleInput> _validInput = new();
+
         private string[] _path;
         private bool _shouldExpandWildcards = true;
 
@@ -438,34 +439,54 @@ namespace WindowsUtils.Commands
         }
         protected override void ProcessRecord()
         {
-            List<string> pathlist = new();
-            validPaths.Clear();
+            List<string> pathList = new();
+            _validInput.Clear();
 
             _path ??= new[] { ".\\*" };
 
             foreach (string path in _path)
             {
+                pathList.Clear();
+
                 ProviderInfo provider;
 
                 if (_shouldExpandWildcards)
-                    pathlist.AddRange(GetResolvedProviderPathFromPSPath(path, out provider));
+                    pathList.AddRange(GetResolvedProviderPathFromPSPath(path, out provider));
 
                 else
-                    pathlist.Add(SessionState.Path.GetUnresolvedProviderPathFromPSPath(path, out provider, out PSDriveInfo drive));
+                    pathList.Add(SessionState.Path.GetUnresolvedProviderPathFromPSPath(path, out provider, out _));
 
-                // FIX THIS!!!!!!
-                foreach (string filepath in pathlist)
+
+                foreach (string singlePath in pathList)
                 {
-                    if (File.Exists(filepath) || Directory.Exists(filepath))
-                        validPaths.Add(filepath);
-                    else
-                        WriteWarning("Object '" + filepath + "' not found.");
+                    switch (provider.Name)
+                    {
+                        case "FileSystem":
+                            if (File.Exists(singlePath) || Directory.Exists(singlePath))
+                                _validInput.Add(new ObjectHandleInput(path, ObjectHandleType.FileSystem));
+                            else
+                                WriteWarning($"Object '{singlePath}' not found.");
+
+                            break;
+
+                        case "Registry":
+                            string? ntPath = Utils.GetRegistryNtPath(singlePath);
+                            if (ntPath is not null)
+                            {
+                                // Console.WriteLine(ntPath);
+                                _validInput.Add(new ObjectHandleInput(ntPath, ObjectHandleType.Registry));
+                            }
+                            else
+                                WriteWarning($"Object '{singlePath}' not found.");
+
+                            break;
+
+                        default:
+                            WriteWarning($"Provider '{provider.Name}' not supported.");
+                            break;
+                    }
                 }
-
             }
-
-            if (validPaths.Count == 0)
-                throw new ItemNotFoundException("No object found for the specified path(s).");
 
             Wrapper unWrapper = new();
             if (CloseHandle)
@@ -476,19 +497,19 @@ namespace WindowsUtils.Commands
                     "ATTENTION! Closing handles can lead to system malfunction.\n"
                     ))
                 {
-                    unWrapper.GetProcessObjectHandle(validPaths.ToArray(), true);
-                    ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
+                    unWrapper.GetProcessObjectHandle(_validInput.ToArray(), true);
+                    ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(_validInput.ToArray(), false);
                     if (result is not null)
                     {
                         WriteWarning("Failed to remove handles for the processes below.");
-                        result.OrderBy(p => p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
+                        result.OrderBy(p => p.Type).ThenBy(p => p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
                     }
                 }
             }
             else
             {
-                ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(validPaths.ToArray(), false);
-                result?.OrderBy(p => p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
+                ObjectHandleBase[] result = unWrapper.GetProcessObjectHandle(_validInput.ToArray(), false);
+                result?.OrderBy(p => p.Type).ThenBy(p => p.Name).ToList().ForEach(x => WriteObject((ObjectHandle)x));
             }
         }
     }

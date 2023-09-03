@@ -51,12 +51,7 @@ namespace WindowsUtils::Core
 	ObjectHandleBase::ObjectHandleBase() : wrapper(new ProcessAndThread::WU_OBJECT_HANDLE) { }
 	ObjectHandleBase::ObjectHandleBase(ProcessAndThread::WU_OBJECT_HANDLE objectHandle)
 	{
-		wrapper = new ProcessAndThread::WU_OBJECT_HANDLE;
-		wrapper->ImagePath = objectHandle.ImagePath;
-		wrapper->Name = objectHandle.Name;
-		wrapper->InputObject = objectHandle.InputObject;
-		wrapper->ProcessId = objectHandle.ProcessId;
-		wrapper->VersionInfo = objectHandle.VersionInfo;
+		wrapper = new ProcessAndThread::WU_OBJECT_HANDLE(objectHandle);
 	}
 	ObjectHandleBase::~ObjectHandleBase() { delete wrapper; }
 	ObjectHandleBase::!ObjectHandleBase() { delete wrapper; }
@@ -184,19 +179,25 @@ namespace WindowsUtils::Core
 	}
 
 	// Get-ObjectHandle
-	array<ObjectHandleBase^>^ Wrapper::GetProcessObjectHandle(array<String^>^ fileName, Boolean closeHandle)
+	array<ObjectHandleBase^>^ Wrapper::GetProcessObjectHandle(array<ObjectHandleInput^>^ inputList, Boolean closeHandle)
 	{
 		wusunique_vector<ProcessAndThread::WU_OBJECT_HANDLE> ppOutput = make_wusunique_vector<ProcessAndThread::WU_OBJECT_HANDLE>();
-		wusunique_vector<WWuString> reslist = make_wusunique_vector<WWuString>();
+		wusunique_vector<ProcessAndThread::OBJECT_INPUT> reslist = make_wusunique_vector<ProcessAndThread::OBJECT_INPUT>();
 
-		for each (String ^ name in fileName) {
-			WWuString wuName = GetWideStringFromSystemString(name);
-			reslist->push_back(wuName);
+		for each (ObjectHandleInput^ input in inputList) {
+			ProcessAndThread::OBJECT_INPUT nativeInput = {
+				GetWideStringFromSystemString(input->Path),
+				static_cast<ProcessAndThread::SUPPORTED_OBJECT_TYPE>(input->Type)
+			};
+			reslist->push_back(nativeInput);
 		}
 
-		WuResult result = patptr->GetProcessObjectHandle(ppOutput.get(), reslist.get(), closeHandle);
-		if (result.Result != ERROR_SUCCESS)
-			throw gcnew NativeException(result);
+		try {
+			patptr->GetProcessObjectHandle(ppOutput.get(), reslist.get(), closeHandle);
+		}
+		catch (const WuStdException& ex) {
+			throw gcnew NativeException(ex);
+		}
 
 		if (ppOutput->size() == 0)
 			return nullptr;

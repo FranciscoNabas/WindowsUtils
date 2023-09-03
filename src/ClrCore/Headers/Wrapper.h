@@ -177,9 +177,16 @@ namespace WindowsUtils::Core
 	};
 
 	// Get-ObjectHandle
+	public enum class ObjectHandleType
+	{
+		FileSystem = 0,
+		Registry = 1
+	};
+
 	public ref class ObjectHandleBase
 	{
 	public:
+		property ObjectHandleType Type { ObjectHandleType get() { return static_cast<ObjectHandleType>(wrapper->Type); } }
 		property String^ InputObject { String^ get() { return gcnew String(wrapper->InputObject.GetBuffer()); } }
 		property String^ Name {
 			String^ get()
@@ -275,6 +282,20 @@ namespace WindowsUtils::Core
 
 	private:
 		ProcessAndThread::PWU_OBJECT_HANDLE wrapper;
+	};
+
+	public ref class ObjectHandleInput
+	{
+	public:
+		property String^ Path { String^ get() { return m_Path; } }
+		property ObjectHandleType Type { ObjectHandleType get() { return m_Type; } }
+
+		ObjectHandleInput(String^ path, ObjectHandleType type)
+			: m_Path(path), m_Type(type) { }
+
+	private:
+		String^ m_Path;
+		ObjectHandleType m_Type;
 	};
 
 	// Get-ResourceMessageTable
@@ -397,7 +418,7 @@ namespace WindowsUtils::Core
 		String^ GetLastWin32Error();
 
 		// Get-ObjectHandle
-		array<ObjectHandleBase^>^ GetProcessObjectHandle(array<String^>^ fileName, Boolean closeHandle);
+		array<ObjectHandleBase^>^ GetProcessObjectHandle(array<ObjectHandleInput^>^ inputList, Boolean closeHandle);
 
 		// Send-Click
 		Void SendClick();

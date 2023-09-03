@@ -76,6 +76,6 @@
 #include <time.h>
 #include <windns.h>
 #include <sysinfoapi.h>
-#include <processthreadsapi.h>
+#include <TlHelp32.h>
 
 #endif //PCH_H
