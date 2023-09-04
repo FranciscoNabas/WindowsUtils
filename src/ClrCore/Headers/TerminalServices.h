@@ -22,11 +22,13 @@ namespace WindowsUtils::Core
 			WWuString				SessionName;	// Session name.
 			LARGE_INTEGER			LastInputTime;	// Last input time.
 			LARGE_INTEGER			LogonTime;		// User logon time.
+			WWuString				ComputerName;	// The computer name.
 			WTS_CONNECTSTATE_CLASS	SessionState;	// Session state.
 
 			_WU_COMPUTER_SESSION() { }
-			_WU_COMPUTER_SESSION(INT sessionId, const WWuString& userName, const WWuString& sessionName, LARGE_INTEGER lastInpTime, LARGE_INTEGER logonTime, WTS_CONNECTSTATE_CLASS sessionState)
-				: SessionId(sessionId), UserName(userName), SessionName(sessionName), LastInputTime(lastInpTime), LogonTime(logonTime), SessionState(sessionState)
+			_WU_COMPUTER_SESSION(INT sessionId, const WWuString& userName, const WWuString& sessionName, LARGE_INTEGER lastInpTime,
+				LARGE_INTEGER logonTime, WTS_CONNECTSTATE_CLASS sessionState, const WWuString& computerName)
+				: SessionId(sessionId), UserName(userName), SessionName(sessionName), LastInputTime(lastInpTime), LogonTime(logonTime), SessionState(sessionState), ComputerName(computerName)
 			{ }
 
 			~_WU_COMPUTER_SESSION() { }
@@ -54,6 +56,7 @@ namespace WindowsUtils::Core
 
 		// Get-ComputerSession
 		WuResult GetEnumeratedSession(wuvector<WU_COMPUTER_SESSION>* sessionList, HANDLE session, BOOL onlyActive, BOOL includeSystemSessions);
+		void GetEnumeratedSession(WWuString& computerName, wuvector<WU_COMPUTER_SESSION>& sessionList, bool onlyActive, bool includeSystemSessions);
 
 		// Invoke-RemoteMessage
 		WuResult SendMessage(WWuString& pTitle, WWuString& pMessage, DWORD style, DWORD timeout, BOOL wait, wuvector<DWORD>* sessionIdList, wuvector<WU_MESSAGE_RESPONSE>* responseList, HANDLE session);

@@ -182,6 +182,7 @@
     <ClInclude Include="Headers\Network.h" />
     <ClInclude Include="Headers\Notification.h" />
     <ClInclude Include="Headers\NtUtilities.h" />
+    <ClInclude Include="Headers\Objects.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Headers\ProcessAndThread.h" />
     <ClInclude Include="Headers\Registry.h" />

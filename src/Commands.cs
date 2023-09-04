@@ -234,14 +234,13 @@ namespace WindowsUtils.Commands
             Wrapper unWrapper = new();
             if (string.IsNullOrEmpty(ComputerName))
             {
-                ComputerSessionBase[] result = unWrapper.GetComputerSession(ComputerName, IntPtr.Zero, ActiveOnly, IncludeSystemSession);
-                result.ToList().ForEach(x => WriteObject((ComputerSession)x));
+                ComputerSession[] result = unWrapper.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession);
+                result.ToList().ForEach(x => WriteObject(x));
             }
             else
             {
-                using WtsSession session = new(ComputerName);
-                ComputerSessionBase[] result = unWrapper.GetComputerSession(ComputerName, session.SessionHandle.DangerousGetHandle(), ActiveOnly, IncludeSystemSession);
-                result.ToList().ForEach(x => WriteObject((ComputerSession)x));
+                ComputerSession[] result = unWrapper.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession);
+                result.ToList().ForEach(x => WriteObject(x));
             }
         }
     }
@@ -1769,7 +1768,7 @@ namespace WindowsUtils.Commands
             {
                 Console.Write($"Enter the password for {UserName}: ");
                 _password = Utils.ReadPassword();
-                _titleBar = $"{CommandLine} running as ({UserName})";
+                Console.Write("\n");
                 
                 if (UserName.Contains('\\'))
                 {
@@ -1786,13 +1785,12 @@ namespace WindowsUtils.Commands
                 else
                 {
                     _userName = UserName;
-                    _domain = string.Empty;
+                    _domain = Environment.GetEnvironmentVariable("COMPUTERNAME");
                 }
             }
             else
             {
                 _password = Credential.Password;
-                _titleBar = $"{CommandLine} running as ({Credential.UserName})";
 
                 if (Credential.UserName.Contains('\\'))
                 {
@@ -1809,9 +1807,11 @@ namespace WindowsUtils.Commands
                 else
                 {
                     _userName = Credential.UserName;
-                    _domain = string.Empty;
+                    _domain = Environment.GetEnvironmentVariable("COMPUTERNAME");
                 }
             }
+
+            _titleBar = $"{CommandLine} (running as {_domain}\\{_userName})";
         }
 
         protected override void ProcessRecord()

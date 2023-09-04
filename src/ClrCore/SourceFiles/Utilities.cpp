@@ -286,7 +286,7 @@ namespace WindowsUtils::Core
 			userName.GetBuffer(),
 			domain.GetBuffer(),
 			password.GetBuffer(),
-			LOGON_NETCREDENTIALS_ONLY,
+			LOGON_WITH_PROFILE,
 			NULL,
 			commandLine.GetBuffer(),
 			CREATE_UNICODE_ENVIRONMENT,

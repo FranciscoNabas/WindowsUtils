@@ -19,34 +19,6 @@ namespace WindowsUtils::Core
 	MessageResponseBase::~MessageResponseBase() { delete wrapper; }
 	MessageResponseBase::!MessageResponseBase() { delete wrapper; }
 
-	//Get-ComputerSession
-	ComputerSessionBase::ComputerSessionBase() : wrapper(new TerminalServices::WU_COMPUTER_SESSION) { }
-	ComputerSessionBase::ComputerSessionBase(TerminalServices::WU_COMPUTER_SESSION unwrapped)
-	{
-		wrapper = new TerminalServices::WU_COMPUTER_SESSION(
-			unwrapped.SessionId,
-			unwrapped.UserName,
-			unwrapped.SessionName,
-			unwrapped.LastInputTime,
-			unwrapped.LogonTime,
-			unwrapped.SessionState
-		);
-	}
-	ComputerSessionBase::ComputerSessionBase(TerminalServices::WU_COMPUTER_SESSION unwrapped, String^ computerName)
-	{
-		_computerName = computerName;
-		wrapper = new TerminalServices::WU_COMPUTER_SESSION(
-			unwrapped.SessionId,
-			unwrapped.UserName,
-			unwrapped.SessionName,
-			unwrapped.LastInputTime,
-			unwrapped.LogonTime,
-			unwrapped.SessionState
-		);
-	}
-	ComputerSessionBase::~ComputerSessionBase() { delete wrapper; }
-	ComputerSessionBase::!ComputerSessionBase() { delete wrapper; }
-
 	// Get-ObjectHandle
 	ObjectHandleBase::ObjectHandleBase() : wrapper(new ProcessAndThread::WU_OBJECT_HANDLE) { }
 	ObjectHandleBase::ObjectHandleBase(ProcessAndThread::WU_OBJECT_HANDLE objectHandle)
@@ -125,21 +97,26 @@ namespace WindowsUtils::Core
 	}
 
 	// Get-ComputerSession
-	array<ComputerSessionBase^>^ Wrapper::GetComputerSession(String^ computerName, IntPtr session, Boolean activeOnly, Boolean includeSystemSessions)
+	array<ComputerSession^>^ Wrapper::GetComputerSession(String^ computerName, Boolean activeOnly, Boolean includeSystemSessions)
 	{
 		wusunique_vector<TerminalServices::WU_COMPUTER_SESSION> sessionList = make_wusunique_vector<TerminalServices::WU_COMPUTER_SESSION>();
-		WuResult result = wtsptr->GetEnumeratedSession(sessionList.get(), (HANDLE)session, activeOnly, includeSystemSessions);
-		if (result.Result != ERROR_SUCCESS)
-			throw gcnew NativeException(result);
-
-		List<ComputerSessionBase^>^ output = gcnew List<ComputerSessionBase^>((int)sessionList->size());
-
-		if (computerName != nullptr)
-			for (auto& sessionInfo : *sessionList)
-				output->Add(gcnew ComputerSessionBase(sessionInfo, computerName));
+		WWuString wrappedPcName;
+		if (String::IsNullOrEmpty(computerName))
+			wrappedPcName = WWuString();
 		else
-			for (auto& sessionInfo : *sessionList)
-				output->Add(gcnew ComputerSessionBase(sessionInfo));
+			wrappedPcName = GetWideStringFromSystemString(computerName);
+
+		try {
+			wtsptr->GetEnumeratedSession(wrappedPcName, *sessionList, activeOnly, includeSystemSessions);
+		}
+		catch (const WuStdException& ex) {
+			throw gcnew NativeException(ex);
+		}
+
+		List<ComputerSession^>^ output = gcnew List<ComputerSession^>((int)sessionList->size());
+
+		for (auto& sessionInfo : *sessionList)
+			output->Add(gcnew ComputerSession(sessionInfo));
 
 		return output->ToArray();
 	}

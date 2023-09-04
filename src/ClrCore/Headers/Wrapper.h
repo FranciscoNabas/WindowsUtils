@@ -3,6 +3,7 @@
 
 #include "String.h"
 #include "Common.h"
+#include "Objects.h"
 #include "Network.h"
 #include "Registry.h"
 #include "Services.h"
@@ -127,53 +128,6 @@ namespace WindowsUtils::Core
 
 	private:
 		TerminalServices::PWU_MESSAGE_RESPONSE wrapper;
-	};
-
-	// Get-ComputerSession
-	public ref class ComputerSessionBase
-	{
-	public:
-		property Int32 SessionId { Int32 get() { return wrapper->SessionId; } }
-		property String^ UserName { String^ get() { return gcnew String(wrapper->UserName.GetBuffer()); } }
-		property String^ SessionName { String^ get() { return gcnew String(wrapper->SessionName.GetBuffer()); } }
-		property TimeSpan IdleTime {
-			TimeSpan get()
-			{
-				if (wrapper->LastInputTime.QuadPart == 0)
-					return TimeSpan::Zero;
-				else {
-					::FILETIME datePivot;
-					datePivot.dwLowDateTime = wrapper->LastInputTime.LowPart;
-					datePivot.dwHighDateTime = wrapper->LastInputTime.HighPart;
-
-				}
-
-				return DateTime::Now - DateTime::FromFileTime(wrapper->LastInputTime.QuadPart);
-			}
-		}
-		property DateTime^ LogonTime {
-			DateTime^ get()
-			{
-				if (wrapper->LogonTime.QuadPart == 0)
-					return nullptr;
-
-				return DateTime::FromFileTime(wrapper->LogonTime.QuadPart);
-			}
-		}
-		property UInt32 SessionState { UInt32 get() { return wrapper->SessionState; } }
-		property String^ ComputerName { String^ get() { return _computerName; } }
-
-		ComputerSessionBase();
-		ComputerSessionBase(TerminalServices::WU_COMPUTER_SESSION excompsess);
-		ComputerSessionBase(TerminalServices::WU_COMPUTER_SESSION excompsess, String^ inppcname);
-		~ComputerSessionBase();
-
-	protected:
-		!ComputerSessionBase();
-
-	private:
-		String^ _computerName;
-		TerminalServices::PWU_COMPUTER_SESSION wrapper;
 	};
 
 	// Get-ObjectHandle
@@ -406,7 +360,7 @@ namespace WindowsUtils::Core
 		array<MessageResponseBase^>^ SendRemoteMessage(IntPtr session, array<Int32>^ sessionid, String^ title, String^ message, UInt32 style, Int32 timeout, Boolean wait);
 
 		// Get-ComputerSession
-		array<ComputerSessionBase^>^ GetComputerSession(String^ computername, IntPtr session, Boolean onlyactive, Boolean includesystemsession);
+		array<ComputerSession^>^ GetComputerSession(String^ computername, Boolean onlyactive, Boolean includesystemsession);
 
 		// Disconnect-Session
 		Void DisconnectSession(IntPtr session, UInt32^ sessionid, Boolean wait);

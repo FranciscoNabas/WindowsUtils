@@ -190,6 +190,88 @@ namespace WindowsUtils::Core
 		return result;
 	}
 
+	void TerminalServices::GetEnumeratedSession(WWuString& computerName, wuvector<WU_COMPUTER_SESSION>& sessionList, bool onlyActive, bool includeSystemSessions)
+	{
+		HANDLE hServer;
+		PWTS_SESSION_INFOW sessionInfo;
+		DWORD sessionCount;
+		WuResult result;
+
+		if (computerName.Length() == 0) {
+			hServer = WTS_CURRENT_SERVER_HANDLE;
+
+			WCHAR computerNameRaw[MAX_PATH] = { 0 };
+			DWORD pcNameSize = MAX_PATH;
+			if (GetComputerName(computerNameRaw, &pcNameSize))
+				computerName = WWuString(computerNameRaw);
+		}
+		else {
+			// If the function succeeds you get what you want, if it fails
+			// you also get what you want, but is invalid. wth??
+			hServer = WTSOpenServer(computerName.GetBuffer());
+		}
+
+		if (!WTSEnumerateSessionsW(hServer, 0, 1, &sessionInfo, &sessionCount))
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+		switch (onlyActive) {
+			case true:
+				for (DWORD i = 0; i < sessionCount; i++) {
+					if (sessionInfo[i].State == WTSActive) {
+						TerminalServices::WU_COMPUTER_SESSION computerSession;
+
+						result = GetSessionOutput(&computerSession, hServer, sessionInfo[i]);
+						if (result.Result != ERROR_SUCCESS) {
+							WTSFreeMemory(sessionInfo);
+							throw WuStdException(result.Result, __FILEW__, __LINE__);
+						}
+
+						computerSession.ComputerName = computerName;
+
+						sessionList.push_back(computerSession);
+					}
+				}
+				break;
+
+				// 'System' sessions are never 'WTSActive'
+			default:
+				if (includeSystemSessions == true) {
+					for (DWORD i = 0; i < sessionCount; i++) {
+						TerminalServices::WU_COMPUTER_SESSION computerSession;
+
+						result = GetSessionOutput(&computerSession, hServer, sessionInfo[i]);
+						if (result.Result != ERROR_SUCCESS) {
+							WTSFreeMemory(sessionInfo);
+							throw WuStdException(result.Result, __FILEW__, __LINE__);
+						}
+						
+						computerSession.ComputerName = computerName;
+
+						sessionList.push_back(computerSession);
+					}
+				}
+				else {
+					for (DWORD i = 0; i < sessionCount; i++) {
+						TerminalServices::WU_COMPUTER_SESSION computerSession;
+
+						result = GetSessionOutput(&computerSession, hServer, sessionInfo[i]);
+						if (result.Result != ERROR_SUCCESS) {
+							WTSFreeMemory(sessionInfo);
+							throw WuStdException(result.Result, __FILEW__, __LINE__);
+						}
+
+						computerSession.ComputerName = computerName;
+
+						if (!WWuString::IsNullOrEmpty(computerSession.UserName))
+							sessionList.push_back(computerSession);
+					}
+				}
+				break;
+		}
+
+		WTSFreeMemory(sessionInfo);
+	}
+
 	// Disconnect-Session
 	WuResult TerminalServices::DisconnectSession(
 		HANDLE hServer = WTS_CURRENT_SERVER_HANDLE,		// A handle to a WTS server session.

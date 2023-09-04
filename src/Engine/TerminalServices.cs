@@ -12,25 +12,6 @@ namespace WindowsUtils.Interop
 
 namespace WindowsUtils.TerminalServices
 {
-    /// <summary>
-    /// Object used on WTS Cmdlets
-    /// </summary>
-    public class ComputerSession
-    {
-        public int SessionId => wrapper.SessionId;
-        public string UserName => wrapper.UserName;
-        public string SessionName => wrapper.SessionName;
-        public TimeSpan IdleTime => wrapper.IdleTime;
-        public DateTime LogonTime => (DateTime)wrapper.LogonTime;
-        public SessionState SessionState => (SessionState)wrapper.SessionState;
-        public string ComputerName => wrapper.ComputerName;
-        
-        public static explicit operator ComputerSession(ComputerSessionBase csbase) => new(csbase);
-        public ComputerSession(ComputerSessionBase csbase) => wrapper = csbase;
-
-        private readonly ComputerSessionBase wrapper;
-    }
-
     internal sealed class WtsSession : IDisposable
     {
         internal string ComputerName { get; set; }
