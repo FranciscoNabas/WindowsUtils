@@ -248,7 +248,7 @@ namespace WindowsUtils::Core
 			if (!DuplicateHandle(hExtProcess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
 				continue;
 
-			NtQueryObjectWithTimeout(hTarget, ObjectNameInformation, objectNameBuffer, 200);
+			NtQueryObjectWithTimeout(hTarget, ObjectNameInformation, objectNameBuffer, 50);
 
 			CloseHandle(hTarget);
 

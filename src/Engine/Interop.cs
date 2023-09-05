@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.ConstrainedExecution;
 using Microsoft.Win32.SafeHandles;
+using System.Text;
 
 namespace WindowsUtils.Interop
 {
@@ -17,6 +18,19 @@ namespace WindowsUtils.Interop
         KeyTrustInformation,
         KeyLayerInformation,
         MaxKeyInfoClass
+    }
+
+    internal enum SID_NAME_USE
+    {
+        SidTypeUser = 1,
+        SidTypeGroup,
+        SidTypeDomain,
+        SidTypeAlias,
+        SidTypeWellKnownGroup,
+        SidTypeDeletedAccount,
+        SidTypeInvalid,
+        SidTypeUnknown,
+        SidTypeComputer
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -96,6 +110,9 @@ namespace WindowsUtils.Interop
     internal partial class NativeConstants
     {
         internal static readonly IntPtr INVALID_HANDLE_VALUE = (IntPtr)(-1);
+        internal const int ERROR_INSUFFICIENT_BUFFER = 122;
+        internal const int ERROR_INVALID_FLAGS = 1004;
+        internal const int ERROR_SUCCESS = 0;
     }
 
     internal partial class NativeFunctions
@@ -107,6 +124,24 @@ namespace WindowsUtils.Interop
             IntPtr KeyInformation,
             int Length,
             out int ResultLength
+        );
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        internal static extern bool LookupAccountName(
+            string lpSystemName,
+            string lpAccountName,
+            [MarshalAs(UnmanagedType.LPArray)] byte[] Sid,
+            ref uint cbSid,
+            StringBuilder ReferencedDomainName,
+            ref uint cchReferencedDomainName,
+            out SID_NAME_USE peUse
+        );
+
+        [DllImport("advapi32", CharSet = CharSet.Auto, SetLastError = true)]
+        internal static extern bool CheckTokenMembership(
+            IntPtr tokenHandle,
+            [MarshalAs(UnmanagedType.LPArray)] byte[] Sid,
+            out bool isMember
         );
 
         [DllImport("kernel32", SetLastError = true)]

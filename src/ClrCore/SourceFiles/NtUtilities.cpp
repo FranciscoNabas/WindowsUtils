@@ -111,7 +111,7 @@ namespace WindowsUtils::Core
 					continue;
 
 				wuunique_ptr<BYTE[]> nameBuffer;
-				NtQueryObjectWithTimeout(hTarget, ObjectNameInformation, nameBuffer, 200);
+				NtQueryObjectWithTimeout(hTarget, ObjectNameInformation, nameBuffer, 50);
 				CloseHandle(hTarget);
 
 				auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(nameBuffer.get());

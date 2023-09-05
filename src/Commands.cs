@@ -469,7 +469,7 @@ namespace WindowsUtils.Commands
                             break;
 
                         case "Registry":
-                            string? ntPath = Utils.GetRegistryNtPath(singlePath);
+                            string? ntPath = Wrapper.GetRegistryNtPath(singlePath);
                             if (ntPath is not null)
                             {
                                 // Console.WriteLine(ntPath);
