@@ -462,7 +462,7 @@ namespace WindowsUtils.Commands
                     {
                         case "FileSystem":
                             if (File.Exists(singlePath) || Directory.Exists(singlePath))
-                                _validInput.Add(new ObjectHandleInput(path, ObjectHandleType.FileSystem));
+                                _validInput.Add(new ObjectHandleInput(singlePath, ObjectHandleType.FileSystem));
                             else
                                 WriteWarning($"Object '{singlePath}' not found.");
 

@@ -1,6 +1,6 @@
 @{
     GUID = 'C5F7B91E-668D-46AC-9F0E-23B0A74ABCBA'
-    ModuleVersion = '1.7.0'
+    ModuleVersion = '1.8.4'
     RootModule = 'WindowsUtils.dll'
     CompatiblePSEditions = @(
         'Desktop',
@@ -13,7 +13,7 @@
     NestedModules = @('WindowsUtils.psm1')
     RequiredAssemblies = @(
         'WindowsUtils.dll',
-        'Core.dll',
+        'WuCore.dll',
         'System.Security.Principal.Windows.dll',
         'System.Security.AccessControl.dll',
         'System.ServiceProcess.ServiceController.dll'
@@ -31,14 +31,17 @@
         'Get-MsiProperties',
         'Get-RemoteMessageOptions',
         'Get-ResourceMessageTable', 
-        'Invoke-RemoteMessage',
+        'Send-RemoteMessage',
         'Send-Click',
         'Disconnect-Session',
         'Remove-Service',
         'Get-ServiceSecurity',
         'New-ServiceAccessRule',
         'New-ServiceAuditRule',
-        'Set-ServiceSecurity'
+        'Set-ServiceSecurity',
+        'Expand-Cabinet',
+        'Start-Tcping'
+        'Start-ProcessAsUser'
     )
     AliasesToExport = @(
         'gethandle',
@@ -46,7 +49,6 @@
     )
     PrivateData = @{
         PSData = @{
-            Prerelease = 'preview.1'
             LicenseUri = 'https://github.com/FranciscoNabas/WindowsUtils/blob/main/LICENSE'
             ProjectUri = 'https://github.com/FranciscoNabas/WindowsUtils'
             ReleaseNotes = 'https://github.com/FranciscoNabas/WindowsUtils/blob/main/CHANGELOG.md'
