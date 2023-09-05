@@ -911,6 +911,50 @@ namespace WindowsUtils::Core
 	}
 
 	// Utilities
+	String^ Wrapper::GetRegistryNtPath(String^ keyPath)
+	{
+		array<String^>^ splitPath = keyPath->Split('\\');
+		String^ subkeyPath = String::Join("\\", gcnew ArraySegment<String^>(splitPath, 1, splitPath->Length - 1));
+
+		HKEY hiveKey;
+		if (splitPath[0] == "HKEY_CLASSES_ROOT") { hiveKey = HKEY_CLASSES_ROOT; }
+		else if (splitPath[0] == "HKEY_CURRENT_USER") { hiveKey = HKEY_CURRENT_USER; }
+		else if (splitPath[0] == "HKEY_LOCAL_MACHINE") { hiveKey = HKEY_LOCAL_MACHINE; }
+		else if (splitPath[0] == "HKEY_USERS") { hiveKey = HKEY_USERS; }
+		else if (splitPath[0] == "HKEY_CURRENT_CONFIG") { hiveKey = HKEY_CURRENT_CONFIG; }
+		else { throw gcnew ArgumentException("Invalid hive '" + splitPath[0] + "'."); }
+
+		HKEY subKey;
+		pin_ptr<const wchar_t> wrappedKey = PtrToStringChars(subkeyPath);
+		LSTATUS regStatus = RegOpenKey(hiveKey, wrappedKey, &subKey);
+		if (regStatus != ERROR_SUCCESS)
+			throw gcnew NativeException(regStatus);
+
+		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
+		if (hNtdll == NULL) {
+			hNtdll = LoadLibrary(L"ntdll.dll");
+			if (hNtdll == NULL)
+				throw gcnew NativeException(GetLastError());
+		}
+
+		_NtQueryKey NtQueryKey = (_NtQueryKey)GetProcAddress(hNtdll, "NtQueryKey");
+		if (NtQueryKey == NULL)
+			throw gcnew NativeException(GetLastError());
+
+		ULONG bufferSize = 1 << 6;
+		wuunique_ptr<BYTE[]> buffer = make_wuunique<BYTE[]>(bufferSize);
+		NTSTATUS result = NtQueryKey(subKey, KeyNameInformation, buffer.get(), bufferSize, &bufferSize);
+		if (result != STATUS_SUCCESS)
+			throw gcnew NativeException(WuResult(result, __FILEW__, __LINE__, true));
+
+		auto keyNameInfo = reinterpret_cast<PKEY_NAME_INFORMATION>(buffer.get());
+
+		if (keyNameInfo->NameLength > 0)
+			return gcnew String(keyNameInfo->Name);
+
+		return nullptr;
+	}
+
 	array<String^>^ Wrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray(const LPWSTR pvNativeArray, DWORD dwszBytes)
 	{
 		List<String^>^ stringList = gcnew List<String^>();

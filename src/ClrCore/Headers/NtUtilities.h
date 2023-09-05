@@ -23,6 +23,21 @@ namespace WindowsUtils::Core
 	* https://github.com/winsiderss/systeminformer
 	*/
 
+	typedef enum _KEY_INFORMATION_CLASS
+	{
+		KeyBasicInformation,
+		KeyNodeInformation,
+		KeyFullInformation,
+		KeyNameInformation,
+		KeyCachedInformation,
+		KeyFlagsInformation,
+		KeyVirtualizationInformation,
+		KeyHandleTagsInformation,
+		KeyTrustInformation,
+		KeyLayerInformation,
+		MaxKeyInfoClass
+	} KEY_INFORMATION_CLASS;
+	
 	// Objects
 
 	typedef enum _OBJECT_INFORMATION_CLASS {
@@ -159,6 +174,12 @@ namespace WindowsUtils::Core
 		LARGE_INTEGER OtherTransferCount;
 		SYSTEM_THREAD_INFORMATION Threads[1]; // SystemProcessInformation
 	} SYSTEM_PROCESS_INFORMATION, *PSYSTEM_PROCESS_INFORMATION;
+
+	typedef struct _KEY_NAME_INFORMATION
+	{
+		ULONG NameLength;
+		WCHAR Name[1];
+	} KEY_NAME_INFORMATION, *PKEY_NAME_INFORMATION;
 	
 	// Procedures
 
@@ -201,6 +222,14 @@ namespace WindowsUtils::Core
 		PVOID						SystemInformation,
 		ULONG						SystemInformationLength,
 		PULONG						ReturnLength
+	);
+
+	typedef NTSTATUS(NTAPI* _NtQueryKey)(
+		__in HANDLE					KeyHandle,
+		__in KEY_INFORMATION_CLASS	KeyInformationClass,
+		__out_opt PVOID				KeyInformation,
+		__in ULONG					Length,
+		__out PULONG				ResultLength
 	);
 
 	typedef __kernel_entry NTSTATUS(NTAPI* _NtQuerySystemTime)(__out PLARGE_INTEGER SystemTime);

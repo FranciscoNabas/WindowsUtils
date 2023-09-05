@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "t5w3k2vfyTE1DQhCtEqndwbIQTT8gZNTO0y+WFvucXlgxrjdfJpnhQHFljZV3PYpbjQqs2vVlpoDyyIr7z2RYQ==",
+  "dgSpecHash": "vRXYTMLl11NbFximsP9ggkBmt/P7o1nomJoLL1dGr507CpJ8Oi5+M+uq/oWPHFSc0rR2fIu3cxji4Bkes2Z0Bw==",
   "success": true,
-  "projectFilePath": "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
+  "projectFilePath": "c:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\7.0.0\\microsoft.bcl.asyncinterfaces.7.0.0.nupkg.sha512",
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
@@ -23,7 +23,6 @@
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\system.text.encodings.web\\7.0.0\\system.text.encodings.web.7.0.0.nupkg.sha512",
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\system.text.json\\7.0.3\\system.text.json.7.0.3.nupkg.sha512",
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\system.threading.tasks.extensions\\4.5.4\\system.threading.tasks.extensions.4.5.4.nupkg.sha512",
-    "C:\\Users\\francisco.nabas\\.nuget\\packages\\system.valuetuple\\4.5.0\\system.valuetuple.4.5.0.nupkg.sha512",
     "C:\\Users\\francisco.nabas\\.nuget\\packages\\xmldoc2cmdletdoc\\0.3.0\\xmldoc2cmdletdoc.0.3.0.nupkg.sha512"
   ],
   "logs": []

@@ -431,6 +431,9 @@ namespace WindowsUtils::Core
 		// Start-ProcessAsUser
 		void StartProcessAsUser(String^ userName, String^ domain, SecureString^ password, String^ commandLine, String^ titleBar);
 
+		// Utilities
+		static String^ GetRegistryNtPath(String^ keyPath);
+
 	private:
 		Utilities* utlptr;
 		TerminalServices* wtsptr;

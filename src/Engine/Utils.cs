@@ -1,41 +1,47 @@
-﻿using System.Security;
-using System.Security.Principal;
+﻿using System.Text;
+using System.Security;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
-using System.Runtime.CompilerServices;
 using WindowsUtils.Core;
+using WindowsUtils.Interop;
 
 namespace WindowsUtils
 {
     public static class Utils
     {
-        public static bool TryGetWindowsCurrentIdentity(out WindowsIdentity? currentIdentity)
+        internal static bool IsAdministrator()
         {
-            try
+            string account = "Administrators";
+            byte[] Sid = new byte[0];
+            uint cbSid = 0;
+            StringBuilder referencedDomainName = new();
+            uint cchReferencedDomainName = (uint)referencedDomainName.Capacity;
+
+            int err;
+            if (!NativeFunctions.LookupAccountName(string.Empty, account, Sid, ref cbSid, referencedDomainName, ref cchReferencedDomainName, out _))
             {
-                currentIdentity = WindowsIdentity.GetCurrent();
+                err = Marshal.GetLastWin32Error();
+                if (err == NativeConstants.ERROR_INSUFFICIENT_BUFFER || err == NativeConstants.ERROR_INVALID_FLAGS)
+                {
+                    Sid = new byte[cbSid];
+                    referencedDomainName.EnsureCapacity((int)cchReferencedDomainName);
+                    err = NativeConstants.ERROR_SUCCESS;
+                    if (!NativeFunctions.LookupAccountName(string.Empty, account, Sid, ref cbSid, referencedDomainName, ref cchReferencedDomainName, out _))
+                        err = Marshal.GetLastWin32Error();
+                }
             }
-            catch (SecurityException)
+            else
+                return false;
+
+            if (err == NativeConstants.ERROR_SUCCESS)
             {
+                if (!NativeFunctions.CheckTokenMembership(IntPtr.Zero, Sid, out bool isAdmin))
+                    throw new NativeException(Marshal.GetLastWin32Error());
 
-                currentIdentity = null;
+                return isAdmin;
             }
-
-            return currentIdentity != null;
-        }
-
-        public static bool IsAdministrator()
-        {
-            if (TryGetWindowsCurrentIdentity(out WindowsIdentity? currentIdentity))
-            {
-                if (currentIdentity is null)
-                    return false;
-
-                WindowsPrincipal principal = new(currentIdentity);
-                return principal.IsInRole(WindowsBuiltInRole.Administrator);
-            }
-
-            return false;
+            else
+                throw new NativeException(err);
         }
 
         internal static SecureString ReadPassword()
@@ -64,40 +70,6 @@ namespace WindowsUtils
                 }
             }
             return pwd;
-        }
-
-        internal static string? GetRegistryNtPath(string keyPath)
-        {
-            string[] splitPath = keyPath.Split('\\');
-            string subkeyPath = string.Join("\\", new ArraySegment<string>(splitPath, 1, splitPath.Length - 1));
-
-            int bufferSize = 1 << 10;
-            IntPtr buffer = Marshal.AllocHGlobal(bufferSize);
-            RegistryKey hiveKey = splitPath[0] switch {
-                "HKEY_CLASSES_ROOT" => Microsoft.Win32.Registry.ClassesRoot,
-                "HKEY_CURRENT_USER" => Microsoft.Win32.Registry.CurrentUser,
-                "HKEY_LOCAL_MACHINE" => Microsoft.Win32.Registry.LocalMachine,
-                "HKEY_USERS" => Microsoft.Win32.Registry.Users,
-                "HKEY_CURRENT_CONFIG" => Microsoft.Win32.Registry.CurrentConfig,
-                _ => throw new ArgumentException($"Invalid hive '{splitPath[0]}'."),
-            };
-
-            using (RegistryKey? keyHandle = hiveKey.OpenSubKey(subkeyPath))
-            {
-                if (keyHandle is null)
-                    return null;
-
-                int result = Interop.NativeFunctions.NtQueryKey(keyHandle.Handle.DangerousGetHandle(), Interop.KEY_INFORMATION_CLASS.KeyNameInformation, buffer, bufferSize, out bufferSize);
-                if (result != 0)
-                    throw new NativeException(result);
-            }
-
-            char[] bytes = new char[2 + bufferSize + 2];
-            Marshal.Copy(buffer, bytes, 0, bufferSize);
-            // startIndex == 2  skips the NameLength field of the structure (2 chars == 4 bytes)
-            // needed/2         reduces value from bytes to chars
-            //  needed/2 - 2    reduces length to not include the NameLength
-            return new(bytes, 2, (bufferSize / 2) - 2);
         }
     }
 }
