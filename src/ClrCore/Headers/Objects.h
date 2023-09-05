@@ -13,6 +13,20 @@ using namespace System;
 namespace WindowsUtils
 {
 	// Get-ComputerSession
+	public enum class SessionState
+	{
+		Active,
+		Connected,
+		ConnectQuery,
+		Shadow,
+		Disconnected,
+		Idle,
+		Listen,
+		Reset,
+		Down,
+		Init
+	};
+
 	public ref class ComputerSession
 	{
 	public:
@@ -43,7 +57,7 @@ namespace WindowsUtils
 				return DateTime::FromFileTime(wrapper->LogonTime.QuadPart);
 			}
 		}
-		property UInt32 SessionState { UInt32 get() { return wrapper->SessionState; } }
+		property SessionState State { SessionState get() { return static_cast<SessionState>(wrapper->SessionState); } }
 		property String^ ComputerName { String^ get() { return gcnew String(wrapper->ComputerName.GetBuffer()); } }
 
 		ComputerSession()

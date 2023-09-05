@@ -12,7 +12,7 @@
                             <Name>SessionId</Name>
                             <Name>UserName</Name>
                             <Name>SessionName</Name>
-                            <Name>SessionState</Name>
+                            <Name>State</Name>
                         </ReferencedProperties>
                     </PropertySet>
                     <PropertySet>
@@ -65,25 +65,6 @@
       </MemberSet>
     </Members>
   </Type>
-  <!-- <Type>
-    <Name>WindowsUtils.ObjectHandle</Name>
-    <Members>
-      <MemberSet>
-        <Name>PSStandardMembers</Name>
-        <Members>
-          <PropertySet>
-            <Name>DefaultDisplayPropertySet</Name>
-            <ReferencedProperties>
-              <Name>InputObject</Name>
-              <Name>Name</Name>
-              <Name>ProcessId</Name>
-              <Name>Description</Name>
-            </ReferencedProperties>
-          </PropertySet>
-        </Members>
-      </MemberSet>
-    </Members>
-  </Type> -->
   <Type>
     <Name>WindowsUtils.AccessControl.ServiceSecurity</Name>
     <Members>
