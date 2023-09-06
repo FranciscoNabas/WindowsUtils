@@ -1,8 +1,8 @@
 ﻿#pragma once
 #pragma unmanaged
 
-#include "Utilities.h"
 #include "String.h"
+#include "Utilities.h"
 #include "MemoryManagement.h"
 
 namespace WindowsUtils::Core
@@ -21,6 +21,14 @@ namespace WindowsUtils::Core
 			TCPING_OUTPUT,
 			TCPING_STATISTICS
 		} WRITE_OUTPUT_TYPE;
+
+		typedef enum _WRITE_DATA_TYPE
+		{
+			InformationData,
+			ProgressData,
+			ObjectData,
+			WarningData
+		} WRITE_DATA_TYPE;
 
 		typedef struct _MAPPED_PROGRESS_DATA
 		{

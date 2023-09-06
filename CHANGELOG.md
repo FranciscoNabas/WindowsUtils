@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
 
+## [1.8.5] - 2023-09-06
+
+### Changed
+
+- Start-Tcping.
+  - When canceling via Ctrl + C while probing an unreachable port, sometimes the last result is a false positive. Also, the cancel took forever.
+    Implemented a worker-thread approach to cancel more rapidly, and a pooled queue system for notification, since `WriteObject` cannot be called from a different thread.
+    Fine tunned the results to avoid false positives.
+
+## [1.8.3 - 1.8.4] - 2023-09-04
+
+### Bugs
+
+- Get-ObjectHandle.
+  - Checking if the user is running as administrator required the use of `WindowsIdentity`, which is not supported anymore, so everything was moved to C++.
+
 ## [1.8.2] - 2023-09-03
 
 ### Added

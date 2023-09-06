@@ -17,13 +17,6 @@ namespace WindowsUtils::Core
 	extern "C" public class __declspec(dllexport) Network
 	{
 	public:
-		typedef enum _PREFERRED_IP_PROTOCOL
-		{
-			None,
-			IPv4,
-			IPv6
-		} PREFERRED_IP_PROTOCOL;
-
 		typedef enum _TCPING_STATUS : WORD
 		{
 			Open,
@@ -49,6 +42,13 @@ namespace WindowsUtils::Core
 			_TCPING_STATISTICS()
 				: Sent(0), Successful(0), Failed(0), FailedPercent(0), MinRtt(0.00), MaxRtt(0.00), AvgRtt(0.00),
 					MinJitter(0.00), MaxJitter(0.00), AvgJitter(0.00), TotalJitter(0.00), TotalMilliseconds(0.00) { }
+
+			_TCPING_STATISTICS(DWORD sent, DWORD success, DWORD failed, double failPercent, double minRtt, double maxRtt, double avgRtt,
+				double minJitter, double maxJitter, double avgJitter, double totalJitter, double totalMilliseconds
+			)
+				: Sent(sent), Successful(success), Failed(failed), FailedPercent(FailedPercent), MinRtt(minRtt), MaxRtt(maxRtt), AvgRtt(AvgRtt),
+				MinJitter(MinJitter), MaxJitter(maxJitter), AvgJitter(avgJitter), TotalJitter(totalJitter), TotalMilliseconds(TotalMilliseconds)
+			{ }
 
 		} TCPING_STATISTICS, *PTCPING_STATISTICS;
 
@@ -95,12 +95,13 @@ namespace WindowsUtils::Core
 
 		} TCPING_OUTPUT, *PTCPING_OUTPUT;
 
+
 		class EphemeralSocket
 		{
 		public:
 			SOCKET UnderlyingSocket;
 			
-			EphemeralSocket(ADDRINFO* addressInfo);
+			EphemeralSocket(ADDRINFOW* addressInfo);
 			~EphemeralSocket();
 		};
 
@@ -115,13 +116,14 @@ namespace WindowsUtils::Core
 			static const bool IsCtrlCHit();
 			
 			WuStopWatch StopWatch;
-			CHAR PortAsString[6] = { 0 };
+			WCHAR PortAsString[6] = { 0 };
+			WWuString DisplayName;
+			TCPING_STATISTICS Statistics;
 
 			WWuString Destination;						// The destination. Either an IP or hostname.
 			DWORD Count;								// The ping count, analogous to '-n'. Default is 4.
 			DWORD Timeout;								// The timeout in seconds. Default is 2.
 			DWORD SecondsInterval;						// Interval between each ping in seconds. Default is 1.
-			PREFERRED_IP_PROTOCOL PreferredIpProtocol;	// Preferred IP protocol.
 			int FailedCountThreshold;					// Number of failing attempts before giving up. Default is the same as 'count'.
 			DWORD Port;									// TCP port. Default is 80.
 			bool IsContinuous;							// Pings continuously. Analogous to '-t'
@@ -140,7 +142,6 @@ namespace WindowsUtils::Core
 				DWORD count,
 				DWORD timeout,
 				DWORD secondsInterval,
-				PREFERRED_IP_PROTOCOL ipProt,
 				DWORD failedThres,
 				bool continuous,
 				bool includeJitter,
@@ -162,6 +163,39 @@ namespace WindowsUtils::Core
 			static TcpingForm* GetForm();
 		};
 
+		typedef struct _QUEUED_DATA
+		{
+			Notification::WRITE_DATA_TYPE Type;
+			union
+			{
+				Notification::PMAPPED_INFORMATION_DATA InformationData;
+				Notification::PMAPPED_PROGRESS_DATA ProgressData;
+				struct
+				{
+					Notification::WRITE_OUTPUT_TYPE ObjectType;
+					PVOID Object;
+				} ObjectData;
+				WWuString WarningData;
+			};
+
+			_QUEUED_DATA(const _QUEUED_DATA& other);
+			_QUEUED_DATA(
+				__in Notification::WRITE_DATA_TYPE type,
+				__in PVOID data,
+				__in_opt Notification::WRITE_OUTPUT_TYPE* objectData
+			);
+
+			~_QUEUED_DATA();
+
+		} QUEUED_DATA, * PQUEUED_DATA;
+
+		typedef struct _TCPING_WORKER_DATA
+		{
+			TcpingForm* WorkForm;
+			wuqueue<QUEUED_DATA>* Queue;
+			bool IsComplete;
+		} TCPING_WORKER_DATA, *PTCPING_WORKER_DATA;
+
 		////////////////////////////////////////////////////////////////////////////////////////
 		//
 		//	This function, and Cmdlet are based on the great 'tcping.exe' by Eli Fulkerson.
@@ -179,11 +213,15 @@ namespace WindowsUtils::Core
 		void StartTcpPing(TcpingForm& workForm, WuNativeContext* context);
 	};
 
-	void PerformSingleTestProbe(ADDRINFO* singleInfo, Network::TcpingForm* workForm, const WWuString& displayName, Network::PTCPING_STATISTICS statistics, WuNativeContext* context, DWORD& result);
-	void PerformSocketConnectSend(ADDRINFO* addressInfo, Network::TcpingForm* workForm, DWORD& result);
-	void ProcessStatistics(const Network::PTCPING_STATISTICS statistics, const WWuString& displayName, Network::TcpingForm* workForm, WuNativeContext* context);
-	void PrintHeader(Network::TcpingForm* workForm, const WWuString& displayText, WuNativeContext* context);
-	void FormatIp(ADDRINFO* address, WWuString& ipString);
+	void PerformSingleTestProbe(ADDRINFOW* singleInfo, Network::TcpingForm* workForm, const WWuString& displayName,
+		Network::PTCPING_STATISTICS statistics, wuqueue<Network::QUEUED_DATA>* infoQueue, DWORD& result);
+
+	void ProcessStatistics(Network::TcpingForm* workForm, WuNativeContext* context);
+
+	DWORD WINAPI StartTcpingWorker(PVOID params);
+	void PrintHeader(Network::TcpingForm* workForm, const WWuString& displayText);
+	void PrintQueueData(const Network::QUEUED_DATA& data, WuNativeContext* context);
+	void FormatIp(ADDRINFOW* address, WWuString& ipString);
 	void ReverseIp(WWuString& ip);
 	void ReverseIPv6(WWuString& ip);
 	void ResolveIpToDomainName(const WWuString& ip, WWuString& domainName);

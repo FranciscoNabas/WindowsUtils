@@ -368,7 +368,7 @@ namespace WindowsUtils
     public sealed class TcpingProbeInfo
     {
         public string Destination { get; }
-        public string DestinationAddress { get; }
+        public string ResolvedAddress { get; }
         public DateTime Timestamp { get; }
         public uint Port { get; }
         public TcpingStatus Status { get; }
@@ -378,7 +378,7 @@ namespace WindowsUtils
         internal TcpingProbeInfo(TCPING_OUTPUT nativeInfo)
         {
             Destination = nativeInfo.Destination;
-            DestinationAddress = nativeInfo.DestAddress;
+            ResolvedAddress = nativeInfo.DestAddress;
             Timestamp = DateTime.FromFileTime(nativeInfo.Timestamp);
             Port = nativeInfo.Port;
             Status = nativeInfo.Status;

@@ -1516,12 +1516,15 @@ namespace WindowsUtils.Commands
         private int? _count;
         private int _failedThreshold = -1;
 
-        private string _outputFile;
+        private string _outputFile;     
         private bool _append = false;
         private bool _continuous;
-        private bool _single;
+        private bool _single = false;
 
         private bool _ignoreSingle = false;
+
+        string[] _destination;
+        int[] _port = new int[] { 80 };
 
         /// <summary>
         /// <para type="description">The destination.</para>
@@ -1530,7 +1533,11 @@ namespace WindowsUtils.Commands
             Mandatory = true,
             Position = 0
         )]
-        public string[] Destination { get; set; }
+        [ValidateNotNullOrEmpty]
+        public string[] Destination {
+            get { return _destination; }
+            set { _destination = value; }
+        }
 
         /// <summary>
         /// <para type="description">The port.</para>
@@ -1538,7 +1545,10 @@ namespace WindowsUtils.Commands
         [Parameter(Position = 1)]
         [Alias("p")]
         [ValidateRange(1, 65535)]
-        public int[] Port { get; set; } = new int[] { 80 };
+        public int[] Port {
+            get { return _port; }
+            set { _port = value; }
+        }
 
         /// <summary>
         /// <para type="description">The number of tests to perform.</para>
@@ -1590,13 +1600,6 @@ namespace WindowsUtils.Commands
         [Alias("i")]
         [ValidateRange(1, int.MaxValue)]
         public int Interval { get; set; } = 1;
-
-        /// <summary>
-        /// <para type="description">The preferred IP protocol.</para>
-        /// </summary>
-        [Parameter()]
-        [Alias("ipv")]
-        public PreferredIpProtocol PreferredIpProtocol { get; set; } = PreferredIpProtocol.None;
 
         /// <summary>
         /// <para type="description">The number of failed attempts before aborting.</para>
@@ -1694,6 +1697,9 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
+            if ((Destination.Length > 1 || Port.Length > 1) && _continuous)
+                WriteWarning("'-Continuous' was used with multiple destination or ports. Only the first will be processed.");
+
             bool isCancel;
             bool isFirst = true;
             foreach (string server in Destination)
@@ -1704,10 +1710,10 @@ namespace WindowsUtils.Commands
                         _append = true;
 
                     if (_ignoreSingle)
-                        _unwrapper.StartTcpPing(server, singlePort, Count, Timeout, Interval, PreferredIpProtocol, FailedThreshold, Continuous,
+                        _unwrapper.StartTcpPing(server, singlePort, Count, Timeout, Interval, FailedThreshold, Continuous,
                             IncludeJitter, PrintFqdn, Force, false, OutputFile, Append, (CmdletContextBase)CmdletContext, out isCancel);
                     else
-                        _unwrapper.StartTcpPing(server, singlePort, Count, Timeout, Interval, PreferredIpProtocol, FailedThreshold, Continuous,
+                        _unwrapper.StartTcpPing(server, singlePort, Count, Timeout, Interval, FailedThreshold, Continuous,
                             IncludeJitter, PrintFqdn, Force, Single, OutputFile, Append, (CmdletContextBase)CmdletContext, out isCancel);
 
                     if (isCancel)

@@ -27,13 +27,6 @@ using namespace Microsoft::Win32;
 
 namespace WindowsUtils
 {
-	public enum class PreferredIpProtocol : UInt16
-	{
-		None,
-		IPv4,
-		IPv6
-	};
-
 	public enum class WriteOutputType : UInt32
 	{
 		TCPING_OUTPUT,
@@ -425,7 +418,7 @@ namespace WindowsUtils::Core
 		void ExpandArchiveFile(Object^ archiveObject, String^ destination, ArchiveFileType fileType);
 
 		// Start-Tcping
-		void StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, PreferredIpProtocol ipProt, Int32 failThreshold, bool continuous,
+		void StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, Int32 failThreshold, bool continuous,
 			bool jitter, bool fqdn, bool force, bool single, String^ outFile, bool append, CmdletContextBase^ context, [Out] bool% isCancel);
 
 		// Start-ProcessAsUser
