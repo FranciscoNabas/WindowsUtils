@@ -77,5 +77,6 @@
 #include <windns.h>
 #include <sysinfoapi.h>
 #include <TlHelp32.h>
+#include <queue>
 
 #endif //PCH_H

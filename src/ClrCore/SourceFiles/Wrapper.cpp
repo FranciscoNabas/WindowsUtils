@@ -866,7 +866,7 @@ namespace WindowsUtils::Core
 	}
 
 	// Start-Tcping
-	void Wrapper::StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, PreferredIpProtocol ipProt, Int32 failThreshold, bool continuous,
+	void Wrapper::StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, Int32 failThreshold, bool continuous,
 		bool jitter, bool fqdn, bool force, bool single, String^ outFile, bool append, CmdletContextBase^ context, [Out] bool% isCancel)
 	{
 		bool isFile = false;
@@ -878,7 +878,7 @@ namespace WindowsUtils::Core
 
 		WWuString wrappedDest = GetWideStringFromSystemString(destination);
 
-		wuunique_ptr<Network::TcpingForm> form = make_wuunique<Network::TcpingForm>(wrappedDest, port, count, timeout, interval, (Network::PREFERRED_IP_PROTOCOL)ipProt, failThreshold,
+		wuunique_ptr<Network::TcpingForm> form = make_wuunique<Network::TcpingForm>(wrappedDest, port, count, timeout, interval, failThreshold,
 			continuous, jitter, fqdn, force, single, isFile, wrappedOutFile, append);
 
 		try {

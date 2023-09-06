@@ -8,7 +8,7 @@ namespace WindowsUtils::Core
 	*	~ Ephemeral socket ~
 	*/
 
-	Network::EphemeralSocket::EphemeralSocket(ADDRINFO* addressInfo)
+	Network::EphemeralSocket::EphemeralSocket(ADDRINFOW* addressInfo)
 	{
 		UnderlyingSocket = socket(addressInfo->ai_family, addressInfo->ai_socktype, addressInfo->ai_protocol);
 		if (UnderlyingSocket == INVALID_SOCKET)
@@ -38,7 +38,6 @@ namespace WindowsUtils::Core
 		DWORD count,
 		DWORD timeout,
 		DWORD secondsInterval,
-		PREFERRED_IP_PROTOCOL ipProt,
 		DWORD failedThreshold,
 		bool continuous,
 		bool includeJitter,
@@ -48,7 +47,7 @@ namespace WindowsUtils::Core
 		bool outputFile,
 		const WWuString& filePath,
 		bool append
-	) :Destination(destination.GetBuffer()), Port(port), Count(count), Timeout(timeout), SecondsInterval(secondsInterval), PreferredIpProtocol(ipProt),
+	) :Destination(destination.GetBuffer()), Port(port), Count(count), Timeout(timeout), SecondsInterval(secondsInterval),
 			FailedCountThreshold(failedThreshold), IsContinuous(continuous), IncludeJitter(includeJitter), PrintFqdn(printFqdn),
 				IsForce(force), Single(single), OutputToFile(outputFile), Append(append)
 	{
@@ -59,7 +58,7 @@ namespace WindowsUtils::Core
 		if ((result = WSAStartup(reqVersion, &wsaData)) != 0)
 			throw result;
 
-		_ui64toa_s(Port, PortAsString, 6, 10);
+		_ui64tow_s(Port, PortAsString, 6, 10);
 
 		if (outputFile) {
 			DWORD access;
@@ -140,14 +139,247 @@ namespace WindowsUtils::Core
 	}
 
 	/*
+	*	~ Queued data ~
+	*/
+
+	Network::_QUEUED_DATA::_QUEUED_DATA(const _QUEUED_DATA& other)
+	{
+		Type = other.Type;
+		switch (other.Type) {
+			case Notification::InformationData:
+				InformationData = new Notification::MAPPED_INFORMATION_DATA(
+					other.InformationData->Computer,
+					other.InformationData->NativeThreadId,
+					other.InformationData->Text,
+					other.InformationData->Source,
+					other.InformationData->Tags,
+					other.InformationData->TagCount,
+					other.InformationData->TimeGenerated,
+					other.InformationData->User
+				);
+				break;
+
+			case Notification::ObjectData:
+			{
+				ObjectData.ObjectType = other.ObjectData.ObjectType;
+				switch (other.ObjectData.ObjectType) {
+
+					case Notification::TCPING_OUTPUT:
+					{
+						auto objData = reinterpret_cast<PTCPING_OUTPUT>(other.ObjectData.Object);
+						ObjectData.Object = new Network::TCPING_OUTPUT(
+							objData->Timestamp,
+							objData->Destination,
+							objData->DestAddress,
+							objData->Port,
+							objData->Status,
+							objData->RoundTripTime,
+							objData->Jitter
+						);
+					} break;
+
+					case Notification::TCPING_STATISTICS:
+					{
+						auto objData = reinterpret_cast<PTCPING_STATISTICS>(other.ObjectData.Object);
+						ObjectData.Object = new Network::TCPING_STATISTICS(
+							objData->Sent,
+							objData->Successful,
+							objData->Failed,
+							objData->FailedPercent,
+							objData->MinRtt,
+							objData->MaxRtt,
+							objData->AvgRtt,
+							objData->MinJitter,
+							objData->MaxJitter,
+							objData->AvgJitter,
+							objData->TotalJitter,
+							objData->TotalMilliseconds
+						);
+					} break;
+				}
+			} break;
+
+			case Notification::ProgressData:
+				ProgressData = new Notification::MAPPED_PROGRESS_DATA(*other.ProgressData);
+				break;
+
+			case Notification::WarningData:
+				WarningData = WWuString(other.WarningData);
+				break;
+		}
+	}
+
+	Network::_QUEUED_DATA::_QUEUED_DATA(
+		__in Notification::WRITE_DATA_TYPE type,
+		__in PVOID data,
+		__in_opt Notification::WRITE_OUTPUT_TYPE* objectData
+	)
+	{
+		Type = type;
+		switch (type) {
+			case Notification::InformationData:
+			{
+				auto infoData = reinterpret_cast<Notification::PMAPPED_INFORMATION_DATA>(data);
+				InformationData = new Notification::MAPPED_INFORMATION_DATA(*infoData);
+			} break;
+
+			case Notification::ObjectData:
+			{
+				ObjectData.ObjectType = *objectData;
+				switch (*objectData) {
+
+					case Notification::TCPING_OUTPUT:
+					{
+						auto objData = reinterpret_cast<Network::PTCPING_OUTPUT>(data);
+						ObjectData.Object = new Network::TCPING_OUTPUT(*objData);
+					} break;
+
+					case Notification::TCPING_STATISTICS:
+					{
+						auto objData = reinterpret_cast<Network::PTCPING_STATISTICS>(data);
+						ObjectData.Object = new Network::TCPING_STATISTICS(*objData);
+					} break;
+				}
+			} break;
+
+			case Notification::ProgressData:
+			{
+				auto progData = reinterpret_cast<Notification::PMAPPED_PROGRESS_DATA>(data);
+				ProgressData = new Notification::MAPPED_PROGRESS_DATA(*progData);
+			} break;
+
+			case Notification::WarningData:
+			{
+				auto warnData = reinterpret_cast<WWuString*>(data);
+				WarningData = WWuString(*warnData);
+			} break;
+		}
+	}
+
+	Network::_QUEUED_DATA::~_QUEUED_DATA()
+	{
+		switch (Type) {
+			case Notification::InformationData:
+				if (InformationData != NULL)
+					delete InformationData;
+				break;
+
+			case Notification::ObjectData:
+				if (ObjectData.Object != NULL)
+					delete ObjectData.Object;
+				break;
+
+			case Notification::ProgressData:
+				if (ProgressData != NULL)
+					delete ProgressData;
+				break;
+		}
+	}
+
+	/*
 	*	~ Function definition ~
 	*/
 
 	void Network::StartTcpPing(TcpingForm& workForm, WuNativeContext* context)
 	{
+		// Creating notification queue and worker parameters.
+		wuqueue<QUEUED_DATA> queue;
+		TCPING_WORKER_DATA threadArgs = {
+			&workForm,
+			&queue,
+			false
+		};
+
+		// Creating worker thread.
+		DWORD threadId;
+		HANDLE hWorker = CreateThread(NULL, 0, StartTcpingWorker, &threadArgs, 0, &threadId);
+
+		// da loop.
+		do {
+			// Checking the notification queue.
+			if (queue.size() > 0) {
+
+				// Printing from queue.
+				QUEUED_DATA& data = queue.front();
+				PrintQueueData(data, context);
+				queue.pop();
+			}
+
+			// Checking the cancel flag.
+			if (workForm.IsCtrlCHit()) {
+				if (!threadArgs.IsComplete)
+					TerminateThread(hWorker, ERROR_CANCELLED);
+				
+				break;
+			}
+
+			Sleep(1);
+
+		} while (!threadArgs.IsComplete);
+
+		DWORD workerExitCode;
+		GetExitCodeThread(hWorker, &workerExitCode);
+		if (workerExitCode != ERROR_SUCCESS && workerExitCode != ERROR_NO_MORE_ITEMS && workerExitCode != ERROR_CANCELLED)
+			throw WuStdException(workerExitCode, __FILEW__, __LINE__);
+
+		// Printing remaining items on queue (if any).
+		if (!workForm.IsCtrlCHit()) {
+			while (queue.size() > 0) {
+				QUEUED_DATA& data = queue.front();
+				PrintQueueData(data, context);
+				queue.pop();
+			}
+		}
+
+		// Process and print statistics.
+		if (!workForm.Single)
+			ProcessStatistics(&workForm, context);
+	}
+
+	void PrintQueueData(const Network::QUEUED_DATA& data, WuNativeContext* context)
+	{
+		switch (data.Type) {
+			case Notification::InformationData:
+				context->NativeWriteInformation(data.InformationData);
+				break;
+
+			case Notification::ObjectData:
+			{
+				switch (data.ObjectData.ObjectType) {
+
+					case Notification::TCPING_OUTPUT:
+					{
+						auto objData = reinterpret_cast<Network::PTCPING_OUTPUT>(data.ObjectData.Object);
+						context->NativeWriteObject<Network::TCPING_OUTPUT>(objData, data.ObjectData.ObjectType);
+					} break;
+
+					case Notification::TCPING_STATISTICS:
+					{
+						auto objData = reinterpret_cast<Network::PTCPING_STATISTICS>(data.ObjectData.Object);
+						context->NativeWriteObject<Network::TCPING_STATISTICS>(objData, data.ObjectData.ObjectType);
+					} break;
+				}
+			} break;
+
+			case Notification::ProgressData:
+				context->NativeWriteProgress(data.ProgressData);
+				break;
+
+			case Notification::WarningData:
+				context->NativeWriteWarning(data.WarningData);
+				break;
+		}
+	}
+
+	DWORD WINAPI StartTcpingWorker(PVOID params)
+	{
 		// Defining environment.
+		auto threadArgs = reinterpret_cast<Network::PTCPING_WORKER_DATA>(params);
+		Network::TcpingForm* workForm = threadArgs->WorkForm;
+		wuqueue<Network::QUEUED_DATA>* infoQueue = threadArgs->Queue;
+
 		int intResult;
-		ADDRINFO hints = { 0 }, * addressInfo, * singleInfo;
+		ADDRINFOW hints = { 0 }, *addressInfo, *singleInfo;
 
 		double milliseconds = 0.0;
 		double totalMilliseconds = 0.0;
@@ -156,122 +388,114 @@ namespace WindowsUtils::Core
 		int failedCount = 0;
 
 		WWuString header;
-		WWuString displayName;
 		WWuString destText;
 
-		if (workForm.Single)
-			workForm.Count = 1;
-
-		// Using a variable here, cause if the user goes Ctrl + C we can set
-		// up the error to 'ERROR_CANCELLED'.
-		DWORD finalResult;
-
-		// Statistics showed at the end.
-		TCPING_STATISTICS statistics;
-
-		auto prefIpProto = workForm.PreferredIpProtocol;
+		if (workForm->Single)
+			workForm->Count = 1;
 
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_family = AF_UNSPEC;
 
 		// Attempting to get destination address information.
-		WuString narrowDest = WWuStringToNarrow(workForm.Destination);
-		intResult = getaddrinfo(narrowDest.GetBuffer(), workForm.PortAsString, &hints, &addressInfo);
-		if (intResult != 0)
-			throw WuStdException(intResult, __FILEW__, __LINE__);
-
-		bool found = false;
-		WuResult lastResult;
-		for (singleInfo = addressInfo; singleInfo != NULL; singleInfo = singleInfo->ai_next) {
-			if (workForm.IsCtrlCHit()) {
-				finalResult = ERROR_CANCELLED;
-				goto END;
-			}
-			
-			if ((singleInfo->ai_family == AF_UNSPEC && prefIpProto == None) ||
-				(singleInfo->ai_family == AF_INET && prefIpProto != IPv6) ||
-				(singleInfo->ai_family == AF_INET6 && prefIpProto != IPv4)
-				) {
-				found = true;
-				break;
-			}
+		WuString narrowDest = WWuStringToNarrow(workForm->Destination);
+		intResult = GetAddrInfoW(workForm->Destination.GetBuffer(), workForm->PortAsString, &hints, &addressInfo);
+		if (intResult != 0) {
+			threadArgs->IsComplete = true;
+			return intResult;
 		}
 
-		if (!found)
-			throw WuStdException(WSAHOST_NOT_FOUND, __FILEW__, __LINE__);
+		singleInfo = addressInfo;
 
 		FormatIp(addressInfo, destText);
-		if (workForm.PrintFqdn) {
+		if (workForm->PrintFqdn) {
 			if (singleInfo->ai_family == AF_INET6) {
 				WWuString ipStr = WWuString(destText);
-				ResolveIpv6ToDomainName(ipStr, displayName);
-				if (displayName.Length() == 0)
-					displayName = destText;
+				ResolveIpv6ToDomainName(ipStr, workForm->DisplayName);
+				if (workForm->DisplayName.Length() == 0)
+					workForm->DisplayName = destText;
 			}
 			else {
-				ResolveIpToDomainName(destText, displayName);
-				if (displayName.Length() == 0)
-					displayName = destText;
+				ResolveIpToDomainName(destText, workForm->DisplayName);
+				if (workForm->DisplayName.Length() == 0)
+					workForm->DisplayName = destText;
 			}
 		}
 		else
-			displayName = destText;
+			workForm->DisplayName = destText;
 
 		// Header
-		if (workForm.OutputToFile)
-			PrintHeader(&workForm, displayName, context);
+		if (workForm->OutputToFile)
+			PrintHeader(workForm, workForm->DisplayName);
 
 		// Main loop. Here the 'ping' will happen for 'count' times.
-		if (workForm.IsContinuous) {
+		if (workForm->IsContinuous) {
 			while (!Network::TcpingForm::IsCtrlCHit()) {
 				DWORD testResult = ERROR_SUCCESS;
-				PerformSingleTestProbe(singleInfo, &workForm, displayName, &statistics, context, testResult);
+				try {
+					PerformSingleTestProbe(singleInfo, workForm, workForm->DisplayName, &workForm->Statistics, infoQueue, testResult);
+				}
+				catch (const WuStdException& ex) {
+					threadArgs->IsComplete = true;
+					return ex.ErrorCode();
+				}
+
 				if (testResult != ERROR_SUCCESS && testResult != WSAETIMEDOUT) {
 					if (testResult == ERROR_CANCELLED)
 						goto END;
 
-					throw WuStdException(testResult, __FILEW__, __LINE__);
+					threadArgs->IsComplete = true;
+					return testResult;
 				}
 				// We don't wanna sleep on the last one.
-				else if (testResult == ERROR_SUCCESS && (statistics.Sent < workForm.Count || workForm.IsContinuous))
-					Sleep(workForm.SecondsInterval * 1000);
+				else if (testResult == ERROR_SUCCESS && (workForm->Statistics.Sent < workForm->Count || workForm->IsContinuous))
+					Sleep(workForm->SecondsInterval * 1000);
 			}
 		}
 		else {
-			for (DWORD i = 0; i < workForm.Count; i++) {
-				if (static_cast<int>(statistics.Failed) >= workForm.FailedCountThreshold)
+			for (DWORD i = 0; i < workForm->Count; i++) {
+				if (static_cast<int>(workForm->Statistics.Failed) >= workForm->FailedCountThreshold)
 					goto END;
 
 				DWORD testResult = ERROR_SUCCESS;
-				PerformSingleTestProbe(singleInfo, &workForm, displayName, &statistics, context, testResult);
+				try {
+					PerformSingleTestProbe(singleInfo, workForm, workForm->DisplayName, &workForm->Statistics, infoQueue, testResult);
+				}
+				catch (const WuStdException& ex) {
+					threadArgs->IsComplete = true;
+					return ex.ErrorCode();
+				}
+
 				if (testResult != ERROR_SUCCESS && testResult != WSAETIMEDOUT) {
 					if (testResult == ERROR_CANCELLED)
 						goto END;
 
-					throw WuStdException(testResult, __FILEW__, __LINE__);
+					threadArgs->IsComplete = true;
+					return testResult;
 				}
-				else if (testResult == ERROR_SUCCESS && (statistics.Sent < workForm.Count || workForm.IsContinuous))
-					Sleep(workForm.SecondsInterval * 1000);
+				else if (testResult == ERROR_SUCCESS && (workForm->Statistics.Sent < workForm->Count || workForm->IsContinuous))
+					Sleep(workForm->SecondsInterval * 1000);
 			}
 		}
 
 	END:
-		if (!workForm.Single)
-			ProcessStatistics(&statistics, displayName, &workForm, context);
+		
+		threadArgs->IsComplete = true;
+		return ERROR_SUCCESS;
 	};
 
 	//////////////////////////////////////////////////////////////////////
 	//
 	// ~ Important note:
 	//
-	// Since this is running in native, and managed code performance
+	// Since this is running in native and managed, code performance
 	// is very important. At first everything was nice and structured
 	// with return types, and separate functions, but that was 
 	// affecting the results.
 	//
 	//////////////////////////////////////////////////////////////////////
 
-	void PerformSingleTestProbe(ADDRINFO* singleInfo, Network::TcpingForm* workForm, const WWuString& displayName, Network::PTCPING_STATISTICS statistics, WuNativeContext* context, DWORD& result)
+	void PerformSingleTestProbe(ADDRINFOW* singleInfo, Network::TcpingForm* workForm, const WWuString& displayName,
+		Network::PTCPING_STATISTICS statistics, wuqueue<Network::QUEUED_DATA>* infoQueue, DWORD& result)
 	{
 		DWORD finalResult = ERROR_SUCCESS;
 		DWORD sendResult = ERROR_SUCCESS;
@@ -279,11 +503,8 @@ namespace WindowsUtils::Core
 		WuStopWatch timeoutSpw;
 		FILETIME timestamp;
 
-
 		wuunique_ptr<Network::EphemeralSocket> ephSocket;
 		
-		CHECKIFCTRLC;
-
 		workForm->StopWatch.Restart();
 		bool timedOut = false;
 
@@ -331,10 +552,14 @@ namespace WindowsUtils::Core
 		}
 		workForm->StopWatch.Stop();
 
+		if (Network::TcpingForm::IsCtrlCHit()) {
+			result = ERROR_CANCELLED;
+			return;
+		}
+
 		statistics->Sent++;
 
 		if (timedOut) {
-			CHECKIFCTRLC;
 			outputText += WWuString::Format(L"%ws%ws - TCP:%d - No response - time=%dms", outputText.GetBuffer(), displayName.GetBuffer(), workForm->Port, (workForm->Timeout * 1000));
 
 			if (workForm->OutputToFile) {
@@ -344,10 +569,10 @@ namespace WindowsUtils::Core
 				WWuString action = WWuString::Format(L"Probing %ws", displayName.GetBuffer());
 				WWuString status;
 
-				wuunique_ptr<Notification::MAPPED_PROGRESS_DATA> progressRecord;
+				Notification::MAPPED_PROGRESS_DATA progressRecord;
 				if (workForm->IsContinuous) {
 					status = WWuString::Format(L"TCP:%d - No response - time %dms - press Ctrl + C to stop.", workForm->Port, (workForm->Timeout * 1000));
-					progressRecord = make_wuunique<Notification::MAPPED_PROGRESS_DATA>(
+					progressRecord = Notification::MAPPED_PROGRESS_DATA(
 						action.GetBuffer(),
 						0,
 						(LPWSTR)NULL,
@@ -358,12 +583,13 @@ namespace WindowsUtils::Core
 						status.GetBuffer()
 					);
 
-					context->NativeWriteProgress(progressRecord.get());
+					Network::QUEUED_DATA queueData(Notification::ProgressData, &progressRecord, NULL);
+					infoQueue->push(queueData);
 				}
 				else {
 					status = WWuString::Format(L"TCP:%d - No response - time %dms", workForm->Port, (workForm->Timeout * 1000));
 					percentage = std::lround((static_cast<float>(statistics->Sent) / workForm->Count) * 100);
-					progressRecord = make_wuunique<Notification::MAPPED_PROGRESS_DATA>(
+					progressRecord = Notification::MAPPED_PROGRESS_DATA(
 						action.GetBuffer(),
 						0,
 						(LPWSTR)NULL,
@@ -374,7 +600,8 @@ namespace WindowsUtils::Core
 						status.GetBuffer()
 					);
 
-					context->NativeWriteProgress(progressRecord.get());
+					Network::QUEUED_DATA queueData(Notification::ProgressData, &progressRecord, NULL);
+					infoQueue->push(queueData);
 				}
 
 				IO::AppendTextToFile(workForm->File, WWuString::Format(L"%ws\n", outputText.GetBuffer()));
@@ -394,8 +621,10 @@ namespace WindowsUtils::Core
 					-1.00
 				);
 
-				context->NativeWriteObject<Network::TCPING_OUTPUT>(&tcpingOut, Notification::TCPING_OUTPUT);
-				
+				auto objType = Notification::TCPING_OUTPUT;
+				Network::QUEUED_DATA queueData(Notification::ObjectData, &tcpingOut, &objType);
+				infoQueue->push(queueData);
+
 				/*LPWSTR tags[1] = { L"PSHOST" };
 				Notification::MAPPED_INFORMATION_DATA report(
 					(LPWSTR)NULL, GetCurrentThreadId(), outputText.GetBuffer(), L"Start-Tcping", tags, 1, 0, (LPWSTR)NULL
@@ -450,10 +679,10 @@ namespace WindowsUtils::Core
 			if (workForm->IncludeJitter && statistics->Successful > 1)
 				status += WWuString::Format(L" jitter=%.2fms", currentJitter);
 
-			wuunique_ptr<Notification::MAPPED_PROGRESS_DATA> progressRecord;
+			Notification::MAPPED_PROGRESS_DATA progressRecord;
 			if (workForm->IsContinuous) {
 				status += L" - press Ctrl + C to stop.";
-				progressRecord = make_wuunique<Notification::MAPPED_PROGRESS_DATA>(
+				progressRecord = Notification::MAPPED_PROGRESS_DATA(
 					action.GetBuffer(),
 					0,
 					(LPWSTR)NULL,
@@ -464,11 +693,12 @@ namespace WindowsUtils::Core
 					status.GetBuffer()
 				);
 
-				context->NativeWriteProgress(progressRecord.get());
+				Network::QUEUED_DATA queueData(Notification::ProgressData, &progressRecord, NULL);
+				infoQueue->push(queueData);
 			}
 			else {
 				percentage = std::lround((static_cast<float>(statistics->Sent) / workForm->Count) * 100);
-				progressRecord = make_wuunique<Notification::MAPPED_PROGRESS_DATA>(
+				progressRecord = Notification::MAPPED_PROGRESS_DATA(
 					action.GetBuffer(),
 					0,
 					(LPWSTR)NULL,
@@ -479,7 +709,8 @@ namespace WindowsUtils::Core
 					status.GetBuffer()
 				);
 
-				context->NativeWriteProgress(progressRecord.get());
+				Network::QUEUED_DATA queueData(Notification::ProgressData, &progressRecord, NULL);
+				infoQueue->push(queueData);
 			}
 
 			IO::AppendTextToFile(workForm->File, WWuString::Format(L"%ws\n", outputText.GetBuffer()));
@@ -499,7 +730,9 @@ namespace WindowsUtils::Core
 				currentJitter
 			);
 
-			context->NativeWriteObject<Network::TCPING_OUTPUT>(&tcpingOut, Notification::TCPING_OUTPUT);
+			auto objType = Notification::TCPING_OUTPUT;
+			Network::QUEUED_DATA queueData(Notification::ObjectData, &tcpingOut, &objType);
+			infoQueue->push(queueData);
 
 			/*LPWSTR tags[1] = { L"PSHOST" };
 			Notification::MAPPED_INFORMATION_DATA report(
@@ -510,46 +743,44 @@ namespace WindowsUtils::Core
 #endif
 		}
 
-	END:
-	
 		result = finalResult;
 	}
 
-	void ProcessStatistics(const Network::PTCPING_STATISTICS statistics, const WWuString& displayName, Network::TcpingForm* workForm, WuNativeContext* context)
+	void ProcessStatistics(Network::TcpingForm* workForm, WuNativeContext* context)
 	{
-		statistics->FailedPercent = (static_cast<double>(statistics->Failed) / statistics->Sent) * 100.00;
+		workForm->Statistics.FailedPercent = (static_cast<double>(workForm->Statistics.Failed) / workForm->Statistics.Sent) * 100.00;
 		
-		if (statistics->TotalMilliseconds == 0)
-			statistics->AvgRtt = 0.00;
+		if (workForm->Statistics.TotalMilliseconds == 0)
+			workForm->Statistics.AvgRtt = 0.00;
 		else
-			statistics->AvgRtt = statistics->TotalMilliseconds / statistics->Successful;
+			workForm->Statistics.AvgRtt = workForm->Statistics.TotalMilliseconds / workForm->Statistics.Successful;
 
 		// Yes, this can be done better, but my ADHD doesn't wanna think right now.
 		WWuString output = WWuString::Format(
 			L"\nPinging statistics for %ws:\n\tPackets: Sent = %d, Successful = %d, Failed = %d (%.2f%%),\n",
-			displayName.GetBuffer(),
-			statistics->Sent,
-			statistics->Successful,
-			statistics->Failed,
-			statistics->FailedPercent
+			workForm->DisplayName.GetBuffer(),
+			workForm->Statistics.Sent,
+			workForm->Statistics.Successful,
+			workForm->Statistics.Failed,
+			workForm->Statistics.FailedPercent
 		);
 		output += WWuString::Format(
 			L"Approximate round trip times in milli-seconds:\n\tMinimum = %.2fms, Maximum = %.2fms, Average = %.2fms",
-			statistics->MinRtt,
-			statistics->MaxRtt,
-			statistics->AvgRtt
+			workForm->Statistics.MinRtt,
+			workForm->Statistics.MaxRtt,
+			workForm->Statistics.AvgRtt
 		);
 		if (workForm->IncludeJitter) {
-			if (statistics->TotalJitter == 0)
-				statistics->AvgJitter = 0.00;
+			if (workForm->Statistics.TotalJitter == 0)
+				workForm->Statistics.AvgJitter = 0.00;
 			else
-				statistics->AvgJitter = statistics->TotalJitter / (statistics->Successful - 1);
+				workForm->Statistics.AvgJitter = workForm->Statistics.TotalJitter / (workForm->Statistics.Successful - 1);
 			
 			output += WWuString::Format(
 				L",\nApproximate jitter in milli-seconds:\n\tMinimum = %.2fms, Maximum = %.2fms, Average = %.2fms",
-				statistics->MinJitter,
-				statistics->MaxJitter,
-				statistics->AvgJitter
+				workForm->Statistics.MinJitter,
+				workForm->Statistics.MaxJitter,
+				workForm->Statistics.AvgJitter
 			);
 		}
 
@@ -559,7 +790,7 @@ namespace WindowsUtils::Core
 #if defined(_TCPING_TEST)
 			wprintf(L"%ws\n", output.GetBuffer());
 #else
-			context->NativeWriteObject<Network::TCPING_STATISTICS>(statistics, Notification::TCPING_STATISTICS);
+			context->NativeWriteObject<Network::TCPING_STATISTICS>(&workForm->Statistics, Notification::TCPING_STATISTICS);
 
 			/*LPWSTR tags[1] = { L"PSHOST" };
 			Notification::MAPPED_INFORMATION_DATA report(
@@ -571,74 +802,38 @@ namespace WindowsUtils::Core
 #endif
 	}
 
-	void PrintHeader(Network::TcpingForm* workForm, const WWuString& displayText, WuNativeContext* context)
+	void PrintHeader(Network::TcpingForm* workForm, const WWuString& displayText)
 	{
 		WWuString header;
 
-		if (workForm->OutputToFile) {
-			WWuString protoStr;
-			switch (workForm->PreferredIpProtocol) {
-				case Network::IPv4:
-					protoStr = L"IPv4";
-					break;
+		header = L"~ Start-Tcping\n";
+		header += WWuString::Format(L"\nDestination: %ws : %s\n", workForm->Destination.GetBuffer(), workForm->PortAsString);
 
-				case Network::IPv6:
-					protoStr = L"IPv4";
-					break;
-
-				case Network::None:
-					protoStr = L"Unspecified";
-					break;
-			}
-			
-			header = L"~ Start-Tcping\n";
-			header += WWuString::Format(L"\nDestination: %ws : %s\n", workForm->Destination.GetBuffer(), workForm->PortAsString);
-			
-			if (workForm->IsContinuous) {
-				header += WWuString::Format(
-					L"Count: continuous\nFail threshold: continuous\nInterval: %ds\nTimeout: %ds\nForce: %s\nPrint FQDN: %s\nPreferred protocol: %ws\n",
-					workForm->SecondsInterval,
-					workForm->Timeout,
-					workForm->IsForce ? "true" : "false",
-					workForm->PrintFqdn ? "true" : "false",
-					protoStr.GetBuffer()
-				);
-			}
-			else {
-				header += WWuString::Format(
-					L"Count: %d\nFail threshold: %d\nInterval: %ds\nTimeout: %ds\nForce: %s\nPrint FQDN: %s\nPreferred protocol: %ws\n",
-					workForm->Count,
-					workForm->FailedCountThreshold,
-					workForm->SecondsInterval,
-					workForm->Timeout,
-					workForm->IsForce ? "true" : "false",
-					workForm->PrintFqdn ? "true" : "false",
-					protoStr.GetBuffer()
-				);
-			}
-
-			IO::AppendTextToFile(workForm->File, WWuString::Format(L"\n%ws\n", header.GetBuffer()));
+		if (workForm->IsContinuous) {
+			header += WWuString::Format(
+				L"Count: continuous\nFail threshold: continuous\nInterval: %ds\nTimeout: %ds\nForce: %s\nPrint FQDN: %s\n",
+				workForm->SecondsInterval,
+				workForm->Timeout,
+				workForm->IsForce ? "true" : "false",
+				workForm->PrintFqdn ? "true" : "false"
+			);
 		}
 		else {
-			if (workForm->IsContinuous)
-				header = WWuString::Format(L"Probing %ws [%ws] continuously on port %s (press Ctrl + C to stop):", workForm->Destination.GetBuffer(), displayText.GetBuffer(), workForm->PortAsString);
-			else
-				header = WWuString::Format(L"Probing %ws [%ws] on port %s:", workForm->Destination.GetBuffer(), displayText.GetBuffer(), workForm->PortAsString);
-
-#if defined(_TCPING_TEST)
-			wprintf(L"\n%ws\n", header.GetBuffer());
-#else
-			LPWSTR tags[1] = { L"PSHOST" };
-			Notification::MAPPED_INFORMATION_DATA report(
-				(LPWSTR)NULL, GetCurrentThreadId(), WWuString::Format(L"\n%ws", header.GetBuffer()).GetBuffer(), L"Start-Tcping", tags, 1, 0, (LPWSTR)NULL
+			header += WWuString::Format(
+				L"Count: %d\nFail threshold: %d\nInterval: %ds\nTimeout: %ds\nForce: %s\nPrint FQDN: %s\n",
+				workForm->Count,
+				workForm->FailedCountThreshold,
+				workForm->SecondsInterval,
+				workForm->Timeout,
+				workForm->IsForce ? "true" : "false",
+				workForm->PrintFqdn ? "true" : "false"
 			);
-
-			context->NativeWriteInformation(&report);
-#endif
 		}
+
+		IO::AppendTextToFile(workForm->File, WWuString::Format(L"\n%ws\n", header.GetBuffer()));
 	}
 
-	void FormatIp(ADDRINFO* address, WWuString& ipString)
+	void FormatIp(ADDRINFOW* address, WWuString& ipString)
 	{
 		wchar_t buffer[46];
 		DWORD ret;
