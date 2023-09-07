@@ -933,24 +933,34 @@ namespace WindowsUtils::Core
 		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
 		if (hNtdll == NULL) {
 			hNtdll = LoadLibrary(L"ntdll.dll");
-			if (hNtdll == NULL)
+			if (hNtdll == NULL) {
+				RegCloseKey(subKey);
 				throw gcnew NativeException(GetLastError());
+			}
 		}
 
 		_NtQueryKey NtQueryKey = (_NtQueryKey)GetProcAddress(hNtdll, "NtQueryKey");
-		if (NtQueryKey == NULL)
+		if (NtQueryKey == NULL) {
+			RegCloseKey(subKey);
 			throw gcnew NativeException(GetLastError());
+		}
 
-		ULONG bufferSize = 1 << 6;
+		ULONG bufferSize = 1 << 10;
 		wuunique_ptr<BYTE[]> buffer = make_wuunique<BYTE[]>(bufferSize);
 		NTSTATUS result = NtQueryKey(subKey, KeyNameInformation, buffer.get(), bufferSize, &bufferSize);
-		if (result != STATUS_SUCCESS)
+		if (result != STATUS_SUCCESS) {
+			RegCloseKey(subKey);
 			throw gcnew NativeException(WuResult(result, __FILEW__, __LINE__, true));
+		}
 
 		auto keyNameInfo = reinterpret_cast<PKEY_NAME_INFORMATION>(buffer.get());
 
-		if (keyNameInfo->NameLength > 0)
+		if (keyNameInfo->NameLength > 0) {
+			RegCloseKey(subKey);
 			return gcnew String(keyNameInfo->Name);
+		}
+
+		RegCloseKey(subKey);
 
 		return nullptr;
 	}

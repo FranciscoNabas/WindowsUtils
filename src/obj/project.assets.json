@@ -1127,7 +1127,7 @@
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
-    "version": "1.8.5",
+    "version": "1.8.6",
     "restore": {
       "projectUniqueName": "c:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
       "projectName": "WindowsUtils",

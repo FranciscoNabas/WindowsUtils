@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
 
+## [1.8.6] - 2023-09-06
+
+- Get-ObjectHandle
+  - The condition to see if the open handle is a handle to our key was wrong, thus returning processes that does not have handles opened to our object.
+    Fixing that caused performance issues, because we are querying every single object opened, and using threads to avoid freeze in `NtQueryObject`.
+    Turns out `NtQueryObject` freezes in certain asynchronous objects with blocking primitives. So we added a check to make sure it's a registry key before calling `NtQueryObject`.
+
 ## [1.8.5] - 2023-09-06
 
 ### Changed
