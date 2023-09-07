@@ -51,11 +51,7 @@ namespace WindowsUtils::Core
 		CloseHandle(hFile);
 	}
 
-	void GetProcessUsingObject(
-		const WWuString& objectName,		// Object name here needs to be the same as the object name from 'NtQueryObject'.
-		wuvector<DWORD>& processIdList,		// The list of process IDs that have a handle opened to the object.
-		bool closeHandle
-	)
+	void GetProcessUsingKey(const WWuString& ntKeyName, wuvector<DWORD>& resultPidList, bool closeHandle)
 	{
 		NTSTATUS status = STATUS_SUCCESS;
 		ULONG bytesNeeded;
@@ -73,6 +69,8 @@ namespace WindowsUtils::Core
 		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hNtdll, "NtQueryObject");
 		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
 
+		HANDLE dummyEvent = CreateEvent(NULL, TRUE, FALSE, L"WuNtQueryKeyDummyEvent");
+
 		for (DWORD pid : procIdList) {
 			HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_DUP_HANDLE, FALSE, pid);
 			if (hProcess == NULL)
@@ -80,7 +78,7 @@ namespace WindowsUtils::Core
 
 			// Getting the initial size needed.
 			NtQueryInformationProcess(hProcess, ProcessHandleInformation, NULL, 0, &bytesNeeded);
-			
+
 			wuunique_ptr<BYTE[]> buffer;
 			bool succeeded = true;
 			do {
@@ -110,27 +108,52 @@ namespace WindowsUtils::Core
 				if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
 					continue;
 
-				wuunique_ptr<BYTE[]> nameBuffer;
-				NtQueryObjectWithTimeout(hTarget, ObjectNameInformation, nameBuffer, 50);
+				////////////////////////////////////////////////////////////////////
+				//
+				// ~ TL;DR: 'NtQueryObject' hangs with certain handles.
+				//
+				// When querying information about asynchronous objects
+				// like pipes, if these objects have pending wait operations
+				// querying the handle freezes the current thread permanently.
+				// A solution is to use threads with timeout, but the overhead
+				// is immense when trying to query all objects in use, like here.
+				// 
+				// So here we are checking if the handle is a registry key
+				// before proceeding.
+				// A similar approach can be used for files, with
+				// 'CreateFileMapping'.
+				//
+				////////////////////////////////////////////////////////////////////
+
+				if (RegNotifyChangeKeyValue((HKEY)hTarget, FALSE, REG_NOTIFY_THREAD_AGNOSTIC, dummyEvent, TRUE) != 0) {
+					CloseHandle(hTarget);
+					continue;
+				}
+
+				bytesNeeded = 1 << 10;
+				BYTE nameBuffer[1 << 10] = { 0 };
+				NtQueryObject(hTarget, ObjectNameInformation, nameBuffer, bytesNeeded, &bytesNeeded);
 				CloseHandle(hTarget);
 
-				auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(nameBuffer.get());
+				auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(nameBuffer);
 				WWuString test(nameInfo->Name.Buffer);
 
 				if (nameInfo->Name.Buffer != NULL)
-					if (_wcsnicmp(objectName.GetBuffer(), nameInfo->Name.Buffer, objectName.Length())) {
+					if (_wcsnicmp(ntKeyName.GetBuffer(), nameInfo->Name.Buffer, ntKeyName.Length()) == 0) {
 						if (closeHandle) {
 							if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
 								throw WuStdException(GetLastError(), __FILEW__, __LINE__);
 
 							CloseHandle(hTarget);
 						}
-						
-						processIdList.push_back(pid);
+
+						resultPidList.push_back(pid);
 						break;
 					}
 			}
 		}
+		
+		CloseHandle(dummyEvent);
 	}
 
 	void GetRunnningProcessIdList(wuvector<DWORD>& procIdList)

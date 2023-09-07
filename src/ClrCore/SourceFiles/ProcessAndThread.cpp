@@ -27,7 +27,7 @@ namespace WindowsUtils::Core
 				case Registry:
 				{
 					inputObject = input.ObjectName.Split('\\').back();
-					GetProcessUsingObject(input.ObjectName, processIdList, closeHandle);
+					GetProcessUsingKey(input.ObjectName, processIdList, closeHandle);
 				} break;
 			}
 

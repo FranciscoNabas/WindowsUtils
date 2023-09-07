@@ -103,6 +103,14 @@ namespace WindowsUtils::Core
 		wuunique_ptr<BYTE[]>&		ObjectInfo;
 	}THREAD_FUNC_ARGUMENTS, * PTHREAD_FUNC_ARGUMENTS;
 
+	typedef struct _THREAD_FUNC_ARGUMENTS2
+	{
+		HANDLE						ObjectHandle;
+		OBJECT_INFORMATION_CLASS	ObjectInformationClass;
+		wuunique_ptr<BYTE[]>&		ObjectInfo;
+		HANDLE						EndEvent;
+	}THREAD_FUNC_ARGUMENTS2, * PTHREAD_FUNC_ARGUMENTS2;
+
 	typedef struct _PROCESS_HANDLE_TABLE_ENTRY_INFO
 	{
 		HANDLE HandleValue;
@@ -239,7 +247,7 @@ namespace WindowsUtils::Core
 	==========================================*/
 
 	void GetProcessUsingFile(const WWuString& fileName, wuvector<DWORD>& processIdList);
-	void GetProcessUsingObject(const WWuString& objectName, wuvector<DWORD>& processIdList, bool closeHandle);
+	void GetProcessUsingKey(const WWuString& ntKeyName, wuvector<DWORD>& resultPidList, bool closeHandle);
 	void GetRunnningProcessIdList(wuvector<DWORD>& procIdList);
 	DWORD WINAPI NtQueryObjectRaw(LPVOID param);
 	void NtQueryObjectWithTimeout(HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass, wuunique_ptr<BYTE[]>& objectInfo, ULONG timeout);

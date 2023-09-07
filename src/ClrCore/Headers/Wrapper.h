@@ -123,12 +123,7 @@ namespace WindowsUtils::Core
 		TerminalServices::PWU_MESSAGE_RESPONSE wrapper;
 	};
 
-	// Get-ObjectHandle
-	public enum class ObjectHandleType
-	{
-		FileSystem = 0,
-		Registry = 1
-	};
+	
 
 	public ref class ObjectHandleBase
 	{

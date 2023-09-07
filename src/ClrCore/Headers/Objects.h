@@ -74,4 +74,11 @@ namespace WindowsUtils
 	private:
 		Core::TerminalServices::PWU_COMPUTER_SESSION wrapper;
 	};
+
+	// Get-ObjectHandle
+	public enum class ObjectHandleType
+	{
+		FileSystem = 0,
+		Registry = 1
+	};
 }
