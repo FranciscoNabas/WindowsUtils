@@ -141,7 +141,7 @@ namespace WindowsUtils
         private static readonly Wrapper unWrapper = new();
 
         internal static string GetLastWin32Error() => unWrapper.GetLastWin32Error();
-        internal static string GetLastWin32Error(int errorCode) => unWrapper.GetFormattedError(errorCode);
+        internal static string GetLastWin32Error(int errorCode) => unWrapper.GetFormattedError(errorCode, ErrorType.SystemError);
     }
 
     /// <summary>

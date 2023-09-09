@@ -1,0 +1,13 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package ProductCode="C5F7B91E-668D-46AC-9F0E-23B0A74ABCBA" Name="WindowsUtils, the preposterous PowerShell module." 
+		   Manufacturer="Francisco Nabas Labs" Version="6.6.6" UpgradeCode="DDBFF83C-2431-4FE5-8FE8-086484B87B0E">
+    <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
+	  <Property Id="ARPPRODUCTICON" Value="WindowsUtilsIcon"/>
+	  <Property Id="ARPHELPLINK" Value="https://github.com/FranciscoNabas/WindowsUtils/blob/main/README.md"/>
+	  <Property Id="ARPURLINFOABOUT" Value="https://github.com/FranciscoNabas/WindowsUtils"/>
+	  <Property Id="SUPERTITSPROPERTY" Value="BOOBIES"/>
+    <Feature Id="Main">
+      <ComponentGroupRef Id="ExampleComponents" />
+    </Feature>
+  </Package>
+</Wix>

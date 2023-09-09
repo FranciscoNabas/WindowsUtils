@@ -55,6 +55,21 @@ public:
 #endif
 	}
 
+	WuStdException(const LPWSTR message, LPCWSTR filePath, int lineNumber)
+	{
+		m_message = message;
+		m_isNt = false;
+		m_windowsError = -1;
+
+#if defined(_DEBUG)
+		WWuString fileName(filePath);
+		PathStripPath(fileName.GetBuffer());
+		m_compactTrace = WWuString::Format(L" (%ws:%d)", fileName.GetBuffer(), lineNumber);
+#else
+		m_compactTrace = WWuString();
+#endif
+	}
+
 	~WuStdException() { }
 
 private:
@@ -100,40 +115,52 @@ private:
 	{
 		switch (m_windowsError) {
 			case FDIERROR_CABINET_NOT_FOUND:
-				m_message = L"Cabinet not found";
+				m_message = L"Cabinet not found.";
+				break;
 
 			case FDIERROR_NOT_A_CABINET:
-				m_message = L"File is not a cabinet";
+				m_message = L"File is not a cabinet.";
+				break;
 
 			case FDIERROR_UNKNOWN_CABINET_VERSION:
-				m_message = L"Unknown cabinet version";
+				m_message = L"Unknown cabinet version.";
+				break;
 
 			case FDIERROR_CORRUPT_CABINET:
-				m_message = L"Corrupt cabinet";
+				m_message = L"Corrupt cabinet.";
+				break;
 
 			case FDIERROR_ALLOC_FAIL:
-				m_message = L"Memory allocation failed";
+				m_message = L"Memory allocation failed.";
+				break;
 
 			case FDIERROR_BAD_COMPR_TYPE:
-				m_message = L"Unknown compression type";
+				m_message = L"Unknown compression type.";
+				break;
 
 			case FDIERROR_MDI_FAIL:
-				m_message = L"Failure decompressing data";
+				m_message = L"Failure decompressing data.";
+				break;
 
 			case FDIERROR_TARGET_FILE:
-				m_message = L"Failure writing to target file";
+				m_message = L"Failure writing to target file.";
+				break;
 
 			case FDIERROR_RESERVE_MISMATCH:
-				m_message = L"Cabinets in set have different RESERVE sizes";
+				m_message = L"Cabinets in set have different RESERVE sizes.";
+				break;
 
 			case FDIERROR_WRONG_CABINET:
-				m_message = L"Cabinet returned on fdintNEXT_CABINET is incorrect";
+				m_message = L"Cabinet returned on fdintNEXT_CABINET is incorrect.";
+				break;
 
 			case FDIERROR_USER_ABORT:
-				m_message = L"Application aborted";
+				m_message = L"Application aborted.";
+				break;
 
 			default:
 				SetMessage(false);
+				break;
 		}
 	}
 };

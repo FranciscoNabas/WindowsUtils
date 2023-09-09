@@ -2,6 +2,7 @@
 #pragma unmanaged
 
 #include "Utilities.h"
+#include "SafeHandle.h"
 #include "Notification.h"
 #include "AccessControl.h"
 
@@ -16,8 +17,7 @@ namespace WindowsUtils::Core
 		===========================================*/
 
 		// Remove-Service
-		WuResult RemoveService(const WWuString& servicename, const WWuString& computername, BOOL stopservice, WuNativeContext* context);
-		WuResult RemoveService(SC_HANDLE hservice, const WWuString& servicename, const WWuString& computername, BOOL stopservice, WuNativeContext* context);
+		void RemoveService(const WWuString& servicename, const WWuString& computername, BOOL stopservice, WuNativeContext* context, bool noWait);
 
 		// Get-ServiceSecurity
 		WuResult GetServiceSecurity(const WWuString& serviceName, const WWuString& computerName, WWuString& sddl, LPDWORD pdwSize, BOOL bAudit = FALSE);
@@ -27,6 +27,6 @@ namespace WindowsUtils::Core
 		WuResult SetServiceSecurity(const WWuString& lpszServiceName, const WWuString& lpszComputerName, const WWuString& lpszSddl, BOOL bChangeAudit, BOOL bChangeOwner);
 	};
 
-	WuResult StopDependentServices(SC_HANDLE scm, SC_HANDLE hservice, const WWuString& computername, WuNativeContext* context);
-	WuResult StopServiceWithWarning(SC_HANDLE hservice, SC_HANDLE scm, const WWuString& lpszSvcName, LPSERVICE_STATUS lpsvcstatus, WuNativeContext* context);
+	void StopDependentServices(const ScmHandle& scm, const ScmHandle& hservice, const WWuString& computername, WuNativeContext* context, bool noWait);
+	void StopServiceWithWarning(const ScmHandle& hservice, const ScmHandle& scm, const WWuString& lpszSvcName, LPSERVICE_STATUS lpsvcstatus, WuNativeContext* context);
 }

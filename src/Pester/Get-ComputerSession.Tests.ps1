@@ -1,7 +1,3 @@
-BeforeAll {
-    Import-Module .\Release\WindowsUtils\WindowsUtils.psd1
-}
-
 Describe 'Get-ComputerSession' {
     It 'Gets the active session' {
         $computer_session = Get-ComputerSession

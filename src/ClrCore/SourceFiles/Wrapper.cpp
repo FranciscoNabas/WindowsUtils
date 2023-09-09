@@ -135,14 +135,11 @@ namespace WindowsUtils::Core
 	}
 
 	// Get-FormattedError
-	String^ Wrapper::GetFormattedError(Int32 errorCode)
+	String^ Wrapper::GetFormattedError(Int32 errorCode, ErrorType source)
 	{
-		WWuString errorMessage;
-		WuResult result = utlptr->GetFormattedError((DWORD)errorCode, errorMessage);
-		if (result.Result != ERROR_SUCCESS)
-			throw gcnew NativeException(result.Result, String::Format("'GetFormattedError' failed with {0}", result.Result));
+		WuStdException ex(errorCode, __FILEW__, __LINE__, (_ErrorType)source);
 
-		return (gcnew String(errorMessage.GetBuffer()))->Trim();
+		return (gcnew String(ex.Message().GetBuffer()))->Trim();
 	}
 	// Get-LastWin32Error
 	String^ Wrapper::GetLastWin32Error()
@@ -222,9 +219,9 @@ namespace WindowsUtils::Core
 	}
 
 	// Get-MsiProperties
-	Dictionary<String^, String^>^ Wrapper::GetMsiProperties(String^ filePath)
+	Dictionary<String^, Object^>^ Wrapper::GetMsiProperties(String^ filePath)
 	{
-		Dictionary<String^, String^>^ output = gcnew Dictionary<String^, String^>();
+		Dictionary<String^, Object^>^ output = gcnew Dictionary<String^, Object^>();
 		wusunique_map<WWuString, WWuString> propertyMap = make_wusunique_map<WWuString, WWuString>();
 		WWuString wuFileName = GetWideStringFromSystemString(filePath);
 
@@ -246,37 +243,29 @@ namespace WindowsUtils::Core
 	}
 
 	// Remove-Service
-	void Wrapper::RemoveService(String^ serviceName, String^ computerName, bool stopService, CmdletContextBase^ context)
+	void Wrapper::RemoveService(String^ serviceName, String^ computerName, bool stopService, CmdletContextBase^ context, bool noWait)
 	{
 		WWuString wuComputerName = GetWideStringFromSystemString(computerName);
 		WWuString wuServiceName = GetWideStringFromSystemString(serviceName);
 
-		WuResult result = svcptr->RemoveService(wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext());
-		if (result.Result != ERROR_SUCCESS)
-			throw gcnew NativeException(result);
+		try {
+			svcptr->RemoveService(wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext(), noWait);
+		}
+		catch (const WuStdException& ex) {
+			throw gcnew NativeException(ex);
+		}
 	}
 
-	void Wrapper::RemoveService(String^ serviceName, bool stopService, CmdletContextBase^ context)
+	void Wrapper::RemoveService(String^ serviceName, bool stopService, CmdletContextBase^ context, bool noWait)
 	{
 		WWuString wuServiceName = GetWideStringFromSystemString(serviceName);
 
-		WuResult result = svcptr->RemoveService(wuServiceName, L"", stopService, context->GetUnderlyingContext());
-		if (result.Result != ERROR_SUCCESS)
-			throw gcnew NativeException(result);
-	}
-
-	void Wrapper::RemoveService(IntPtr hService, String^ serviceName, String^ computerName, bool stopService, CmdletContextBase^ context)
-	{
-		WWuString wuComputerName = GetWideStringFromSystemString(computerName);
-		WWuString wuServiceName = GetWideStringFromSystemString(serviceName);
-
-
-		HANDLE wService = static_cast<HANDLE>(hService);
-		SC_HANDLE schService = static_cast<SC_HANDLE>(wService);
-		WuResult result = svcptr->RemoveService(schService, wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext());
-
-		if (result.Result != ERROR_SUCCESS)
-			throw gcnew NativeException(result);
+		try {
+			svcptr->RemoveService(wuServiceName, L"", stopService, context->GetUnderlyingContext(), noWait);
+		}
+		catch (const WuStdException& ex) {
+			throw gcnew NativeException(ex);
+		}
 	}
 
 	// Get-ServiceSecurity

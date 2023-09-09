@@ -9,30 +9,6 @@ namespace WindowsUtils::Core
 	==		 Main function definition		==
 	==========================================*/
 
-	// Get-FormattedMessage
-	WuResult Utilities::GetFormattedError(
-		DWORD errorCode,				// The Win32 error code.
-		WWuString& errorMessage			// The output message string.
-	)
-	{
-		LPWSTR buffer = NULL;
-		if (!::FormatMessageW(
-			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-			NULL,
-			errorCode,
-			0,
-			(LPWSTR)&buffer,
-			0,
-			NULL
-		))
-			return WuResult(GetLastError(), __FILEW__, __LINE__);
-
-		errorMessage = buffer;
-		LocalFree(buffer);
-
-		return WuResult();
-	}
-
 	// Get-LastWin32Error
 	WuResult Utilities::GetFormattedWin32Error(
 		WWuString& errorMessage		// The output message string.
@@ -141,15 +117,15 @@ namespace WindowsUtils::Core
 
 	// Get-MsiProperties
 	WuResult Utilities::GetMsiProperties(
-		wumap<WWuString, WWuString>* propertyMap,		// A map with the properties and values from the MSI database.
+		wumap<WWuString, WWuString>* propertyMap,	// A map with the properties and values from the MSI database.
 		const WWuString& fileName					// The MSI file path.
 	)
 	{
 		DWORD dwResult;
 		DWORD bufferSize = 0;
-		MSIHANDLE hDatabase;
-		MSIHANDLE hView;
-		MSIHANDLE hRecord;
+		PMSIHANDLE hDatabase;
+		PMSIHANDLE hView;
+		PMSIHANDLE hRecord;
 
 		dwResult = MsiOpenDatabaseW(fileName.GetBuffer(), L"MSIDBOPEN_READONLY", &hDatabase);
 		DWERRORCHECKV(dwResult);

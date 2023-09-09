@@ -42,9 +42,6 @@ namespace WindowsUtils::Core
 		// Get-LastWin32Error
 		WuResult GetFormattedWin32Error(WWuString& errorMessage);
 		
-		// Get-FormattedError
-		WuResult GetFormattedError(DWORD errorCode, WWuString& errorMessage);
-
 		// Get-MsiProperties
 		WuResult GetMsiProperties(wumap<WWuString, WWuString>* propertyMap, const WWuString& fileName);
 		WuResult GetMsiExtendedError(WWuString& errorMessage);

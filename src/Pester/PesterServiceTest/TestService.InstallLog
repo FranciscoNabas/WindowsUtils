@@ -1,0 +1,39 @@
+﻿Installing assembly 'C:\Repositories\TestService\bin\Release\TestService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\Repositories\TestService\bin\Release\TestService.InstallLog
+   assemblypath = C:\Repositories\TestService\bin\Release\TestService.exe
+Rolling back assembly 'C:\Repositories\TestService\bin\Release\TestService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\Repositories\TestService\bin\Release\TestService.InstallLog
+   assemblypath = C:\Repositories\TestService\bin\Release\TestService.exe
+An exception occurred during the Rollback phase of the System.ServiceProcess.ServiceProcessInstaller installer.
+System.NullReferenceException: Object reference not set to an instance of an object.
+An exception occurred during the Rollback phase of the installation. This exception will be ignored and the rollback will continue. However, the machine might not fully revert to its initial state after the rollback is complete.
+Installing assembly 'C:\Repositories\TestService\bin\Release\TestService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\Repositories\TestService\bin\Release\TestService.InstallLog
+   assemblypath = C:\Repositories\TestService\bin\Release\TestService.exe
+Rolling back assembly 'C:\Repositories\TestService\bin\Release\TestService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\Repositories\TestService\bin\Release\TestService.InstallLog
+   assemblypath = C:\Repositories\TestService\bin\Release\TestService.exe
+An exception occurred during the Rollback phase of the System.ServiceProcess.ServiceProcessInstaller installer.
+System.NullReferenceException: Object reference not set to an instance of an object.
+An exception occurred during the Rollback phase of the installation. This exception will be ignored and the rollback will continue. However, the machine might not fully revert to its initial state after the rollback is complete.
+Installing assembly 'C:\Repositories\TestService\bin\Release\TestService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\Repositories\TestService\bin\Release\TestService.InstallLog
+   assemblypath = C:\Repositories\TestService\bin\Release\TestService.exe
+Installing service TestService...
+Service TestService has been successfully installed.
+Creating EventLog source TestService in log Application...
+Committing assembly 'C:\Repositories\TestService\bin\Release\TestService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   logfile = C:\Repositories\TestService\bin\Release\TestService.InstallLog
+   assemblypath = C:\Repositories\TestService\bin\Release\TestService.exe

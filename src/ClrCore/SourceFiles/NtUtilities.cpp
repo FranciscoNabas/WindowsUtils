@@ -136,8 +136,6 @@ namespace WindowsUtils::Core
 				CloseHandle(hTarget);
 
 				auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(nameBuffer);
-				WWuString test(nameInfo->Name.Buffer);
-
 				if (nameInfo->Name.Buffer != NULL)
 					if (_wcsnicmp(ntKeyName.GetBuffer(), nameInfo->Name.Buffer, ntKeyName.Length()) == 0) {
 						if (closeHandle) {
@@ -148,12 +146,80 @@ namespace WindowsUtils::Core
 						}
 
 						resultPidList.push_back(pid);
-						break;
 					}
 			}
 		}
 		
 		CloseHandle(dummyEvent);
+	}
+
+	void CloseExternalHandlesToFile(HANDLE hProcess, const WWuString& fileName)
+	{
+		ULONG bytesNeeded;
+		NTSTATUS status;
+
+		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
+		if (hNtdll == NULL) {
+			hNtdll = LoadLibrary(L"ntdll.dll");
+			if (hNtdll == NULL)
+				throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		}
+
+		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hNtdll, "NtQueryObject");
+		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
+
+		NtQueryInformationProcess(hProcess, ProcessHandleInformation, NULL, 0, &bytesNeeded);
+
+		wuunique_ptr<BYTE[]> buffer;
+		do {
+			// By the second call time more handles might be opened.
+			bytesNeeded += 64;
+			buffer = make_wuunique<BYTE[]>(bytesNeeded);
+
+			status = NtQueryInformationProcess(hProcess, ProcessHandleInformation, buffer.get(), bytesNeeded, &bytesNeeded);
+			if (status != STATUS_SUCCESS && status != STATUS_INFO_LENGTH_MISMATCH) {
+				throw WuStdException(status, __FILEW__, __LINE__, NtError);
+			}
+
+			if (status == STATUS_SUCCESS)
+				break;
+
+		} while (status == STATUS_INFO_LENGTH_MISMATCH);
+
+		auto procSnapshotInfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
+
+		// Iterating through each handle.
+		for (size_t i = 0; i < procSnapshotInfo->NumberOfHandles; i++) {
+			HANDLE hTarget;
+			if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
+				continue;
+
+			// Checking if the handle is a file handle.
+			// Check notes in 'GetProcessUsingKey'.
+			HANDLE hFileMapping = CreateFileMapping(hTarget, NULL, PAGE_READONLY, 0, 0, L"WuCloseExtHandlesToFileDummyMap");
+			if (hFileMapping == NULL && GetLastError() == ERROR_BAD_EXE_FORMAT) {
+				CloseHandle(hTarget);
+				continue;
+			}
+			
+			CloseHandle(hFileMapping);
+
+			bytesNeeded = 1 << 10;
+			BYTE nameBuffer[1 << 10] = { 0 };
+			NtQueryObject(hTarget, ObjectNameInformation, nameBuffer, bytesNeeded, &bytesNeeded);
+			CloseHandle(hTarget);
+
+			auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(nameBuffer);
+			if (nameInfo->Name.Buffer != NULL) {
+				WWuString nameStr(nameInfo->Name.Buffer);
+				if (nameStr.EndsWith(fileName)) {
+					if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
+						throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+					CloseHandle(hTarget);
+				}
+			}
+		}
 	}
 
 	void GetRunnningProcessIdList(wuvector<DWORD>& procIdList)
