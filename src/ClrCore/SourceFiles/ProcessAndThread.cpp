@@ -51,12 +51,6 @@ namespace WindowsUtils::Core
 						objHandle->ImagePath = imgNameBuffer.get();
 						objHandle->Name = objHandle->ImagePath;
 						PathStripPathW(objHandle->Name.GetBuffer());
-
-						for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName }) {
-							WWuString value;
-							GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
-							objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
-						}
 					}
 
 					if (wcslen(imgNameBuffer.get()) == 0) {
@@ -79,7 +73,7 @@ namespace WindowsUtils::Core
 					}
 
 					if (closeHandle && input.Type == FileSystem)
-						CloseExtProcessHandle(hProcess, inputObject);
+						CloseExternalHandlesToFile(hProcess, inputObject);
 					
 					CloseHandle(hProcess);
 				}
@@ -211,10 +205,6 @@ namespace WindowsUtils::Core
 		NTSTATUS ntCall = STATUS_SUCCESS;
 		HANDLE hTarget = NULL;
 
-		WWuString pathNoRoot = PathSkipRoot(objectName.GetBuffer());
-		if (pathNoRoot.Length() == 0)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-
 		HMODULE hmodule = GetModuleHandle(L"ntdll.dll");
 		if (INVALID_HANDLE_VALUE == hmodule || NULL == hmodule)
 			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
@@ -256,7 +246,7 @@ namespace WindowsUtils::Core
 			if (objectNameInfo->Name.Buffer)
 			{
 				WWuString buffString = objectNameInfo->Name.Buffer;
-				if (buffString.EndsWith(pathNoRoot))
+				if (buffString.EndsWith(objectName))
 				{
 					if (!DuplicateHandle(hExtProcess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE)) {
 						CloseHandle(hTarget);

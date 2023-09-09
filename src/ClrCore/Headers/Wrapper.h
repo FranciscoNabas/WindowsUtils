@@ -33,6 +33,13 @@ namespace WindowsUtils
 		TCPING_STATISTICS
 	};
 
+	public enum class ErrorType
+	{
+		SystemError,
+		NtError,
+		FdiError
+	};
+
 	[Serializable()]
 	public ref class NativeException : public Exception
 	{
@@ -122,8 +129,6 @@ namespace WindowsUtils::Core
 	private:
 		TerminalServices::PWU_MESSAGE_RESPONSE wrapper;
 	};
-
-	
 
 	public ref class ObjectHandleBase
 	{
@@ -354,7 +359,7 @@ namespace WindowsUtils::Core
 		Void DisconnectSession(IntPtr session, UInt32^ sessionid, Boolean wait);
 
 		// Get-FormattedError
-		String^ GetFormattedError(Int32 errorcode);
+		String^ GetFormattedError(Int32 errorcode, ErrorType source);
 
 		// Get-LastWin32Error
 		String^ GetLastWin32Error();
@@ -369,12 +374,11 @@ namespace WindowsUtils::Core
 		array<ResourceMessageTableCore^>^ GetResourceMessageTable(String^ libpath);
 
 		// Get-MsiProperties
-		Dictionary<String^, String^>^ GetMsiProperties(String^ filepath);
+		Dictionary<String^, Object^>^ GetMsiProperties(String^ filepath);
 
 		// Remove-Service
-		void RemoveService(String^ servicename, String^ computerName, bool stopservice, CmdletContextBase^ context);
-		void RemoveService(IntPtr hservice, String^ servicename, String^ computername, bool stopservice, CmdletContextBase^ context);
-		void RemoveService(String^ servicename, bool stopservice, CmdletContextBase^ context);
+		void RemoveService(String^ servicename, String^ computerName, bool stopservice, CmdletContextBase^ context, bool noWait);
+		void RemoveService(String^ servicename, bool stopservice, CmdletContextBase^ context, bool noWait);
 
 		// Get-ServiceSecurity
 		String^ GetServiceSecurityDescriptorString(String^ serviceName, String^ computerName, bool audit);

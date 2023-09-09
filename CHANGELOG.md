@@ -3,6 +3,47 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
 
+## [1.8.7] - 2023-09-09
+
+### Added
+
+- Pester tests for the following commands:
+  - `Get-ComputerSession`
+  - `Get-ErrorString`
+  - `Get-MsiProperties` (created an installer to get the properties from).
+  - `Get-ObjectHandle` (for files and registry!).
+  - `Get-ResourceMessageTable` (created a DLL with a single message for testing).
+  - `Remove-Service` (we have a test service with delayed stop).
+- `PSObjectFactory` helper class. Implemented to help creating `PSObjects` seamlessly throughout the code.
+- `SafeHandle.h.` This header file and implementation contains wrapper classes to apply RAII to native system handles.
+  The first one is `ScmHandle` for service related handles. The `Remove-Service` Cmdlet now runs with this class.
+- `Remove-Service`
+  - Implemented the `NoWait` switch parameter for when stopping services prior to deletion.
+
+### Changed
+
+- `Remove-Service`
+  - Cmdlet now uses the new `ScmHandle` class to manage Service Control Manager handles.
+- `Get-ErrorString` now uses `WuStdException` to generate messages. It's more reliable and complete.
+- `Get-ObjectHandle`
+  - The helper function to close handles was changed to mimic the `GetObjectUsingKey` function, on the way it uses `NtQueryObject`.
+    `NtQueryObject` hangs when querying asynchronous objects like pipes, and these objects have pending operations.
+    To mitigate that we were using threads, but this way is too slow and unreliable. Now we use `CreateFileMapping` on the handle, and check the result for error
+    `ERROR_BAD_EXE_FORMAT` to check if the handle is a file handle. Idea from this [question](https://stackoverflow.com/questions/16127948/hang-on-ntquerysysteminformation-in-winxpx32-but-works-fine-in-win7x64).
+
+### Bugs
+
+- `Get-ObjectHandle` was not closing file handles because it was not finding the handles listed. Fixed that with the new helper function to close external handles.
+- `Remove-Service`
+  - Had a broken string when writing warning. That happened because I was using the `WWuString` instead of its buffer in the format
+  - A corrupted heap exception was being thrown because we were trying to close a handle opened in managed code, wrapped in the `ServiceController` object.
+  - Still in the handle department, there were a couple of leaks with handles that were fixed by the new `ScmHandle` wrapper class.
+- `Get-MsiProperties`
+  - Saved the best for last. This was one of the first Cmdlets I built, and oh boy that thing was crude. We were closing NONE of the handles, leaving the file opened blocked in the current process.
+    That was fixed switching `MSIHANDLE` by `PMSIHANDLE`, which was what inspired me to create the `SafeHandle` wrapper classes.
+  - The Cmdlet had ZERO provider awareness, and I consider this a bug. Now we have all the path shenanigans in it. We also check to see if the current provider is `FileSystem`,
+    which is the only one supported.
+
 ## [1.8.6] - 2023-09-06
 
 - Get-ObjectHandle

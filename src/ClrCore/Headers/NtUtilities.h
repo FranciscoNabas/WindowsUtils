@@ -248,6 +248,7 @@ namespace WindowsUtils::Core
 
 	void GetProcessUsingFile(const WWuString& fileName, wuvector<DWORD>& processIdList);
 	void GetProcessUsingKey(const WWuString& ntKeyName, wuvector<DWORD>& resultPidList, bool closeHandle);
+	void CloseExternalHandlesToFile(HANDLE hProcess, const WWuString& fileName);
 	void GetRunnningProcessIdList(wuvector<DWORD>& procIdList);
 	DWORD WINAPI NtQueryObjectRaw(LPVOID param);
 	void NtQueryObjectWithTimeout(HANDLE hObject, OBJECT_INFORMATION_CLASS objInfoClass, wuunique_ptr<BYTE[]>& objectInfo, ULONG timeout);

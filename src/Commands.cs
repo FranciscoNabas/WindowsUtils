@@ -321,10 +321,16 @@ namespace WindowsUtils.Commands
         )]
         public int ErrorCode { get; set; }
 
+        [Parameter(
+            Position = 1,
+            HelpMessage = "Source of the error."
+        )]
+        public ErrorType Source { get; set; } = ErrorType.SystemError;
+
         protected override void ProcessRecord()
         {
             Wrapper unWrapper = new();
-            WriteObject(unWrapper.GetFormattedError(ErrorCode));
+            WriteObject(unWrapper.GetFormattedError(ErrorCode, Source));
         }
     }
 
@@ -520,29 +526,93 @@ namespace WindowsUtils.Commands
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "MsiProperties")]
     [OutputType(typeof(PSObject))]
-    public class GetMsiPropertiesCommand : Cmdlet
+    public class GetMsiPropertiesCommand : PSCmdlet
     {
+        private string[] _path;
+        private bool _shouldExpandWildcards = true;
+
+        private readonly List<string> _validInput = new();
+
         /// <summary>
-        /// <para type="description">The MSI file path.</para>
+        /// <para type="description">The object path.</para>
+        /// </summary>
+        [Parameter(
+            Position = 0,
+            ValueFromPipeline = true,
+            ValueFromPipelineByPropertyName = true,
+            ParameterSetName = "byPath",
+            HelpMessage = "The object(s) path."
+        )]
+        [ValidateNotNullOrEmpty]
+        [SupportsWildcards]
+        public string[] Path {
+            get { return _path; }
+            set { _path = value; }
+        }
+
+        /// <summary>
+        /// <para Type="description">Provider-aware file system object path.</para>
         /// </summary>
         [Parameter(
             Mandatory = true,
-            Position = 0,
+            ValueFromPipeline = false,
             ValueFromPipelineByPropertyName = true,
-            HelpMessage = "The MSI file path."
+            ParameterSetName = "byLiteral",
+            HelpMessage = "The object(s) literal path."
         )]
+        [Alias("PSPath")]
         [ValidateNotNullOrEmpty]
-        [ValidateFileExists]
-        public string Path { get; set; }
+        public string[] LiteralPath {
+            get { return _path; }
+            set {
+                _shouldExpandWildcards = false;
+                _path = value;
+            }
+        }
 
         protected override void ProcessRecord()
         {
+            List<string> pathList = new();
+            _validInput.Clear();
+
+            _path ??= new[] { ".\\*" };
+
+            foreach (string path in _path)
+            {
+                pathList.Clear();
+
+                ProviderInfo provider;
+
+                if (_shouldExpandWildcards)
+                    pathList.AddRange(GetResolvedProviderPathFromPSPath(path, out provider));
+
+                else
+                    pathList.Add(SessionState.Path.GetUnresolvedProviderPathFromPSPath(path, out provider, out _));
+
+
+                foreach (string singlePath in pathList)
+                {
+                    if (provider.Name == "FileSystem")
+                    {
+                        if (File.Exists(singlePath))
+                            _validInput.Add(singlePath);
+                        else
+                        {
+                            if (Directory.Exists(singlePath))
+                                WriteWarning("Path must be a valid MSI file.");
+                            else
+                                WriteWarning($"File '{singlePath}' not found.");
+                        }
+                    }
+                    else
+                        WriteWarning("Only 'FileSystem' provider is supported.");
+                }
+            }
+
             Wrapper unWrapper = new();
             PSObject outObject = new();
-            foreach (KeyValuePair<string, string> item in unWrapper.GetMsiProperties(Path).OrderBy(x => x.Key))
-                outObject.Members.Add(new PSNoteProperty(item.Key, item.Value));
-
-            WriteObject(outObject);
+            foreach (string path in _validInput)
+                WriteObject(Utils.PSObjectFactory(unWrapper.GetMsiProperties(path).OrderBy(x => x.Key)));
         }
     }
 
@@ -719,21 +789,19 @@ namespace WindowsUtils.Commands
         [Parameter(HelpMessage = "Stops the service and any dependents.")]
         public SwitchParameter Stop { get; set; }
 
-        /// <summary>
-        /// <para type="description">Suppresses confirmation.</para>
-        /// </summary>
-        [Parameter(HelpMessage = "Suppresses confirmation.")]
-        new public SwitchParameter Force { get; set; }
+        [Parameter(HelpMessage = "Does not wait for the service(s) to stop.")]
+        public SwitchParameter NoWait { get; set; }
 
         protected override void ProcessRecord()
         {
             Wrapper unWrapper = new();
+            if (NoWait.IsPresent && !Stop.IsPresent)
+                WriteWarning("'-NoWait' was used without '-Stop'. NoWait will have no effect.");
 
             if (ParameterSetName == "WithServiceController")
             {
-                WriteVerbose($"Using service controller for service {InputObject.ServiceName}. Unsafe handle: {InputObject.ServiceHandle.DangerousGetHandle()}");
                 if (Force)
-                    unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
+                    unWrapper.RemoveService(InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext, NoWait);
                 else
                 {
                     if (InputObject.MachineName == ".")
@@ -742,7 +810,7 @@ namespace WindowsUtils.Commands
                            $"Removing service {InputObject.ServiceName} from the local computer.",
                            $"Are you sure you want to remove service {InputObject.ServiceName}?",
                            "Removing Service"))
-                            unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
+                            unWrapper.RemoveService(InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext, NoWait);
                     }
                     else
                     {
@@ -750,7 +818,7 @@ namespace WindowsUtils.Commands
                            $"Removing service {InputObject.ServiceName} on computer {InputObject.MachineName}",
                            $"Are you sure you want to remove service {InputObject.ServiceName} on {InputObject.MachineName}?",
                            "Removing Service"))
-                            unWrapper.RemoveService(InputObject.ServiceHandle.DangerousGetHandle(), InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext);
+                            unWrapper.RemoveService(InputObject.ServiceName, InputObject.MachineName, Stop, (CmdletContextBase)CmdletContext, NoWait);
                     }
                 }
 
@@ -761,27 +829,27 @@ namespace WindowsUtils.Commands
                 if (string.IsNullOrEmpty(ComputerName))
                 {
                     if (Force)
-                        unWrapper.RemoveService(Name, Stop, (CmdletContextBase)CmdletContext);
+                        unWrapper.RemoveService(Name, Stop, (CmdletContextBase)CmdletContext, NoWait);
                     else
                     {
                         if (ShouldProcess(
                            $"Removing service {Name} from the local computer.",
                            $"Are you sure you want to remove service {Name}?",
                            "Removing Service"))
-                            unWrapper.RemoveService(Name, Stop, (CmdletContextBase)CmdletContext);
+                            unWrapper.RemoveService(Name, Stop, (CmdletContextBase)CmdletContext, NoWait);
                     }
                 }
                 else
                 {
                     if (Force)
-                        unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext);
+                        unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext, NoWait);
                     else
                     {
                         if (ShouldProcess(
                            $"Removing service {Name} on computer {ComputerName}",
                            $"Are you sure you want to remove service {Name} on {ComputerName}?",
                            "Removing Service"))
-                            unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext);
+                            unWrapper.RemoveService(Name, ComputerName, Stop, (CmdletContextBase)CmdletContext, NoWait);
                     }
                 }
             }

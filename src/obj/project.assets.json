@@ -304,6 +304,15 @@
         "build": {
           "build/XmlDoc2CmdletDoc.targets": {}
         }
+      },
+      "WuCore/1.0.0": {
+        "type": "project",
+        "compile": {
+          "bin/placeholder/WuCore.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/WuCore.dll": {}
+        }
       }
     }
   },
@@ -1108,6 +1117,11 @@
         "xmldoc2cmdletdoc.0.3.0.nupkg.sha512",
         "xmldoc2cmdletdoc.nuspec"
       ]
+    },
+    "WuCore/1.0.0": {
+      "type": "project",
+      "path": "ClrCore/WuCore.vcxproj",
+      "msbuildProject": "ClrCore/WuCore.vcxproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -1119,6 +1133,7 @@
       "System.Security.AccessControl >= 6.0.0",
       "System.ServiceProcess.ServiceController >= 7.0.1",
       "System.Text.Json >= 7.0.3",
+      "WuCore >= 1.0.0",
       "XmlDoc2CmdletDoc >= 0.3.0"
     ]
   },
@@ -1127,13 +1142,13 @@
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
-    "version": "1.8.6",
+    "version": "1.8.7",
     "restore": {
-      "projectUniqueName": "c:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
+      "projectUniqueName": "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
       "projectName": "WindowsUtils",
-      "projectPath": "c:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
+      "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
       "packagesPath": "C:\\Users\\francisco.nabas\\.nuget\\packages\\",
-      "outputPath": "c:\\LocalRepositories\\.WindowsUtils\\src\\obj\\",
+      "outputPath": "C:\\LocalRepositories\\.WindowsUtils\\src\\obj\\",
       "projectStyle": "PackageReference",
       "crossTargeting": true,
       "fallbackFolders": [
@@ -1149,12 +1164,17 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "https://api.nuget.org/v3/index.json": {}
+        "https://api.nuget.org/v3/index.json": {},
+        "https://nuget.pkg.github.com/wixtoolset/index.json": {}
       },
       "frameworks": {
         "netstandard2.0": {
           "targetAlias": "netstandard2.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\LocalRepositories\\.WindowsUtils\\src\\ClrCore\\WuCore.vcxproj": {
+              "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\src\\ClrCore\\WuCore.vcxproj"
+            }
+          }
         }
       },
       "warningProperties": {

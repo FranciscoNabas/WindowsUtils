@@ -183,6 +183,7 @@
     <ClInclude Include="Headers\Notification.h" />
     <ClInclude Include="Headers\NtUtilities.h" />
     <ClInclude Include="Headers\Objects.h" />
+    <ClInclude Include="Headers\SafeHandle.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Headers\ProcessAndThread.h" />
     <ClInclude Include="Headers\Registry.h" />
@@ -209,6 +210,7 @@
     </ClCompile>
     <ClCompile Include="SourceFiles\ProcessAndThread.cpp" />
     <ClCompile Include="SourceFiles\Registry.cpp" />
+    <ClCompile Include="SourceFiles\SafeHandle.cpp" />
     <ClCompile Include="SourceFiles\Services.cpp" />
     <ClCompile Include="SourceFiles\Utilities.cpp" />
     <ClCompile Include="SourceFiles\TerminalServices.cpp" />
