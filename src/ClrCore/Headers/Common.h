@@ -8,7 +8,8 @@ typedef enum _ErrorType
 {
 	SystemError,
 	NtError,
-	FdiError
+	FdiError,
+	FciError
 } ErrorType;
 
 class WuStdException : public std::exception
@@ -43,6 +44,9 @@ public:
 				break;
 			case FdiError:
 				SetFdiMessage();
+				break;
+			case FciError:
+				SetFciMessage();
 				break;
 		}
 
@@ -156,6 +160,51 @@ private:
 
 			case FDIERROR_USER_ABORT:
 				m_message = L"Application aborted.";
+				break;
+
+			default:
+				SetMessage(false);
+				break;
+		}
+	}
+
+	void SetFciMessage()
+	{
+		switch (m_windowsError) {
+			case FCIERR_OPEN_SRC:
+				m_message = L"Failure opening the file to be stored in the cabinet.";
+				break;
+
+			case FCIERR_READ_SRC:
+				m_message = L"Failure reading the file to be stored in the cabinet.";
+				break;
+
+			case FCIERR_ALLOC_FAIL:
+				m_message = L"Out of memory in FCI.";
+				break;
+
+			case FCIERR_TEMP_FILE:
+				m_message = L"Could not create a temporary file.";
+				break;
+
+			case FCIERR_BAD_COMPR_TYPE:
+				m_message = L"Unknown compression type.";
+				break;
+
+			case FCIERR_CAB_FILE:
+				m_message = L"Could not create the cabinet file.";
+				break;
+
+			case FCIERR_USER_ABORT:
+				m_message = L"FCI aborted.";
+				break;
+
+			case FCIERR_MCI_FAIL:
+				m_message = L"Failure compressing data.";
+				break;
+
+			case FCIERR_CAB_FORMAT_LIMIT:
+				m_message = L"Data-size or file-count exceeded CAB format limits.";
 				break;
 
 			default:

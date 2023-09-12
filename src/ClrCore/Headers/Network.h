@@ -17,6 +17,9 @@ namespace WindowsUtils::Core
 	extern "C" public class __declspec(dllexport) Network
 	{
 	public:
+
+		// Start-Tcping
+
 		typedef enum _TCPING_STATUS : WORD
 		{
 			Open,
@@ -196,6 +199,36 @@ namespace WindowsUtils::Core
 			bool IsComplete;
 		} TCPING_WORKER_DATA, *PTCPING_WORKER_DATA;
 
+		// Get-NetworkFile
+
+		typedef struct _NETWORK_FILE_INFO
+		{
+			DWORD Id;
+			DWORD Permissions;
+			DWORD LockCount;
+			WWuString Path;
+			WWuString UserName;
+
+			_NETWORK_FILE_INFO(DWORD id, DWORD perms, DWORD locks, const WWuString& path, const WWuString& userName);
+			~_NETWORK_FILE_INFO();
+
+		} NETWORK_FILE_INFO, *PNETWORK_FILE_INFO;
+
+		typedef struct _NETWORK_SESSION_INFO
+		{
+			WWuString ComputerSessionName;
+			WWuString UserName;
+			DWORD OpenIoCount;
+
+			_NETWORK_SESSION_INFO(const WWuString& sessName, const WWuString& userName, DWORD ioCount);
+			~_NETWORK_SESSION_INFO();
+
+		} NETWORK_SESSION_INFO, *PNETWORK_SESSION_INFO;
+
+		/*
+		*	~ Function definition
+		*/
+
 		////////////////////////////////////////////////////////////////////////////////////////
 		//
 		//	This function, and Cmdlet are based on the great 'tcping.exe' by Eli Fulkerson.
@@ -211,6 +244,15 @@ namespace WindowsUtils::Core
 		////////////////////////////////////////////////////////////////////////////////////////
 
 		void StartTcpPing(TcpingForm& workForm, WuNativeContext* context);
+
+		// Get-NetworkFile (PsFile)
+
+		void ListNetworkFiles(const WWuString& computerName, const WWuString& basePath, const WWuString& userName, wuvector<NETWORK_FILE_INFO>& result);
+		void ListNetworkFiles(const WWuString& computerName, const WWuString& basePath, const WWuString& userName, wuvector<NETWORK_FILE_INFO>& fileInfo, wuvector<NETWORK_SESSION_INFO>& sessionInfo);
+
+		// Close-NetworkFile (PsFile)
+
+		void CloseNetworkFile(const WWuString& computerName, DWORD fileId);
 	};
 
 	void PerformSingleTestProbe(ADDRINFOW* singleInfo, Network::TcpingForm* workForm, const WWuString& displayName,

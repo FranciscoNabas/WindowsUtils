@@ -48,4 +48,43 @@ namespace WindowsUtils::Core
 	}
 
 	const SC_HANDLE ScmHandle::get() const { return m_h; }
+
+	/*
+	*	~ File handle
+	*/
+
+	FileHandle::FileHandle()
+	{
+		m_hFile = NULL;
+		m_isValid = false;
+	}
+
+	FileHandle::FileHandle(const WWuString& fileName, DWORD desiredAccess, DWORD shareMode, LPSECURITY_ATTRIBUTES secAttr, DWORD disposition, DWORD flagsAndAttr, HANDLE hTemplate)
+	{
+		m_hFile = CreateFile(
+			fileName.GetBuffer(),
+			desiredAccess,
+			shareMode,
+			secAttr,
+			disposition,
+			flagsAndAttr,
+			hTemplate
+		);
+		
+		if (m_hFile == INVALID_HANDLE_VALUE)
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+		m_isValid = true;
+	}
+
+	FileHandle::~FileHandle()
+	{
+		if (m_hFile != NULL && m_hFile != INVALID_HANDLE_VALUE)
+			CloseHandle(m_hFile);
+
+		m_hFile = NULL;
+		m_isValid = false;
+	}
+
+	const HANDLE FileHandle::get() const { return m_hFile; }
 }

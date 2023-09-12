@@ -49,6 +49,7 @@
 #pragma comment(lib, "AdvApi32.lib")
 #pragma comment(lib, "Dnsapi.lib")
 #pragma comment(lib, "Psapi")
+#pragma comment(lib, "Netapi32.lib")
 
 // Include list.
 #include <Windows.h>
@@ -64,6 +65,7 @@
 #include <AclAPI.h>
 #include <sddl.h>
 #include <fdi.h>
+#include <fci.h>
 #include <fcntl.h>
 #include <io.h>
 #include <cmath>
@@ -78,5 +80,7 @@
 #include <sysinfoapi.h>
 #include <TlHelp32.h>
 #include <queue>
+#include <Lm.h>
+#include <stdlib.h>
 
 #endif //PCH_H

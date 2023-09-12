@@ -24,28 +24,35 @@
         'Get-InstalledDotnet'
     )
     CmdletsToExport = @(
-        'Get-ComputerSession',
-        'Get-ObjectHandle',
-        'Get-ErrorString', 
-        'Get-LastWin32Error',
-        'Get-MsiProperties',
-        'Get-RemoteMessageOptions',
-        'Get-ResourceMessageTable', 
-        'Send-RemoteMessage',
-        'Send-Click',
-        'Disconnect-Session',
-        'Remove-Service',
-        'Get-ServiceSecurity',
-        'New-ServiceAccessRule',
-        'New-ServiceAuditRule',
-        'Set-ServiceSecurity',
-        'Expand-Cabinet',
+        'Get-ComputerSession'
+        'Get-ObjectHandle'
+        'Get-ErrorString'
+        'Get-LastWin32Error'
+        'Get-MsiProperties'
+        'Get-RemoteMessageOptions'
+        'Get-ResourceMessageTable'
+        'Send-RemoteMessage'
+        'Send-Click'
+        'Disconnect-Session'
+        'Remove-Service'
+        'Get-ServiceSecurity'
+        'New-ServiceAccessRule'
+        'New-ServiceAuditRule'
+        'Set-ServiceSecurity'
+        'Expand-Cabinet'
         'Start-Tcping'
         'Start-ProcessAsUser'
+        'Get-NetworkFile'
+        'Close-NetworkFile'
+        'New-Cabinet'
     )
     AliasesToExport = @(
-        'gethandle',
+        'gethandle'
         'disconnect'
+        'runas'
+        'psfile'
+        'getnetfile'
+        'closenetfile'
     )
     PrivateData = @{
         PSData = @{

@@ -15,6 +15,10 @@
 
 namespace WindowsUtils::Core
 {
+	/*
+	*	~ SCM handles
+	*/
+
 	typedef enum _SCM_HANDLE_TYPE
 	{
 		ServiceControlManager,
@@ -34,5 +38,23 @@ namespace WindowsUtils::Core
 		~ScmHandle();
 
 		const SC_HANDLE get() const;
+	};
+
+	/*
+	*	~ File handle
+	*/
+
+	class FileHandle
+	{
+	private:
+		HANDLE m_hFile;
+		bool m_isValid;
+
+	public:
+		FileHandle();
+		FileHandle(const WWuString& fileName, DWORD desiredAccess, DWORD shareMode, LPSECURITY_ATTRIBUTES secAttr, DWORD disposition, DWORD flagsAndAttr, HANDLE hTemplate);
+		~FileHandle();
+
+		const HANDLE get() const;
 	};
 }

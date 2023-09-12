@@ -277,7 +277,7 @@ namespace WindowsUtils::Core
 	}
 
 	/*
-	*	~ Function definition ~
+	*	~ Start-Tcping
 	*/
 
 	void Network::StartTcpPing(TcpingForm& workForm, WuNativeContext* context)
@@ -335,6 +335,149 @@ namespace WindowsUtils::Core
 		if (!workForm.Single)
 			ProcessStatistics(&workForm, context);
 	}
+
+	/*
+	*	~ Get-NetworkFile
+	*/
+
+	Network::_NETWORK_FILE_INFO::_NETWORK_FILE_INFO(DWORD id, DWORD perms, DWORD locks, const WWuString& path, const WWuString& userName)
+		: Id(id), Permissions(perms), LockCount(locks), Path(path), UserName(userName) { }
+
+	Network::_NETWORK_FILE_INFO::~_NETWORK_FILE_INFO() { }
+
+	Network::_NETWORK_SESSION_INFO::_NETWORK_SESSION_INFO(const WWuString& sessName, const WWuString& userName, DWORD ioCount)
+		: ComputerSessionName(sessName), UserName(userName), OpenIoCount(ioCount) { }
+
+	Network::_NETWORK_SESSION_INFO::~_NETWORK_SESSION_INFO() { }
+
+	void Network::ListNetworkFiles(const WWuString& computerName, const WWuString& basePath, const WWuString& userName, wuvector<NETWORK_FILE_INFO>& result)
+	{
+		LPBYTE buffer;
+		DWORD entryCount;
+		DWORD totalEntryCount;
+
+		NET_API_STATUS status = NetFileEnum(
+			(LPWSTR)computerName.GetBuffer(),	// The computer name. NULL for the current computer.
+			(LPWSTR)basePath.GetBuffer(),		// A path prefix. If used, only paths that starts with this prefix are returned.
+			(LPWSTR)userName.GetBuffer(),		// Qualifier for user name or connection name. Results are limited by matches to this qualifier.
+			3,									// Level of information data. 3 = FILE_INFO_3.
+			&buffer,							// The buffer that receives the list.
+			MAX_PREFERRED_LENGTH,				// Maximum preferred buffer length. MAX_PREFERRED_LENGTH = no limit.
+			&entryCount,						// The number of entries returned in the buffer.
+			&totalEntryCount,					// A hint to total number of entries if the operation is resumed.
+			NULL								// Resume handle used in possible subsequent calls.
+		);
+
+		if (status != NERR_Success)
+			throw WuStdException(status, __FILEW__, __LINE__);
+
+		size_t dataSize = sizeof(FILE_INFO_3);
+		LPBYTE offset = buffer;
+		for (DWORD i = 0; i < entryCount; i++) {
+			auto currentInfo = reinterpret_cast<PFILE_INFO_3>(offset);
+			result.push_back(
+				NETWORK_FILE_INFO(
+					currentInfo->fi3_id,
+					currentInfo->fi3_permissions,
+					currentInfo->fi3_num_locks,
+					currentInfo->fi3_pathname,
+					currentInfo->fi3_username
+				)
+			);
+
+			offset += dataSize;
+		}
+
+		NetApiBufferFree(buffer);
+	}
+
+	void Network::ListNetworkFiles(const WWuString& computerName, const WWuString& basePath, const WWuString& userName, wuvector<NETWORK_FILE_INFO>& fileInfo, wuvector<NETWORK_SESSION_INFO>& sessionInfo)
+	{
+		LPBYTE buffer;
+		DWORD entryCount;
+		DWORD totalEntryCount;
+
+		NET_API_STATUS status = NetFileEnum(
+			(LPWSTR)computerName.GetBuffer(),	// The computer name. NULL for the current computer.
+			(LPWSTR)basePath.GetBuffer(),		// A path prefix. If used, only paths that starts with this prefix are returned.
+			(LPWSTR)userName.GetBuffer(),		// Qualifier for user name or connection name. Results are limited by matches to this qualifier.
+			3,									// Level of information data. 3 = FILE_INFO_3.
+			&buffer,							// The buffer that receives the list.
+			MAX_PREFERRED_LENGTH,				// Maximum preferred buffer length. MAX_PREFERRED_LENGTH = no limit.
+			&entryCount,						// The number of entries returned in the buffer.
+			&totalEntryCount,					// A hint to total number of entries if the operation is resumed.
+			NULL								// Resume handle used in possible subsequent calls.
+		);
+
+		if (status != NERR_Success)
+			throw WuStdException(status, __FILEW__, __LINE__);
+
+		size_t dataSize = sizeof(FILE_INFO_3);
+		LPBYTE offset = buffer;
+		for (DWORD i = 0; i < entryCount; i++) {
+			auto currentInfo = reinterpret_cast<PFILE_INFO_3>(offset);
+			fileInfo.push_back(
+				NETWORK_FILE_INFO(
+					currentInfo->fi3_id,
+					currentInfo->fi3_permissions,
+					currentInfo->fi3_num_locks,
+					currentInfo->fi3_pathname,
+					currentInfo->fi3_username
+				)
+			);
+
+			offset += dataSize;
+		}
+
+		NetApiBufferFree(buffer);
+
+		status = NetSessionEnum(
+			(LPWSTR)computerName.GetBuffer(),	// The computer name. NULL for the current computer.
+			NULL,								// A filter for the computer session name where the session was initiated from.
+			NULL,								// Qualifier for user name or connection name. Results are limited by matches to this qualifier.
+			1,									// Level of information data. 1 = SESSION_INFO_1.
+			&buffer,							// The buffer that receives the list.
+			MAX_PREFERRED_LENGTH,				// Maximum preferred buffer length. MAX_PREFERRED_LENGTH = no limit.
+			&entryCount,						// The number of entries returned in the buffer.
+			&totalEntryCount,					// A hint to total number of entries if the operation is resumed.
+			NULL								// Resume handle used in possible subsequent calls.
+		);
+
+		if (status != NERR_Success)
+			throw WuStdException(status, __FILEW__, __LINE__);
+
+		dataSize = sizeof(SESSION_INFO_1);
+		offset = buffer;
+		for (DWORD i = 0; i < entryCount; i++) {
+			auto currentInfo = reinterpret_cast<PSESSION_INFO_1>(offset);
+			sessionInfo.push_back(
+				NETWORK_SESSION_INFO(
+					currentInfo->sesi1_cname,
+					currentInfo->sesi1_username,
+					currentInfo->sesi1_num_opens
+				)
+			);
+
+			offset += dataSize;
+		}
+
+		NetApiBufferFree(buffer);
+	}
+
+	/*
+	*	~ Close-NetworkFile
+	*/
+
+	void Network::CloseNetworkFile(const WWuString& computerName, DWORD fileId)
+	{
+		NET_API_STATUS status = NetFileClose((LPWSTR)computerName.GetBuffer(), fileId);
+		if (status != NERR_Success)
+			throw WuStdException(status, __FILEW__, __LINE__);
+	}
+
+	/*
+	*	~ Utility functions
+	*/
 
 	void PrintQueueData(const Network::QUEUED_DATA& data, WuNativeContext* context)
 	{

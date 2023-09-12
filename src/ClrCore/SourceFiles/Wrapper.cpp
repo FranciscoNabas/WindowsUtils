@@ -899,6 +899,73 @@ namespace WindowsUtils::Core
 			throw gcnew NativeException(result);
 	}
 
+	// Get-NetworkFile
+	List<NetworkFileInfo^>^ Wrapper::GetNetworkFile(String^ computerName, String^ basePath, String^ userName, bool includeSessionName)
+	{
+		WWuString wrappedPcName = GetWideStringFromSystemString(computerName);
+		WWuString wrappedBasePath = GetWideStringFromSystemString(basePath);
+		WWuString wrappedUserName = GetWideStringFromSystemString(userName);
+
+		wuvector<Network::NETWORK_FILE_INFO> result;
+		auto output = gcnew List<NetworkFileInfo^>();
+
+		if (includeSessionName) {
+			wuvector<Network::NETWORK_SESSION_INFO> sessionInfo;
+			ntwptr->ListNetworkFiles(wrappedPcName, wrappedBasePath, wrappedUserName, result, sessionInfo);
+			for (Network::NETWORK_FILE_INFO& info : result) {
+				WWuString sessName;
+				for (Network::NETWORK_SESSION_INFO& sessInfo : sessionInfo) {
+					if (sessInfo.UserName == info.UserName) {
+						sessName = sessInfo.ComputerSessionName;
+						break;
+					}
+				}
+				
+				output->Add(gcnew NetworkFileInfo(info, sessName, computerName));
+			}
+		}
+		else {
+			try {
+				ntwptr->ListNetworkFiles(wrappedPcName, wrappedBasePath, wrappedUserName, result);
+				for (Network::NETWORK_FILE_INFO& info : result)
+					output->Add(gcnew NetworkFileInfo(info, computerName));
+			}
+			catch (const WuStdException& ex) {
+				throw gcnew NativeException(ex);
+			}
+		}
+
+		return output;
+	}
+
+	// Close-NetworkFile
+	void Wrapper::CloseNetworkFile(String^ computerName, Int32 fileId)
+	{
+		WWuString wrappedPcName = GetWideStringFromSystemString(computerName);
+
+		ntwptr->CloseNetworkFile(wrappedPcName, fileId);
+	}
+
+	// Compress-ArchiveFile
+	void Wrapper::CompressArchiveFile(String^ path, String^ destination, String^ namePrefix, int maxCabSize, CabinetCompressionType compressionType, ArchiveFileType type, CmdletContextBase^ context)
+	{
+		switch (type) {
+			case WindowsUtils::Core::ArchiveFileType::Cabinet:
+			{
+				AbstractPathTree apt;
+				GetAptFromPath(path, &apt);
+				WuCabinet cabinet(apt, GetWideStringFromSystemString(namePrefix), static_cast<USHORT>(compressionType), context->GetUnderlyingContext());
+
+				try {
+					cabinet.CompressCabinetFile(GetWideStringFromSystemString(destination), maxCabSize);
+				}
+				catch (const WuStdException& ex) {
+					throw gcnew NativeException(ex);
+				}
+			} break;
+		}
+	}
+
 	// Utilities
 	String^ Wrapper::GetRegistryNtPath(String^ keyPath)
 	{
@@ -1038,6 +1105,24 @@ namespace WindowsUtils::Core
 			CloseHandle(hToken);
 		}
 	}
+
+	static void GetAptFromPath(String^ path, AbstractPathTree* apt)
+	{
+		WWuString wrappedPath = GetWideStringFromSystemString(path);
+
+		wuvector<FS_INFO> fsInfo = IO::EnumerateFileSystemInfo(wrappedPath);
+		for (FS_INFO& info : fsInfo) {
+			if (info.Length > 0x7FFFFFFF)
+				throw gcnew ArgumentException("Cabinet does not support files bigger than 2Gb.");
+
+			apt->PushEntry(AbstractPathTree::AptEntry(info.Name, info.FullName, wrappedPath, info.Length, info.Type));
+		}
+			
+	}
+
+	/*
+	*	~ CmdletContextBase
+	*/
 
 	CmdletContextBase::CmdletContextBase(
 		WriteProgressWrapper^ progWrapper,

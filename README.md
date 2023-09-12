@@ -1,7 +1,7 @@
 # WindowsUtils
   
 **WindowsUtils** is a PowerShell module designed to make easier the administration of Windows computers.  
-The module consists in a library written in C++/CLI which contains the main functions, and the .NET wrapper, and an utilities-library written in C#.  
+The module consists in a library written in C++/CLI which contains the main functions, and the .NET wrapper.  
 To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.  
   
 - [WindowsUtils](#windowsutils)
@@ -14,9 +14,9 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [Get-ResourceMessageTable](#get-resourcemessagetable)
     - [Get-FormattedError](#get-formattederror)
     - [Get-LastWin32Error](#get-lastwin32error)
-    - [Get-ObjectHandle](#get-objecthandle)
+    - [Get-ObjectHandle (gethandle)](#get-objecthandle-gethandle)
     - [Get-MsiProperties](#get-msiproperties)
-    - [Disconnect-Session](#disconnect-session)
+    - [Disconnect-Session (disconnect)](#disconnect-session-disconnect)
     - [Remove-Service](#remove-service)
     - [Get-ServiceSecurity](#get-servicesecurity)
     - [New-ServiceAccessRule](#new-serviceaccessrule)
@@ -24,8 +24,10 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [Set-ServiceSecurity](#set-servicesecurity)
     - [Get-InstalledDotnet](#get-installeddotnet)
     - [Expand-Cabinet](#expand-cabinet)
-    - [Start-Tcping](#start-tcping)
-    - [Start-ProcessAsUser](#start-processasuser)
+    - [Start-Tcping (tcping)](#start-tcping-tcping)
+    - [Start-ProcessAsUser (runas)](#start-processasuser-runas)
+    - [Get-NetworkFile (psfile, getnetfile)](#get-networkfile-psfile-getnetfile)
+    - [Close-NetworkFile (closenetfile)](#close-networkfile-closenetfile)
   - [Changelog](#changelog)
   - [Support](#support)
   
@@ -115,7 +117,7 @@ Does the same as the **GetLastWin32Error()** method, from **System.Runtime.Inter
 Get-LastWin32Error
 ```  
   
-### Get-ObjectHandle
+### Get-ObjectHandle (gethandle)
   
 My favorite one, and the one I had most fun building.  
 This Cmdlet was designed to mimic the famous [Handle](https://learn.microsoft.com/en-us/sysinternals/downloads/handle), from Sysinternals.  
@@ -141,7 +143,7 @@ This can also be achieved using the [WindowsInstaller.Installer](https://learn.m
 Get-MsiProperties -Path 'C:\Users\You\Downloads\PowerShell-Installer.msi'
 ```
   
-### Disconnect-Session
+### Disconnect-Session (disconnect)
   
 This Cmdlet disconnects interactive sessions on the local, or remote computers.  
 It disconnects based on the **SessionId**, which can be obtained with **Get-ComputerSession**.  
@@ -293,7 +295,7 @@ Expand-Cabinet -Path "$env:SystemDrive\Path\To\Cabinet.cab" -Destination "$env:S
 Get-ChildItem -Path 'C:\CabinetSource\MultipleCab*' | Expand-Cabinet -Destination 'C:\Path\To\Destination'
 ```
 
-### Start-Tcping
+### Start-Tcping (tcping)
 
 This Cmdlet attempts to measure network statistics while connecting to a destination using TCP.
 It works similarly as well-known tools like 'ping.exe', or 'tcping.exe'.
@@ -329,7 +331,7 @@ google.com                     80    Open    Rtt: 9.57
 google.com                     443   Open    Rtt: 7.01
 ```
 
-### Start-ProcessAsUser
+### Start-ProcessAsUser (runas)
 
 This Cmdlet logs in a user and starts a process with it.
 This is my terrible attempt to reverse engineer 'runas.exe'.
@@ -344,6 +346,104 @@ Of course we have an alias for it.
 
 ```powershell
 runas -CommandLine powershell -Credential (Get-Credential)
+```
+
+### Get-NetworkFile (psfile, getnetfile)
+
+This Cmdlet lists all files opened through the network on the current or remote computer.
+It was designed to mimic `psfile.exe` from Sysinternals.
+
+```powershell-console
+Get-NetworkFile -ComputerName CISCOSRVP01P
+
+Id Path                                                      LockCount UserName        Permissions
+-- ----                                                      --------- --------        -----------
+8  C:\                                                       0         francisco.nabas Read
+14 C:\Program Files                                          0         francisco.nabas Read
+18 C:\Program Files\Microsoft Analysis Services              0         francisco.nabas Read
+24 C:\Program Files\Microsoft Analysis Services\AS OLEDB     0         francisco.nabas Read
+25 C:\Program Files\Microsoft Analysis Services\AS OLEDB     0         francisco.nabas Read
+28 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+29 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+40 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+43 C:\Program Files\Microsoft Analysis Services\AS OLEDB     0         francisco.nabas Read
+56 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+59 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+60 \srvsvc                                                   0         francisco.nabas Read, Write, ChangeAttribute
+```
+
+```powershell-console
+psfile CISCOSRVP01P -IncludeConnectionName | Select-object * -First 1
+
+ComputerName : CISCOSRVP01P
+SessionName  : 10.21.13.152
+UserName     : francisco.nabas
+LockCount    : 0
+Permissions  : Read
+Path         : C:\
+Id           : 8
+```
+
+```powershell-console
+psfile CISCOSRVP01P -BasePath 'C:\Program Files\Microsoft Analysis Services'
+
+Id Path                                                      LockCount UserName        Permissions
+-- ----                                                      --------- --------        -----------
+18 C:\Program Files\Microsoft Analysis Services              0         francisco.nabas Read
+24 C:\Program Files\Microsoft Analysis Services\AS OLEDB     0         francisco.nabas Read
+25 C:\Program Files\Microsoft Analysis Services\AS OLEDB     0         francisco.nabas Read
+28 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+29 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+40 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+43 C:\Program Files\Microsoft Analysis Services\AS OLEDB     0         francisco.nabas Read
+59 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+```
+
+```powershell-console
+getnetfile CISCOSRVP01P -UserConnectionFilter 'francisco.nabas'
+
+Id Path                                                      LockCount UserName        Permissions
+-- ----                                                      --------- --------        -----------
+8  C:\                                                       0         francisco.nabas Read
+14 C:\Program Files                                          0         francisco.nabas Read
+18 C:\Program Files\Microsoft Analysis Services              0         francisco.nabas Read
+24 C:\Program Files\Microsoft Analysis Services\AS OLEDB     0         francisco.nabas Read
+25 C:\Program Files\Microsoft Analysis Services\AS OLEDB     0         francisco.nabas Read
+28 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+29 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+40 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+43 C:\Program Files\Microsoft Analysis Services\AS OLEDB     0         francisco.nabas Read
+59 C:\Program Files\Microsoft Analysis Services\AS OLEDB\140 0         francisco.nabas Read
+64 \srvsvc                                                   0         francisco.nabas Read, Write, ChangeAttribute
+```
+
+### Close-NetworkFile (closenetfile)
+
+This Cmdlet closes files opened through the network on the local or remote computer.
+It was designed to work in conjunction with `Get-NetworkFile`.
+It is also based on `psfile.exe`, from Sysinternals.
+
+```powershell-console
+Get-NetworkFile -ComputerName CISCOSRVP01P
+
+Id  Path                                                                                                                    LockCount UserName        Permissions
+--  ----                                                                                                                    --------- --------        -----------
+24  C:\Program Files\Microsoft Analysis Services\AS OLEDB                                                                   0         francisco.nabas Read
+25  C:\Program Files\Microsoft Analysis Services\AS OLEDB                                                                   0         francisco.nabas Read
+28  C:\Program Files\Microsoft Analysis Services\AS OLEDB\140                                                               0         francisco.nabas Read
+29  C:\Program Files\Microsoft Analysis Services\AS OLEDB\140                                                               0         francisco.nabas Read
+59  C:\Program Files\Microsoft Analysis Services\AS OLEDB\140                                                               0         francisco.nabas Read
+140 C:\Windows\SYSVOL\sysvol\nabas.com\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}\Machine                              0         CISCOCS01P$     Read
+141 C:\Windows\SYSVOL\sysvol\nabas.com\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}\Machine\Microsoft                    0         CISCOCS01P$     Read
+142 C:\Windows\SYSVOL\sysvol\nabas.com\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}\Machine\Microsoft\Windows NT         0         CISCOCS01P$     Read
+143 C:\Windows\SYSVOL\sysvol\nabas.com\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}\Machine\Microsoft\Windows NT\SecEdit 0         CISCOCS01P$     Read
+147 \srvsvc
+
+Close-NetworkFile -ComputerName CISCOSRVP01P -FileId 24
+```
+
+```powershell
+getnetfile CISCOSRVP01P | ? UserName -eq 'francisco.nabas' | closenetfile -Force
 ```
 
 ## Changelog

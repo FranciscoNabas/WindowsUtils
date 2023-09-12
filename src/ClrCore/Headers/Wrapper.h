@@ -40,6 +40,15 @@ namespace WindowsUtils
 		FdiError
 	};
 
+	public enum class CabinetCompressionType
+	{
+		None = tcompTYPE_NONE,
+		MSZip = tcompTYPE_MSZIP,
+		LZXLow = tcompTYPE_LZX | tcompLZX_WINDOW_LO,
+		LZXHigh = tcompTYPE_LZX | tcompLZX_WINDOW_HI
+
+	};
+
 	[Serializable()]
 	public ref class NativeException : public Exception
 	{
@@ -415,6 +424,7 @@ namespace WindowsUtils::Core
 
 		// Containers
 		void ExpandArchiveFile(Object^ archiveObject, String^ destination, ArchiveFileType fileType);
+		void CompressArchiveFile(String^ path, String^ destination, String^ namePrefix, int maxCabSize, CabinetCompressionType compressionType, ArchiveFileType type, CmdletContextBase^ context);
 
 		// Start-Tcping
 		void StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, Int32 failThreshold, bool continuous,
@@ -422,6 +432,12 @@ namespace WindowsUtils::Core
 
 		// Start-ProcessAsUser
 		void StartProcessAsUser(String^ userName, String^ domain, SecureString^ password, String^ commandLine, String^ titleBar);
+
+		// Get-NetworkFile
+		List<NetworkFileInfo^>^ GetNetworkFile(String^ computerName, String^ basePath, String^ userName, bool includeSessionName);
+
+		// Close-NetworkFile
+		void CloseNetworkFile(String^ computerName, Int32 fileId);
 
 		// Utilities
 		static String^ GetRegistryNtPath(String^ keyPath);
@@ -443,4 +459,5 @@ namespace WindowsUtils::Core
 	};
 
 	WWuString GetWideStringFromSystemString(String^ string);
+	static void GetAptFromPath(String^ path, AbstractPathTree* apt);
 }
