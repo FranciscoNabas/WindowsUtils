@@ -30,7 +30,8 @@ namespace WindowsUtils
 	public enum class WriteOutputType : UInt32
 	{
 		TCPING_OUTPUT,
-		TCPING_STATISTICS
+		TCPING_STATISTICS,
+		TESTPORT_OUTPUT
 	};
 
 	public enum class ErrorType
@@ -47,6 +48,12 @@ namespace WindowsUtils
 		LZXLow = tcompTYPE_LZX | tcompLZX_WINDOW_LO,
 		LZXHigh = tcompTYPE_LZX | tcompLZX_WINDOW_HI
 
+	};
+
+	public enum class TransportProtocol
+	{
+		Tcp,
+		Udp
 	};
 
 	[Serializable()]
@@ -438,6 +445,9 @@ namespace WindowsUtils::Core
 
 		// Close-NetworkFile
 		void CloseNetworkFile(String^ computerName, Int32 fileId);
+
+		// Test-Port
+		void TestNetworkPort(String^ destination, UInt32 port, TransportProtocol protocol, UInt32 timeout, Boolean printFqdn, CmdletContextBase^ context);
 
 		// Utilities
 		static String^ GetRegistryNtPath(String^ keyPath);

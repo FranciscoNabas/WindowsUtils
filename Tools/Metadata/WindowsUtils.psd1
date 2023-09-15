@@ -45,6 +45,7 @@
         'Get-NetworkFile'
         'Close-NetworkFile'
         'New-Cabinet'
+        'Test-Port'
     )
     AliasesToExport = @(
         'gethandle'
@@ -53,6 +54,7 @@
         'psfile'
         'getnetfile'
         'closenetfile'
+        'testport'
     )
     PrivateData = @{
         PSData = @{

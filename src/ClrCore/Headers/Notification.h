@@ -19,7 +19,8 @@ namespace WindowsUtils::Core
 		typedef enum _WRITE_OUTPUT_TYPE : DWORD
 		{
 			TCPING_OUTPUT,
-			TCPING_STATISTICS
+			TCPING_STATISTICS,
+			TESTPORT_OUTPUT
 		} WRITE_OUTPUT_TYPE;
 
 		typedef enum _WRITE_DATA_TYPE

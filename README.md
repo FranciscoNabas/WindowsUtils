@@ -28,6 +28,7 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [Start-ProcessAsUser (runas)](#start-processasuser-runas)
     - [Get-NetworkFile (psfile, getnetfile)](#get-networkfile-psfile-getnetfile)
     - [Close-NetworkFile (closenetfile)](#close-networkfile-closenetfile)
+    - [New-Cabinet](#new-cabinet)
   - [Changelog](#changelog)
   - [Support](#support)
   
@@ -444,6 +445,22 @@ Close-NetworkFile -ComputerName CISCOSRVP01P -FileId 24
 
 ```powershell
 getnetfile CISCOSRVP01P | ? UserName -eq 'francisco.nabas' | closenetfile -Force
+```
+
+### New-Cabinet
+
+This command creates a new cabinet based on a source path. It must be a valid path to a file or folder.
+If the path is a folder, it will search for files recursively, and compress them.
+Cabinet files only accept files up to 2Gb of length, and the maximum size for a cabinet is also 2Gb.
+
+```powershell
+New-Cabinet -Path 'C:\Path\To\Files' -Destination 'C:\Path\To\Destination'
+```
+
+You can also limit the size of the cabinet, in kilobytes. If the files surpass this limit they will span over multiple files
+
+```powershell
+New-Cabinet -Path 'C:\Path\To\Files' -Destination 'C:\Path\To\Destination' -MaxCabSize 20000
 ```
 
 ## Changelog

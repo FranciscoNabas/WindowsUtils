@@ -27,6 +27,12 @@ namespace WindowsUtils::Core
 			Timeout
 		} TCPING_STATUS;
 
+		typedef enum _TESTPORT_PROTOCOL
+		{
+			Tcp,
+			Udp
+		} TESTPORT_PROTOCOL;
+
 		typedef struct _TCPING_STATISTICS
 		{
 			DWORD Sent;
@@ -57,7 +63,7 @@ namespace WindowsUtils::Core
 
 		typedef struct _TCPING_OUTPUT
 		{
-			FILETIME Timestamp;
+			::FILETIME Timestamp;
 			LPWSTR Destination;
 			LPWSTR DestAddress;
 			DWORD Port;
@@ -65,7 +71,7 @@ namespace WindowsUtils::Core
 			double RoundTripTime;
 			double Jitter;
 
-			_TCPING_OUTPUT(FILETIME timestamp, const LPWSTR dest, LPWSTR destAddr, DWORD port, TCPING_STATUS stat, double rtt, double jitter)
+			_TCPING_OUTPUT(::FILETIME timestamp, const LPWSTR dest, LPWSTR destAddr, DWORD port, TCPING_STATUS stat, double rtt, double jitter)
 				: Timestamp(timestamp), Port(port), Status(stat), RoundTripTime(rtt), Jitter(jitter)
 			{
 				if (dest != NULL) {
@@ -98,6 +104,47 @@ namespace WindowsUtils::Core
 
 		} TCPING_OUTPUT, *PTCPING_OUTPUT;
 
+		typedef struct _TESTPORT_OUTPUT
+		{
+			::FILETIME Timestamp;
+			LPWSTR Destination;
+			LPWSTR DestAddress;
+			DWORD Port;
+			TCPING_STATUS Status;
+
+			_TESTPORT_OUTPUT(::FILETIME timestamp, const LPWSTR destination, const LPWSTR destAddress, DWORD port, TCPING_STATUS status)
+			{
+				if (destination != NULL) {
+					size_t destLen = wcslen(destination) + 1;
+					Destination = new WCHAR[destLen];
+					wcscpy_s(Destination, destLen, destination);
+				}
+				else
+					Destination = NULL;
+
+				if (destAddress != NULL) {
+					size_t destAddrLen = wcslen(destAddress) + 1;
+					DestAddress = new WCHAR[destAddrLen];
+					wcscpy_s(DestAddress, destAddrLen, destAddress);
+				}
+				else
+					DestAddress = NULL;
+
+				Timestamp = timestamp;
+				Port = port;
+				Status = status;
+			}
+
+			~_TESTPORT_OUTPUT()
+			{
+				if (Destination != NULL)
+					delete[] Destination;
+
+				if (DestAddress != NULL)
+					delete[] DestAddress;
+			}
+
+		} TESTPORT_OUTPUT, *PTESTPORT_OUTPUT;
 
 		class EphemeralSocket
 		{
@@ -225,6 +272,29 @@ namespace WindowsUtils::Core
 
 		} NETWORK_SESSION_INFO, *PNETWORK_SESSION_INFO;
 
+		class TestPortForm
+		{
+		public:
+			const WWuString& Destination() const;
+			const DWORD Port() const;
+			const TESTPORT_PROTOCOL Protocol() const;
+			const DWORD Timeout() const;
+			const bool PrintFqdn() const;
+			
+			LPCWSTR PortAsString() const;
+
+			TestPortForm(const WWuString& destination, DWORD port, TESTPORT_PROTOCOL protocol, DWORD timeoutSec, bool printFqdn);
+			~TestPortForm();
+
+		private:
+			WWuString m_destination;
+			DWORD m_port;
+			TESTPORT_PROTOCOL m_protocol;
+			DWORD m_timeoutSec;
+			WCHAR m_portAsString[6];
+			bool m_printFqdn;
+		};
+
 		/*
 		*	~ Function definition
 		*/
@@ -253,6 +323,10 @@ namespace WindowsUtils::Core
 		// Close-NetworkFile (PsFile)
 
 		void CloseNetworkFile(const WWuString& computerName, DWORD fileId);
+
+		// Test-Port
+
+		void TestNetworkPort(const TestPortForm& workForm, WuNativeContext* context);
 	};
 
 	void PerformSingleTestProbe(ADDRINFOW* singleInfo, Network::TcpingForm* workForm, const WWuString& displayName,

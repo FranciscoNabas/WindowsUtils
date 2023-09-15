@@ -966,6 +966,21 @@ namespace WindowsUtils::Core
 		}
 	}
 
+	// Test-Port
+	void Wrapper::TestNetworkPort(String^ destination, UInt32 port, TransportProtocol protocol, UInt32 timeout, Boolean printFqdn, CmdletContextBase^ context)
+	{
+		WWuString wrappedDest = GetWideStringFromSystemString(destination);
+		Network::TestPortForm workForm(
+			wrappedDest,
+			port,
+			static_cast<Network::TESTPORT_PROTOCOL>(protocol),
+			timeout,
+			printFqdn
+		);
+
+		ntwptr->TestNetworkPort(workForm, context->GetUnderlyingContext());
+	}
+
 	// Utilities
 	String^ Wrapper::GetRegistryNtPath(String^ keyPath)
 	{

@@ -272,6 +272,11 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
                 output = new TcpingStatistics(nativeStats);
                 break;
 
+            case WriteOutputType.TESTPORT_OUTPUT:
+                TESTPORT_OUTPUT testPortStats = (TESTPORT_OUTPUT)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(TESTPORT_OUTPUT));
+                output = new TestPortInfo(testPortStats);
+                break;
+
             default:
                 return;
         }

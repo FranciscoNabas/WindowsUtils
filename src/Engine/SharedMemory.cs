@@ -141,6 +141,21 @@ namespace WindowsUtils.Interop
         internal double TotalMilliseconds;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct TESTPORT_OUTPUT
+    {
+        internal long Timestamp;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string Destination;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string DestAddress;
+
+        internal uint Port;
+        internal TcpingStatus Status;
+    }
+
     internal partial class NativeFunctions
     {
         [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CreateFileMappingW")]

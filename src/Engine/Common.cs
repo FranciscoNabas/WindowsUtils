@@ -416,4 +416,22 @@ namespace WindowsUtils
             TotalJitter = nativeStatistics.TotalJitter;
         }
     }
+
+    public sealed class TestPortInfo
+    {
+        public string Destination { get; }
+        public string ResolvedAddress { get; }
+        public DateTime Timestamp { get; }
+        public uint Port { get; }
+        public TcpingStatus Status { get; }
+
+        internal TestPortInfo(TESTPORT_OUTPUT nativeInfo)
+        {
+            Destination = nativeInfo.Destination;
+            ResolvedAddress = nativeInfo.DestAddress;
+            Timestamp = DateTime.FromFileTime(nativeInfo.Timestamp);
+            Port = nativeInfo.Port;
+            Status = nativeInfo.Status;
+        }
+    }
 }
