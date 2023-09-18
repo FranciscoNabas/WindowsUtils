@@ -31,6 +31,14 @@ public:
 #endif
 	}
 
+	WuStdException(const WuStdException& other)
+	{
+		m_windowsError = other.m_windowsError;
+		m_message = other.m_message;
+		m_compactTrace = other.m_compactTrace;
+		m_isNt = other.m_isNt;
+	}
+
 	WuStdException(int errorCode, LPCWSTR filePath, int lineNumber, ErrorType type = ErrorType::SystemError)
 	{
 		m_windowsError = errorCode;
@@ -562,4 +570,27 @@ private:
 
 		return counter.QuadPart;
 	}
+};
+
+template <class T>
+class VectorArrayWrapper
+{
+public:
+	const size_t Count() const { return m_count; }
+	const T* Array() const { return m_array; }
+
+	VectorArrayWrapper<T>(const std::vector<T>& vec)
+	{
+		size_t dataSize = vec.size() * sizeof(T);
+		m_array = (T*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dataSize);
+		RtlCopyMemory(m_array, &vec.front(), dataSize);
+
+		m_count = vec.size();
+	}
+
+	~VectorArrayWrapper() { HeapFree(GetProcessHeap(), 0, m_array); }
+
+private:
+	size_t m_count;
+	T* m_array;
 };

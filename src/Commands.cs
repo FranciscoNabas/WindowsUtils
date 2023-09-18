@@ -9,6 +9,7 @@ using WindowsUtils.AccessControl;
 using WindowsUtils.TerminalServices;
 using WindowsUtils.ArgumentCompletion;
 using System.Security;
+using System.Diagnostics;
 
 #pragma warning disable CS8618
 namespace WindowsUtils.Commands
@@ -2193,6 +2194,7 @@ namespace WindowsUtils.Commands
     /// <summary>
     /// <para type="synopsis">Test if a TCP or UDP port is open.</para>
     /// <para type="description">This Cmdlet tests if TCP or UPD ports are opened in a given destination.</para>
+    /// <para type="description">Attention! Testing UDP can return false positives due the nature of the protocol. If the server doesn't refuse the connection we consider the port open.</para>
     /// <example>
     ///     <para></para>
     ///     <code>Test-Port -ComputerName 'google.com'</code>
@@ -2250,20 +2252,8 @@ namespace WindowsUtils.Commands
                     .ToArray();
             }
             set {
-                foreach (int port in value) {
-                    if (port < 0 || port > ushort.MaxValue) {
-                        WriteError(new(
-                            new ArgumentOutOfRangeException("port"),
-                            "PortOutOfRange",
-                            ErrorCategory.InvalidArgument,
-                            port
-                        ));
-
-                        continue;
-                    }
-
+                foreach (int port in value)
                     _portList.Add(new() { Port = port, Protocol = TransportProtocol.Tcp });
-                }
             }
         }
 
@@ -2279,20 +2269,8 @@ namespace WindowsUtils.Commands
                     .ToArray();
             }
             set {
-                foreach (int port in value) {
-                    if (port < 0 || port > ushort.MaxValue) {
-                        WriteError(new(
-                            new ArgumentOutOfRangeException("port"),
-                            "PortOutOfRange",
-                            ErrorCategory.InvalidArgument,
-                            port
-                        ));
-
-                        continue;
-                    }
-
+                foreach (int port in value)
                     _portList.Add(new() { Port = port, Protocol = TransportProtocol.Udp });
-                }
             }
         }
 
@@ -2303,20 +2281,113 @@ namespace WindowsUtils.Commands
         [ValidateRange(1, int.MaxValue)]
         public int Timeout { get; set; } = 2;
 
+        protected override void ProcessRecord()
+        {
+            if (_portList.Count == 0)
+                throw new ArgumentException("You need to input at least one port.");
+
+            foreach (string destination in _destination) {
+                foreach (SingleTestInfo port in _portList) {
+                    if (port.Port < 0 || port.Port > ushort.MaxValue) {
+                        WriteError(new(
+                            new ArgumentOutOfRangeException($"Port cannot be smaller than 0, or bigger than 65535. Was '{port.Port}'."),
+                            "PortOutOfRange",
+                            ErrorCategory.InvalidArgument,
+                            port
+                        ));
+
+                        continue;
+                    }
+
+                    _unwrapper.TestNetworkPort(destination, (uint)port.Port, port.Protocol, (uint)Timeout, (CmdletContextBase)CmdletContext);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">List processes modules.</para>
+    /// <para type="description">This Cmdlet lists modules loaded into processes.</para>
+    /// <para type="description">You can list specific processes, or all processes. You can also include module version information.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-ProcessModule -Name 'explorer'</code>
+    ///     <para>Gets loaded modules for the explorer process.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>listdlls -ProcessId 666, 667 -IncludeVersionInfo</code>
+    ///     <para>Gets loaded modules for processes ID 666 and 667, including module version info.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>listdlls</code>
+    ///     <para>Gets loaded modules for all processes.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(
+        VerbsCommon.Get, "ProcessModule",
+        DefaultParameterSetName = "byName"
+    )]
+    [Alias("listdlls")]
+    public class GetProcessModuleCommand : CoreCommandBase
+    {
+        private readonly Wrapper _unwrapper = new();
+        private readonly List<uint> _processIdList = new();
+
         /// <summary>
-        /// <para type="description">If called, attempts to resolve the address to a FQDN.</para>
-        /// <para type="description">Attention! There is a performance penalty due the DNS reverse lookup.</para>
+        /// <para type="description">One or more process friendly names.</para>
+        /// </summary>
+        [Parameter(
+            Position = 0,
+            ParameterSetName = "byName"
+        )]
+        [ValidateNotNullOrEmpty]
+        public string[] Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">One or more process IDs.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "byProcessId")]
+        [ValidateNotNullOrEmpty]
+        public uint[] ProcessId { get; set; }
+        
+        /// <summary>
+        /// <para type="description">Include module file version information.</para>
         /// </summary>
         [Parameter()]
-        public SwitchParameter PrintFqdn { get; set; }
+        public SwitchParameter IncludeVersionInfo { get; set; }
+
+        protected override void BeginProcessing()
+        {
+            if (!Utils.IsAdministrator())
+                throw new InvalidOperationException("Cmdlet needs to run elevated.");
+
+            if (ParameterSetName == "byName") {
+                if (Name is not null)
+                    foreach (string processName in Name) {
+                        Process[]? process = Process.GetProcessesByName(processName);
+                        if (process is null || process.Length == 0)
+                            WriteWarning($"Process with name '{processName}' not found.");
+                        else
+                            foreach (Process p in process)
+                                _processIdList.Add((uint)p.Id);
+                    }
+            }
+            else
+                if (ProcessId is not null)
+                    _processIdList.AddRange(ProcessId);
+        }
 
         protected override void ProcessRecord()
         {
-            foreach (string destination in _destination) {
-                foreach (SingleTestInfo port in _portList) {
-                    _unwrapper.TestNetworkPort(destination, (uint)port.Port, port.Protocol, (uint)Timeout, PrintFqdn, (CmdletContextBase)CmdletContext);
-                }
-            }
+            if (!_processIdList.Any())
+                _unwrapper.ListProcessModule(IncludeVersionInfo, (CmdletContextBase)CmdletContext);
+            else
+                _unwrapper.ListProcessModule(_processIdList.ToArray(), IncludeVersionInfo, (CmdletContextBase)CmdletContext);
         }
     }
 } 

@@ -967,18 +967,36 @@ namespace WindowsUtils::Core
 	}
 
 	// Test-Port
-	void Wrapper::TestNetworkPort(String^ destination, UInt32 port, TransportProtocol protocol, UInt32 timeout, Boolean printFqdn, CmdletContextBase^ context)
+	void Wrapper::TestNetworkPort(String^ destination, UInt32 port, TransportProtocol protocol, UInt32 timeout, CmdletContextBase^ context)
 	{
 		WWuString wrappedDest = GetWideStringFromSystemString(destination);
 		Network::TestPortForm workForm(
 			wrappedDest,
 			port,
 			static_cast<Network::TESTPORT_PROTOCOL>(protocol),
-			timeout,
-			printFqdn
+			timeout
 		);
 
 		ntwptr->TestNetworkPort(workForm, context->GetUnderlyingContext());
+	}
+
+	// Get-ProcessModule
+	void Wrapper::ListProcessModule(array<UInt32>^ processIdList, bool includeVersionInfo, CmdletContextBase^ context)
+	{
+		wuvector<DWORD> wrappedProcIdList;
+		for each (UInt32 procId in processIdList)
+			wrappedProcIdList.push_back(procId);
+
+		patptr->GetProcessLoadedModuleInformation(wrappedProcIdList, includeVersionInfo, false, context->GetUnderlyingContext());
+	}
+
+	void Wrapper::ListProcessModule(bool includeVersionInfo, CmdletContextBase^ context)
+	{
+		wuvector<DWORD> procIdList;
+		GetRunnningProcessIdList(procIdList);
+
+		wuvector<ProcessAndThread::PROCESS_MODULE_INFO> moduleInfo;
+		patptr->GetProcessLoadedModuleInformation(procIdList, includeVersionInfo, true, context->GetUnderlyingContext());
 	}
 
 	// Utilities
@@ -1144,10 +1162,12 @@ namespace WindowsUtils::Core
 		WriteWarningWrapper^ warnWrapper,
 		WriteInformationWrapper^ infoWrapper,
 		WriteObjectWrapper^ objWrapper,
+		WriteErrorWrapper^ errorWrapper,
 		Byte* progressBuffer,
 		Byte* warningBuffer,
 		Byte* infoBuffer,
-		Byte* objBuffer
+		Byte* objBuffer,
+		Byte* errorBuffer
 	) {
 		_progressGcHandle = GCHandle::Alloc(progWrapper);
 		IntPtr progressDelegatePtr = Marshal::GetFunctionPointerForDelegate(progWrapper);
@@ -1165,15 +1185,21 @@ namespace WindowsUtils::Core
 		IntPtr objectDelegatePtr = Marshal::GetFunctionPointerForDelegate(objWrapper);
 		auto objPtr = static_cast<Notification::UnmanagedWriteObject>(objectDelegatePtr.ToPointer());
 
+		_errorGcHandle = GCHandle::Alloc(errorWrapper);
+		IntPtr errorDelegatePtr = Marshal::GetFunctionPointerForDelegate(errorWrapper);
+		auto errorPtr = static_cast<Notification::UnmanagedWriteError>(errorDelegatePtr.ToPointer());
+
 		_nativeContext = new WuNativeContext(
 			progressPtr,
 			warningPtr,
 			infoPtr,
 			objPtr,
+			errorPtr,
 			progressBuffer,
 			warningBuffer,
 			infoBuffer,
-			objBuffer
+			objBuffer,
+			errorBuffer
 		);
 	}
 	CmdletContextBase::~CmdletContextBase()

@@ -280,7 +280,7 @@ namespace WindowsUtils::Core
 	*	~ TestPortForm
 	*/
 
-	Network::TestPortForm::TestPortForm(const WWuString& destination, DWORD port, TESTPORT_PROTOCOL protocol, DWORD timeoutSec, bool printFqdn)
+	Network::TestPortForm::TestPortForm(const WWuString& destination, DWORD port, TESTPORT_PROTOCOL protocol, DWORD timeoutSec)
 	{
 		WSADATA wsaData;
 		WORD reqVersion = MAKEWORD(2, 2);
@@ -296,7 +296,6 @@ namespace WindowsUtils::Core
 		m_port = port;
 		m_protocol = protocol;
 		m_timeoutSec = timeoutSec;
-		m_printFqdn = printFqdn;
 	}
 
 	Network::TestPortForm::~TestPortForm()
@@ -308,7 +307,6 @@ namespace WindowsUtils::Core
 	const DWORD Network::TestPortForm::Port() const { return m_port; }
 	const Network::TESTPORT_PROTOCOL Network::TestPortForm::Protocol() const { return m_protocol; }
 	const DWORD Network::TestPortForm::Timeout() const { return m_timeoutSec; }
-	const bool Network::TestPortForm::PrintFqdn() const { return m_printFqdn; }
 
 	LPCWSTR Network::TestPortForm::PortAsString() const { return m_portAsString; }
 
@@ -539,23 +537,7 @@ namespace WindowsUtils::Core
 
 		// Getting the display name from the resolved address, and optionally the FQDN.
 		WWuString displayName;
-		WWuString destText;
-		FormatIp(addressInfo, destText);
-		if (workForm.PrintFqdn()) {
-			if (addressInfo->ai_family == AF_INET6) {
-				WWuString ipStr = WWuString(destText);
-				ResolveIpv6ToDomainName(ipStr, displayName);
-				if (displayName.Length() == 0)
-					displayName = destText;
-			}
-			else {
-				ResolveIpToDomainName(destText, displayName);
-				if (displayName.Length() == 0)
-					displayName = destText;
-			}
-		}
-		else
-			displayName = destText;
+		FormatIp(addressInfo, displayName);
 		
 		::FILETIME timestamp = { 0, 0 };
 		TESTPORT_OUTPUT output(timestamp, (LPWSTR)workForm.Destination().GetBuffer(), reinterpret_cast<const LPWSTR>(displayName.GetBuffer()), workForm.Port(), TCPING_STATUS::Timeout);

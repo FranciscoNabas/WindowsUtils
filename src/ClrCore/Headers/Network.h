@@ -279,11 +279,10 @@ namespace WindowsUtils::Core
 			const DWORD Port() const;
 			const TESTPORT_PROTOCOL Protocol() const;
 			const DWORD Timeout() const;
-			const bool PrintFqdn() const;
 			
 			LPCWSTR PortAsString() const;
 
-			TestPortForm(const WWuString& destination, DWORD port, TESTPORT_PROTOCOL protocol, DWORD timeoutSec, bool printFqdn);
+			TestPortForm(const WWuString& destination, DWORD port, TESTPORT_PROTOCOL protocol, DWORD timeoutSec);
 			~TestPortForm();
 
 		private:
@@ -292,7 +291,6 @@ namespace WindowsUtils::Core
 			TESTPORT_PROTOCOL m_protocol;
 			DWORD m_timeoutSec;
 			WCHAR m_portAsString[6];
-			bool m_printFqdn;
 		};
 
 		/*

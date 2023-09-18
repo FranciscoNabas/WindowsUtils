@@ -1,9 +1,10 @@
 using System.Net;
 using System.Text.Json;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using WindowsUtils.Core;
-using WindowsUtils.Commands;
 using WindowsUtils.Interop;
+using WindowsUtils.Commands;
 
 namespace WindowsUtils
 {
@@ -420,7 +421,7 @@ namespace WindowsUtils
     public sealed class TestPortInfo
     {
         public string Destination { get; }
-        public string ResolvedAddress { get; }
+        public string Address { get; }
         public DateTime Timestamp { get; }
         public uint Port { get; }
         public TcpingStatus Status { get; }
@@ -428,10 +429,69 @@ namespace WindowsUtils
         internal TestPortInfo(TESTPORT_OUTPUT nativeInfo)
         {
             Destination = nativeInfo.Destination;
-            ResolvedAddress = nativeInfo.DestAddress;
+            Address = nativeInfo.DestAddress;
             Timestamp = DateTime.FromFileTime(nativeInfo.Timestamp);
             Port = nativeInfo.Port;
             Status = nativeInfo.Status;
+        }
+    }
+
+    public sealed class LabStruct
+    {
+        public uint Id { get; }
+        public string StringObject { get; }
+
+        internal LabStruct(LAB_STRUCT nativeInfo)
+        {
+            Id = nativeInfo.Id;
+            StringObject = nativeInfo.StringObject;
+        }
+    }
+
+    public sealed class ModuleInfo
+    {
+        public string ModuleName { get; }
+        public string ModulePath { get; }
+        public ImageVersionInfo VersionInfo { get; }
+
+        internal ModuleInfo(WU_MODULE_INFO nativeInfo)
+        {
+            ModuleName = nativeInfo.ModuleName;
+            ModulePath = nativeInfo.ModulePath;
+
+            VersionInfo = new() {
+                FileDescription = nativeInfo.VersionInfo.FileDescription,
+                ProductName = nativeInfo.VersionInfo.ProductName,
+                FileVersion = nativeInfo.VersionInfo.FileVersion,
+                CompanyName = nativeInfo.VersionInfo.CompanyName
+            };
+        }
+    }
+
+    public sealed class ProcessModuleInfo
+    {
+        public uint ProcessId { get; }
+        public string ImagePath { get; }
+        public string ImageName { get; }
+        public string CommandLine { get; }
+        public ModuleInfo[] ModuleInfo { get; }
+
+        internal ProcessModuleInfo(PROCESS_MODULE_INFO nativeInfo)
+        {
+            ProcessId = nativeInfo.ProcessId;
+            ImagePath = nativeInfo.ImagePath;
+            ImageName = nativeInfo.ImageFileName;
+            CommandLine = nativeInfo.CommandLine;
+
+            ModuleInfo = new ModuleInfo[nativeInfo.ModuleInfoCount];
+            IntPtr offset = nativeInfo.ModuleInfo;
+            for (uint i = 0; i < nativeInfo.ModuleInfoCount; i++)
+            {
+                WU_MODULE_INFO currentModule = (WU_MODULE_INFO)Marshal.PtrToStructure(offset, typeof(WU_MODULE_INFO));
+                ModuleInfo[i] = new(currentModule);
+
+                offset = IntPtr.Add(offset, Marshal.SizeOf(typeof(WU_MODULE_INFO)));
+            }
         }
     }
 }

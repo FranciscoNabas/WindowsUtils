@@ -136,6 +136,99 @@ namespace WindowsUtils::Core
 		}
 	}
 
+	Notification::_MAPPED_ERROR_DATA::_MAPPED_ERROR_DATA(const WuStdException& exception, const LPWSTR errorId, WRITE_ERROR_CATEGORY category, const LPWSTR targetObject)
+	{
+		size_t messageLen = exception.Message().Length();
+		size_t compTraceLen = exception.CompactTrace().Length();
+
+		if (messageLen > 0) {
+			ErrorMessage = new WCHAR[messageLen + 1];
+			wcscpy_s(ErrorMessage, messageLen + 1, exception.Message().GetBuffer());
+		}
+		else
+			ErrorMessage = NULL;
+
+		if (compTraceLen > 0) {
+			CompactTrace = new WCHAR[compTraceLen + 1];
+			wcscpy_s(CompactTrace, compTraceLen + 1, exception.CompactTrace().GetBuffer());
+		}
+		else
+			CompactTrace = NULL;
+
+		if (errorId != NULL) {
+			size_t errorIdLen = wcslen(errorId) + 1;
+			ErrorId = new WCHAR[errorIdLen];
+			wcscpy_s(ErrorId, errorIdLen, errorId);
+		}
+		else
+			ErrorId = NULL;
+
+		if (targetObject != NULL) {
+			size_t targetObjLen = wcslen(targetObject) + 1;
+			TargetObject = new WCHAR[targetObjLen];
+			wcscpy_s(TargetObject, targetObjLen, targetObject);
+		}
+		else
+			TargetObject = NULL;
+
+		Category = category;
+		ErrorCode = exception.ErrorCode();
+	}
+
+	Notification::_MAPPED_ERROR_DATA::_MAPPED_ERROR_DATA(const WuStdException& exception, const LPWSTR message, const LPWSTR errorId, WRITE_ERROR_CATEGORY category, const LPWSTR targetObject)
+	{
+		size_t compTraceLen = exception.CompactTrace().Length();
+
+		if (message != NULL) {
+			size_t messageLen = wcslen(message) + 1;
+			ErrorMessage = new WCHAR[messageLen];
+			wcscpy_s(ErrorMessage, messageLen, message);
+		}
+		else
+			ErrorMessage = NULL;
+
+		if (compTraceLen > 0) {
+			CompactTrace = new WCHAR[compTraceLen + 1];
+			wcscpy_s(CompactTrace, compTraceLen + 1, exception.CompactTrace().GetBuffer());
+		}
+		else
+			CompactTrace = NULL;
+
+		if (errorId != NULL) {
+			size_t errorIdLen = wcslen(errorId) + 1;
+			ErrorId = new WCHAR[errorIdLen];
+			wcscpy_s(ErrorId, errorIdLen, errorId);
+		}
+		else
+			ErrorId = NULL;
+
+		if (targetObject != NULL) {
+			size_t targetObjLen = wcslen(targetObject) + 1;
+			TargetObject = new WCHAR[targetObjLen];
+			wcscpy_s(TargetObject, targetObjLen, targetObject);
+		}
+		else
+			TargetObject = NULL;
+
+		Category = category;
+		ErrorCode = exception.ErrorCode();
+	}
+
+	Notification::_MAPPED_ERROR_DATA::~_MAPPED_ERROR_DATA()
+	{
+		if (ErrorMessage != NULL)
+			delete[] ErrorMessage;
+
+		if (CompactTrace != NULL)
+			delete[] CompactTrace;
+
+		if (ErrorId != NULL)
+			delete[] ErrorId;
+
+		if (TargetObject != NULL)
+			delete[] TargetObject;
+	}
+
 	/*
 	*	~ WindowsUtils native context ~
 	*/
@@ -145,13 +238,14 @@ namespace WindowsUtils::Core
 		Notification::UnmanagedWriteWarning warnPtr,
 		Notification::UnmanagedWriteInformation infoPtr,
 		Notification::UnmanagedWriteObject objPtr,
+		Notification::UnmanagedWriteError errorPtr,
 		BYTE* progBuffer,
 		BYTE* warningBuffer,
 		BYTE* informationBuffer,
-		BYTE* objectBuffer
-
-	) : m_WriteProgressHook(progPtr), m_WriteWarningHook(warnPtr), m_WriteInformationHook(infoPtr), m_WriteObjectHook(objPtr),
-			m_ProgressBuffer(progBuffer), m_WarningBuffer(warningBuffer), m_InformationBuffer(informationBuffer), m_objectBuffer(objectBuffer)
+		BYTE* objectBuffer,
+		BYTE* errorBuffer
+	) : m_WriteProgressHook(progPtr), m_WriteWarningHook(warnPtr), m_WriteInformationHook(infoPtr), m_WriteObjectHook(objPtr), m_WriteErrorHook(errorPtr),
+			m_ProgressBuffer(progBuffer), m_WarningBuffer(warningBuffer), m_InformationBuffer(informationBuffer), m_objectBuffer(objectBuffer), m_ErrorBuffer(errorBuffer)
 	{ }
 
 	WuNativeContext::~WuNativeContext() { }
@@ -181,5 +275,14 @@ namespace WindowsUtils::Core
 		RtlZeroMemory(m_InformationBuffer, 128);
 		RtlCopyMemory(m_InformationBuffer, infoData, dataSize);
 		m_WriteInformationHook();
+	}
+
+	void WuNativeContext::NativeWriteError(const Notification::PMAPPED_ERROR_DATA errorData)
+	{
+		size_t dataSize = sizeof(Notification::MAPPED_ERROR_DATA);
+
+		RtlZeroMemory(m_ErrorBuffer, 128);
+		RtlCopyMemory(m_ErrorBuffer, errorData, dataSize);
+		m_WriteErrorHook();
 	}
 }

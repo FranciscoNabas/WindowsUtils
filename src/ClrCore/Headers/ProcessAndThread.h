@@ -4,6 +4,8 @@
 #include "Utilities.h"
 #include "Expressions.h"
 #include "NtUtilities.h"
+#include "Notification.h"
+#include "AccessControl.h"
 
 namespace WindowsUtils::Core
 {
@@ -57,12 +59,67 @@ namespace WindowsUtils::Core
 
 		} WU_OBJECT_HANDLE, *PWU_OBJECT_HANDLE;
 
+		typedef struct _WU_MODULE_INFO
+		{
+			WWuString ModuleName;
+			WWuString ModulePath;
+			struct
+			{
+				WWuString FileDescription;
+				WWuString ProductName;
+				WWuString FileVersion;
+				WWuString CompanyName;
+
+			} VersionInfo;
+
+			_WU_MODULE_INFO() { }
+			~_WU_MODULE_INFO() { }
+
+		} WU_MODULE_INFO, *PWU_MODULE_INFO;
+
+		typedef struct _PROCESS_MODULE_INFO
+		{
+			DWORD ProcessId;
+			WWuString ImagePath;
+			WWuString ImageFileName;
+			WWuString CommandLine;
+			size_t ModuleInfoCount;
+			PWU_MODULE_INFO ModuleInfo;
+
+			_PROCESS_MODULE_INFO()
+				: ProcessId(0), ModuleInfo(NULL), ModuleInfoCount(0) { }
+
+			~_PROCESS_MODULE_INFO() { }
+
+			void SetModuleInfo(VectorArrayWrapper<WU_MODULE_INFO>& wrappedVec)
+			{
+				if (wrappedVec.Count() > 0) {
+					ModuleInfoCount = wrappedVec.Count();
+					ModuleInfo = new ProcessAndThread::WU_MODULE_INFO[ModuleInfoCount];
+
+					const ProcessAndThread::WU_MODULE_INFO* modList = wrappedVec.Array();
+					for (size_t i = 0; i < ModuleInfoCount; i++) {
+						ModuleInfo[i].ModuleName = modList[i].ModuleName;
+						ModuleInfo[i].ModulePath = modList[i].ModulePath;
+						ModuleInfo[i].VersionInfo.FileDescription = modList[i].VersionInfo.FileDescription;
+						ModuleInfo[i].VersionInfo.ProductName = modList[i].VersionInfo.ProductName;
+						ModuleInfo[i].VersionInfo.FileVersion = modList[i].VersionInfo.FileVersion;
+						ModuleInfo[i].VersionInfo.CompanyName = modList[i].VersionInfo.CompanyName;
+					}
+				}
+			}
+
+		} PROCESS_MODULE_INFO, *PPROCESS_MODULE_INFO;
+
 		/*=========================================
 		==		 Function identification		 ==
 		===========================================*/
 
 		// Get-ObjectHandle
 		void GetProcessObjectHandle(wuvector<WU_OBJECT_HANDLE>* objectHandleList, wuvector<OBJECT_INPUT>* inputList, bool closeHandle);
+		
+		// Get-ProcessModule
+		void GetProcessLoadedModuleInformation(wuvector<DWORD> processIdList, bool includeVersionInfo, bool suppressError, WuNativeContext* context);
 	};
 
 	/*=========================================

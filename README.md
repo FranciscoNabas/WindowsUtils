@@ -22,13 +22,15 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [New-ServiceAccessRule](#new-serviceaccessrule)
     - [New-ServiceAuditRule](#new-serviceauditrule)
     - [Set-ServiceSecurity](#set-servicesecurity)
-    - [Get-InstalledDotnet](#get-installeddotnet)
+    - [Get-InstalledDotnet (getdotnet)](#get-installeddotnet-getdotnet)
     - [Expand-Cabinet](#expand-cabinet)
     - [Start-Tcping (tcping)](#start-tcping-tcping)
     - [Start-ProcessAsUser (runas)](#start-processasuser-runas)
     - [Get-NetworkFile (psfile, getnetfile)](#get-networkfile-psfile-getnetfile)
     - [Close-NetworkFile (closenetfile)](#close-networkfile-closenetfile)
     - [New-Cabinet](#new-cabinet)
+    - [Test-Port (testport)](#test-port-testport)
+    - [Get-ProcessModule (listdlls)](#get-processmodule-listdlls)
   - [Changelog](#changelog)
   - [Support](#support)
   
@@ -261,7 +263,7 @@ $serviceSecurity.AddAccessRule($newRule)
 Set-ServiceSecurity -Name test_service -SecurityObject $serviceSecurity
 ```
 
-### Get-InstalledDotnet
+### Get-InstalledDotnet (getdotnet)
 
 This Cmdlet returns all .NET versions installed in the computer. Additionally, you can return
 the installed patches for .NET.
@@ -449,7 +451,7 @@ getnetfile CISCOSRVP01P | ? UserName -eq 'francisco.nabas' | closenetfile -Force
 
 ### New-Cabinet
 
-This command creates a new cabinet based on a source path. It must be a valid path to a file or folder.
+This Cmdlet creates a new cabinet based on a source path. It must be a valid path to a file or folder.
 If the path is a folder, it will search for files recursively, and compress them.
 Cabinet files only accept files up to 2Gb of length, and the maximum size for a cabinet is also 2Gb.
 
@@ -463,6 +465,41 @@ You can also limit the size of the cabinet, in kilobytes. If the files surpass t
 New-Cabinet -Path 'C:\Path\To\Files' -Destination 'C:\Path\To\Destination' -MaxCabSize 20000
 ```
 
+### Test-Port (testport)
+
+This Cmdlet tests if a TCP or UDP port is open in a given destination.
+Attention! Due to the nature of UDP packets, `Test-Port` might return false positive if a timeout occur when testing against public domains, like 'google.com'.
+UPD testing is better used with LAN servers.
+
+```powershell
+Test-Port -ComputerName 'google.com' -TcpPort 80
+```
+
+```powershell
+testport 'SUPERSERVER.contoso.com' 443
+```
+
+```powershell
+testport 'SUPERSERVER1.contoso.com', 'SUPERSERVER2.contoso.com' -TcpPort 80, 443, 1433 -UdpPort 67, 68, 69, 4011
+```
+
+### Get-ProcessModule (listdlls)
+
+This Cmdlet lists modules loaded into processes. You can list modules for one or more processes, or all of them.
+You can also include module file version information (with a performance penalty).
+
+```powershell
+Get-ProcessModule -Name 'explorer'
+```
+
+```powershell
+listdlls -ProcessId 666, 667 -IncludeVersionInfo
+```
+
+```powershell
+listdlls
+```
+
 ## Changelog
   
 Versioning information can be found on the [Changelog](https://github.com/FranciscoNabas/WindowsUtils/blob/main/CHANGELOG.md) file.  
@@ -470,5 +507,6 @@ Changelogging began at version 1.3.0, because I didn't keep track before that.
   
 ## Support
   
+No way you made it down here LOL.  
 If you have an idea, or a solution you'd like to have in PowerShell, Windows-related, regardless of how absurd it might sound, let me know. I'd love to try it.  
-This is a module from a Sysadmin for Sysadmins, if you know how to program using C++/CLI and C#, and want to contribute, fork it!  
+This is a module from a Sysadmin to Sysadmins, if you know how to program using C++/CLI and C#, and want to contribute, fork it!  

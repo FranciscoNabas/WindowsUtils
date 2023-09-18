@@ -1,4 +1,5 @@
 using System.Management.Automation;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using WindowsUtils.Interop;
@@ -154,6 +155,78 @@ namespace WindowsUtils.Interop
 
         internal uint Port;
         internal TcpingStatus Status;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct MAPPED_ERROR_DATA
+    {
+        internal int ErrorCode;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string ErrorMessage;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string CompactTrace;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string ErrorId;
+        internal ErrorCategory Category;
+
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string TargetObject;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct WWuString
+    {
+        [MarshalAs(UnmanagedType.LPWStr)]
+        internal string Buffer;
+        internal ulong CharCount;
+        internal IntPtr Allocator;
+
+        [MarshalAs(UnmanagedType.Bool)]
+        internal bool IsAllocated;
+
+        public override readonly string ToString()
+            => this.Buffer;
+
+        public static implicit operator string(WWuString wuString)
+            => wuString.Buffer;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct LAB_STRUCT
+    {
+        internal uint Id;
+        internal WWuString StringObject;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct WU_MODULE_INFO_VersionInfo
+    {
+        internal WWuString FileDescription;
+        internal WWuString ProductName;
+        internal WWuString FileVersion;
+        internal WWuString CompanyName;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct WU_MODULE_INFO
+    {
+        internal WWuString ModuleName;
+        internal WWuString ModulePath;
+        internal WU_MODULE_INFO_VersionInfo VersionInfo;
+    }
+    
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct PROCESS_MODULE_INFO
+    {
+        internal uint ProcessId;
+        internal WWuString ImagePath;
+        internal WWuString ImageFileName;
+        internal WWuString CommandLine;
+        internal ulong ModuleInfoCount;
+        internal IntPtr ModuleInfo;
     }
 
     internal partial class NativeFunctions
