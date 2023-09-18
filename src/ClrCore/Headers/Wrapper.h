@@ -30,7 +30,11 @@ namespace WindowsUtils
 	public enum class WriteOutputType : UInt32
 	{
 		TCPING_OUTPUT,
-		TCPING_STATISTICS
+		TCPING_STATISTICS,
+		TESTPORT_OUTPUT,
+		WWUSTRING,
+		LAB_STRUCT,
+		PROCESS_MODULE_INFO
 	};
 
 	public enum class ErrorType
@@ -38,6 +42,21 @@ namespace WindowsUtils
 		SystemError,
 		NtError,
 		FdiError
+	};
+
+	public enum class CabinetCompressionType
+	{
+		None = tcompTYPE_NONE,
+		MSZip = tcompTYPE_MSZIP,
+		LZXLow = tcompTYPE_LZX | tcompLZX_WINDOW_LO,
+		LZXHigh = tcompTYPE_LZX | tcompLZX_WINDOW_HI
+
+	};
+
+	public enum class TransportProtocol
+	{
+		Tcp,
+		Udp
 	};
 
 	[Serializable()]
@@ -80,6 +99,10 @@ namespace WindowsUtils
 			: Exception(message), _errorCode(errorCode)
 		{ }
 
+		NativeException(Int32 errorCode, String^ message, String^ compactTrace)
+			: Exception(message), _errorCode(errorCode), _compactTrace(compactTrace)
+		{ }
+
 		NativeException(Int32 errorCode, String^ message, Exception^ inner_exception)
 			: Exception(message, inner_exception), _errorCode(errorCode)
 		{ }
@@ -95,9 +118,40 @@ namespace WindowsUtils
 
 	private:
 		Int32 _errorCode;
-#if defined(_DEBUG)
 		String^ _compactTrace;
-#endif
+	};
+
+	public ref class ImageVersionInfo
+	{
+	public:
+		property String^ FileDescription {
+			String^ get() { return m_fileDescription; }
+			void set(String^ value) { m_fileDescription = value; }
+		}
+
+		property String^ ProductName {
+			String^ get() { return m_productName; }
+			void set(String^ value) { m_productName = value; }
+		}
+
+		property String^ FileVersion {
+			String^ get() { return m_fileVersion; }
+			void set(String^ value) { m_fileVersion = value; }
+		}
+
+		property String^ CompanyName {
+			String^ get() { return m_companyName; }
+			void set(String^ value) { m_companyName = value; }
+		}
+
+		ImageVersionInfo()
+			: m_fileDescription(nullptr), m_productName(nullptr), m_fileVersion(nullptr), m_companyName(nullptr) { }
+
+	private:
+		String^ m_fileDescription;
+		String^ m_productName;
+		String^ m_fileVersion;
+		String^ m_companyName;
 	};
 }
 
@@ -270,17 +324,20 @@ namespace WindowsUtils::Core
 		delegate void WriteProgressWrapper();
 		delegate void WriteWarningWrapper();
 		delegate void WriteInformationWrapper();
+		delegate void WriteErrorWrapper();
 		delegate void WriteObjectWrapper(WriteOutputType type);
 
 		CmdletContextBase(
 			WriteProgressWrapper^ progWrapper,
 			WriteWarningWrapper^ warnWrapper,
 			WriteInformationWrapper^ infoWrapper,
-			WriteObjectWrapper^objWrapper,
+			WriteObjectWrapper^ objWrapper,
+			WriteErrorWrapper^ errorWrapper,
 			Byte* progressBuffer,
 			Byte* warningBuffer,
 			Byte* infoBuffer,
-			Byte* objBuffer
+			Byte* objBuffer,
+			Byte* errorBuffer
 		);
 
 		~CmdletContextBase();
@@ -296,6 +353,7 @@ namespace WindowsUtils::Core
 		GCHandle _warningGcHandle;
 		GCHandle _informationGcHandle;
 		GCHandle _objectGcHandle;
+		GCHandle _errorGcHandle;
 	};
 
 	// TEST ONLY
@@ -415,6 +473,7 @@ namespace WindowsUtils::Core
 
 		// Containers
 		void ExpandArchiveFile(Object^ archiveObject, String^ destination, ArchiveFileType fileType);
+		void CompressArchiveFile(String^ path, String^ destination, String^ namePrefix, int maxCabSize, CabinetCompressionType compressionType, ArchiveFileType type, CmdletContextBase^ context);
 
 		// Start-Tcping
 		void StartTcpPing(String^ destination, Int32 port, Int32 count, Int32 timeout, Int32 interval, Int32 failThreshold, bool continuous,
@@ -422,6 +481,19 @@ namespace WindowsUtils::Core
 
 		// Start-ProcessAsUser
 		void StartProcessAsUser(String^ userName, String^ domain, SecureString^ password, String^ commandLine, String^ titleBar);
+
+		// Get-NetworkFile
+		List<NetworkFileInfo^>^ GetNetworkFile(String^ computerName, String^ basePath, String^ userName, bool includeSessionName);
+
+		// Close-NetworkFile
+		void CloseNetworkFile(String^ computerName, Int32 fileId);
+
+		// Test-Port
+		void TestNetworkPort(String^ destination, UInt32 port, TransportProtocol protocol, UInt32 timeout, CmdletContextBase^ context);
+
+		// Get-ProcessModule
+		void ListProcessModule(array<UInt32>^ processIdList, bool includeVersionInfo, CmdletContextBase^ context);
+		void ListProcessModule(bool includeVersionInfo, CmdletContextBase^ context);
 
 		// Utilities
 		static String^ GetRegistryNtPath(String^ keyPath);
@@ -443,4 +515,5 @@ namespace WindowsUtils::Core
 	};
 
 	WWuString GetWideStringFromSystemString(String^ string);
+	static void GetAptFromPath(String^ path, AbstractPathTree* apt);
 }

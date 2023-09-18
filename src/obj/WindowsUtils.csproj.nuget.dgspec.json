@@ -20,7 +20,7 @@
       }
     },
     "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj": {
-      "version": "1.8.7",
+      "version": "1.9.0",
       "restore": {
         "projectUniqueName": "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
         "projectName": "WindowsUtils",
@@ -59,9 +59,6 @@
           "warnAsError": [
             "NU1605"
           ]
-        },
-        "restoreAuditProperties": {
-          "enableAudit": "default"
         }
       },
       "frameworks": {
@@ -116,7 +113,7 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100-preview.7.23376.3\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100-rc.1.23455.8\\RuntimeIdentifierGraph.json"
         }
       }
     }

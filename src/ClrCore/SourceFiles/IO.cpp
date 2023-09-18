@@ -119,6 +119,101 @@ namespace WindowsUtils::Core
 		return WuResult();
 	}
 
+	__uint64 IO::GetFileSize(const WWuString& filePath)
+	{
+		LARGE_INTEGER size;
+
+		FileHandle hFile(
+			filePath,
+			GENERIC_READ,
+			FILE_SHARE_READ | FILE_SHARE_WRITE,
+			NULL,
+			OPEN_EXISTING,
+			FILE_ATTRIBUTE_NORMAL,
+			NULL
+		);
+
+		if (!GetFileSizeEx(hFile.get(), &size))
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+		return size.QuadPart;
+	}
+
+	wuvector<FS_INFO> IO::EnumerateFileSystemInfo(WWuString& path)
+	{
+		std::vector<FS_INFO> output;
+		WIN32_FIND_DATA data;
+
+		HANDLE hFind = FindFirstFile(path.GetBuffer(), &data);
+		if (hFind != INVALID_HANDLE_VALUE && (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+			WWuString name = path;
+			PathStripPath(name.GetBuffer());
+
+			FS_INFO info = {
+				FS_OBJECT_TYPE::File,
+				name,
+				path,
+				(static_cast<__uint64>(data.nFileSizeHigh) << 32) | data.nFileSizeLow
+			};
+
+			output.push_back(info);
+
+			FindClose(hFind);
+		}
+		else {
+			WWuString globbedPath;
+			if (path.EndsWith(L"\\"))
+				globbedPath = path + L"*";
+			else {
+				globbedPath = path + L"\\*";
+				path += L"\\";
+			}
+
+			// 'FindFirstFileEx' have a slight better performance than 'FindFirstFile' when used with 'FindExInfoBasic'.
+			// It mapped the whole C: drive in 24 sec, in opose of 45 from 'FindFirstFile'.
+			hFind = FindFirstFileEx(globbedPath.GetBuffer(), FindExInfoBasic, &data, FindExSearchNameMatch, NULL, 0);
+			if (hFind == INVALID_HANDLE_VALUE)
+				return output;
+
+			do {
+				WWuString name = WWuString(data.cFileName);
+				if (name == L"." || name == L"..")
+					continue;
+
+				bool isDir = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) > 0;
+				WWuString fullPath = path + name;
+				if (isDir) {
+					FS_INFO info = {
+						FS_OBJECT_TYPE::Directory,
+						name,
+						fullPath,
+						0
+					};
+
+					output.push_back(info);
+
+					auto recVec = EnumerateFileSystemInfo(fullPath);
+					output.insert(output.end(), recVec.begin(), recVec.end());
+				}
+				else {
+					FS_INFO info = {
+						FS_OBJECT_TYPE::File,
+						name,
+						fullPath,
+						(static_cast<__uint64>(data.nFileSizeHigh) << 32) | data.nFileSizeLow
+					};
+
+					output.push_back(info);
+				}
+
+			} while (FindNextFile(hFind, &data));
+
+			FindClose(hFind);
+		}
+
+		return output;
+	}
+
 	/*
 	*	~ Memory mapped file ~
 	*/
@@ -162,4 +257,90 @@ namespace WindowsUtils::Core
 	{
 		return _length;
 	}
+
+	/*
+	*	~ Native Abstract Path Tree
+	*/
+
+	AbstractPathTree::AbstractPathTree(const AbstractPathTree& other)
+	{
+		for (AptEntry entry : other.m_apt) {
+			if (entry.Type == Directory)
+				DirectoryCount++;
+			else
+				FileCount++;
+
+			TotalLength += entry.Length;
+			m_apt.push_back(entry);
+		}
+	}
+
+	AbstractPathTree& AbstractPathTree::operator=(const AbstractPathTree& other)
+	{
+		for (AptEntry entry : other.m_apt) {
+			if (entry.Type == Directory)
+				DirectoryCount++;
+			else
+				FileCount++;
+
+			TotalLength += entry.Length;
+			m_apt.push_back(entry);
+		}
+
+		return *this;
+	}
+
+	void AbstractPathTree::PushEntry(const AbstractPathTree::AptEntry& entry)
+	{
+		if (entry.Type == Directory)
+			DirectoryCount++;
+		else
+			FileCount++;
+
+		TotalLength += entry.Length;
+		m_apt.push_back(entry);
+	}
+
+	AbstractPathTree::AbstractPathTree() 
+		: FileCount(0), DirectoryCount(0), TotalLength(0) { }
+
+	AbstractPathTree::~AbstractPathTree() { }
+	wuvector<AbstractPathTree::AptEntry>& AbstractPathTree::GetApt() { return m_apt; }
+
+	AbstractPathTree::_AptEntry::_AptEntry(const WWuString& name, const WWuString& filePath, const WWuString& rootPath, __uint64 length, FS_OBJECT_TYPE type)
+	{
+		WWuString relPath;
+		WWuString finalRoot;
+		std::vector<WWuString>fpSplit;
+		std::vector<WWuString>rpSplit;
+
+		// It's a file.
+		if (filePath == rootPath) {
+			relPath = L"\\" + name;
+			goto END;
+		}
+
+		if (!rootPath.EndsWith('\\'))
+			finalRoot = WWuString::Format(L"%ws\\", rootPath.GetBuffer());
+		else
+			finalRoot = rootPath;
+
+		fpSplit = filePath.Split('\\');
+		rpSplit = finalRoot.Split('\\');
+
+		for (size_t i = 0; i < fpSplit.size(); i++) {
+			if (i >= rpSplit.size())
+				relPath = WWuString::Format(L"%ws\\%ws", relPath.GetBuffer(), fpSplit[i].GetBuffer());
+		}
+
+	END:
+
+		Name = name;
+		FullPath = filePath;
+		RelativePath = relPath.Remove(0);
+		Type = type;
+		Length = length;
+	}
+
+	AbstractPathTree::_AptEntry::~_AptEntry() { }
 }

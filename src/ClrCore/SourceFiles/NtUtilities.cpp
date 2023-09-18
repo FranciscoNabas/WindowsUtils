@@ -379,4 +379,41 @@ namespace WindowsUtils::Core
 
 		} while (systemProcInfo->NextEntryOffset != 0);
 	}
+
+	void GetProcessCommandLine(HANDLE hProcess, WWuString& commandLine)
+	{
+		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
+		if (hNtdll == NULL) {
+			hNtdll = LoadLibrary(L"ntdll.dll");
+			if (hNtdll == NULL)
+				throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		}
+
+		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
+		if (NtQueryInformationProcess == NULL)
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+		ULONG bytesNeeded;
+		PROCESS_BASIC_INFORMATION basicInfo;
+		NTSTATUS status = NtQueryInformationProcess(hProcess, ProcessBasicInformation, &basicInfo, sizeof(basicInfo), &bytesNeeded);
+
+		wuunique_ptr<BYTE[]> pebBuffer = make_wuunique<BYTE[]>(sizeof(PEB));
+		if (!ReadProcessMemory(hProcess, basicInfo.PebBaseAddress, pebBuffer.get(), sizeof(PEB), (SIZE_T*)(&bytesNeeded)))
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+		PPEB peb = reinterpret_cast<PPEB>(pebBuffer.get());
+		wuunique_ptr<BYTE[]> procParamsBuffer = make_wuunique<BYTE[]>(sizeof(RTL_USER_PROCESS_PARAMETERS));
+		if (!ReadProcessMemory(hProcess, peb->ProcessParameters, procParamsBuffer.get(), sizeof(RTL_USER_PROCESS_PARAMETERS), (SIZE_T*)(&bytesNeeded)))
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+		PRTL_USER_PROCESS_PARAMETERS procParams = reinterpret_cast<PRTL_USER_PROCESS_PARAMETERS>(procParamsBuffer.get());
+		size_t cmdLineSize = procParams->CommandLine.Length + 1;
+		LPWSTR cmdLineBuffer = new WCHAR[cmdLineSize];
+		if (!ReadProcessMemory(hProcess, procParams->CommandLine.Buffer, cmdLineBuffer, cmdLineSize * 2, (SIZE_T*)(&bytesNeeded)))
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+		commandLine = WWuString(reinterpret_cast<LPWSTR>(cmdLineBuffer));
+
+		delete[] cmdLineBuffer;
+	}
 }

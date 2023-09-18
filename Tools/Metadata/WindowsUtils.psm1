@@ -57,6 +57,7 @@
 function Get-InstalledDotnet {
 
     [CmdletBinding()]
+    [Alias('getdotnet')]
     param (
         [Parameter(HelpMessage = 'The computer name(s) to retrieve the information from. Default is the current computer.')]
         [ValidateNotNullOrEmpty()]
@@ -394,7 +395,8 @@ function Get-RemoteDotNetCoreVersionInfo {
         $invCmdSplat.Session = $Session.Value
     }
 
-    return Invoke-Command @invCmdSplat
+    $result = Invoke-Command @invCmdSplat
+    return $result
 }
 
 function Get-RemoteDotNetFFVersionInfo {

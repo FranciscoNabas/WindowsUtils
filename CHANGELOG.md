@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
 
+## [1.9.0] - 2023-09-17
+
+### Added
+
+- `Get-NetworkFile`
+- `Close-NetworkFile`
+- `New-Cabinet`
+- `Test-Port`
+- `Get-ProcessModule`
+- New alias `getdotnet` for `Get-InstalledDotnet`
+- Implemented `NativeWriteError` for writing errors from unmanaged land.
+- Implemented `EnumerateFileSystemInfo` for future Cmdlets.
+- Implemented `AbstractPathTree` for future Cmdlets.
+
 ## [1.8.7] - 2023-09-09
 
 ### Added

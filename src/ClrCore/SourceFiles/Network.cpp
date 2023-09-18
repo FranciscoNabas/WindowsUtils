@@ -277,7 +277,41 @@ namespace WindowsUtils::Core
 	}
 
 	/*
-	*	~ Function definition ~
+	*	~ TestPortForm
+	*/
+
+	Network::TestPortForm::TestPortForm(const WWuString& destination, DWORD port, TESTPORT_PROTOCOL protocol, DWORD timeoutSec)
+	{
+		WSADATA wsaData;
+		WORD reqVersion = MAKEWORD(2, 2);
+		int result;
+
+		result = WSAStartup(reqVersion, &wsaData);
+		if (result != ERROR_SUCCESS)
+			throw WuStdException(result, __FILEW__, __LINE__);
+
+		_ui64tow_s(port, m_portAsString, 6, 10);
+
+		m_destination = destination;
+		m_port = port;
+		m_protocol = protocol;
+		m_timeoutSec = timeoutSec;
+	}
+
+	Network::TestPortForm::~TestPortForm()
+	{
+		WSACleanup();
+	}
+
+	const WWuString& Network::TestPortForm::Destination() const { return m_destination; }
+	const DWORD Network::TestPortForm::Port() const { return m_port; }
+	const Network::TESTPORT_PROTOCOL Network::TestPortForm::Protocol() const { return m_protocol; }
+	const DWORD Network::TestPortForm::Timeout() const { return m_timeoutSec; }
+
+	LPCWSTR Network::TestPortForm::PortAsString() const { return m_portAsString; }
+
+	/*
+	*	~ Start-Tcping
 	*/
 
 	void Network::StartTcpPing(TcpingForm& workForm, WuNativeContext* context)
@@ -335,6 +369,280 @@ namespace WindowsUtils::Core
 		if (!workForm.Single)
 			ProcessStatistics(&workForm, context);
 	}
+
+	/*
+	*	~ Get-NetworkFile
+	*/
+
+	Network::_NETWORK_FILE_INFO::_NETWORK_FILE_INFO(DWORD id, DWORD perms, DWORD locks, const WWuString& path, const WWuString& userName)
+		: Id(id), Permissions(perms), LockCount(locks), Path(path), UserName(userName) { }
+
+	Network::_NETWORK_FILE_INFO::~_NETWORK_FILE_INFO() { }
+
+	Network::_NETWORK_SESSION_INFO::_NETWORK_SESSION_INFO(const WWuString& sessName, const WWuString& userName, DWORD ioCount)
+		: ComputerSessionName(sessName), UserName(userName), OpenIoCount(ioCount) { }
+
+	Network::_NETWORK_SESSION_INFO::~_NETWORK_SESSION_INFO() { }
+
+	void Network::ListNetworkFiles(const WWuString& computerName, const WWuString& basePath, const WWuString& userName, wuvector<NETWORK_FILE_INFO>& result)
+	{
+		LPBYTE buffer;
+		DWORD entryCount;
+		DWORD totalEntryCount;
+
+		NET_API_STATUS status = NetFileEnum(
+			(LPWSTR)computerName.GetBuffer(),	// The computer name. NULL for the current computer.
+			(LPWSTR)basePath.GetBuffer(),		// A path prefix. If used, only paths that starts with this prefix are returned.
+			(LPWSTR)userName.GetBuffer(),		// Qualifier for user name or connection name. Results are limited by matches to this qualifier.
+			3,									// Level of information data. 3 = FILE_INFO_3.
+			&buffer,							// The buffer that receives the list.
+			MAX_PREFERRED_LENGTH,				// Maximum preferred buffer length. MAX_PREFERRED_LENGTH = no limit.
+			&entryCount,						// The number of entries returned in the buffer.
+			&totalEntryCount,					// A hint to total number of entries if the operation is resumed.
+			NULL								// Resume handle used in possible subsequent calls.
+		);
+
+		if (status != NERR_Success)
+			throw WuStdException(status, __FILEW__, __LINE__);
+
+		size_t dataSize = sizeof(FILE_INFO_3);
+		LPBYTE offset = buffer;
+		for (DWORD i = 0; i < entryCount; i++) {
+			auto currentInfo = reinterpret_cast<PFILE_INFO_3>(offset);
+			result.push_back(
+				NETWORK_FILE_INFO(
+					currentInfo->fi3_id,
+					currentInfo->fi3_permissions,
+					currentInfo->fi3_num_locks,
+					currentInfo->fi3_pathname,
+					currentInfo->fi3_username
+				)
+			);
+
+			offset += dataSize;
+		}
+
+		NetApiBufferFree(buffer);
+	}
+
+	void Network::ListNetworkFiles(const WWuString& computerName, const WWuString& basePath, const WWuString& userName, wuvector<NETWORK_FILE_INFO>& fileInfo, wuvector<NETWORK_SESSION_INFO>& sessionInfo)
+	{
+		LPBYTE buffer;
+		DWORD entryCount;
+		DWORD totalEntryCount;
+
+		NET_API_STATUS status = NetFileEnum(
+			(LPWSTR)computerName.GetBuffer(),	// The computer name. NULL for the current computer.
+			(LPWSTR)basePath.GetBuffer(),		// A path prefix. If used, only paths that starts with this prefix are returned.
+			(LPWSTR)userName.GetBuffer(),		// Qualifier for user name or connection name. Results are limited by matches to this qualifier.
+			3,									// Level of information data. 3 = FILE_INFO_3.
+			&buffer,							// The buffer that receives the list.
+			MAX_PREFERRED_LENGTH,				// Maximum preferred buffer length. MAX_PREFERRED_LENGTH = no limit.
+			&entryCount,						// The number of entries returned in the buffer.
+			&totalEntryCount,					// A hint to total number of entries if the operation is resumed.
+			NULL								// Resume handle used in possible subsequent calls.
+		);
+
+		if (status != NERR_Success)
+			throw WuStdException(status, __FILEW__, __LINE__);
+
+		size_t dataSize = sizeof(FILE_INFO_3);
+		LPBYTE offset = buffer;
+		for (DWORD i = 0; i < entryCount; i++) {
+			auto currentInfo = reinterpret_cast<PFILE_INFO_3>(offset);
+			fileInfo.push_back(
+				NETWORK_FILE_INFO(
+					currentInfo->fi3_id,
+					currentInfo->fi3_permissions,
+					currentInfo->fi3_num_locks,
+					currentInfo->fi3_pathname,
+					currentInfo->fi3_username
+				)
+			);
+
+			offset += dataSize;
+		}
+
+		NetApiBufferFree(buffer);
+
+		status = NetSessionEnum(
+			(LPWSTR)computerName.GetBuffer(),	// The computer name. NULL for the current computer.
+			NULL,								// A filter for the computer session name where the session was initiated from.
+			NULL,								// Qualifier for user name or connection name. Results are limited by matches to this qualifier.
+			1,									// Level of information data. 1 = SESSION_INFO_1.
+			&buffer,							// The buffer that receives the list.
+			MAX_PREFERRED_LENGTH,				// Maximum preferred buffer length. MAX_PREFERRED_LENGTH = no limit.
+			&entryCount,						// The number of entries returned in the buffer.
+			&totalEntryCount,					// A hint to total number of entries if the operation is resumed.
+			NULL								// Resume handle used in possible subsequent calls.
+		);
+
+		if (status != NERR_Success)
+			throw WuStdException(status, __FILEW__, __LINE__);
+
+		dataSize = sizeof(SESSION_INFO_1);
+		offset = buffer;
+		for (DWORD i = 0; i < entryCount; i++) {
+			auto currentInfo = reinterpret_cast<PSESSION_INFO_1>(offset);
+			sessionInfo.push_back(
+				NETWORK_SESSION_INFO(
+					currentInfo->sesi1_cname,
+					currentInfo->sesi1_username,
+					currentInfo->sesi1_num_opens
+				)
+			);
+
+			offset += dataSize;
+		}
+
+		NetApiBufferFree(buffer);
+	}
+
+	/*
+	*	~ Close-NetworkFile
+	*/
+
+	void Network::CloseNetworkFile(const WWuString& computerName, DWORD fileId)
+	{
+		NET_API_STATUS status = NetFileClose((LPWSTR)computerName.GetBuffer(), fileId);
+		if (status != NERR_Success)
+			throw WuStdException(status, __FILEW__, __LINE__);
+	}
+
+	/*
+	*	~ Test-Port
+	*/
+
+	void Network::TestNetworkPort(const TestPortForm& workForm, WuNativeContext* context)
+	{
+		// Initial setup.
+		int intResult;
+		ADDRINFOW hints = { 0 }, *addressInfo;
+
+		if (workForm.Protocol() == Network::Tcp) {
+			hints.ai_socktype = SOCK_STREAM;
+			hints.ai_family = AF_UNSPEC;
+			hints.ai_protocol = IPPROTO_TCP;
+		}
+		else {
+			hints.ai_socktype = SOCK_DGRAM;
+			hints.ai_family = AF_INET;
+			hints.ai_protocol = IPPROTO_UDP;
+		}
+
+		// Getting address info for destination.
+		intResult = GetAddrInfoW(workForm.Destination().GetBuffer(), workForm.PortAsString(), &hints, &addressInfo);
+		if (intResult != 0)
+			throw WuStdException(intResult, __FILEW__, __LINE__);
+
+		// Getting the display name from the resolved address, and optionally the FQDN.
+		WWuString displayName;
+		FormatIp(addressInfo, displayName);
+		
+		::FILETIME timestamp = { 0, 0 };
+		TESTPORT_OUTPUT output(timestamp, (LPWSTR)workForm.Destination().GetBuffer(), reinterpret_cast<const LPWSTR>(displayName.GetBuffer()), workForm.Port(), TCPING_STATUS::Timeout);
+
+		EphemeralSocket ephSocket(addressInfo);
+		long timeout = workForm.Timeout() * 1000;
+		if (workForm.Protocol() == Network::Tcp) {
+
+			// Setting timeout for 'send'.
+			setsockopt(ephSocket.UnderlyingSocket, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+			
+			// Attempting to connect. This here is a non blocking operation.
+			intResult = connect(ephSocket.UnderlyingSocket, addressInfo->ai_addr, static_cast<int>(addressInfo->ai_addrlen));
+			if (intResult == SOCKET_ERROR) {
+				intResult = WSAGetLastError();
+				if (intResult != WSAEWOULDBLOCK)
+					throw WuStdException(intResult, __FILEW__, __LINE__);
+			}
+
+			// Checking if the connection was successful with timeout.
+			fd_set set = { 0, 0 };
+			FD_SET(ephSocket.UnderlyingSocket, &set);
+			timeval timevalOut = { static_cast<long>(workForm.Timeout()), 0 };
+			intResult = select(0, NULL, &set, NULL, &timevalOut);
+			
+			// 0: Timeout.
+			if (intResult == 0) {
+				GetSystemTimeAsFileTime(&timestamp);
+				output.Timestamp = timestamp;
+			}
+			else {
+				if (intResult == SOCKET_ERROR)
+					throw WuStdException(WSAGetLastError(), __FILEW__, __LINE__);
+
+				// Attempting to send.
+				intResult = send(ephSocket.UnderlyingSocket, "tits", 4, 0);
+				if (intResult == SOCKET_ERROR)
+					throw WuStdException(WSAGetLastError(), __FILEW__, __LINE__);
+				else {
+					GetSystemTimeAsFileTime(&timestamp);
+					output.Timestamp = timestamp;
+					output.Status = TCPING_STATUS::Open;
+				}
+			}
+		}
+		else {
+			// Setting the socket to blocking mode.
+			u_long mode = 0;
+			ioctlsocket(ephSocket.UnderlyingSocket, FIONBIO, &mode);
+
+			// Setting the timeout for 'read'.
+			setsockopt(ephSocket.UnderlyingSocket, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+
+			// Attempting to connect.
+			intResult = connect(ephSocket.UnderlyingSocket, addressInfo->ai_addr, static_cast<int>(addressInfo->ai_addrlen));
+			if (intResult == SOCKET_ERROR)
+				throw WuStdException(WSAGetLastError(), __FILEW__, __LINE__);
+
+			// Attempting to send.
+			intResult = send(ephSocket.UnderlyingSocket, "tits", 4, 0);
+			if (intResult == SOCKET_ERROR)
+				throw WuStdException(WSAGetLastError(), __FILEW__, __LINE__);
+
+			// Attempting to read.
+			CHAR recBuffer[512] = { 0 };
+			do {
+				intResult = recv(ephSocket.UnderlyingSocket, recBuffer, 512, 0);
+				
+				// Received data, port is open.
+				if (intResult > 0) {
+					GetSystemTimeAsFileTime(&timestamp);
+					output.Timestamp = timestamp;
+					output.Status = TCPING_STATUS::Open;
+				}
+				else {
+					GetSystemTimeAsFileTime(&timestamp);
+					output.Timestamp = timestamp;
+
+					if (intResult != 0) {
+						switch (WSAGetLastError()) {
+							// Timed out, not forcibly closed. Port is open.
+							case WSAETIMEDOUT:
+								output.Status = TCPING_STATUS::Open;
+								break;
+
+							// Forcibly closed.
+							case WSAECONNRESET:
+								output.Status = TCPING_STATUS::Closed;
+								break;
+
+							// Default is already set to timeout.
+						}
+					}
+				}
+				
+			} while (intResult > 0);
+		}
+
+		// Printing output.
+		context->NativeWriteObject<TESTPORT_OUTPUT>(&output, Notification::TESTPORT_OUTPUT);
+	}
+
+	/*
+	*	~ Utility functions
+	*/
 
 	void PrintQueueData(const Network::QUEUED_DATA& data, WuNativeContext* context)
 	{

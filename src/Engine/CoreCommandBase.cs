@@ -67,15 +67,17 @@ public abstract class CoreCommandBase : PSCmdlet, IDynamicParameters
 
 internal unsafe sealed class CmdletNativeContext : IDisposable
 {
-    private UnmanagedMemoryStream _progressStream;
-    private UnmanagedMemoryStream _warningStream;
-    private UnmanagedMemoryStream _informationStream;
-    private UnmanagedMemoryStream _objectStream;
+    private readonly UnmanagedMemoryStream _progressStream;
+    private readonly UnmanagedMemoryStream _warningStream;
+    private readonly UnmanagedMemoryStream _informationStream;
+    private readonly UnmanagedMemoryStream _objectStream;
+    private readonly UnmanagedMemoryStream _errorStream;
 
-    private IntPtr _progressBuffer;
-    private IntPtr _warningBuffer;
-    private IntPtr _informationBuffer;
-    private IntPtr _objectBuffer;
+    private readonly IntPtr _progressBuffer;
+    private readonly IntPtr _warningBuffer;
+    private readonly IntPtr _informationBuffer;
+    private readonly IntPtr _objectBuffer;
+    private readonly IntPtr _errorBuffer;
 
     private readonly PSCmdlet _command;
     private readonly bool _streamErrors;
@@ -135,11 +137,13 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
         _warningBuffer = Marshal.AllocHGlobal(128);
         _informationBuffer = Marshal.AllocHGlobal(128);
         _objectBuffer = Marshal.AllocHGlobal(128);
+        _errorBuffer = Marshal.AllocHGlobal(128);
 
         _progressStream = new((byte*)_progressBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
         _warningStream = new((byte*)_warningBuffer.ToPointer(),128, 128, FileAccess.ReadWrite);
         _informationStream = new((byte*)_informationBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
         _objectStream = new((byte*)_informationBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
+        _errorStream = new((byte*)_errorBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
     }
     
     // Operators
@@ -150,10 +154,12 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
             new CmdletContextBase.WriteWarningWrapper(context.NativeWriteWarning),
             new CmdletContextBase.WriteInformationWrapper(context.NativeWriteInformation),
             new CmdletContextBase.WriteObjectWrapper(context.NativeWriteObject),
+            new CmdletContextBase.WriteErrorWrapper(context.NativeWriteError),
             context._progressStream.PositionPointer,
             context._warningStream.PositionPointer,
             context._informationStream.PositionPointer,
-            context._objectStream.PositionPointer
+            context._objectStream.PositionPointer,
+            context._errorStream.PositionPointer
         );
     }
 
@@ -170,10 +176,14 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
             _progressStream.Close();
             _warningStream.Close();
             _informationStream.Close();
+            _objectStream.Close();
+            _errorStream.Close();
 
             Marshal.FreeHGlobal(_progressBuffer);
             Marshal.FreeHGlobal(_warningBuffer);
             Marshal.FreeHGlobal(_informationBuffer);
+            Marshal.FreeHGlobal(_objectBuffer);
+            Marshal.FreeHGlobal(_errorBuffer);
         }
     }
 
@@ -272,11 +282,42 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
                 output = new TcpingStatistics(nativeStats);
                 break;
 
+            case WriteOutputType.TESTPORT_OUTPUT:
+                TESTPORT_OUTPUT testPortStats = (TESTPORT_OUTPUT)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(TESTPORT_OUTPUT));
+                output = new TestPortInfo(testPortStats);
+                break;
+
+            case WriteOutputType.WWUSTRING:
+                WWuString nativeString = (WWuString)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(WWuString));
+                output = nativeString;
+                break;
+
+            case WriteOutputType.LAB_STRUCT:
+                LAB_STRUCT labStruct = (LAB_STRUCT)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(LAB_STRUCT));
+                output = new LabStruct(labStruct);
+                break;
+
+            case WriteOutputType.PROCESS_MODULE_INFO:
+                PROCESS_MODULE_INFO modInfo = (PROCESS_MODULE_INFO)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(PROCESS_MODULE_INFO));
+                output = new ProcessModuleInfo(modInfo);
+                break;
+
             default:
                 return;
         }
 
         _command.WriteObject(output);
+    }
+
+    private void NativeWriteError()
+    {
+        MAPPED_ERROR_DATA errorData = (MAPPED_ERROR_DATA)Marshal.PtrToStructure(_errorBuffer, typeof(MAPPED_ERROR_DATA));
+        _command.WriteError(new(
+            new NativeException(errorData.ErrorCode, errorData.ErrorMessage, errorData.CompactTrace),
+            errorData.ErrorId,
+            errorData.Category,
+            errorData.TargetObject
+        ));
     }
     
     internal bool HasErrors()

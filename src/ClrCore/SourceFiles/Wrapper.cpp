@@ -899,6 +899,106 @@ namespace WindowsUtils::Core
 			throw gcnew NativeException(result);
 	}
 
+	// Get-NetworkFile
+	List<NetworkFileInfo^>^ Wrapper::GetNetworkFile(String^ computerName, String^ basePath, String^ userName, bool includeSessionName)
+	{
+		WWuString wrappedPcName = GetWideStringFromSystemString(computerName);
+		WWuString wrappedBasePath = GetWideStringFromSystemString(basePath);
+		WWuString wrappedUserName = GetWideStringFromSystemString(userName);
+
+		wuvector<Network::NETWORK_FILE_INFO> result;
+		auto output = gcnew List<NetworkFileInfo^>();
+
+		if (includeSessionName) {
+			wuvector<Network::NETWORK_SESSION_INFO> sessionInfo;
+			ntwptr->ListNetworkFiles(wrappedPcName, wrappedBasePath, wrappedUserName, result, sessionInfo);
+			for (Network::NETWORK_FILE_INFO& info : result) {
+				WWuString sessName;
+				for (Network::NETWORK_SESSION_INFO& sessInfo : sessionInfo) {
+					if (sessInfo.UserName == info.UserName) {
+						sessName = sessInfo.ComputerSessionName;
+						break;
+					}
+				}
+				
+				output->Add(gcnew NetworkFileInfo(info, sessName, computerName));
+			}
+		}
+		else {
+			try {
+				ntwptr->ListNetworkFiles(wrappedPcName, wrappedBasePath, wrappedUserName, result);
+				for (Network::NETWORK_FILE_INFO& info : result)
+					output->Add(gcnew NetworkFileInfo(info, computerName));
+			}
+			catch (const WuStdException& ex) {
+				throw gcnew NativeException(ex);
+			}
+		}
+
+		return output;
+	}
+
+	// Close-NetworkFile
+	void Wrapper::CloseNetworkFile(String^ computerName, Int32 fileId)
+	{
+		WWuString wrappedPcName = GetWideStringFromSystemString(computerName);
+
+		ntwptr->CloseNetworkFile(wrappedPcName, fileId);
+	}
+
+	// Compress-ArchiveFile
+	void Wrapper::CompressArchiveFile(String^ path, String^ destination, String^ namePrefix, int maxCabSize, CabinetCompressionType compressionType, ArchiveFileType type, CmdletContextBase^ context)
+	{
+		switch (type) {
+			case WindowsUtils::Core::ArchiveFileType::Cabinet:
+			{
+				AbstractPathTree apt;
+				GetAptFromPath(path, &apt);
+				WuCabinet cabinet(apt, GetWideStringFromSystemString(namePrefix), static_cast<USHORT>(compressionType), context->GetUnderlyingContext());
+
+				try {
+					cabinet.CompressCabinetFile(GetWideStringFromSystemString(destination), maxCabSize);
+				}
+				catch (const WuStdException& ex) {
+					throw gcnew NativeException(ex);
+				}
+			} break;
+		}
+	}
+
+	// Test-Port
+	void Wrapper::TestNetworkPort(String^ destination, UInt32 port, TransportProtocol protocol, UInt32 timeout, CmdletContextBase^ context)
+	{
+		WWuString wrappedDest = GetWideStringFromSystemString(destination);
+		Network::TestPortForm workForm(
+			wrappedDest,
+			port,
+			static_cast<Network::TESTPORT_PROTOCOL>(protocol),
+			timeout
+		);
+
+		ntwptr->TestNetworkPort(workForm, context->GetUnderlyingContext());
+	}
+
+	// Get-ProcessModule
+	void Wrapper::ListProcessModule(array<UInt32>^ processIdList, bool includeVersionInfo, CmdletContextBase^ context)
+	{
+		wuvector<DWORD> wrappedProcIdList;
+		for each (UInt32 procId in processIdList)
+			wrappedProcIdList.push_back(procId);
+
+		patptr->GetProcessLoadedModuleInformation(wrappedProcIdList, includeVersionInfo, false, context->GetUnderlyingContext());
+	}
+
+	void Wrapper::ListProcessModule(bool includeVersionInfo, CmdletContextBase^ context)
+	{
+		wuvector<DWORD> procIdList;
+		GetRunnningProcessIdList(procIdList);
+
+		wuvector<ProcessAndThread::PROCESS_MODULE_INFO> moduleInfo;
+		patptr->GetProcessLoadedModuleInformation(procIdList, includeVersionInfo, true, context->GetUnderlyingContext());
+	}
+
 	// Utilities
 	String^ Wrapper::GetRegistryNtPath(String^ keyPath)
 	{
@@ -1039,15 +1139,35 @@ namespace WindowsUtils::Core
 		}
 	}
 
+	static void GetAptFromPath(String^ path, AbstractPathTree* apt)
+	{
+		WWuString wrappedPath = GetWideStringFromSystemString(path);
+
+		wuvector<FS_INFO> fsInfo = IO::EnumerateFileSystemInfo(wrappedPath);
+		for (FS_INFO& info : fsInfo) {
+			if (info.Length > 0x7FFFFFFF)
+				throw gcnew ArgumentException("Cabinet does not support files bigger than 2Gb.");
+
+			apt->PushEntry(AbstractPathTree::AptEntry(info.Name, info.FullName, wrappedPath, info.Length, info.Type));
+		}
+			
+	}
+
+	/*
+	*	~ CmdletContextBase
+	*/
+
 	CmdletContextBase::CmdletContextBase(
 		WriteProgressWrapper^ progWrapper,
 		WriteWarningWrapper^ warnWrapper,
 		WriteInformationWrapper^ infoWrapper,
 		WriteObjectWrapper^ objWrapper,
+		WriteErrorWrapper^ errorWrapper,
 		Byte* progressBuffer,
 		Byte* warningBuffer,
 		Byte* infoBuffer,
-		Byte* objBuffer
+		Byte* objBuffer,
+		Byte* errorBuffer
 	) {
 		_progressGcHandle = GCHandle::Alloc(progWrapper);
 		IntPtr progressDelegatePtr = Marshal::GetFunctionPointerForDelegate(progWrapper);
@@ -1065,15 +1185,21 @@ namespace WindowsUtils::Core
 		IntPtr objectDelegatePtr = Marshal::GetFunctionPointerForDelegate(objWrapper);
 		auto objPtr = static_cast<Notification::UnmanagedWriteObject>(objectDelegatePtr.ToPointer());
 
+		_errorGcHandle = GCHandle::Alloc(errorWrapper);
+		IntPtr errorDelegatePtr = Marshal::GetFunctionPointerForDelegate(errorWrapper);
+		auto errorPtr = static_cast<Notification::UnmanagedWriteError>(errorDelegatePtr.ToPointer());
+
 		_nativeContext = new WuNativeContext(
 			progressPtr,
 			warningPtr,
 			infoPtr,
 			objPtr,
+			errorPtr,
 			progressBuffer,
 			warningBuffer,
 			infoBuffer,
-			objBuffer
+			objBuffer,
+			errorBuffer
 		);
 	}
 	CmdletContextBase::~CmdletContextBase()

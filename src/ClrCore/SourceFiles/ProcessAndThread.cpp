@@ -4,7 +4,10 @@
 
 namespace WindowsUtils::Core
 {
-	// Get-ObjectHandle
+	/*
+	*	~ Get-ObjectHandle
+	*/
+
 	void ProcessAndThread::GetProcessObjectHandle(
 		wuvector<WU_OBJECT_HANDLE>* objectHandleList,	// The output object handle list.
 		wuvector<OBJECT_INPUT>* inputList,				// The input list containing the object name and type.
@@ -135,6 +138,173 @@ namespace WindowsUtils::Core
 				objectHandleList->push_back(*objHandle.get());
 			}
 		}
+	}
+
+	/*
+	*	~ Get-ProcessModule
+	*	https://learn.microsoft.com/windows/win32/psapi/enumerating-all-modules-for-a-process
+	*/
+
+	void ProcessAndThread::GetProcessLoadedModuleInformation(
+		wuvector<DWORD> processIdList,					// The process ID list.
+		bool includeVersionInfo,						// True to include module version information.
+		bool suppressError,								// Suppress error output. For when enumerating all processes.
+		WuNativeContext* context						// The Cmdlet native representation.
+	)
+	{
+		// SE_DEBUG_NAME is required to get the process command line.
+		wuvector<WWuString> privList;
+		privList.push_back(L"SeDebugPrivilege");
+		AccessControl::AdjustCurrentTokenPrivilege(&privList, SE_PRIVILEGE_ENABLED);
+
+		// When listing the modules for multiple processes, we are going to have
+		// repeated modules, and querying information about them every time implies
+		// a cost. This map will be a global information cache.
+		wumap<WWuString, WU_MODULE_INFO> moduleInfoCache;
+
+		for (DWORD& processId : processIdList) {
+			HANDLE hProcess = OpenProcess(
+				PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+				FALSE,
+				processId
+			);
+
+			if (hProcess == NULL) {
+				if (!suppressError) {
+					WuStdException stdException(GetLastError(), __FILEW__, __LINE__);
+					Notification::MAPPED_ERROR_DATA errorData(
+						stdException,
+						WWuString::Format(L"Error opening handle to process ID '%d': %ws", processId, stdException.Message().GetBuffer()).GetBuffer(),
+						L"ErrorOpeningHandleToProcess",
+						Notification::WRITE_ERROR_CATEGORY::OpenError,
+						WWuString::Format(L"%d", processId).GetBuffer()
+					);
+
+					context->NativeWriteError(&errorData);
+				}
+
+				continue;
+			}
+
+			// Getting process image file name.
+			DWORD imgNameSize = MAX_PATH;
+			WCHAR imgName[MAX_PATH];
+			WWuString procImgName;
+			WWuString procFullPath;
+			if (QueryFullProcessImageName(hProcess, 0, imgName, &imgNameSize)) {
+				procFullPath = WWuString(imgName);
+				PathStripPath(imgName);
+				procImgName = WWuString(imgName);
+			}
+
+			// Getting process command line.
+			// Help from: https://stackoverflow.com/questions/6530565/getting-another-process-command-line-in-windows
+			WWuString commandLine;
+			try {
+				GetProcessCommandLine(hProcess, commandLine);
+			}
+			catch (const WuStdException& ex) {
+				if (!suppressError) {
+					WuStdException stdException(GetLastError(), __FILEW__, __LINE__);
+					Notification::MAPPED_ERROR_DATA errorData(
+						ex,
+						WWuString::Format(L"Failed getting command line for process ID '%d': %ws", processId, ex.Message().GetBuffer()).GetBuffer(),
+						L"ErrorGettingProcessCommandLine",
+						Notification::WRITE_ERROR_CATEGORY::ReadError,
+						WWuString::Format(L"%d", processId).GetBuffer()
+					);
+
+					context->NativeWriteError(&errorData);
+				}
+			}
+
+			// MS recommends using a big list, getting the right buffer size is
+			// not as straight forward as with other functions.
+			HMODULE moduleList[1024];
+			DWORD returnBytes;
+			if (!EnumProcessModules(hProcess, moduleList, sizeof(moduleList), &returnBytes)) {
+				if (!suppressError) {
+					WuStdException stdException(GetLastError(), __FILEW__, __LINE__);
+					Notification::MAPPED_ERROR_DATA errorData(
+						stdException,
+						WWuString::Format(L"Error enumerating modules for process ID '%d': %ws", processId, stdException.Message().GetBuffer()).GetBuffer(),
+						L"ErrorEnumeratingProcessModules",
+						Notification::WRITE_ERROR_CATEGORY::InvalidResult,
+						WWuString::Format(L"%d", processId).GetBuffer()
+					);
+
+					context->NativeWriteError(&errorData);
+				}
+
+				CloseHandle(hProcess);
+				continue;
+			}
+
+			PROCESS_MODULE_INFO currentProcessInfo;
+			currentProcessInfo.ProcessId = processId;
+			currentProcessInfo.ImageFileName = procImgName;
+			currentProcessInfo.ImagePath = procFullPath;
+			currentProcessInfo.CommandLine = commandLine;
+
+			wuvector<WU_MODULE_INFO> moduleInfoList;
+			for (size_t i = 0; i < (returnBytes / sizeof(HMODULE)); i++) {
+				WCHAR modNameBuffer[MAX_PATH];
+				if (GetModuleFileNameEx(hProcess, moduleList[i], modNameBuffer, MAX_PATH)) {
+					
+					// Checking if this module is already in the cache.
+					WWuString moduleFileName(modNameBuffer);
+					WU_MODULE_INFO moduleInfo;
+					try {
+						moduleInfo = moduleInfoCache.at(moduleFileName);
+						moduleInfoList.push_back(moduleInfo);
+						continue;
+					}
+					catch (const std::out_of_range&) { }
+					
+					PathStripPath(moduleFileName.GetBuffer());
+					
+					moduleInfo.ModuleName = moduleFileName;
+					moduleInfo.ModulePath = modNameBuffer;
+
+					if (includeVersionInfo) {
+						for (VERSION_INFO_PROPERTY versionInfo : { FileDescription, ProductName, FileVersion, CompanyName }) {
+							WWuString value;
+							GetProccessVersionInfo(modNameBuffer, versionInfo, value);
+							
+							switch (versionInfo) {
+								case FileDescription:
+									moduleInfo.VersionInfo.FileDescription = value;
+									break;
+								
+								case ProductName:
+									moduleInfo.VersionInfo.ProductName = value;
+									break;
+
+								case FileVersion:
+									moduleInfo.VersionInfo.FileVersion = value;
+									break;
+
+								case CompanyName:
+									moduleInfo.VersionInfo.CompanyName = value;
+									break;
+							}
+						}
+					}
+
+					moduleInfoList.push_back(moduleInfo);
+					moduleInfoCache.emplace(moduleInfo.ModulePath, moduleInfo);
+				}
+			}
+
+			// Writing to output.
+			VectorArrayWrapper<WU_MODULE_INFO> infoWrapper(moduleInfoList);
+			currentProcessInfo.SetModuleInfo(infoWrapper);
+			context->NativeWriteObject<PROCESS_MODULE_INFO>(&currentProcessInfo, Notification::PROCESS_MODULE_INFO);
+			CloseHandle(hProcess);
+		}
+
+		// Never leave your process privileges escalated.
+		AccessControl::AdjustCurrentTokenPrivilege(&privList, SE_PRIVILEGE_DISABLED);
 	}
 
 	/*========================================

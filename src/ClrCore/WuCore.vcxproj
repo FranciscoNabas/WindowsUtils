@@ -178,6 +178,7 @@
     <ClInclude Include="Headers\Containers.h" />
     <ClInclude Include="Headers\Expressions.h" />
     <ClInclude Include="Headers\IO.h" />
+    <ClInclude Include="Headers\Lab.h" />
     <ClInclude Include="Headers\MemoryManagement.h" />
     <ClInclude Include="Headers\Network.h" />
     <ClInclude Include="Headers\Notification.h" />
@@ -199,6 +200,7 @@
     <ClCompile Include="SourceFiles\AssemblyInfo.cpp" />
     <ClCompile Include="SourceFiles\Containers.cpp" />
     <ClCompile Include="SourceFiles\IO.cpp" />
+    <ClCompile Include="SourceFiles\Lab.cpp" />
     <ClCompile Include="SourceFiles\Network.cpp" />
     <ClCompile Include="SourceFiles\Notification.cpp" />
     <ClCompile Include="SourceFiles\NtUtilities.cpp" />
@@ -224,6 +226,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\SystemKnownInformation.mc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Core" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

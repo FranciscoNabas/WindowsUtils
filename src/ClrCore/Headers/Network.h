@@ -17,12 +17,21 @@ namespace WindowsUtils::Core
 	extern "C" public class __declspec(dllexport) Network
 	{
 	public:
+
+		// Start-Tcping
+
 		typedef enum _TCPING_STATUS : WORD
 		{
 			Open,
 			Closed,
 			Timeout
 		} TCPING_STATUS;
+
+		typedef enum _TESTPORT_PROTOCOL
+		{
+			Tcp,
+			Udp
+		} TESTPORT_PROTOCOL;
 
 		typedef struct _TCPING_STATISTICS
 		{
@@ -54,7 +63,7 @@ namespace WindowsUtils::Core
 
 		typedef struct _TCPING_OUTPUT
 		{
-			FILETIME Timestamp;
+			::FILETIME Timestamp;
 			LPWSTR Destination;
 			LPWSTR DestAddress;
 			DWORD Port;
@@ -62,7 +71,7 @@ namespace WindowsUtils::Core
 			double RoundTripTime;
 			double Jitter;
 
-			_TCPING_OUTPUT(FILETIME timestamp, const LPWSTR dest, LPWSTR destAddr, DWORD port, TCPING_STATUS stat, double rtt, double jitter)
+			_TCPING_OUTPUT(::FILETIME timestamp, const LPWSTR dest, LPWSTR destAddr, DWORD port, TCPING_STATUS stat, double rtt, double jitter)
 				: Timestamp(timestamp), Port(port), Status(stat), RoundTripTime(rtt), Jitter(jitter)
 			{
 				if (dest != NULL) {
@@ -95,6 +104,47 @@ namespace WindowsUtils::Core
 
 		} TCPING_OUTPUT, *PTCPING_OUTPUT;
 
+		typedef struct _TESTPORT_OUTPUT
+		{
+			::FILETIME Timestamp;
+			LPWSTR Destination;
+			LPWSTR DestAddress;
+			DWORD Port;
+			TCPING_STATUS Status;
+
+			_TESTPORT_OUTPUT(::FILETIME timestamp, const LPWSTR destination, const LPWSTR destAddress, DWORD port, TCPING_STATUS status)
+			{
+				if (destination != NULL) {
+					size_t destLen = wcslen(destination) + 1;
+					Destination = new WCHAR[destLen];
+					wcscpy_s(Destination, destLen, destination);
+				}
+				else
+					Destination = NULL;
+
+				if (destAddress != NULL) {
+					size_t destAddrLen = wcslen(destAddress) + 1;
+					DestAddress = new WCHAR[destAddrLen];
+					wcscpy_s(DestAddress, destAddrLen, destAddress);
+				}
+				else
+					DestAddress = NULL;
+
+				Timestamp = timestamp;
+				Port = port;
+				Status = status;
+			}
+
+			~_TESTPORT_OUTPUT()
+			{
+				if (Destination != NULL)
+					delete[] Destination;
+
+				if (DestAddress != NULL)
+					delete[] DestAddress;
+			}
+
+		} TESTPORT_OUTPUT, *PTESTPORT_OUTPUT;
 
 		class EphemeralSocket
 		{
@@ -196,6 +246,57 @@ namespace WindowsUtils::Core
 			bool IsComplete;
 		} TCPING_WORKER_DATA, *PTCPING_WORKER_DATA;
 
+		// Get-NetworkFile
+
+		typedef struct _NETWORK_FILE_INFO
+		{
+			DWORD Id;
+			DWORD Permissions;
+			DWORD LockCount;
+			WWuString Path;
+			WWuString UserName;
+
+			_NETWORK_FILE_INFO(DWORD id, DWORD perms, DWORD locks, const WWuString& path, const WWuString& userName);
+			~_NETWORK_FILE_INFO();
+
+		} NETWORK_FILE_INFO, *PNETWORK_FILE_INFO;
+
+		typedef struct _NETWORK_SESSION_INFO
+		{
+			WWuString ComputerSessionName;
+			WWuString UserName;
+			DWORD OpenIoCount;
+
+			_NETWORK_SESSION_INFO(const WWuString& sessName, const WWuString& userName, DWORD ioCount);
+			~_NETWORK_SESSION_INFO();
+
+		} NETWORK_SESSION_INFO, *PNETWORK_SESSION_INFO;
+
+		class TestPortForm
+		{
+		public:
+			const WWuString& Destination() const;
+			const DWORD Port() const;
+			const TESTPORT_PROTOCOL Protocol() const;
+			const DWORD Timeout() const;
+			
+			LPCWSTR PortAsString() const;
+
+			TestPortForm(const WWuString& destination, DWORD port, TESTPORT_PROTOCOL protocol, DWORD timeoutSec);
+			~TestPortForm();
+
+		private:
+			WWuString m_destination;
+			DWORD m_port;
+			TESTPORT_PROTOCOL m_protocol;
+			DWORD m_timeoutSec;
+			WCHAR m_portAsString[6];
+		};
+
+		/*
+		*	~ Function definition
+		*/
+
 		////////////////////////////////////////////////////////////////////////////////////////
 		//
 		//	This function, and Cmdlet are based on the great 'tcping.exe' by Eli Fulkerson.
@@ -211,6 +312,19 @@ namespace WindowsUtils::Core
 		////////////////////////////////////////////////////////////////////////////////////////
 
 		void StartTcpPing(TcpingForm& workForm, WuNativeContext* context);
+
+		// Get-NetworkFile (PsFile)
+
+		void ListNetworkFiles(const WWuString& computerName, const WWuString& basePath, const WWuString& userName, wuvector<NETWORK_FILE_INFO>& result);
+		void ListNetworkFiles(const WWuString& computerName, const WWuString& basePath, const WWuString& userName, wuvector<NETWORK_FILE_INFO>& fileInfo, wuvector<NETWORK_SESSION_INFO>& sessionInfo);
+
+		// Close-NetworkFile (PsFile)
+
+		void CloseNetworkFile(const WWuString& computerName, DWORD fileId);
+
+		// Test-Port
+
+		void TestNetworkPort(const TestPortForm& workForm, WuNativeContext* context);
 	};
 
 	void PerformSingleTestProbe(ADDRINFOW* singleInfo, Network::TcpingForm* workForm, const WWuString& displayName,

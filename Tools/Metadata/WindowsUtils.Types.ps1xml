@@ -144,4 +144,60 @@
       </MemberSet>
     </Members>
   </Type>
+  <Type>
+    <Name>WindowsUtils.ModuleInfo</Name>
+    <Members>
+      <ScriptProperty>
+        <Name>HasVersionInfo</Name>
+        <GetScriptBlock>
+          if (![string]::IsNullOrEmpty($this.VersionInfo.ProductName) -or
+              ![string]::IsNullOrEmpty($this.VersionInfo.FileDescription) -or
+              ![string]::IsNullOrEmpty($this.VersionInfo.FileVersion) -or
+              ![string]::IsNullOrEmpty($this.VersionInfo.CompanyName)) {
+                  return $true
+              }
+    
+          return $false
+        </GetScriptBlock>
+      </ScriptProperty>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>ModuleName</Name>
+              <Name>ModulePath</Name>
+              <Name>HasVersionInfo</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+    </Members>
+  </Type>
+  <Type>
+    <Name>WindowsUtils.ProcessModuleInfo</Name>
+    <Members>
+      <ScriptProperty>
+        <Name>ModuleCount</Name>
+        <GetScriptBlock>
+          return $this.ModuleInfo.Count
+        </GetScriptBlock>
+      </ScriptProperty>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>ProcessId</Name>
+              <Name>ImageName</Name>
+              <Name>ModuleCount</Name>
+              <Name>ModuleInfo</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+    </Members>
+  </Type>
 </Types>

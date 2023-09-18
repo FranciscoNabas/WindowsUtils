@@ -9,6 +9,7 @@ using WindowsUtils.AccessControl;
 using WindowsUtils.TerminalServices;
 using WindowsUtils.ArgumentCompletion;
 using System.Security;
+using System.Diagnostics;
 
 #pragma warning disable CS8618
 namespace WindowsUtils.Commands
@@ -1890,5 +1891,503 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
             => _unwrapper.StartProcessAsUser(_userName, _domain, _password, CommandLine, _titleBar);
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Returns files opened by remote sessions.</para>
+    /// <para type="description">This cmdlet returns files opened in a server remotely by a user session.</para>
+    /// <para type="description">It was inspired by 'psfile.exe' from Sysinternals.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-NetworkFile -ComputerName SUPERSERVER</code>
+    ///     <para>Returns open remotely opened files on computer 'SUPERSERVER'.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>psfile SUPERSERVER -UserConnectionFilter 'francisco.nabas'</code>
+    ///     <para>Returns files opened remotely on computer 'SUPERSERVER' by user 'francisco.nabas'.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>getnetfile 'SUPERSERVER' -IncludeConnectionName</code>
+    ///     <para>Returns files opened remotely on computer 'SUPERSERVER' and includes the origin session name.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-NetworkFile -UserConnectionFilter \\10.1.1.15</code>
+    ///     <para>Returns files opened remotely on the current computer filtered by session connection name '10.1.1.15'.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(VerbsCommon.Get, "NetworkFile")]
+    [OutputType(typeof(NetworkFileInfo))]
+    [Alias(new string[] { "psfile", "getnetfile" })]
+    public class GetNetworkFileCommand : PSCmdlet
+    {
+        private readonly Wrapper _unwrapper = new();
+
+        /// <summary>
+        /// <para type="description">The computer name. If not present, the current computer is used.</para>
+        /// </summary>
+        [Parameter(
+            Position = 0,
+            HelpMessage = "The computer name. If not present, the current computer is used."
+        )]
+        public string ComputerName { get; set; }
+
+        /// <summary>
+        /// <para type="description">A path prefix filter for the results.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "A path prefix.")]
+        public string BasePath { get; set; }
+
+        /// <summary>
+        /// <para type="description">An user name or connection name filter.</para>
+        /// <para type="description">For user name, input the user name, for connection name, input the connection name prepended by two back slashes '\\'.</para>
+        /// <para type="description">For more information, see documentation for 'NetFileEnum'.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "A user name filter or connection name filter.")]
+        public string UserConnectionFilter { get; set; }
+
+        /// <summary>
+        /// <para type="description">Includes the session connection name. This implies a cost because a call to 'NtSessionEnum' is made.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "Include connection name.")]
+        public SwitchParameter IncludeConnectionName { get; set; }
+
+        protected override void ProcessRecord()
+        {
+            if (string.IsNullOrWhiteSpace(ComputerName)) { ComputerName = string.Empty; }
+            if (string.IsNullOrWhiteSpace(BasePath)) { BasePath = string.Empty; }
+            if (string.IsNullOrWhiteSpace(UserConnectionFilter)) { UserConnectionFilter = string.Empty; }
+
+            WriteObject(_unwrapper.GetNetworkFile(ComputerName, BasePath, UserConnectionFilter, IncludeConnectionName), true);
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Closes a network file.</para>
+    /// <para type="description">This Cmdlet closes a file opened remotely on the current or remote computer.</para>
+    /// <para type="description">It was inspired by 'psfile.exe' from Sysinternals.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Close-NetworkFile -ComputerName 'SUPERSERVER' -FileId 222</code>
+    ///     <para>Closes file ID 222 on computer 'SUPERSERVER'.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>closenetfile 'SUPERSERVER' 100, 102, 111 -Force</code>
+    ///     <para>Closes file IDs 100, 102 and 111 on computer 'SUPERSERVER' without prompting for confirmation.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-NetworkFile 'SUPERSERVER' -BasePath "$env:windir\MySuperPath" | Close-NetworkFile</code>
+    ///     <para>Closes all files that starts with "$env:windir\MySuperPath" on computer 'SUPERSERVER'.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(
+        VerbsCommon.Close, "NetworkFile",
+        DefaultParameterSetName = "withFileId",
+        SupportsShouldProcess = true,
+        ConfirmImpact = ConfirmImpact.High
+    )]
+    [Alias("closenetfile")]
+    public class CloseNetworkFileCommand : PSCmdlet
+    {
+        public readonly Wrapper _unwrapper = new();
+
+        /// <summary>
+        /// <para type="description">The computer name. If not present, the current computer is used.</para>
+        /// </summary>
+        [Parameter(
+            Position = 0,
+            ParameterSetName = "withFileId",
+            HelpMessage = "The computer name. If not present, the current computer is used."
+        )]
+        public string ComputerName { get; set; }
+
+        /// <summary>
+        /// <para type="description">One or more file IDs.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            Position = 1,
+            ParameterSetName = "withFileId",
+            HelpMessage = "One or more file IDs."
+        )]
+        [ValidateNotNullOrEmpty]
+        public int[] FileId { get; set; }
+
+        /// <summary>
+        /// <para type="description">The result from 'Get-NetworkFile'.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            ParameterSetName = "withInputObject",
+            ValueFromPipeline = true,
+            HelpMessage = "The result from 'Get-NetworkFile'."
+        )]
+        public NetworkFileInfo[] InputObject { get; set; }
+
+        /// <summary>
+        /// <para type="description">Used to skip confirmation.</para>
+        /// </summary>
+        [Parameter(HelpMessage = "Used to skip confirmation.")]
+        public SwitchParameter Force { get; set; }
+
+        protected override void ProcessRecord()
+        {
+            if (ParameterSetName == "withFileId") {
+                if (Force.IsPresent) {
+                    foreach (int id in FileId)
+                        if (string.IsNullOrEmpty(ComputerName))
+                            _unwrapper.CloseNetworkFile(string.Empty, id);
+                        else
+                            _unwrapper.CloseNetworkFile(ComputerName, id);
+                }
+                else {
+                    foreach (int id in FileId) {
+                        if (string.IsNullOrEmpty(ComputerName)) {
+                            if (ShouldProcess(
+                                $"Closing file id {id} on the current computer.",
+                                $"Are you sure you want to close the remote file id {id}?",
+                                "Closing remote file"))
+                                _unwrapper.CloseNetworkFile(string.Empty, id);
+                        }
+                        else {
+                            if (ShouldProcess(
+                                $"Closing file id {id} on computer '{ComputerName}'.",
+                                $"Are you sure you want to close the remote file id {id}?",
+                                "Closing remote file"))
+                                _unwrapper.CloseNetworkFile(ComputerName, id);
+                        }
+                    }
+                }
+            }
+            else {
+                if (Force.IsPresent) {
+                    foreach (NetworkFileInfo info in InputObject)
+                        if (string.IsNullOrEmpty(info.ComputerName))
+                            _unwrapper.CloseNetworkFile(string.Empty, info.Id);
+                        else
+                            _unwrapper.CloseNetworkFile(info.ComputerName, info.Id);
+                }
+                else {
+                    foreach (NetworkFileInfo info in InputObject) {
+                        if (string.IsNullOrEmpty(info.ComputerName)) {
+                            if (ShouldProcess(
+                                $"Closing file id {info.Id} on the current computer.",
+                                $"Are you sure you want to close the remote file id {info.Id}?",
+                                "Closing remote file"))
+                                _unwrapper.CloseNetworkFile(string.Empty, info.Id);
+                        }
+                        else {
+                            if (ShouldProcess(
+                                $"Closing file id {info.Id} on computer '{info.ComputerName}'.",
+                                $"Are you sure you want to close the remote file id {info.Id}?",
+                                "Closing remote file"))
+                                _unwrapper.CloseNetworkFile(info.ComputerName, info.Id);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Creates a new cabinet file.</para>
+    /// <para type="description">This Cmdlet creates a new cabinet based on the input path.</para>
+    /// <para type="description">If the path is a directory it looks recursively for all files.</para>
+    /// <para type="description">You can use the 'MaxCabSize'(Kb) parameter if you want to split in multiple cabs, and the 'NamePrefix' to chose a prefix name.</para>
+    /// <para type="description">Important! Cabinet files accepts only files smaller than 2Gb, and the maximum size for a cabinet file is 2Gb.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>New-Cabinet -Path 'C:\Path\To\Files' -Destination 'C:\Path\To\Destination'</code>
+    ///     <para>Compresses all files in 'C:\Path\To\Files'.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>New-Cabinet 'C:\Path\To\Files' 'C:\Path\To\Destination' -MaxCabSize 20000 -NamePrefix 'CoolCab'</code>
+    ///     <para>Compress all files in 'C:\Path\To\Files' with a max cab size of 20Mb and a prefix name of 'CoolCab'</para>
+    ///     <para>If the size exceeds 20Mb, files will span over multiple cabs, following the pattern 'CoolCab01.cab', 'CoolCab02.cab'...</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(VerbsCommon.New, "Cabinet")]
+    public class CompressArchiveFileCommand : CoreCommandBase
+    {
+        private readonly Wrapper _unwrapper = new();
+
+        private string _path;
+        private string _destination;
+
+        /// <summary>
+        /// <para type="description">The path to the files to be compressed.</para>
+        /// <para type="description">It can be a path to a file, or a directory.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            Position = 0
+        )]
+        [ValidateNotNullOrEmpty]
+        public string Path {
+            get { return _path; }
+            set {
+                if (!Directory.Exists(value) && !File.Exists(value))
+                    throw new FileNotFoundException($"Path {value} not found.");
+
+                _path = value;
+            }
+        }
+
+        /// <summary>
+        /// <para type="description">A path to the destination. It needs to be a path to a valid folder.</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            Position = 1
+        )]
+        [ValidateNotNullOrEmpty]
+        public string Destination {
+            get { return _destination; }
+            set {
+                if (!Directory.Exists(value))
+                    throw new FileNotFoundException($"Directory {value} not found.");
+
+                _destination = value;
+            }
+        }
+
+        /// <summary>
+        /// <para type="description">A name prefix. The cabinet will be created in the format 'Prefix01.cab'</para>
+        /// <para type="description">If the files span through multiple cabs, the count is incremented. 'Prefix01.cab', 'Prefix02.cab'...</para>
+        /// </summary>
+        [Parameter()]
+        public string NamePrefix { get; set; } = "Cabinet";
+
+        /// <summary>
+        /// <para type="description">The maximum cabinet size in kilobytes. This size will determine if files are going to span over multiple cabs.</para>
+        /// <para type="description">The maximum supported cabinet size, and the default is 2Gb.</para>
+        /// </summary>
+        [Parameter()]
+        [ValidateRange(1, 0x1FFFFF)]
+        public int MaxCabSize { get; set; } = 0x1FFFFF;
+
+        /// <summary>
+        /// <para type="description">The compression algorithm. The higher the compression level, the longer it takes to compress all files.</para>
+        /// <para type="description">From lower to higher: None, MSZip, LZXLow, LZXHigh.</para>
+        /// </summary>
+        [Parameter()]
+        public CabinetCompressionType CompressionType { get; set; } = CabinetCompressionType.MSZip;
+
+        protected override void ProcessRecord()
+            => _unwrapper.CompressArchiveFile(Path, _destination, NamePrefix, (MaxCabSize * 1024), CompressionType, ArchiveFileType.Cabinet, (CmdletContextBase)CmdletContext);
+    }
+
+    /// <summary>
+    /// <para type="synopsis">Test if a TCP or UDP port is open.</para>
+    /// <para type="description">This Cmdlet tests if TCP or UPD ports are opened in a given destination.</para>
+    /// <para type="description">Attention! Testing UDP can return false positives due the nature of the protocol. If the server doesn't refuse the connection we consider the port open.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Test-Port -ComputerName 'google.com'</code>
+    ///     <para>Tests if the TCP port '80' is opened at 'google.com'.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>testport 'SUPERSERVER.contoso.com' -UdpPort 69</code>
+    ///     <para>Tests if the UDP port '69' is opened at 'SUPERSERVER.contoso.com'.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>testport 'SUPERSERVER.contoso.com' -TcpPort 80, 443 -UdpPort 67, 68, 69</code>
+    ///     <para>Tests if the TCP ports 80, 443, and UDP ports 67, 68, and 69 are opened at 'SUPERSERVER.contoso.com'.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(VerbsDiagnostic.Test, "Port")]
+    [Alias("testport")]
+    public class TestPortCommand : CoreCommandBase
+    {
+        private struct SingleTestInfo
+        {
+            public int Port;
+            public TransportProtocol Protocol;
+        }
+
+        private readonly Wrapper _unwrapper = new();
+        private readonly List<SingleTestInfo> _portList = new();
+
+        private string[] _destination = new string[] { "localhost" };
+
+        /// <summary>
+        /// <para type="description">One or more destination.</para>
+        /// </summary>
+        [Parameter(Position = 0)]
+        [ValidateNotNullOrEmpty]
+        public string[] ComputerName {
+            get { return _destination; }
+            set { _destination = value; }
+        }
+
+        /// <summary>
+        /// <para type="description">One or more TCP ports.</para>
+        /// </summary>
+        [Parameter(Position = 1)]
+        [ValidateNotNullOrEmpty]
+        public int[] TcpPort {
+            get {
+                return _portList
+                    .Where(p => p.Protocol == TransportProtocol.Tcp)
+                    .Select(p => p.Port)
+                    .ToArray();
+            }
+            set {
+                foreach (int port in value)
+                    _portList.Add(new() { Port = port, Protocol = TransportProtocol.Tcp });
+            }
+        }
+
+        /// <summary>
+        /// <para type="description">One or more UDP ports.</para>
+        /// </summary>
+        [Parameter()]
+        public int[] UdpPort {
+            get {
+                return _portList
+                    .Where(p => p.Protocol == TransportProtocol.Udp)
+                    .Select(p => p.Port)
+                    .ToArray();
+            }
+            set {
+                foreach (int port in value)
+                    _portList.Add(new() { Port = port, Protocol = TransportProtocol.Udp });
+            }
+        }
+
+        /// <summary>
+        /// <para type="description">The test timeout, in seconds.</para>
+        /// </summary>
+        [Parameter()]
+        [ValidateRange(1, int.MaxValue)]
+        public int Timeout { get; set; } = 2;
+
+        protected override void ProcessRecord()
+        {
+            if (_portList.Count == 0)
+                throw new ArgumentException("You need to input at least one port.");
+
+            foreach (string destination in _destination) {
+                foreach (SingleTestInfo port in _portList) {
+                    if (port.Port < 0 || port.Port > ushort.MaxValue) {
+                        WriteError(new(
+                            new ArgumentOutOfRangeException($"Port cannot be smaller than 0, or bigger than 65535. Was '{port.Port}'."),
+                            "PortOutOfRange",
+                            ErrorCategory.InvalidArgument,
+                            port
+                        ));
+
+                        continue;
+                    }
+
+                    _unwrapper.TestNetworkPort(destination, (uint)port.Port, port.Protocol, (uint)Timeout, (CmdletContextBase)CmdletContext);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// <para type="synopsis">List processes modules.</para>
+    /// <para type="description">This Cmdlet lists modules loaded into processes.</para>
+    /// <para type="description">You can list specific processes, or all processes. You can also include module version information.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Get-ProcessModule -Name 'explorer'</code>
+    ///     <para>Gets loaded modules for the explorer process.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>listdlls -ProcessId 666, 667 -IncludeVersionInfo</code>
+    ///     <para>Gets loaded modules for processes ID 666 and 667, including module version info.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>listdlls</code>
+    ///     <para>Gets loaded modules for all processes.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
+    [Cmdlet(
+        VerbsCommon.Get, "ProcessModule",
+        DefaultParameterSetName = "byName"
+    )]
+    [Alias("listdlls")]
+    public class GetProcessModuleCommand : CoreCommandBase
+    {
+        private readonly Wrapper _unwrapper = new();
+        private readonly List<uint> _processIdList = new();
+
+        /// <summary>
+        /// <para type="description">One or more process friendly names.</para>
+        /// </summary>
+        [Parameter(
+            Position = 0,
+            ParameterSetName = "byName"
+        )]
+        [ValidateNotNullOrEmpty]
+        public string[] Name { get; set; }
+
+        /// <summary>
+        /// <para type="description">One or more process IDs.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "byProcessId")]
+        [ValidateNotNullOrEmpty]
+        public uint[] ProcessId { get; set; }
+        
+        /// <summary>
+        /// <para type="description">Include module file version information.</para>
+        /// </summary>
+        [Parameter()]
+        public SwitchParameter IncludeVersionInfo { get; set; }
+
+        protected override void BeginProcessing()
+        {
+            if (!Utils.IsAdministrator())
+                throw new InvalidOperationException("Cmdlet needs to run elevated.");
+
+            if (ParameterSetName == "byName") {
+                if (Name is not null)
+                    foreach (string processName in Name) {
+                        Process[]? process = Process.GetProcessesByName(processName);
+                        if (process is null || process.Length == 0)
+                            WriteWarning($"Process with name '{processName}' not found.");
+                        else
+                            foreach (Process p in process)
+                                _processIdList.Add((uint)p.Id);
+                    }
+            }
+            else
+                if (ProcessId is not null)
+                    _processIdList.AddRange(ProcessId);
+        }
+
+        protected override void ProcessRecord()
+        {
+            if (!_processIdList.Any())
+                _unwrapper.ListProcessModule(IncludeVersionInfo, (CmdletContextBase)CmdletContext);
+            else
+                _unwrapper.ListProcessModule(_processIdList.ToArray(), IncludeVersionInfo, (CmdletContextBase)CmdletContext);
+        }
     }
 } 

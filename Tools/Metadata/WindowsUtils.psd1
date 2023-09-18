@@ -1,6 +1,6 @@
 @{
     GUID = 'C5F7B91E-668D-46AC-9F0E-23B0A74ABCBA'
-    ModuleVersion = '1.8.7'
+    ModuleVersion = '1.9.0'
     RootModule = 'WindowsUtils.dll'
     CompatiblePSEditions = @(
         'Desktop',
@@ -24,28 +24,40 @@
         'Get-InstalledDotnet'
     )
     CmdletsToExport = @(
-        'Get-ComputerSession',
-        'Get-ObjectHandle',
-        'Get-ErrorString', 
-        'Get-LastWin32Error',
-        'Get-MsiProperties',
-        'Get-RemoteMessageOptions',
-        'Get-ResourceMessageTable', 
-        'Send-RemoteMessage',
-        'Send-Click',
-        'Disconnect-Session',
-        'Remove-Service',
-        'Get-ServiceSecurity',
-        'New-ServiceAccessRule',
-        'New-ServiceAuditRule',
-        'Set-ServiceSecurity',
-        'Expand-Cabinet',
+        'Get-ComputerSession'
+        'Get-ObjectHandle'
+        'Get-ErrorString'
+        'Get-LastWin32Error'
+        'Get-MsiProperties'
+        'Get-RemoteMessageOptions'
+        'Get-ResourceMessageTable'
+        'Send-RemoteMessage'
+        'Send-Click'
+        'Disconnect-Session'
+        'Remove-Service'
+        'Get-ServiceSecurity'
+        'New-ServiceAccessRule'
+        'New-ServiceAuditRule'
+        'Set-ServiceSecurity'
+        'Expand-Cabinet'
         'Start-Tcping'
         'Start-ProcessAsUser'
+        'Get-NetworkFile'
+        'Close-NetworkFile'
+        'New-Cabinet'
+        'Test-Port'
+        'Get-ProcessModule'
     )
     AliasesToExport = @(
-        'gethandle',
+        'gethandle'
         'disconnect'
+        'runas'
+        'psfile'
+        'getnetfile'
+        'closenetfile'
+        'testport'
+        'getdotnet'
+        'listdlls'
     )
     PrivateData = @{
         PSData = @{

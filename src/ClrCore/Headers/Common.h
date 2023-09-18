@@ -8,7 +8,8 @@ typedef enum _ErrorType
 {
 	SystemError,
 	NtError,
-	FdiError
+	FdiError,
+	FciError
 } ErrorType;
 
 class WuStdException : public std::exception
@@ -30,6 +31,14 @@ public:
 #endif
 	}
 
+	WuStdException(const WuStdException& other)
+	{
+		m_windowsError = other.m_windowsError;
+		m_message = other.m_message;
+		m_compactTrace = other.m_compactTrace;
+		m_isNt = other.m_isNt;
+	}
+
 	WuStdException(int errorCode, LPCWSTR filePath, int lineNumber, ErrorType type = ErrorType::SystemError)
 	{
 		m_windowsError = errorCode;
@@ -43,6 +52,9 @@ public:
 				break;
 			case FdiError:
 				SetFdiMessage();
+				break;
+			case FciError:
+				SetFciMessage();
 				break;
 		}
 
@@ -156,6 +168,51 @@ private:
 
 			case FDIERROR_USER_ABORT:
 				m_message = L"Application aborted.";
+				break;
+
+			default:
+				SetMessage(false);
+				break;
+		}
+	}
+
+	void SetFciMessage()
+	{
+		switch (m_windowsError) {
+			case FCIERR_OPEN_SRC:
+				m_message = L"Failure opening the file to be stored in the cabinet.";
+				break;
+
+			case FCIERR_READ_SRC:
+				m_message = L"Failure reading the file to be stored in the cabinet.";
+				break;
+
+			case FCIERR_ALLOC_FAIL:
+				m_message = L"Out of memory in FCI.";
+				break;
+
+			case FCIERR_TEMP_FILE:
+				m_message = L"Could not create a temporary file.";
+				break;
+
+			case FCIERR_BAD_COMPR_TYPE:
+				m_message = L"Unknown compression type.";
+				break;
+
+			case FCIERR_CAB_FILE:
+				m_message = L"Could not create the cabinet file.";
+				break;
+
+			case FCIERR_USER_ABORT:
+				m_message = L"FCI aborted.";
+				break;
+
+			case FCIERR_MCI_FAIL:
+				m_message = L"Failure compressing data.";
+				break;
+
+			case FCIERR_CAB_FORMAT_LIMIT:
+				m_message = L"Data-size or file-count exceeded CAB format limits.";
 				break;
 
 			default:
@@ -513,4 +570,27 @@ private:
 
 		return counter.QuadPart;
 	}
+};
+
+template <class T>
+class VectorArrayWrapper
+{
+public:
+	const size_t Count() const { return m_count; }
+	const T* Array() const { return m_array; }
+
+	VectorArrayWrapper<T>(const std::vector<T>& vec)
+	{
+		size_t dataSize = vec.size() * sizeof(T);
+		m_array = (T*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dataSize);
+		RtlCopyMemory(m_array, &vec.front(), dataSize);
+
+		m_count = vec.size();
+	}
+
+	~VectorArrayWrapper() { HeapFree(GetProcessHeap(), 0, m_array); }
+
+private:
+	size_t m_count;
+	T* m_array;
 };
