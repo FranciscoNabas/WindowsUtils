@@ -47,6 +47,8 @@
         'New-Cabinet'
         'Test-Port'
         'Get-ProcessModule'
+        'Suspend-Process'
+        'Resume-Process'
     )
     AliasesToExport = @(
         'gethandle'
@@ -58,6 +60,8 @@
         'testport'
         'getdotnet'
         'listdlls'
+        'suspend'
+        'resume'
     )
     PrivateData = @{
         PSData = @{

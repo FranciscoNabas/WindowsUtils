@@ -184,6 +184,10 @@
           return $this.ModuleInfo.Count
         </GetScriptBlock>
       </ScriptProperty>
+      <AliasProperty>
+        <Name>ModuleInfo</Name>
+        <ReferencedMemberName>Info</ReferencedMemberName>
+      </AliasProperty>
       <MemberSet>
         <Name>PSStandardMembers</Name>
         <Members>

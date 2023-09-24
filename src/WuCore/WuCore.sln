@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34112.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WuCore", "WuCore.vcxproj", "{167CFE96-C393-4FB5-AE4A-6356B69E053C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{167CFE96-C393-4FB5-AE4A-6356B69E053C}.Debug|x64.ActiveCfg = Release|x64
+		{167CFE96-C393-4FB5-AE4A-6356B69E053C}.Debug|x64.Build.0 = Release|x64
+		{167CFE96-C393-4FB5-AE4A-6356B69E053C}.Release|x64.ActiveCfg = Release|x64
+		{167CFE96-C393-4FB5-AE4A-6356B69E053C}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {51AE053D-7D54-4640-AB0E-F0DCF7A3FF04}
+	EndGlobalSection
+EndGlobal
