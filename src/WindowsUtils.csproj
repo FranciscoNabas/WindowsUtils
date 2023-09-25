@@ -4,10 +4,10 @@
 	<TargetFrameworks>netstandard2.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.9.0</Version>
+    <Version>1.10.0</Version>
     <Authors>Francisco Nabas</Authors>
     <Platforms>x64</Platforms>
-    <AssemblyName></AssemblyName>
+    <AssemblyName>WindowsUtils</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <BaseIntermediateOutputPath />
     <LangVersion>11.0</LangVersion>

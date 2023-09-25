@@ -5,7 +5,7 @@
   },
   "projects": {
     "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj": {
-      "version": "1.9.0",
+      "version": "1.10.0",
       "restore": {
         "projectUniqueName": "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
         "projectName": "WindowsUtils",

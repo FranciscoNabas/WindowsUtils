@@ -5,6 +5,29 @@ using WindowsUtils.Core;
 namespace WindowsUtils.Commands
 {
 #pragma warning disable CS8618
+
+    /// <summary>
+    /// <para type="synopsis">Starts a process as user.</para>
+    /// <para type="description">This Cmdlet starts a process as a given user. Mimics the 'runas.exe' application.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Start-ProcessAsUser -UserName CONTOSO\francisco.nabas -CommandLine 'powershell'</code>
+    ///     <para>Starts PowerShell as CONTOSO\francisco.nabas.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>runas CONTOSO\francisco.nabas notepad</code>
+    ///     <para>Starts Notepad as CONTOSO\francisco.nabas</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>runas -CommandLine 'notepad' -Credential (Get-Credential)</code>
+    ///     <para>Starts Notepad with the input credentials.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
     [Cmdlet(
         VerbsLifecycle.Start, "ProcessAsUser",
         DefaultParameterSetName = "withUserName"
@@ -12,7 +35,7 @@ namespace WindowsUtils.Commands
     [Alias("runas")]
     public class StartProcessAsUserCommand : PSCmdlet
     {
-        private Wrapper _unwrapper = new();
+        private readonly Wrapper _unwrapper = new();
 
         private string _userName;
         private string _domain;
@@ -20,6 +43,9 @@ namespace WindowsUtils.Commands
 
         private string _titleBar;
 
+        /// <summary>
+        /// <para type="description">The user name. Can be UPN format or DOMAIN\UserName.</para>
+        /// </summary>
         [Parameter(
             Mandatory = true,
             Position = 0,
@@ -28,6 +54,9 @@ namespace WindowsUtils.Commands
         [ValidateNotNullOrEmpty]
         public string UserName { get; set; }
 
+        /// <summary>
+        /// <para type="description">The command line to run.</para>
+        /// </summary>
         [Parameter(
             Mandatory = true,
             Position = 1,
@@ -41,6 +70,9 @@ namespace WindowsUtils.Commands
         [ValidateNotNullOrEmpty]
         public string CommandLine { get; set; }
 
+        /// <summary>
+        /// <para type="description">The PSCredential to run the command as.</para>
+        /// </summary>
         [Parameter(
             Mandatory = true,
             ParameterSetName = "withCredentials"

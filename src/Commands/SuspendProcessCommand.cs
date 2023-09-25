@@ -6,6 +6,22 @@ namespace WindowsUtils.Commands
 {
 #pragma warning disable CS8618
 
+    /// <summary>
+    /// <para type="synopsis">Suspends one or more processes.</para>
+    /// <para type="description">This Cmdlet suspends one or more processes by name or process ID.</para>
+    /// <example>
+    ///     <para></para>
+    ///     <code>Suspend-Process -Name 'notepad'</code>
+    ///     <para>Suspends all Notepad processes.</para>
+    ///     <para></para>
+    /// </example>
+    /// <example>
+    ///     <para></para>
+    ///     <code>suspend -Id 666</code>
+    ///     <para>Suspends process with ID 666.</para>
+    ///     <para></para>
+    /// </example>
+    /// </summary>
     [Cmdlet(
         VerbsLifecycle.Suspend, "Process",
         DefaultParameterSetName = "byName"
@@ -16,6 +32,9 @@ namespace WindowsUtils.Commands
         private readonly Wrapper _unwrapper = new();
         private readonly List<uint> _processIdList = new();
 
+        /// <summary>
+        /// <para type="description">One or more process friendly names.</para>
+        /// </summary>
         [Parameter(
             Mandatory = true,
             Position = 0,
@@ -24,12 +43,15 @@ namespace WindowsUtils.Commands
         [ValidateNotNullOrEmpty]
         public string[] Name { get; set; }
 
+        /// <summary>
+        /// <para type="description">One or more process IDs.</para>
+        /// </summary>
         [Parameter(
             Mandatory = true,
             ParameterSetName = "byProcessId"
         )]
         [ValidateNotNullOrEmpty]
-        public uint[] ProcessId { get; set; }
+        public uint[] Id { get; set; }
 
         protected override void BeginProcessing()
         {
@@ -48,8 +70,8 @@ namespace WindowsUtils.Commands
                     }
             }
             else
-                if (ProcessId is not null)
-                _processIdList.AddRange(ProcessId);
+                if (Id is not null)
+                _processIdList.AddRange(Id);
         }
 
         protected override void ProcessRecord()
