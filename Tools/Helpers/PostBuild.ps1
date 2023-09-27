@@ -7,6 +7,7 @@ $copypath = @(
     '.\Tools\Metadata\WindowsUtils.Types.ps1xml'
     '.\Tools\Metadata\WindowsUtils.Format.ps1xml'
     '.\src\bin\x64\Release\netstandard2.0\*'
+    '.\Tools\Libraries\ErrorLibrary.dll'
 )
 
 Copy-Item -Path $copypath -Destination $releaseDir -Force

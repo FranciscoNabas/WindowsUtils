@@ -4,23 +4,8 @@
     "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj": {}
   },
   "projects": {
-    "C:\\LocalRepositories\\.WindowsUtils\\src\\ClrCore\\WuCore.vcxproj": {
-      "restore": {
-        "projectUniqueName": "C:\\LocalRepositories\\.WindowsUtils\\src\\ClrCore\\WuCore.vcxproj",
-        "projectName": "WuCore",
-        "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\src\\ClrCore\\WuCore.vcxproj",
-        "frameworks": {
-          "native": {
-            "projectReferences": {}
-          }
-        }
-      },
-      "frameworks": {
-        "native": {}
-      }
-    },
     "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj": {
-      "version": "1.9.0",
+      "version": "1.10.0",
       "restore": {
         "projectUniqueName": "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
         "projectName": "WindowsUtils",
@@ -49,8 +34,8 @@
           "netstandard2.0": {
             "targetAlias": "netstandard2.0",
             "projectReferences": {
-              "C:\\LocalRepositories\\.WindowsUtils\\src\\ClrCore\\WuCore.vcxproj": {
-                "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\src\\ClrCore\\WuCore.vcxproj"
+              "C:\\LocalRepositories\\.WindowsUtils\\src\\WuCore\\WuCore.vcxproj": {
+                "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\src\\WuCore\\WuCore.vcxproj"
               }
             }
           }
@@ -115,6 +100,21 @@
           "warn": true,
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100-rc.1.23455.8\\RuntimeIdentifierGraph.json"
         }
+      }
+    },
+    "C:\\LocalRepositories\\.WindowsUtils\\src\\WuCore\\WuCore.vcxproj": {
+      "restore": {
+        "projectUniqueName": "C:\\LocalRepositories\\.WindowsUtils\\src\\WuCore\\WuCore.vcxproj",
+        "projectName": "WuCore",
+        "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\src\\WuCore\\WuCore.vcxproj",
+        "frameworks": {
+          "native": {
+            "projectReferences": {}
+          }
+        }
+      },
+      "frameworks": {
+        "native": {}
       }
     }
   }

@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
 
+## [1.10.0] - 2023-09-27
+
+### Added
+
+- `Suspend-Process` (suspend).
+- `Resume-Process` (resume).
+- `Get-ErrorInformation` (err).
+
+### Changed
+
+- `WuCore` is now C++20!! (no modules in C++/CLI yet though)
+- The C++/CLI core was completely rewritten to refactor, organize, and conform to C++ programming guidelines.
+- Writing information from unmanaged code to PowerShell was changed to use a system of proxy delegates.
+  These delegates do all the marshalling, and call the `Write*` functions with managed objects.
+  This system allowed us to get rid of shared memory reading/writing. It's all done using wrappers.
+- All Cmdlet classes were given their own file. The main `Commands.cs` was almost 3000 lines long.
+
+### Bugs
+
+- Tied up the error handling in `Close-NetworkFile`, who was throwing from an external component instead of wrapping in a `NativeException`.
+
 ## [1.9.0] - 2023-09-17
 
 ### Added

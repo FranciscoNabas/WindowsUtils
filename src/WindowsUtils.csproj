@@ -4,22 +4,30 @@
 	<TargetFrameworks>netstandard2.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.9.0</Version>
-    <Authors>FranciscoNabas</Authors>
+    <Version>1.10.0</Version>
+    <Authors>Francisco Nabas</Authors>
     <Platforms>x64</Platforms>
-    <AssemblyName></AssemblyName>
+    <AssemblyName>WindowsUtils</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <BaseIntermediateOutputPath />
     <LangVersion>11.0</LangVersion>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <DocumentationFile>bin\WindowsUtils\WindowsUtils.xml</DocumentationFile>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+	<GenerateAssemblyCompanyAttribute>true</GenerateAssemblyCompanyAttribute>
+	<GenerateAssemblyDescriptionAttribute>true</GenerateAssemblyDescriptionAttribute>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <NoWarn>CS1591</NoWarn>
     <UserSecretsId>8ca38eb4-7555-4d88-9f6e-41028e265cc4</UserSecretsId>
+    <Company>Frank Nabas Labs</Company>
+    <Copyright>Copyright (C) Francisco Nabas 2023</Copyright>
+    <PackageProjectUrl>https://github.com/FranciscoNabas/WindowsUtils</PackageProjectUrl>
+    <Title>WindowsUtils</Title>
+    <Product>WindowsUtils</Product>
+    <Description>WindowsUtils Library</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -44,7 +52,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="ClrCore\WuCore.vcxproj" />
+    <ProjectReference Include="WuCore\WuCore.vcxproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1120,8 +1120,8 @@
     },
     "WuCore/1.0.0": {
       "type": "project",
-      "path": "ClrCore/WuCore.vcxproj",
-      "msbuildProject": "ClrCore/WuCore.vcxproj"
+      "path": "WuCore/WuCore.vcxproj",
+      "msbuildProject": "WuCore/WuCore.vcxproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -1142,7 +1142,7 @@
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
-    "version": "1.9.0",
+    "version": "1.10.0",
     "restore": {
       "projectUniqueName": "C:\\LocalRepositories\\.WindowsUtils\\src\\WindowsUtils.csproj",
       "projectName": "WindowsUtils",
@@ -1171,8 +1171,8 @@
         "netstandard2.0": {
           "targetAlias": "netstandard2.0",
           "projectReferences": {
-            "C:\\LocalRepositories\\.WindowsUtils\\src\\ClrCore\\WuCore.vcxproj": {
-              "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\src\\ClrCore\\WuCore.vcxproj"
+            "C:\\LocalRepositories\\.WindowsUtils\\src\\WuCore\\WuCore.vcxproj": {
+              "projectPath": "C:\\LocalRepositories\\.WindowsUtils\\src\\WuCore\\WuCore.vcxproj"
             }
           }
         }

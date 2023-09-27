@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{167CFE96-C393-4FB5-AE4A-6356B69E053C}</ProjectGuid>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <Keyword>ManagedCProj</Keyword>
+    <RootNamespace>WuCore</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CLRSupport>true</CLRSupport>
+    <CharacterSet>Unicode</CharacterSet>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CLRSupport>true</CLRSupport>
+    <CharacterSet>Unicode</CharacterSet>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>Release\x64\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <EnableModules>false</EnableModules>
+      <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
+      <AdditionalOptions>/Zo</AdditionalOptions>
+      <ConformanceMode>false</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies />
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <EnableModules>false</EnableModules>
+      <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
+      <AdditionalOptions>/Zo</AdditionalOptions>
+      <ConformanceMode>false</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies />
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Headers\Engine\AccessControl.h" />
+    <ClInclude Include="Headers\Engine\Containers.h" />
+    <ClInclude Include="Headers\Engine\Network.h" />
+    <ClInclude Include="Headers\Engine\ProcessAndThread.h" />
+    <ClInclude Include="Headers\Engine\Registry.h" />
+    <ClInclude Include="Headers\Engine\Services.h" />
+    <ClInclude Include="Headers\Engine\TerminalServices.h" />
+    <ClInclude Include="Headers\Engine\Utilities.h" />
+    <ClInclude Include="Headers\Support\CoreUtils.h" />
+    <ClInclude Include="Headers\Support\Expressions.h" />
+    <ClInclude Include="Headers\Support\IO.h" />
+    <ClInclude Include="Headers\Support\MemoryManagement.h" />
+    <ClInclude Include="Headers\Support\Notification.h" />
+    <ClInclude Include="Headers\Support\NtUtilities.h" />
+    <ClInclude Include="Headers\Support\SafeHandle.h" />
+    <ClInclude Include="Headers\Support\String.h" />
+    <ClInclude Include="Headers\Support\WuStdException.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\CmdletContextBase.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\ComputerSession.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\MessageResponse.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\NativeException.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\NetworkFileInfo.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\ObjectHandle.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\ProcessModuleInfo.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\ResourceMessageTable.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\TcpingProbeInfo.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\TcpingStatistics.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\TestPortInfo.h" />
+    <ClInclude Include="Headers\Wrappers\Objects\WuManagedCabinet.h" />
+    <ClInclude Include="Headers\Wrappers\Wrapper.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="Resources\VersionInfo.h" />
+    <ClInclude Include="Resources\Resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\AccessControl.cpp" />
+    <ClCompile Include="Source\Engine\Containers.cpp" />
+    <ClCompile Include="Source\Engine\Network.cpp" />
+    <ClCompile Include="Source\Engine\ProcessAndThread.cpp" />
+    <ClCompile Include="Source\Engine\Registry.cpp" />
+    <ClCompile Include="Source\Engine\Services.cpp" />
+    <ClCompile Include="Source\Engine\TerminalServices.cpp" />
+    <ClCompile Include="Source\Engine\Utilities.cpp" />
+    <ClCompile Include="Source\Support\CoreUtils.cpp" />
+    <ClCompile Include="Source\Support\IO.cpp" />
+    <ClCompile Include="Source\Support\Notification.cpp" />
+    <ClCompile Include="Source\Support\SafeHandle.cpp" />
+    <ClCompile Include="Source\Support\NtUtilities.cpp" />
+    <ClCompile Include="Source\Support\WuStdException.cpp" />
+    <ClCompile Include="Source\Wrappers\Wrapper.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources\app.rc" />
+    <ResourceCompile Include="Resources\VersionInfo.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\app.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Management.Automation">
+      <HintPath>..\..\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation\v4.0_3.0.0.0__31bf3856ad364e35\System.Management.Automation.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

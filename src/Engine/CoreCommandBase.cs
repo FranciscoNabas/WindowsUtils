@@ -65,20 +65,8 @@ public abstract class CoreCommandBase : PSCmdlet, IDynamicParameters
     }
 }
 
-internal unsafe sealed class CmdletNativeContext : IDisposable
+internal unsafe sealed class CmdletNativeContext
 {
-    private readonly UnmanagedMemoryStream _progressStream;
-    private readonly UnmanagedMemoryStream _warningStream;
-    private readonly UnmanagedMemoryStream _informationStream;
-    private readonly UnmanagedMemoryStream _objectStream;
-    private readonly UnmanagedMemoryStream _errorStream;
-
-    private readonly IntPtr _progressBuffer;
-    private readonly IntPtr _warningBuffer;
-    private readonly IntPtr _informationBuffer;
-    private readonly IntPtr _objectBuffer;
-    private readonly IntPtr _errorBuffer;
-
     private readonly PSCmdlet _command;
     private readonly bool _streamErrors;
     private readonly PSCredential _credential = PSCredential.Empty;
@@ -132,18 +120,6 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
         _streamErrors = true;
         Origin = command.CommandOrigin;
         PassThru = true;
-
-        _progressBuffer = Marshal.AllocHGlobal(128);
-        _warningBuffer = Marshal.AllocHGlobal(128);
-        _informationBuffer = Marshal.AllocHGlobal(128);
-        _objectBuffer = Marshal.AllocHGlobal(128);
-        _errorBuffer = Marshal.AllocHGlobal(128);
-
-        _progressStream = new((byte*)_progressBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
-        _warningStream = new((byte*)_warningBuffer.ToPointer(),128, 128, FileAccess.ReadWrite);
-        _informationStream = new((byte*)_informationBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
-        _objectStream = new((byte*)_informationBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
-        _errorStream = new((byte*)_errorBuffer.ToPointer(), 128, 128, FileAccess.ReadWrite);
     }
     
     // Operators
@@ -154,37 +130,8 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
             new CmdletContextBase.WriteWarningWrapper(context.NativeWriteWarning),
             new CmdletContextBase.WriteInformationWrapper(context.NativeWriteInformation),
             new CmdletContextBase.WriteObjectWrapper(context.NativeWriteObject),
-            new CmdletContextBase.WriteErrorWrapper(context.NativeWriteError),
-            context._progressStream.PositionPointer,
-            context._warningStream.PositionPointer,
-            context._informationStream.PositionPointer,
-            context._objectStream.PositionPointer,
-            context._errorStream.PositionPointer
+            new CmdletContextBase.WriteErrorWrapper(context.NativeWriteError)
         );
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    private void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            _progressStream.Close();
-            _warningStream.Close();
-            _informationStream.Close();
-            _objectStream.Close();
-            _errorStream.Close();
-
-            Marshal.FreeHGlobal(_progressBuffer);
-            Marshal.FreeHGlobal(_warningBuffer);
-            Marshal.FreeHGlobal(_informationBuffer);
-            Marshal.FreeHGlobal(_objectBuffer);
-            Marshal.FreeHGlobal(_errorBuffer);
-        }
     }
 
     // Default Cmdlet methods.
@@ -225,101 +172,21 @@ internal unsafe sealed class CmdletNativeContext : IDisposable
     // These methods are not meant to be called directly, instead they should be
     // used to create wrapped delegates, who's function pointer will be used by
     // unmanaged code.
-    private void NativeWriteProgress()
-    {
-        MAPPED_PROGRESS_DATA progressData = (MAPPED_PROGRESS_DATA)Marshal.PtrToStructure((IntPtr)_progressStream.PositionPointer, typeof(MAPPED_PROGRESS_DATA));
-        ProgressRecord record = new(progressData.ActivityId, progressData.Activity, progressData.StatusDescription) {
-            CurrentOperation = progressData.CurrentOperation,
-            ParentActivityId = progressData.ParentActivityId,
-            PercentComplete = progressData.PercentComplete,
-            RecordType = progressData.RecordType,
-            SecondsRemaining = progressData.SecondsRemaining
-        };
+    private void NativeWriteProgress(ProgressRecord record)
+        => _command.WriteProgress(record);
 
-        _command.WriteProgress(record);
-    }
+    private void NativeWriteWarning(string text)
+        => _command.WriteWarning(text);
 
-    private void NativeWriteWarning()
-    {
-        string text = Marshal.PtrToStringUni((IntPtr)_warningStream.PositionPointer);
-        _command.WriteWarning(text);
-    }
+    private void NativeWriteInformation(InformationRecord record)
+        => _command.WriteInformation(record);
 
-    private void NativeWriteInformation()
-    {
-        MAPPED_INFORMATION_DATA data = (MAPPED_INFORMATION_DATA)Marshal.PtrToStructure((IntPtr)_informationStream.PositionPointer, typeof(MAPPED_INFORMATION_DATA));
-        InformationRecord record = new(data.Text, data.Source) {
-            Computer = data.Computer,
-            ManagedThreadId = (uint)Thread.CurrentThread.ManagedThreadId,
-            NativeThreadId = data.NativeThreadId,
-            ProcessId = (uint)Process.GetCurrentProcess().Id,
-            TimeGenerated = DateTime.FromFileTime((long)data.TimeGenerated),
-            User = data.User
-        };
+    private void NativeWriteObject(object obj)
+        => _command.WriteObject(obj);
 
-        unsafe
-        {
-            if (data.Tags != null && data.TagCount > 0)
-                for (uint i = 0; i < data.TagCount; i++)
-                    record.Tags.Add(Marshal.PtrToStringUni(data.Tags[i]));
-        }
+    private void NativeWriteError(ErrorRecord record)
+        => _command.WriteError(record);
 
-        _command.WriteInformation(record);
-    }
-
-    private void NativeWriteObject(WriteOutputType objectType)
-    {
-        object output;
-        switch (objectType)
-        {
-            case WriteOutputType.TCPING_OUTPUT:
-                TCPING_OUTPUT nativeObject = (TCPING_OUTPUT)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(TCPING_OUTPUT));
-                output = new TcpingProbeInfo(nativeObject);
-                break;
-
-            case WriteOutputType.TCPING_STATISTICS:
-                TCPING_STATISTICS nativeStats = (TCPING_STATISTICS)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(TCPING_STATISTICS));
-                output = new TcpingStatistics(nativeStats);
-                break;
-
-            case WriteOutputType.TESTPORT_OUTPUT:
-                TESTPORT_OUTPUT testPortStats = (TESTPORT_OUTPUT)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(TESTPORT_OUTPUT));
-                output = new TestPortInfo(testPortStats);
-                break;
-
-            case WriteOutputType.WWUSTRING:
-                WWuString nativeString = (WWuString)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(WWuString));
-                output = nativeString;
-                break;
-
-            case WriteOutputType.LAB_STRUCT:
-                LAB_STRUCT labStruct = (LAB_STRUCT)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(LAB_STRUCT));
-                output = new LabStruct(labStruct);
-                break;
-
-            case WriteOutputType.PROCESS_MODULE_INFO:
-                PROCESS_MODULE_INFO modInfo = (PROCESS_MODULE_INFO)Marshal.PtrToStructure((IntPtr)_objectStream.PositionPointer, typeof(PROCESS_MODULE_INFO));
-                output = new ProcessModuleInfo(modInfo);
-                break;
-
-            default:
-                return;
-        }
-
-        _command.WriteObject(output);
-    }
-
-    private void NativeWriteError()
-    {
-        MAPPED_ERROR_DATA errorData = (MAPPED_ERROR_DATA)Marshal.PtrToStructure(_errorBuffer, typeof(MAPPED_ERROR_DATA));
-        _command.WriteError(new(
-            new NativeException(errorData.ErrorCode, errorData.ErrorMessage, errorData.CompactTrace),
-            errorData.ErrorId,
-            errorData.Category,
-            errorData.TargetObject
-        ));
-    }
-    
     internal bool HasErrors()
         => _accumulatedErrors.Count > 0;
     

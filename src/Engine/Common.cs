@@ -37,6 +37,67 @@ namespace WindowsUtils
         Timeout
     }
 
+    public enum HResultSeverity
+    {
+        Success = 0,
+        Failure
+    }
+
+    public enum HResultFacility
+    {
+        Default = 0,
+        RPC,
+        Dispatch,
+        Storage,
+        ITF,
+        Win32 = 7,
+        Windows,
+        Security,
+        Control,
+        Cert,
+        internet,
+        MediaServer,
+        MSMQ,
+        SetupAPI,
+        SmartCard,
+        COMPlus,
+        AAF,
+        NetClr,
+        AuditCollectionService,
+        DirectPlay,
+        UMI,
+        SXS,
+        WindowsCE,
+        HTTP,
+        CommonLog,
+        FilterManager = 31,
+        BackgroundCopy,
+        Configuration,
+        StateManagement,
+        MsIdentityServer,
+        WindowsUpdate,
+        ActiveDirectory,
+        Graphics,
+        Shell,
+        TPMServices,
+        TPMSoftware,
+        PLA = 48,
+        FVE,
+        FirewallPlatform,
+        WinRM,
+        NDIS,
+        Hypervisor,
+        CMI,
+        Virtualization,
+        VolumeManager,
+        BCD,
+        VHD,
+        SystemDiagnostics = 60,
+        WebServices,
+        WindowsDefender = 80,
+        OPC
+    }
+
     public abstract class Enumeration : IComparable
     {
         internal string Name { get; set; }
@@ -145,67 +206,6 @@ namespace WindowsUtils
         internal static string GetLastWin32Error(int errorCode) => unWrapper.GetFormattedError(errorCode, ErrorType.SystemError);
     }
 
-    /// <summary>
-    /// Object from Get-ResourceMessageTable
-    /// </summary>
-    public class ResourceMessageTable
-    {
-        public long Id => wrapper.Id;
-        public string Message => wrapper.Message;
-
-        public static explicit operator ResourceMessageTable(ResourceMessageTableCore resmesbase) => new(resmesbase);
-        public ResourceMessageTable(ResourceMessageTableCore resmesbase) => wrapper = resmesbase;
-
-        private readonly ResourceMessageTableCore wrapper;
-    }
-
-    /// <summary>
-    /// Object from Get-ObjectHandle
-    /// </summary>
-    public class ObjectHandle
-    {
-        public ObjectHandleType Type => wrapper.Type;
-        public string InputObject => wrapper.InputObject;
-        public string Name => wrapper.Name;
-        public uint ProcessId => wrapper.ProcessId;
-        public string Description => wrapper.Description;
-        public string ProductName => wrapper.ProductName;
-        public object FileVersion
-        {
-            get
-            {
-                try
-                {
-                    return Version.Parse(wrapper.FileVersion);
-                }
-                catch (Exception)
-                {
-                    return wrapper.FileVersion;
-                }
-            }
-        }
-        public string CompanyName => wrapper.CompanyName;
-        public string ImagePath => wrapper.ImagePath;
-
-        public static explicit operator ObjectHandle(ObjectHandleBase ohbase) => new (ohbase);
-        public ObjectHandle(ObjectHandleBase ohbase) => wrapper = ohbase;
-
-        private readonly ObjectHandleBase wrapper;
-    }
-
-    /// <summary>
-    /// Object from Invoke-RemoteMessage
-    /// </summary>
-    public class MessageResponse
-    {
-        public uint SessionId => wrapper.SessionId;
-        public MessageBoxReturn Response => (MessageBoxReturn)wrapper.Response;
-
-        public static explicit operator MessageResponse(MessageResponseBase mrbase) => new (mrbase);
-        public MessageResponse(MessageResponseBase mrbase) => wrapper = mrbase;
-
-        private readonly MessageResponseBase wrapper;
-    }
     public class AppType : Enumeration
     {
         public static AppType UnknownApp = new(0, "UnknownApp");
@@ -366,132 +366,78 @@ namespace WindowsUtils
         }
     }
 
-    public sealed class TcpingProbeInfo
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                                                                                       //
+    // ~ HResult format                                                                                      //
+    //                                                                                                       //
+    // +-------------------------------------------------------------------------------------------------+   //
+    // | S | R | C | N | X |            Facility            |                    Code                    |   //
+    // +-------------------------------------------------------------------------------------------------+   //
+    //                                                                                                       //
+    // S: Severity - 1 bit                                                                                   //
+    // R: Reserved - 1 bit                                                                                   //
+    // C: Customer - 1 bit                                                                                   //
+    // N: Is NT    - 1 bit                                                                                   //
+    // X: Reserved - 1 bit                                                                                   //
+    //                                                                                                       //
+    // Facility - 11 bits                                                                                    //
+    // Code     - 16 bits                                                                                    //
+    //                                                                                                       //
+    // https://learn.microsoft.com/openspecs/windows_protocols/ms-erref/0642cb2f-2075-4469-918c-4441e69c548a //
+    //                                                                                                       //
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public sealed class HResultInfo
     {
-        public string Destination { get; }
-        public string ResolvedAddress { get; }
-        public DateTime Timestamp { get; }
-        public uint Port { get; }
-        public TcpingStatus Status { get; }
-        public double RoundTripTime { get; }
-        public double Jitter { get; }
+        public HResultSeverity Severity { get; }
+        public HResultFacility Facility { get; }
+        public int Code { get; }
 
-        internal TcpingProbeInfo(TCPING_OUTPUT nativeInfo)
+        public HResultInfo(int hResult)
         {
-            Destination = nativeInfo.Destination;
-            ResolvedAddress = nativeInfo.DestAddress;
-            Timestamp = DateTime.FromFileTime(nativeInfo.Timestamp);
-            Port = nativeInfo.Port;
-            Status = nativeInfo.Status;
-            RoundTripTime = nativeInfo.RoundTripTime;
-            Jitter = nativeInfo.Jitter;
-        }
-    }
-
-    public sealed class TcpingStatistics
-    {
-        public uint Sent { get; }
-        public uint Succeeded { get; }
-        public uint Failed { get; }
-        public double MinRtt { get; }
-        public double MaxRtt { get; }
-        public double AvgRtt { get; }
-        public double MinJitter { get; }
-        public double MaxJitter { get; }
-        public double AvgJitter { get; }
-        public double TotalMilliseconds { get; }
-        public double TotalJitter { get; }
-
-        internal TcpingStatistics(TCPING_STATISTICS nativeStatistics)
-        {
-            Sent = nativeStatistics.Sent;
-            Succeeded = nativeStatistics.Successful;
-            Failed = nativeStatistics.Failed;
-            MinRtt = nativeStatistics.MinRtt;
-            MaxRtt = nativeStatistics.MaxRtt;
-            AvgRtt = nativeStatistics.AvgRtt;
-            MinJitter = nativeStatistics.MinJitter;
-            MaxJitter = nativeStatistics.MaxJitter;
-            AvgJitter = nativeStatistics.AvgJitter;
-            TotalMilliseconds = nativeStatistics.TotalMilliseconds;
-            TotalJitter = nativeStatistics.TotalJitter;
-        }
-    }
-
-    public sealed class TestPortInfo
-    {
-        public string Destination { get; }
-        public string Address { get; }
-        public DateTime Timestamp { get; }
-        public uint Port { get; }
-        public TcpingStatus Status { get; }
-
-        internal TestPortInfo(TESTPORT_OUTPUT nativeInfo)
-        {
-            Destination = nativeInfo.Destination;
-            Address = nativeInfo.DestAddress;
-            Timestamp = DateTime.FromFileTime(nativeInfo.Timestamp);
-            Port = nativeInfo.Port;
-            Status = nativeInfo.Status;
-        }
-    }
-
-    public sealed class LabStruct
-    {
-        public uint Id { get; }
-        public string StringObject { get; }
-
-        internal LabStruct(LAB_STRUCT nativeInfo)
-        {
-            Id = nativeInfo.Id;
-            StringObject = nativeInfo.StringObject;
-        }
-    }
-
-    public sealed class ModuleInfo
-    {
-        public string ModuleName { get; }
-        public string ModulePath { get; }
-        public ImageVersionInfo VersionInfo { get; }
-
-        internal ModuleInfo(WU_MODULE_INFO nativeInfo)
-        {
-            ModuleName = nativeInfo.ModuleName;
-            ModulePath = nativeInfo.ModulePath;
-
-            VersionInfo = new() {
-                FileDescription = nativeInfo.VersionInfo.FileDescription,
-                ProductName = nativeInfo.VersionInfo.ProductName,
-                FileVersion = nativeInfo.VersionInfo.FileVersion,
-                CompanyName = nativeInfo.VersionInfo.CompanyName
-            };
-        }
-    }
-
-    public sealed class ProcessModuleInfo
-    {
-        public uint ProcessId { get; }
-        public string ImagePath { get; }
-        public string ImageName { get; }
-        public string CommandLine { get; }
-        public ModuleInfo[] ModuleInfo { get; }
-
-        internal ProcessModuleInfo(PROCESS_MODULE_INFO nativeInfo)
-        {
-            ProcessId = nativeInfo.ProcessId;
-            ImagePath = nativeInfo.ImagePath;
-            ImageName = nativeInfo.ImageFileName;
-            CommandLine = nativeInfo.CommandLine;
-
-            ModuleInfo = new ModuleInfo[nativeInfo.ModuleInfoCount];
-            IntPtr offset = nativeInfo.ModuleInfo;
-            for (uint i = 0; i < nativeInfo.ModuleInfoCount; i++)
+            string binary = Convert.ToString(hResult, 2);
+            if (binary.Length < 32)
             {
-                WU_MODULE_INFO currentModule = (WU_MODULE_INFO)Marshal.PtrToStructure(offset, typeof(WU_MODULE_INFO));
-                ModuleInfo[i] = new(currentModule);
-
-                offset = IntPtr.Add(offset, Marshal.SizeOf(typeof(WU_MODULE_INFO)));
+                Severity = HResultSeverity.Failure;
+                Facility = HResultFacility.Default;
+                Code = hResult;
+            }
+            else
+            {
+                Severity = (HResultSeverity)Convert.ToInt32(binary[0].ToString());
+                Facility = (HResultFacility)Convert.ToInt32(binary.Substring(5, 11), 2);
+                Code = Convert.ToInt32(binary.Substring(16), 2);
             }
         }
+    }
+
+    public sealed class ErrorInformation
+    {
+        private readonly int _errorCode;
+
+        public int ErrorCode { get { return _errorCode; } }
+        public string HexCode { get { return $"0x{Convert.ToString(_errorCode, 16).ToUpper()}"; } }
+        public int? HResultCode {
+            get {
+                if (HResultInfo is not null)
+                    return HResultInfo.Code;
+
+                return null;
+            }
+        }
+        public string? HResultHexCode {
+            get {
+                if (HResultCode is not null)
+                    return $"0x{Convert.ToString(HResultCode.Value, 16).ToUpper()}";
+
+                return null;
+            }
+        }
+        public string SymbolicName { get; }
+        public string? Description { get; }
+        public HResultInfo? HResultInfo { get; }
+
+        internal ErrorInformation(int errorCode, string symName, string? desc, HResultInfo? hrInfo)
+            => (_errorCode, SymbolicName, Description, HResultInfo) = (errorCode, symName, desc, hrInfo);
     }
 }
