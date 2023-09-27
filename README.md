@@ -12,7 +12,7 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [Get-ComputerSession](#get-computersession)
     - [Send-Click](#send-click)
     - [Get-ResourceMessageTable](#get-resourcemessagetable)
-    - [Get-FormattedError](#get-formattederror)
+    - [Get-ErrorString (gerrmess)](#get-errorstring-gerrmess)
     - [Get-LastWin32Error](#get-lastwin32error)
     - [Get-ObjectHandle (gethandle)](#get-objecthandle-gethandle)
     - [Get-MsiProperties](#get-msiproperties)
@@ -31,6 +31,9 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [New-Cabinet](#new-cabinet)
     - [Test-Port (testport)](#test-port-testport)
     - [Get-ProcessModule (listdlls)](#get-processmodule-listdlls)
+    - [Suspend-Process (suspend)](#suspend-process-suspend)
+    - [Resume-Process (resume)](#resume-process-resume)
+    - [Get-ErrorInformation (err)](#get-errorinformation-err)
   - [Changelog](#changelog)
   - [Support](#support)
   
@@ -98,13 +101,13 @@ It is specially useful to build automations for **Microsof Endpoint Configuratio
 Get-ResourceMessageTable -Path 'C:\Windows\System32\kernel32.dll'
 ```
   
-### Get-FormattedError
+### Get-ErrorString (gerrmess)
   
-This Cmdlet retrieves the message for a 'Win32' [System Error Code](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes).  
+This Cmdlet retrieves the message for a 'Win32', 'NTSTATUS', 'FDI' and 'FCI' errors
 Trivia: These errors are stored in message tables, inside system DLLs, which you can list with the previous Cmdlet.  
   
 ```powershell
-Get-FormattedError -ErrorCode 5
+Get-ErrorString -ErrorCode 5
 
 Access is denied.
 
@@ -498,6 +501,56 @@ listdlls -ProcessId 666, 667 -IncludeVersionInfo
 
 ```powershell
 listdlls
+```
+
+### Suspend-Process (suspend)
+
+This Cmdlet suspends a running process.
+
+```powershell
+Suspend-Process -Name 'notepad'
+```
+
+```powershell
+suspend -Id 666
+```
+
+### Resume-Process (resume)
+
+This Cmdlet resumes a suspended process. It does nothing on running processes.
+
+```powershell
+Resume-Process -Name 'notepad'
+```
+
+```powershell
+resume -Id 666
+```
+
+### Get-ErrorInformation (err)
+
+This Cmdlet mimics 'Err.exe'. In fact, the error database is extracted from it.
+
+```powershell
+Get-ErrorInformation -ErrorCode 0xC0000008
+```
+
+```powershell-console
+err 0x80070057
+
+ErrorCode   HexCode    IsHResult SymbolicName               Description
+---------   -------    --------- ------------               -----------
+-2147024809 0x80070057 True      XNS_INTERNAL_ERROR
+-2147024809 0x80070057 False     COR_E_ARGUMENT             An argument does not meet the contract of the method.
+-2147024809 0x80070057 False     DDERR_INVALIDPARAMS
+-2147024809 0x80070057 False     DIERR_INVALIDPARAM
+-2147024809 0x80070057 False     DSERR_INVALIDPARAM
+-2147024809 0x80070057 True      NMERR_FRAME_HAS_NO_CAPTURE
+-2147024809 0x80070057 False     STIERR_INVALID_PARAM
+-2147024809 0x80070057 False     DRM_E_INVALIDARG
+-2147024809 0x80070057 True      ERROR_INVALID_PARAMETER    The parameter is incorrect.
+-2147024809 0x80070057 False     E_INVALIDARG               One or more arguments are invalid
+-2147024809 0x80070057 True      LDAP_FILTER_ERROR
 ```
 
 ## Changelog

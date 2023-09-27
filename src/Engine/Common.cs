@@ -37,6 +37,67 @@ namespace WindowsUtils
         Timeout
     }
 
+    public enum HResultSeverity
+    {
+        Success = 0,
+        Failure
+    }
+
+    public enum HResultFacility
+    {
+        Default = 0,
+        RPC,
+        Dispatch,
+        Storage,
+        ITF,
+        Win32 = 7,
+        Windows,
+        Security,
+        Control,
+        Cert,
+        internet,
+        MediaServer,
+        MSMQ,
+        SetupAPI,
+        SmartCard,
+        COMPlus,
+        AAF,
+        NetClr,
+        AuditCollectionService,
+        DirectPlay,
+        UMI,
+        SXS,
+        WindowsCE,
+        HTTP,
+        CommonLog,
+        FilterManager = 31,
+        BackgroundCopy,
+        Configuration,
+        StateManagement,
+        MsIdentityServer,
+        WindowsUpdate,
+        ActiveDirectory,
+        Graphics,
+        Shell,
+        TPMServices,
+        TPMSoftware,
+        PLA = 48,
+        FVE,
+        FirewallPlatform,
+        WinRM,
+        NDIS,
+        Hypervisor,
+        CMI,
+        Virtualization,
+        VolumeManager,
+        BCD,
+        VHD,
+        SystemDiagnostics = 60,
+        WebServices,
+        WindowsDefender = 80,
+        OPC
+    }
+
     public abstract class Enumeration : IComparable
     {
         internal string Name { get; set; }
@@ -303,5 +364,80 @@ namespace WindowsUtils
             Version = version;
             InstalledUpdates = installedUpdates;
         }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //                                                                                                       //
+    // ~ HResult format                                                                                      //
+    //                                                                                                       //
+    // +-------------------------------------------------------------------------------------------------+   //
+    // | S | R | C | N | X |            Facility            |                    Code                    |   //
+    // +-------------------------------------------------------------------------------------------------+   //
+    //                                                                                                       //
+    // S: Severity - 1 bit                                                                                   //
+    // R: Reserved - 1 bit                                                                                   //
+    // C: Customer - 1 bit                                                                                   //
+    // N: Is NT    - 1 bit                                                                                   //
+    // X: Reserved - 1 bit                                                                                   //
+    //                                                                                                       //
+    // Facility - 11 bits                                                                                    //
+    // Code     - 16 bits                                                                                    //
+    //                                                                                                       //
+    // https://learn.microsoft.com/openspecs/windows_protocols/ms-erref/0642cb2f-2075-4469-918c-4441e69c548a //
+    //                                                                                                       //
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public sealed class HResultInfo
+    {
+        public HResultSeverity Severity { get; }
+        public HResultFacility Facility { get; }
+        public int Code { get; }
+
+        public HResultInfo(int hResult)
+        {
+            string binary = Convert.ToString(hResult, 2);
+            if (binary.Length < 32)
+            {
+                Severity = HResultSeverity.Failure;
+                Facility = HResultFacility.Default;
+                Code = hResult;
+            }
+            else
+            {
+                Severity = (HResultSeverity)Convert.ToInt32(binary[0].ToString());
+                Facility = (HResultFacility)Convert.ToInt32(binary.Substring(5, 11), 2);
+                Code = Convert.ToInt32(binary.Substring(16), 2);
+            }
+        }
+    }
+
+    public sealed class ErrorInformation
+    {
+        private readonly int _errorCode;
+
+        public int ErrorCode { get { return _errorCode; } }
+        public string HexCode { get { return $"0x{Convert.ToString(_errorCode, 16).ToUpper()}"; } }
+        public int? HResultCode {
+            get {
+                if (HResultInfo is not null)
+                    return HResultInfo.Code;
+
+                return null;
+            }
+        }
+        public string? HResultHexCode {
+            get {
+                if (HResultCode is not null)
+                    return $"0x{Convert.ToString(HResultCode.Value, 16).ToUpper()}";
+
+                return null;
+            }
+        }
+        public string SymbolicName { get; }
+        public string? Description { get; }
+        public HResultInfo? HResultInfo { get; }
+
+        internal ErrorInformation(int errorCode, string symName, string? desc, HResultInfo? hrInfo)
+            => (_errorCode, SymbolicName, Description, HResultInfo) = (errorCode, symName, desc, hrInfo);
     }
 }

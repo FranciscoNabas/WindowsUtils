@@ -1,6 +1,6 @@
 @{
     GUID = 'C5F7B91E-668D-46AC-9F0E-23B0A74ABCBA'
-    ModuleVersion = '1.9.0'
+    ModuleVersion = '1.10.0'
     RootModule = 'WindowsUtils.dll'
     CompatiblePSEditions = @(
         'Desktop',
@@ -49,6 +49,7 @@
         'Get-ProcessModule'
         'Suspend-Process'
         'Resume-Process'
+        'Get-ErrorInformation'
     )
     AliasesToExport = @(
         'gethandle'
@@ -62,6 +63,8 @@
         'listdlls'
         'suspend'
         'resume'
+        'err'
+        'gerrmess'
     )
     PrivateData = @{
         PSData = @{

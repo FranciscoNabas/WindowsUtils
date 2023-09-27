@@ -21,6 +21,7 @@ namespace WindowsUtils.Commands
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "ErrorString")]
     [OutputType(typeof(string))]
+    [Alias("gerrmess")]
     public class GetErrorStringCommand : Cmdlet
     {
         /// <summary>
