@@ -64,6 +64,24 @@ struct _WChar_traits_ex : std::_WChar_traits<_char_type>
     {
         return wcsstr(reinterpret_cast<const wchar_t*>(first), reinterpret_cast<const wchar_t*>(second));
     }
+
+    // Converts all characters to upper case.
+    static inline void to_upper(_char_type* str, const size_t length)
+    {
+        if (str == nullptr || length == 0)
+            return;
+
+        _wcsupr_s(reinterpret_cast<wchar_t*>(str), length);
+    }
+
+    // Converts all characters to lower case.
+    static inline void to_lower(_char_type* str, const size_t length)
+    {
+        if (str == nullptr || length == 0)
+            return;
+
+        _wcslwr_s(reinterpret_cast<wchar_t*>(str), length);
+    }
 };
 
 template <class _char_type, class _int_type>
@@ -95,6 +113,24 @@ struct _Narrow_char_traits_ex : std::_Narrow_char_traits<_char_type, _int_type>
     _NODISCARD static inline const _char_type* find_str(const _char_type* first, const _char_type* second)
     {
         return strstr(reinterpret_cast<const char*>(first), reinterpret_cast<const char*>(second));
+    }
+
+    // Converts all characters to upper case.
+    static inline void to_upper(_char_type* str, const size_t length)
+    {
+        if (str == nullptr || length == 0)
+            return;
+
+        _strupr_s(reinterpret_cast<char*>(str), length);
+    }
+
+    // Converts all characters to lower case.
+    static inline void to_lower(_char_type* str, const size_t length)
+    {
+        if (str == nullptr || length == 0)
+            return;
+
+        _strlwr_s(reinterpret_cast<char*>(str), length);
     }
 };
 
@@ -439,6 +475,45 @@ public:
             return true;
 
         return false;
+    }
+
+    // Returns true if the string starts with [str].
+    inline bool StartsWith(const _char_type* str)
+    {
+        if (str == nullptr)
+            return false;
+
+        if (str == _buffer)
+            return true;
+
+        size_t str_length = _traits::length(str);
+        if (str_length > Length())
+            return false;
+
+        for (size_t i = 0; i < str_length; i++) {
+            if (_buffer[i] != str[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    // Returns true if the string starts with [str].
+    inline bool StartsWith(const WuBaseString& str)
+    {
+        if (str._buffer == _buffer)
+            return true;
+
+        size_t str_length = str.Length();
+        if (str_length > Length())
+            return false;
+
+        for (size_t i = 0; i < str_length; i++) {
+            if (_buffer[i] != str._buffer[i])
+                return false;
+        }
+
+        return true;
     }
 
     // Returns true if the string ends with [t_char].
@@ -1139,6 +1214,39 @@ public:
         return output;
     }
 
+    inline const int CompareTo(const _char_type* other, bool ignoreCase = false) const
+    {
+        if (other == nullptr)
+            return -1;
+
+        size_t other_len = _traits::length(other);
+        size_t biggest = (((this->Length()) > (other_len)) ? (this->Length()) : (other_len));
+
+        if (ignoreCase)
+            return _traits::compare_no_case(_buffer, other, biggest);
+
+        return _traits::compare(_buffer, other, biggest);
+    }
+
+    inline const int CompareTo(const WuBaseString& other, bool ignoreCase = false) const
+    {
+        size_t biggest = (((this->Length()) > (other.Length())) ? (this->Length()) : (other.Length()));
+        if (ignoreCase)
+            return _traits::compare_no_case(_buffer, other._buffer, biggest);
+
+        return _traits::compare(_buffer, other._buffer, biggest);
+    }
+
+    inline void ToUpper()
+    {
+        _traits::to_upper(_buffer, this->Length() + 1);
+    }
+
+    inline void ToLower()
+    {
+        _traits::to_lower(_buffer, this->Length() + 1);
+    }
+
     // Addition operator.
     // Adds the C-style string [right] to [left].
     friend WuBaseString operator+(const WuBaseString& left, const _char_type* right)
@@ -1228,14 +1336,12 @@ public:
     // Checks if the string is equal to the C-style string [right].
     inline bool operator==(const _char_type* right) const
     {
-        if (right == NULL) {
+        if (right == nullptr)
             return false;
-        }
-        else {
-            size_t right_len = _traits::length(right);
-            size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
-            return _traits::compare(_buffer, right, biggest) == 0;
-        }
+
+        size_t right_len = _traits::length(right);
+        size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
+        return _traits::compare(_buffer, right, biggest) == 0;
     }
 
     // Checks if the string is equal to [right].
@@ -1260,14 +1366,12 @@ public:
     // Checks if the string is less than the C-style string [right].
     inline bool operator<(const _char_type* right) const
     {
-        if (right == NULL) {
+        if (right == nullptr)
             return false;
-        }
-        else {
-            size_t right_len = _traits::length(right);
-            size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
-            return _traits::compare(_buffer, right, biggest) < 0;
-        }
+        
+        size_t right_len = _traits::length(right);
+        size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
+        return _traits::compare(_buffer, right, biggest) < 0;
     }
 
     // Checks if the string is less than [right].
@@ -1293,14 +1397,12 @@ public:
     // Less-than-or-equal operator.
     inline bool operator<=(const _char_type* right) const
     {
-        if (right == NULL) {
+        if (right == nullptr)
             return false;
-        }
-        else {
-            size_t right_len = _traits::length(right);
-            size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
-            return _traits::compare(_buffer, right, biggest) <= 0;
-        }
+
+        size_t right_len = _traits::length(right);
+        size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
+        return _traits::compare(_buffer, right, biggest) <= 0;
     }
 
     inline bool operator<=(const WuBaseString& right) const
@@ -1312,14 +1414,12 @@ public:
     // Greater-than-or-equal operator.
     inline bool operator>=(const _char_type* right) const
     {
-        if (right == NULL) {
+        if (right == nullptr)
             return false;
-        }
-        else {
-            size_t right_len = _traits::length(right);
-            size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
-            return _traits::compare(_buffer, right, biggest) >= 0;
-        }
+
+        size_t right_len = _traits::length(right);
+        size_t biggest = (((this->Length()) > (right_len)) ? (this->Length()) : (right_len));
+        return _traits::compare(_buffer, right, biggest) >= 0;
     }
 
     inline bool operator>=(const WuBaseString& right) const

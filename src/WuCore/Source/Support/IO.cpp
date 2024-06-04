@@ -213,6 +213,88 @@ namespace WindowsUtils::Core
 		return output;
 	}
 
+	bool IO::FileExists(const WWuString& filePath)
+	{
+		DWORD attributes = GetFileAttributes(filePath.GetBuffer());
+		return (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
+	}
+
+	void IO::GetFileDosPathFromDevicePath(WWuString& devicePath)
+	{
+		constexpr DWORD drivesBuffSize = 512;
+		constexpr DWORD deviceBuffSize = 256;
+		WCHAR logicalDrives[drivesBuffSize] { };
+
+		WWuString deviceName = WWuString::Format(L"\\Device\\%ws", devicePath.Split(L'\\')[1].GetBuffer());
+
+		DWORD charCount = GetLogicalDriveStrings(drivesBuffSize, logicalDrives);
+		if (!charCount)
+			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+
+		for (WWuString& drive : SplitDriveStrings(logicalDrives, charCount)) {
+			const WCHAR trimmedChar[3] { drive[0], L':', L'\0' };
+			WCHAR currentDevice[deviceBuffSize] { };
+			if (!QueryDosDevice(trimmedChar, currentDevice, deviceBuffSize))
+				throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+
+			if (deviceName == currentDevice) {
+				WWuString relativePath = devicePath.Remove(0, deviceName.Length() + 1);
+				devicePath = WWuString::Format(L"%ws\\%ws", trimmedChar, relativePath.GetBuffer());
+			}
+		}
+
+		// We didn't found the drive, so we return the same string.
+	}
+
+	void IO::GetFileDevicePathFromDosPath(WWuString& dosPath)
+	{
+		WWuString drive = WWuString::Format(L"%c:", dosPath[0]);
+		WCHAR device[256] { };
+		if (!QueryDosDevice(drive.GetBuffer(), device, 256))
+			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+
+		WWuString relativePath = dosPath.Remove(0, 3);
+		dosPath = WWuString::Format(L"%ws\\%ws", device, relativePath.GetBuffer());
+	}
+
+	void IO::WriteByteArrayToTempFile(BYTE* data, DWORD length, _Out_ WWuString& filePath)
+	{
+		WCHAR tempPathBuffer[MAX_PATH] { };
+		WCHAR tempFileBuffer[MAX_PATH] { };
+		WCHAR tempFullPath[MAX_PATH] { };
+
+		if (!GetTempPath(MAX_PATH, tempPathBuffer))
+			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+
+		if (!GetTempFileName(tempPathBuffer, L"tmp", 0, tempFileBuffer))
+			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+
+		filePath = tempFileBuffer;
+		FileHandle hFile { filePath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL };
+
+		DWORD bytesWritten { };
+		if (!WriteFile(hFile.get(), reinterpret_cast<LPCVOID>(data), length, &bytesWritten, NULL))
+			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+	}
+
+	wuvector<WWuString> IO::SplitDriveStrings(const LPWSTR drives, const DWORD charCount)
+	{
+		wuvector<WWuString> output;
+		if (charCount <= 4) {
+			output.push_back(WWuString(drives));
+			return output;
+		}
+
+		for (DWORD i = 0; i < charCount; i += 4) {
+			LPWSTR currentOffset = drives + i;
+			WCHAR currentDrive[4] { };
+			wcscpy_s(currentDrive, 4, currentOffset);
+			output.push_back(currentDrive);
+		}
+
+		return output;
+	}
+
 	/*
 	*	~ Memory mapped file ~
 	*/
@@ -220,7 +302,6 @@ namespace WindowsUtils::Core
 	MemoryMappedFile::MemoryMappedFile(const WWuString& filePath)
 		: m_mappedFile(NULL), m_view(NULL), m_length(0)
 	{
-
 		m_hFile = CreateFile(filePath.GetBuffer(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (m_hFile == INVALID_HANDLE_VALUE)
 			throw WuStdException(GetLastError(), __FILEW__, __LINE__);

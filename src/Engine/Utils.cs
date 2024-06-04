@@ -1,10 +1,8 @@
 ﻿using System.Text;
 using System.Security;
-using System.Runtime.InteropServices;
-using Microsoft.Win32;
-using WindowsUtils.Core;
-using WindowsUtils.Interop;
 using System.Management.Automation;
+using System.Runtime.InteropServices;
+using WindowsUtils.Interop;
 
 namespace WindowsUtils
 {

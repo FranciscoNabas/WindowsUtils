@@ -37,20 +37,13 @@ namespace WindowsUtils::Core
 		// Get-LastWin32Error
 		void GetFormattedWin32Error(WWuString& errorMessage);
 
-		// Get-MsiProperties
-		void GetMsiProperties(wumap<WWuString, WWuString>& propertyMap, const WWuString& fileName);
-
 		// Send-Click
 		void SendClick();
-
-		// Start-ProcessAsUser
-		void RunAs(const WWuString& userName, const WWuString& domain, WWuString& password, WWuString& commandLine, WWuString& titleBar);
 	};
 
 	/*
 	*	~ Utility functions
 	*/
 	
-	void GetMsiExtendedError(WWuString& errorMessage);
 	void GetEnvVariable(const WWuString& variableName, WWuString& value);
 }

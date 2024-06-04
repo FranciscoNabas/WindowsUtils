@@ -4,6 +4,8 @@
 #include "../Support/String.h"
 #include "../Support/Expressions.h"
 #include "../Support/Notification.h"
+#include "../Support/NtUtilities.h"
+#include "../Support/IO.h"
 
 namespace WindowsUtils::Core
 {
@@ -19,22 +21,16 @@ namespace WindowsUtils::Core
 		CompanyName = 4
 	};
 
-	enum class SupportedObjectType
-	{
-		FileSystem,
-		Registry
-	};
-
 	typedef struct _OBJECT_INPUT
 	{
 		WWuString ObjectName;
-		SupportedObjectType Type;
+		SupportedHandleType Type;
 
 	} OBJECT_INPUT, * POBJECT_INPUT;
 
 	typedef struct _WU_OBJECT_HANDLE
 	{
-		SupportedObjectType		Type;								// The path type. 'FileSystem' or 'Registry'.
+		SupportedHandleType		Type;								// The path type. 'FileSystem' or 'Registry'.
 		WWuString				InputObject;						// Input object path. Helps tracking which handle belongs to which object, when querying multiple objects.
 		DWORD					ProcessId;							// ID from the process owning the handle.
 		WWuString				Name;								// Process image name. File base name.
@@ -45,7 +41,7 @@ namespace WindowsUtils::Core
 			: InputObject(), ProcessId(0), Name(), ImagePath(), VersionInfo()
 		{ }
 
-		_WU_OBJECT_HANDLE(SupportedObjectType type, const WWuString& inputObj, DWORD pid, const WWuString& name, const WWuString& imagePath, const wumap<VersionInfoProperty, const WWuString>& versionInfo)
+		_WU_OBJECT_HANDLE(SupportedHandleType type, const WWuString& inputObj, DWORD pid, const WWuString& name, const WWuString& imagePath, const wumap<VersionInfoProperty, const WWuString>& versionInfo)
 			: Type(type), InputObject(inputObj), ProcessId(pid), Name(name), ImagePath(imagePath), VersionInfo(versionInfo)
 		{ }
 
@@ -99,16 +95,19 @@ namespace WindowsUtils::Core
 	{
 	public:
 		// Get-ObjectHandle
-		void GetProcessObjectHandle(wuvector<WU_OBJECT_HANDLE>* objectHandleList, wuvector<OBJECT_INPUT>* inputList, bool closeHandle);
+		void GetProcessObjectHandle(wuvector<WU_OBJECT_HANDLE>& objectHandleList, wuvector<OBJECT_INPUT>& inputList, bool closeHandle, WuNativeContext* context);
 
 		// Get-ProcessModule
-		void GetProcessLoadedModuleInformation(wuvector<DWORD> processIdList, bool includeVersionInfo, bool suppressError, WuNativeContext* context);
+		void GetProcessLoadedModuleInformation(wuvector<DWORD>& processIdList, bool includeVersionInfo, bool suppressError, WuNativeContext* context);
 
 		// Suspend-Process
 		void SuspendProcess(DWORD processId, WuNativeContext* context);
 
 		// Resume-Process
 		void ResumeProcess(DWORD processId, WuNativeContext* context);
+
+		// Start-ProcessAsUser
+		void RunAs(const WWuString& userName, const WWuString& domain, WWuString& password, WWuString& commandLine, WWuString& titleBar);
 	};
 
 	/*
@@ -116,5 +115,4 @@ namespace WindowsUtils::Core
 	*/
 
 	void GetProccessVersionInfo(const WWuString& imagePath, VersionInfoProperty propertyName, WWuString& value);
-	void CloseExtProcessHandle(HANDLE sourceProcess, const WWuString& objectName);
 }

@@ -3,7 +3,6 @@
 #include "../../Headers/Engine/ProcessAndThread.h"
 #include "../../Headers/Engine/AccessControl.h"
 #include "../../Headers/Engine/Utilities.h"
-#include "../../Headers/Support/NtUtilities.h"
 #include "../../Headers/Support/WuStdException.h"
 #include "../../Headers/Support/Notification.h"
 #include "../../Headers/Support/SafeHandle.h"
@@ -19,146 +18,149 @@ namespace WindowsUtils::Core
 	*/
 
 	void ProcessAndThread::GetProcessObjectHandle(
-		wuvector<WU_OBJECT_HANDLE>* objectHandleList,	// The output object handle list.
-		wuvector<OBJECT_INPUT>* inputList,				// The input list containing the object name and type.
-		bool closeHandle								// TRUE to ATTEMPT to close the handle(s).
+		wuvector<WU_OBJECT_HANDLE>& objectHandleList,	// The output object handle list.
+		wuvector<OBJECT_INPUT>& inputList,				// The input list containing the object name and type.
+		bool closeHandle,								// TRUE to ATTEMPT to close the handle(s).
+		WuNativeContext* context
 	)
 	{
-		DWORD dwResult;
+		// Listing all running processes, with process ID and image name.
+		std::unordered_map<DWORD, WWuString> runningProcessMap;
+		try {
+			NtUtilities::ListRunningProcessesWithImageName(runningProcessMap);
+		}
+		catch (const WuStdException& ex) {
+			ex.Cry(L"ErrorListingRunningProcesses", WriteErrorCategory::InvalidResult, L"", context);
+			throw ex;
+		}
 
-		for (OBJECT_INPUT& input : *inputList) {
+		// Going for each input object.
+		for (const OBJECT_INPUT& input : inputList) {
 			wuvector<DWORD> processIdList;
 			WWuString inputObject;
-			switch (input.Type) {
-				case SupportedObjectType::FileSystem:
-				{
-					inputObject = input.ObjectName;
-					PathStripPath(inputObject.GetBuffer());
-					GetProcessUsingFile(input.ObjectName, processIdList);
-				} break;
+			
+			// Getting a list of processes using the file system object or the registry key.
+			try {
+				switch (input.Type) {
+					case SupportedHandleType::FileSystem:
+					{
+						inputObject = input.ObjectName;
+						PathStripPath(inputObject.GetBuffer());
+						NtUtilities::GetProcessUsingFile(input.ObjectName, processIdList);
 
-				case SupportedObjectType::Registry:
-				{
-					inputObject = input.ObjectName.Split('\\').back();
-					GetProcessUsingKey(input.ObjectName, processIdList, closeHandle);
-				} break;
+						if (closeHandle) {
+							WWuString devicePath { input.ObjectName };
+							IO::GetFileDevicePathFromDosPath(devicePath);
+							for (const DWORD pid : processIdList)
+								NtUtilities::CloseExternalHandlesToFile(pid, devicePath);
+						}
+					} break;
+
+					case SupportedHandleType::Registry:
+					{
+						inputObject = input.ObjectName.Split('\\').back();
+						NtUtilities::GetProcessUsingKey(input.ObjectName, processIdList, runningProcessMap, closeHandle);
+					} break;
+				}
+			}
+			catch (const WuStdException& ex) {
+				ex.Cry(L"ErrorListingProcessUsingObject", WriteErrorCategory::InvalidResult, input.ObjectName, context);
+				continue;
 			}
 
+			// If 'closeHandle' we don't want to get process information.
+			if (closeHandle)
+				continue;
+
+			// For each process ID found, get process information.
 			for (DWORD pid : processIdList) {
-				wuunique_ptr<WU_OBJECT_HANDLE> objHandle = make_wuunique<WU_OBJECT_HANDLE>();
+				WU_OBJECT_HANDLE objHandle;
 
-				objHandle->InputObject = inputObject;
-				objHandle->ProcessId = pid;
-				objHandle->Type = input.Type;
+				objHandle.InputObject = inputObject;
+				objHandle.ProcessId = pid;
+				objHandle.Type = input.Type;
 
-				HANDLE hProcess = OpenProcess(
-					PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE,
-					FALSE,
-					(DWORD)pid
-				);
-				if (hProcess != NULL) {
-					DWORD maxPath = MAX_PATH;
-					wuunique_ha_ptr<WCHAR> imgNameBuffer = make_wuunique_ha<WCHAR>(MAX_PATH * 2);
+				try {
+					// Attempting to get the image name from our map.
+					bool getVersionInfo = false;
+					if (auto iterator = runningProcessMap.find(pid); iterator != runningProcessMap.end()) {
+						if (iterator->second.StartsWith(L"\\Device\\HarddiskVolume")) {
 
-					if (QueryFullProcessImageName(hProcess, 0, imgNameBuffer.get(), &maxPath)) {
-						objHandle->ImagePath = imgNameBuffer.get();
-						objHandle->Name = objHandle->ImagePath;
-						PathStripPathW(objHandle->Name.GetBuffer());
-					}
+							// Converting NT path format to DOS path format.
+							WWuString imageDosPath { iterator->second };
+							IO::GetFileDosPathFromDevicePath(imageDosPath);
 
-					if (wcslen(imgNameBuffer.get()) == 0) {
-						GetProcessImageName(objHandle->ProcessId, objHandle->Name);
-						if (objHandle->Name.Length() > 0) {
-							objHandle->ImagePath = objHandle->Name;
-							PathStripPath(objHandle->Name.GetBuffer());
-						}
-					}
-					else {
-						objHandle->ImagePath = imgNameBuffer.get();
-						objHandle->Name = objHandle->ImagePath;
-						PathStripPathW(objHandle->Name.GetBuffer());
-					}
+							objHandle.ImagePath = imageDosPath;
+							objHandle.Name = imageDosPath;
+							PathStripPath(objHandle.Name.GetBuffer());
 
-					for (VersionInfoProperty versionInfo : { 
-						VersionInfoProperty::FileDescription,
-						VersionInfoProperty::ProductName,
-						VersionInfoProperty::FileVersion,
-						VersionInfoProperty::CompanyName
-					}) {
-						WWuString value;
-						GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
-						objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
-					}
-
-					if (closeHandle && input.Type == SupportedObjectType::FileSystem)
-						CloseExternalHandlesToFile(hProcess, inputObject);
-
-					CloseHandle(hProcess);
-				}
-				else {
-					if (GetLastError() == ERROR_ACCESS_DENIED) {
-						hProcess = OpenProcess(
-							PROCESS_QUERY_LIMITED_INFORMATION,
-							FALSE,
-							objHandle->ProcessId
-						);
-						if (hProcess == NULL) {
-							dwResult = GetLastError();
-							if (dwResult != ERROR_ACCESS_DENIED)
-								throw WuStdException(dwResult, __FILEW__, __LINE__);
-						}
-
-						DWORD maxPath = MAX_PATH;
-						wuunique_ha_ptr<WCHAR> imgNameBuffer = make_wuunique_ha<WCHAR>(MAX_PATH * 2);
-
-						if (QueryFullProcessImageName(hProcess, 0, imgNameBuffer.get(), &maxPath)) {
-							objHandle->ImagePath = imgNameBuffer.get();
-							objHandle->Name = objHandle->ImagePath;
-							PathStripPathW(objHandle->Name.GetBuffer());
-
-							for (VersionInfoProperty versionInfo : {
-								VersionInfoProperty::FileDescription,
-									VersionInfoProperty::ProductName,
-									VersionInfoProperty::FileVersion,
-									VersionInfoProperty::CompanyName
-							}) {
-								WWuString value;
-								GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
-								objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
-							}
+							getVersionInfo = true;
 						}
 						else {
-							try {
-								GetProcessImageName(objHandle->ProcessId, objHandle->Name);
-								objHandle->ImagePath = objHandle->Name;
-								PathStripPath(objHandle->Name.GetBuffer());
-							}
-							catch (const WuStdException&) { /* If it fails we manage the name later. */ }
+							objHandle.Name = iterator->second;
 
-							if (
-								objHandle->Name == L"System" ||
-								objHandle->Name == L"Secure System" ||
-								objHandle->Name == L"Registry") {
-								GetEnvVariable(L"windir", objHandle->ImagePath);
+							// These processes are hosted in 'ntoskrnl.exe'.
+							if (iterator->second == L"System" ||
+								iterator->second == L"Secure System" ||
+								iterator->second == L"Registry" ||
+								iterator->second == L"Memory Compression") {
 
-								objHandle->ImagePath += L"\\System32\\ntoskrnl.exe";
+								GetEnvVariable(L"windir", objHandle.ImagePath);
+								objHandle.ImagePath += L"\\System32\\ntoskrnl.exe";
 
-								for (VersionInfoProperty versionInfo : {
-									VersionInfoProperty::FileDescription,
-										VersionInfoProperty::ProductName,
-										VersionInfoProperty::FileVersion,
-										VersionInfoProperty::CompanyName
-								}) {
-									WWuString value;
-									GetProccessVersionInfo(objHandle->ImagePath, versionInfo, value);
-									objHandle->VersionInfo.emplace(std::make_pair(versionInfo, value));
-								}
+								getVersionInfo = true;
 							}
 						}
 					}
-				}
+					// Process was not on the map. We try to get it once again.
+					else {
+						WWuString imagePath;
+						NtUtilities::GetProcessImageName(objHandle.ProcessId, imagePath);
 
-				objectHandleList->push_back(*objHandle.get());
+						if (imagePath.StartsWith(L"\\Device\\HarddiskVolume")) {
+							IO::GetFileDosPathFromDevicePath(imagePath);
+
+							objHandle.ImagePath = imagePath;
+							objHandle.Name = imagePath;
+							PathStripPath(objHandle.Name.GetBuffer());
+
+							getVersionInfo = true;
+						}
+						else {
+							objHandle.Name = imagePath;
+
+							if (imagePath == L"System" ||
+								imagePath == L"Secure System" ||
+								imagePath == L"Registry" ||
+								imagePath == L"Memory Compression") {
+
+								GetEnvVariable(L"windir", objHandle.ImagePath);
+								objHandle.ImagePath += L"\\System32\\ntoskrnl.exe";
+
+								getVersionInfo = true;
+							}
+						}
+					}
+
+					if (getVersionInfo) {
+						for (const VersionInfoProperty& versionInfo : {
+							VersionInfoProperty::FileDescription,
+							VersionInfoProperty::ProductName,
+							VersionInfoProperty::FileVersion,
+							VersionInfoProperty::CompanyName
+							}) {
+							WWuString value;
+							GetProccessVersionInfo(objHandle.ImagePath, versionInfo, value);
+							objHandle.VersionInfo.emplace(versionInfo, value);
+						}
+					}
+				}
+				catch (const WuStdException& ex) {
+					ex.Cry(L"ErrorGettingProcessHandleInformation", WriteErrorCategory::InvalidResult, WWuString::Format(L"Process ID: %d", pid), context);
+					continue;
+				}
+				
+				objectHandleList.push_back(objHandle);
 			}
 		}
 	}
@@ -169,7 +171,7 @@ namespace WindowsUtils::Core
 	*/
 
 	void ProcessAndThread::GetProcessLoadedModuleInformation(
-		wuvector<DWORD> processIdList,					// The process ID list.
+		wuvector<DWORD>& processIdList,					// The process ID list.
 		bool includeVersionInfo,						// True to include module version information.
 		bool suppressError,								// Suppress error output. For when enumerating all processes.
 		WuNativeContext* context						// The Cmdlet native representation.
@@ -222,7 +224,7 @@ namespace WindowsUtils::Core
 			// Help from: https://stackoverflow.com/questions/6530565/getting-another-process-command-line-in-windows
 			WWuString commandLine;
 			try {
-				GetProcessCommandLine(hProcess, commandLine);
+				NtUtilities::GetProcessCommandLine(hProcess, commandLine);
 			}
 			catch (const WuStdException& ex) {
 				if (!suppressError) {
@@ -328,33 +330,22 @@ namespace WindowsUtils::Core
 
 	void ProcessAndThread::SuspendProcess(DWORD processId, WuNativeContext* context)
 	{
+		NTSTATUS status;
 		wuvector<WWuString> privList;
 		privList.push_back(L"SeDebugPrivilege");
 		AccessControl::AdjustCurrentTokenPrivilege(privList, SE_PRIVILEGE_ENABLED);
 
-		ModuleHandle hNtdll(L"ntdll.dll");
-		if (!hNtdll.IsValid()) {
-			WuStdException ex { hNtdll.Error(), __FILEW__, __LINE__ };
-			ex.Cry(L"ErrorLoadingLibrary", WriteErrorCategory::ResourceUnavailable, L"ntdll.dll", context);
+		try {
+			ProcessHandle hProcess(PROCESS_SUSPEND_RESUME, FALSE, processId);
+			if (!NT_SUCCESS(status = NtFunctions::GetInstance()->NtSuspendProcess(hProcess))) {
+				WuStdException ex { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+				ex.Cry(L"ErrorSuspendingProcess", WriteErrorCategory::ResourceUnavailable, WWuString::Format(L"%d", processId).GetBuffer(), context);
 
-			return;
+				return;
+			}
 		}
-
-		ProcessHandle hProcess(PROCESS_SUSPEND_RESUME, FALSE, processId);
-		if (!hProcess.IsValid()) {
-			WuStdException ex { hProcess.Error(), __FILEW__, __LINE__ };
+		catch (const WuStdException& ex) {
 			ex.Cry(L"ErrorOpeningProcess", WriteErrorCategory::ResourceUnavailable, WWuString::Format(L"%d", processId).GetBuffer(), context);
-
-			return;
-		}
-
-		_NtSuspendProcess NtSuspendProcess = (_NtSuspendProcess)GetProcAddress(hNtdll.get(), "NtSuspendProcess");
-
-		NTSTATUS status = NtSuspendProcess(hProcess.get());
-		if (status != STATUS_SUCCESS) {
-			WuStdException ex { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
-			ex.Cry(L"ErrorSuspendingProcess", WriteErrorCategory::ResourceUnavailable, WWuString::Format(L"%d", processId).GetBuffer(), context);
-
 			return;
 		}
 
@@ -364,33 +355,22 @@ namespace WindowsUtils::Core
 
 	void ProcessAndThread::ResumeProcess(DWORD processId, WuNativeContext* context)
 	{
+		NTSTATUS status;
 		wuvector<WWuString> privList;
 		privList.push_back(L"SeDebugPrivilege");
 		AccessControl::AdjustCurrentTokenPrivilege(privList, SE_PRIVILEGE_ENABLED);
 
-		ModuleHandle hNtdll(L"ntdll.dll");
-		if (!hNtdll.IsValid()) {
-			WuStdException ex { hNtdll.Error(), __FILEW__, __LINE__ };
-			ex.Cry(L"ErrorLoadingLibrary", WriteErrorCategory::ResourceUnavailable, L"ntdll.dll", context);
+		try {
+			ProcessHandle hProcess(PROCESS_SUSPEND_RESUME, FALSE, processId);
+			if (!NT_SUCCESS(status = NtFunctions::GetInstance()->NtResumeProcess(hProcess))) {
+				WuStdException ex { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+				ex.Cry(L"ErrorResumingProcess", WriteErrorCategory::InvalidResult, WWuString::Format(L"%d", processId), context);
 
-			return;
+				return;
+			}
 		}
-
-		ProcessHandle hProcess(PROCESS_SUSPEND_RESUME, FALSE, processId);
-		if (!hProcess.IsValid()) {
-			WuStdException ex { hProcess.Error(), __FILEW__, __LINE__ };
+		catch (const WuStdException& ex) {
 			ex.Cry(L"ErrorOpeningProcess", WriteErrorCategory::OpenError, WWuString::Format(L"%d", processId), context);
-
-			return;
-		}
-
-		_NtResumeProcess NtResumeProcess = (_NtResumeProcess)GetProcAddress(hNtdll.get(), "NtResumeProcess");
-
-		NTSTATUS status = NtResumeProcess(hProcess.get());
-		if (status != STATUS_SUCCESS) {
-			WuStdException ex { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
-			ex.Cry(L"ErrorResumingProcess", WriteErrorCategory::InvalidResult, WWuString::Format(L"%d", processId), context);
-
 			return;
 		}
 
@@ -458,62 +438,96 @@ namespace WindowsUtils::Core
 	}
 
 	/*
-	* Used by the parameter -CloseHandle, from Get-ObjectHandle.
+	*	~ Start-ProcessAsUser
+	*
+	*	For this function I tried reverse engineering
+	*	'runas.exe' to the best of my ability (which is
+	*	not much).
 	*/
-	void CloseExtProcessHandle(
-		HANDLE hExtProcess,				// A valid handle to the external process.
-		const WWuString& objectName		// The object name, used on GetProcessObjectHandle.
-	)
+	void ProcessAndThread::RunAs(const WWuString& userName, const WWuString& domain, WWuString& password, WWuString& commandLine, WWuString& titleBar)
 	{
-		NTSTATUS ntCall = STATUS_SUCCESS;
-		HANDLE hTarget = NULL;
+		WORD processorArch;
+		size_t bytesNeeded;
+		SYSTEM_INFO sysInfo;
 
-		HMODULE hmodule = GetModuleHandle(L"ntdll.dll");
-		if (INVALID_HANDLE_VALUE == hmodule || NULL == hmodule)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		LPPROC_THREAD_ATTRIBUTE_LIST attrList;
 
-		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)::GetProcAddress(hmodule, "NtQueryInformationProcess");
+		wuunique_ptr<STARTUPINFOEX>startupInfo = make_wuunique<STARTUPINFOEX>();
+		wuunique_ptr<PROCESS_INFORMATION>procInfo = make_wuunique<PROCESS_INFORMATION>();
 
-		std::unique_ptr<BYTE[]> buffer;
-		ULONG szbuffer = (ULONG)sizeof(PROCESS_HANDLE_SNAPSHOT_INFORMATION);
-		ULONG szbuffneed = 0;
-		do {
-			buffer = std::make_unique<BYTE[]>(szbuffer);
-			ntCall = NtQueryInformationProcess(hExtProcess, ProcessHandleInformation, buffer.get(), szbuffer, &szbuffneed);
-
-			if (STATUS_SUCCESS != ntCall && STATUS_INFO_LENGTH_MISMATCH != ntCall)
-				throw WuStdException(ntCall, __FILEW__, __LINE__, CoreErrorType::NtError);
-
-			if (STATUS_SUCCESS == ntCall)
+		GetNativeSystemInfo(&sysInfo);
+		switch (sysInfo.wProcessorArchitecture) {
+			case 9:
+				processorArch = -31132;
 				break;
+			case 5:
+				processorArch = 452;
+				break;
+			case 12:
+				processorArch = -21916;
+				break;
+			case 0:
+				processorArch = 332;
+				break;
+			default:
+				processorArch = 0xFFFF;
+				break;
+		}
 
-			szbuffer = szbuffneed;
-
-		} while (ntCall == STATUS_INFO_LENGTH_MISMATCH);
-
-		PPROCESS_HANDLE_SNAPSHOT_INFORMATION phsnapinfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
-
-		for (ULONG i = 0; i < phsnapinfo->NumberOfHandles; i++) {
-			wuunique_ptr<BYTE[]> objectNameBuffer;
-
-			if (!DuplicateHandle(hExtProcess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
-				continue;
-
-			NtQueryObjectWithTimeout(hTarget, OBJECT_INFORMATION_CLASS::ObjectNameInformation, objectNameBuffer, 50);
-
-			CloseHandle(hTarget);
-
-			auto objectNameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(objectNameBuffer.get());
-			if (objectNameInfo->Name.Buffer) {
-				WWuString buffString = objectNameInfo->Name.Buffer;
-				if (buffString.EndsWith(objectName)) {
-					if (!DuplicateHandle(hExtProcess, phsnapinfo->Handles[i].HandleValue, ::GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE)) {
-						CloseHandle(hTarget);
-
-						throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-					}
-				}
+		if (!InitializeProcThreadAttributeList(NULL, 1, 0, &bytesNeeded)) {
+			DWORD lastError = GetLastError();
+			if (lastError != ERROR_INSUFFICIENT_BUFFER) {
+				password.SecureErase();
+				throw WuStdException(lastError, __FILEW__, __LINE__);
 			}
 		}
+
+		// This is an opaque structure, working with smart pointers would be a hassle.
+		attrList = (LPPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, bytesNeeded);
+		if (attrList == NULL) {
+			password.SecureErase();
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		}
+
+		if (!InitializeProcThreadAttributeList(attrList, 1, 0, &bytesNeeded)) {
+			password.SecureErase();
+			DeleteProcThreadAttributeList(attrList);
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		}
+
+
+		if (!UpdateProcThreadAttribute(attrList, 0, 0x00020019, &processorArch, 2, NULL, NULL)) {
+			password.SecureErase();
+			DeleteProcThreadAttributeList(attrList);
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		}
+
+		WCHAR currentPath[MAX_PATH] = { 0 };
+		GetCurrentDirectoryW(MAX_PATH, currentPath);
+
+		startupInfo->lpAttributeList = attrList;
+		startupInfo->StartupInfo.cb = 112;
+		startupInfo->StartupInfo.lpTitle = titleBar.GetBuffer();
+
+		if (!CreateProcessWithLogonW(
+			userName.GetBuffer(),
+			domain.GetBuffer(),
+			password.GetBuffer(),
+			LOGON_WITH_PROFILE,
+			NULL,
+			commandLine.GetBuffer(),
+			CREATE_UNICODE_ENVIRONMENT,
+			NULL,
+			currentPath,
+			&startupInfo->StartupInfo,
+			procInfo.get()
+		)) {
+			password.SecureErase();
+			DeleteProcThreadAttributeList(attrList);
+			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		}
+
+		DeleteProcThreadAttributeList(attrList);
+		password.SecureErase();
 	}
 }

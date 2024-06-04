@@ -2,7 +2,7 @@
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Runtime.ConstrainedExecution;
-using WindowsUtils.Core;
+using WindowsUtils.Wrappers;
 using WindowsUtils.AccessControl;
 
 namespace WindowsUtils.Interop
@@ -51,7 +51,7 @@ namespace WindowsUtils.Services
 
     public abstract class ServiceCommandBase : PSCmdlet
     {
-        private readonly Wrapper _unwrapper = new();
+        private readonly ServicesWrapper _unwrapper = new();
 
         internal ServiceSecurity GetServiceObjectSecurity(string serviceName, bool getAudit)
         {

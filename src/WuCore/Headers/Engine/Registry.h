@@ -1,6 +1,7 @@
 #pragma once
 #pragma unmanaged
 
+#include "AccessControl.h"
 #include "../Support/String.h"
 #include "../Support/Expressions.h"
 
@@ -21,5 +22,7 @@ namespace WindowsUtils::Core
 
         void GetRegistrySubkeyNames(const WWuString& computerName, const HKEY hRootKey, const WWuString& subKey, DWORD options, wuvector<WWuString>* subkeyNames);
         void GetRegistrySubkeyNames(HKEY hRegistry, const WWuString& subKey, DWORD options, wuvector<WWuString>* subkeyNames);
+
+        static void GetRegistryPathFromNtPath(WWuString& ntPath, WWuString& path);
     };
 }

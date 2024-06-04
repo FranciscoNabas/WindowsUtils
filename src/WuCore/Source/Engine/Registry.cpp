@@ -203,4 +203,25 @@ namespace WindowsUtils::Core
 
         RegCloseKey(hSubKey);
     }
+
+    void Registry::GetRegistryPathFromNtPath(WWuString& ntPath, WWuString& path)
+    {
+        if (ntPath.StartsWith(L"\\REGISTRY\\MACHINE")) {
+            path = ntPath.Replace(L"\\REGISTRY\\MACHINE", L"HKLM:");
+            if (path == L"HKLM:")
+                path = L"HKLM:\\";
+        }
+        else if (ntPath.StartsWith(L"\\REGISTRY\\USER")) {
+            WWuString currentUserRoot { L"\\REGISTRY\\USER\\" + AccessControl::GetCurrentTokenUserSid() };
+            if (ntPath.StartsWith(currentUserRoot))
+                path = ntPath.Replace(currentUserRoot, L"HKCU:");
+            else
+                path = ntPath.Replace(L"\\REGISTRY\\USER", L"HKU:");
+
+            if (path == L"HKCU:" || path == L"HKU:")
+                path += L"\\";
+        }
+        else
+            path = ntPath;
+    }
 }

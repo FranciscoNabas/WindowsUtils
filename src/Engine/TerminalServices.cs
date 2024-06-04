@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using WindowsUtils.Core;
 
 namespace WindowsUtils.Interop
 {

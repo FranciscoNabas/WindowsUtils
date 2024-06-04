@@ -4,7 +4,10 @@
 
 #include <fci.h>
 #include <fdi.h>
+
+#if defined(_DEBUG)
 #include <Shlwapi.h>
+#endif
 
 namespace WindowsUtils::Core
 {
@@ -19,12 +22,14 @@ namespace WindowsUtils::Core
 	WuStdException::WuStdException(int errorCode, LPCWSTR filePath, int lineNumber, CoreErrorType type)
 	{
 		m_errorCode = errorCode;
+		m_isNt = false;
 
 		switch (type) {
 			case CoreErrorType::SystemError:
 				SetMessage(false);
 				break;
 			case CoreErrorType::NtError:
+				m_isNt = true;
 				SetMessage(true);
 				break;
 			case CoreErrorType::FdiError:
@@ -38,15 +43,14 @@ namespace WindowsUtils::Core
 #if defined(_DEBUG)
 		WWuString fileName(filePath);
 		PathStripPath(fileName.GetBuffer());
-		m_compactTrace = WWuString::Format(L" (%ws:%d)", fileName.GetBuffer(), lineNumber);
+		m_compactTrace = WWuString::Format(L"(%ws:%d)", fileName.GetBuffer(), lineNumber);
 #endif
 	}
 
-	WuStdException::WuStdException(int errorCode, LPCWSTR message, LPCWSTR filePath, int lineNumber)
+	WuStdException::WuStdException(int errorCode, const WWuString& message, LPCWSTR filePath, int lineNumber)
 	{
 		m_message = message;
 		m_isNt = false;
-		m_errorCode = -1;
 		m_errorCode = errorCode;
 
 #if defined(_DEBUG)

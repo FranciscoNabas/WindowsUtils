@@ -73,7 +73,7 @@ namespace WindowsUtils::Core
 		);
 
 		if (m_hFile == INVALID_HANDLE_VALUE)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			throw WuStdException(static_cast<int>(GetLastError()), __FILEW__, __LINE__);
 
 		m_isValid = true;
 	}
@@ -97,13 +97,13 @@ namespace WindowsUtils::Core
 		: m_hModule(NULL), m_isLoaded(false), m_isValid(false), m_error(ERROR_SUCCESS)
 	{ }
 
-	ModuleHandle::ModuleHandle(const LPCWSTR name, bool forceLoad)
+	ModuleHandle::ModuleHandle(const WWuString& name, bool forceLoad)
 	{
 		m_error = ERROR_SUCCESS;
 		m_isValid = false;
 		m_isLoaded = false;
 		if (forceLoad) {
-			m_hModule = LoadLibrary(name);
+			m_hModule = LoadLibrary(name.GetBuffer());
 			if (m_hModule == NULL) {
 				m_error = GetLastError();
 			}
@@ -113,9 +113,9 @@ namespace WindowsUtils::Core
 			}
 		}
 		else {
-			m_hModule = GetModuleHandle(name);
+			m_hModule = GetModuleHandle(name.GetBuffer());
 			if (m_hModule == NULL) {
-				m_hModule = LoadLibrary(name);
+				m_hModule = LoadLibrary(name.GetBuffer());
 				if (m_hModule == NULL) {
 					m_error = GetLastError();
 				}
@@ -145,30 +145,31 @@ namespace WindowsUtils::Core
 	*/
 
 	ProcessHandle::ProcessHandle()
-		: m_hProcess(NULL), m_isValid(false), m_error(ERROR_SUCCESS)
-	{ }
+		: m_hProcess(NULL) { }
 
 	ProcessHandle::ProcessHandle(DWORD desiredAccess, BOOL inherit, DWORD processId)
 	{
-		m_isValid = false;
-		m_error = ERROR_SUCCESS;
-
 		m_hProcess = OpenProcess(desiredAccess, inherit, processId);
 		if (m_hProcess == NULL) {
-			m_error = GetLastError();
-		}
-		else {
-			m_isValid = true;
+			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
 		}
 	}
 
 	ProcessHandle::~ProcessHandle()
 	{
-		if (m_hProcess != NULL && m_isValid)
+		if (m_hProcess != NULL)
 			CloseHandle(m_hProcess);
 	}
 
 	const HANDLE ProcessHandle::get() const { return m_hProcess; }
-	const bool ProcessHandle::IsValid() const { return m_isValid; }
-	const int ProcessHandle::Error() const { return m_error; }
+
+	/*
+	*	~ Object handle
+	*/
+
+	ObjectHandle::ObjectHandle() { m_hObject = 0; }
+	ObjectHandle::ObjectHandle(HANDLE hObject) { m_hObject = hObject; }
+	ObjectHandle::~ObjectHandle() { if (m_hObject) CloseHandle(m_hObject); }
+
+	const HANDLE ObjectHandle::get() const { return m_hObject; }
 }

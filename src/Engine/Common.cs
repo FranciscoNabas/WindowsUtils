@@ -1,10 +1,9 @@
 using System.Net;
 using System.Text.Json;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using WindowsUtils.Core;
-using WindowsUtils.Interop;
+using WindowsUtils.Wrappers;
 using WindowsUtils.Commands;
+using WindowsUtils.Installer;
 
 namespace WindowsUtils
 {
@@ -200,7 +199,7 @@ namespace WindowsUtils
 
     internal class Utilities
     {
-        private static readonly Wrapper unWrapper = new();
+        private static readonly UtilitiesWrapper unWrapper = new();
 
         internal static string GetLastWin32Error() => unWrapper.GetLastWin32Error();
         internal static string GetLastWin32Error(int errorCode) => unWrapper.GetFormattedError(errorCode, ErrorType.SystemError);
@@ -439,5 +438,14 @@ namespace WindowsUtils
 
         internal ErrorInformation(int errorCode, string symName, string? desc, HResultInfo? hrInfo)
             => (_errorCode, SymbolicName, Description, HResultInfo) = (errorCode, symName, desc, hrInfo);
+    }
+
+    public sealed class InstallerTableInfo : InstallerTableInfoBase
+    {
+        internal string InstallerPath { get; }
+
+        internal InstallerTableInfo(string installerPath, InstallerTableInfoBase infoBase)
+            : base(infoBase.TableName, infoBase.Columns)
+                => InstallerPath = installerPath;
     }
 }

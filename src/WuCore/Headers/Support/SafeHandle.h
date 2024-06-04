@@ -50,6 +50,11 @@ namespace WindowsUtils::Core
 
 	/*
 	*	~ Module handle
+	* 
+	*	This will attempt to get a handle to the module with 'GetModuleHandle' first. This does
+	*	not increment the reference count for the module, and thus we won't call 'FreeLibrary'.
+	*	If the call fails we attempt 'LoadLibrary', which if succeeds increments the reference count
+	*	for the module, and 'FreeLibrary' needs to be called.
 	*/
 
 	class ModuleHandle
@@ -62,12 +67,14 @@ namespace WindowsUtils::Core
 
 	public:
 		ModuleHandle();
-		ModuleHandle(LPCWSTR name, bool forceLoad = false);
+		ModuleHandle(const WWuString& name, bool forceLoad = false);
 		~ModuleHandle();
 
 		const HMODULE get() const;
 		const bool IsValid() const;
 		const int Error() const;
+
+		operator HMODULE() { return get(); }
 	};
 
 	/*
@@ -78,8 +85,6 @@ namespace WindowsUtils::Core
 	{
 	private:
 		HANDLE m_hProcess;
-		bool m_isValid;
-		int m_error;
 
 	public:
 		ProcessHandle();
@@ -87,7 +92,34 @@ namespace WindowsUtils::Core
 		~ProcessHandle();
 
 		const HANDLE get() const;
-		const bool IsValid() const;
-		const int Error() const;
+
+		void operator =(HANDLE other) { if (m_hProcess) CloseHandle(m_hProcess); m_hProcess = other; }
+		operator HANDLE() { return get(); }
+		operator HANDLE() const { return get(); }
+		LPHANDLE operator &() { if (m_hProcess) CloseHandle(m_hProcess); m_hProcess = 0; return &m_hProcess; }
+	};
+
+	/*
+	*	~ Object handle
+	* 
+	*	Generic object handle that is closed by 'CloseHandle'.
+	*/
+
+	class ObjectHandle
+	{
+	private:
+		HANDLE m_hObject;
+
+	public:
+		ObjectHandle();
+		ObjectHandle(HANDLE hObject);
+		~ObjectHandle();
+
+		const HANDLE get() const;
+
+		void operator =(HANDLE hOther) { if (m_hObject) CloseHandle(m_hObject); m_hObject = hOther; }
+		operator HANDLE() { return get(); }
+		operator HANDLE() const { return get(); }
+		LPHANDLE operator &() { if (m_hObject) CloseHandle(m_hObject); m_hObject = 0; return &m_hObject; }
 	};
 }

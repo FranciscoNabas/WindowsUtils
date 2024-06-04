@@ -1,9 +1,9 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Management.Automation;
+using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using WindowsUtils.Interop;
-using WindowsUtils.Core;
-using System.Management.Automation;
+using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Interop
 {
@@ -33,14 +33,14 @@ namespace WindowsUtils.Registry
         private readonly RegistryHive _hive;
         private readonly SafeRegistryHandle _hRegistry;
 
-        private readonly Wrapper _unwrapper = new();
+        private readonly RegistryWrapper _unwrapper = new();
 
         public string? ComputerName { get { return _computerName; } }
         public RegistryHive Hive { get { return _hive; } }
 
         public RegistryManager(string computerName, PSCredential credential, RegistryHive hive)
         {
-            _unwrapper.LogonAndImpersonateUser(credential.UserName, credential.Password);
+            UtilitiesWrapper.LogonAndImpersonateUser(credential.UserName, credential.Password);
             int connectResult = NativeFunctions.RegConnectRegistry(computerName, hive, out _hRegistry);
             if (connectResult != 0)
             {
@@ -56,7 +56,7 @@ namespace WindowsUtils.Registry
 
         public RegistryManager(PSCredential credential, RegistryHive hive)
         {
-            _unwrapper.LogonAndImpersonateUser(credential.UserName, credential.Password);
+            UtilitiesWrapper.LogonAndImpersonateUser(credential.UserName, credential.Password);
             int connectResult = NativeFunctions.RegConnectRegistry(IntPtr.Zero, hive, out _hRegistry);
             if (connectResult != 0)
             {

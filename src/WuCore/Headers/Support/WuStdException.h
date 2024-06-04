@@ -32,7 +32,7 @@ namespace WindowsUtils::Core
 
 		WuStdException(const WuStdException& other);
 		WuStdException(int errorCode, LPCWSTR filePath, int lineNumber, CoreErrorType type = CoreErrorType::SystemError);
-		WuStdException(int errorCode, LPCWSTR message, LPCWSTR filePath, int lineNumber);
+		WuStdException(int errorCode, const WWuString& message, LPCWSTR filePath, int lineNumber);
 		~WuStdException();
 
 	private:

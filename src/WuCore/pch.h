@@ -26,6 +26,9 @@
 #define UNLEN 256
 #endif
 
+#define THROWWUSTDEXCEPTION(code) throw WuStdException(code, __FILEW__, __LINE__)
+#define THROWWUSTDEXCEPTIONMESSAGE(code, messae) throw WuStdException(code, message, __FILEW__, __LINE__)
+
 // Warnings
 #pragma warning(disable : 4793)			// 'function_name': function compiled as native: Found an intrinsic not supported in managed code
 
