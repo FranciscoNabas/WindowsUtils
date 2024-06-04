@@ -64,7 +64,10 @@
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies />
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -81,12 +84,16 @@
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies />
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Headers\Engine\AccessControl.h" />
     <ClInclude Include="Headers\Engine\Containers.h" />
+    <ClInclude Include="Headers\Engine\Installer.h" />
     <ClInclude Include="Headers\Engine\Network.h" />
     <ClInclude Include="Headers\Engine\ProcessAndThread.h" />
     <ClInclude Include="Headers\Engine\Registry.h" />
@@ -102,20 +109,24 @@
     <ClInclude Include="Headers\Support\SafeHandle.h" />
     <ClInclude Include="Headers\Support\String.h" />
     <ClInclude Include="Headers\Support\WuStdException.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\CmdletContextBase.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\ComputerSession.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\MessageResponse.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\NativeException.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\NetworkFileInfo.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\ObjectHandle.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\ProcessModuleInfo.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\ResourceMessageTable.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\TcpingProbeInfo.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\TcpingStatistics.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\TestPortInfo.h" />
-    <ClInclude Include="Headers\Wrappers\Objects\WuManagedCabinet.h" />
-    <ClInclude Include="Headers\Wrappers\Wrapper.h" />
+    <ClInclude Include="Headers\Wrappers\CmdletContextProxy.h" />
+    <ClInclude Include="Headers\Wrappers\ContainersWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\InstallerWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\NetworkWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\NativeException.h" />
+    <ClInclude Include="Headers\Wrappers\ProcessAndThreadWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\Types\InstallerTypes.h" />
+    <ClInclude Include="Headers\Wrappers\Types\ProcThreadTypes.h" />
+    <ClInclude Include="Headers\Wrappers\RegistryWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\ServicesWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\TerminalServicesWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\Types\NetworkTypes.h" />
+    <ClInclude Include="Headers\Wrappers\Types\WtsTypes.h" />
+    <ClInclude Include="Headers\Wrappers\Types\WuManagedCabinet.h" />
+    <ClInclude Include="Headers\Wrappers\Types\WuManagedContainer.h" />
+    <ClInclude Include="Headers\Wrappers\UtilitiesWrapper.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Resources\resource1.h" />
     <ClInclude Include="Resources\VersionInfo.h" />
     <ClInclude Include="Resources\Resource.h" />
   </ItemGroup>
@@ -127,6 +138,7 @@
     </ClCompile>
     <ClCompile Include="Source\Engine\AccessControl.cpp" />
     <ClCompile Include="Source\Engine\Containers.cpp" />
+    <ClCompile Include="Source\Engine\Installer.cpp" />
     <ClCompile Include="Source\Engine\Network.cpp" />
     <ClCompile Include="Source\Engine\ProcessAndThread.cpp" />
     <ClCompile Include="Source\Engine\Registry.cpp" />
@@ -139,7 +151,14 @@
     <ClCompile Include="Source\Support\SafeHandle.cpp" />
     <ClCompile Include="Source\Support\NtUtilities.cpp" />
     <ClCompile Include="Source\Support\WuStdException.cpp" />
-    <ClCompile Include="Source\Wrappers\Wrapper.cpp" />
+    <ClCompile Include="Source\Wrappers\ContainersWrapper.cpp" />
+    <ClCompile Include="Source\Wrappers\InstallerWrapper.cpp" />
+    <ClCompile Include="Source\Wrappers\NetworkWrapper.cpp" />
+    <ClCompile Include="Source\Wrappers\ProcessAndThreadWrapper.cpp" />
+    <ClCompile Include="Source\Wrappers\RegistryWrapper.cpp" />
+    <ClCompile Include="Source\Wrappers\ServicesWrapper.cpp" />
+    <ClCompile Include="Source\Wrappers\TerminalServicesWrapper.cpp" />
+    <ClCompile Include="Source\Wrappers\UtilitiesWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources\app.rc" />
@@ -150,6 +169,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Management.Automation">
       <HintPath>..\..\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation\v4.0_3.0.0.0__31bf3856ad364e35\System.Management.Automation.dll</HintPath>

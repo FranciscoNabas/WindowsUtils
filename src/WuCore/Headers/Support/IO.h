@@ -32,6 +32,13 @@ namespace WindowsUtils::Core
 		static void AppendTextToFile(const HANDLE hFile, const WWuString& textS);
 		static __uint64 GetFileSize(const WWuString& filePath);
 		static wuvector<FS_INFO> EnumerateFileSystemInfo(WWuString& path);
+		static bool FileExists(const WWuString& filePath);
+		static void GetFileDosPathFromDevicePath(WWuString& devicePath);
+		static void GetFileDevicePathFromDosPath(WWuString& dosPath);
+		static void WriteByteArrayToTempFile(BYTE* data, DWORD length, _Out_ WWuString& filePath);
+
+	private:
+		static wuvector<WWuString> SplitDriveStrings(const LPWSTR drives, const DWORD charCount);
 	};
 
 	class MemoryMappedFile

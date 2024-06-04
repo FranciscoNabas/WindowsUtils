@@ -4,7 +4,7 @@
 	<TargetFrameworks>netstandard2.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.10.0</Version>
+    <Version>1.11.0</Version>
     <Authors>Francisco Nabas</Authors>
     <Platforms>x64</Platforms>
     <AssemblyName>WindowsUtils</AssemblyName>

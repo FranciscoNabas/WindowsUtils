@@ -34,6 +34,10 @@ To get information on how to use it, use **Get-Help _Cmdlet-Name_ -Full**.
     - [Suspend-Process (suspend)](#suspend-process-suspend)
     - [Resume-Process (resume)](#resume-process-resume)
     - [Get-ErrorInformation (err)](#get-errorinformation-err)
+    - [Get-MsiSummaryInfo](#get-msisummaryinfo)
+    - [Get-MsiTableInfo](#get-msitableinfo)
+    - [Get-MsiTableData](#get-msitabledata)
+    - [Invoke-MsiQuery (imsisql)](#invoke-msiquery-imsisql)
   - [Changelog](#changelog)
   - [Support](#support)
   
@@ -136,6 +140,11 @@ Get-ObjectHandle -Path "$env:TEMP\*.tmp"
 
 Get-ObjectHandle -Path "${env:ProgramFiles(x86)}\7-zip\7-zip.dll" -CloseHandle
 Get-ObjectHandle -Path "${env:ProgramFiles(x86)}\7-zip\7-zip.dll" -CloseHandle -Force
+
+Get-ChildItem -Path 'C:\Windows\System32' -Filter '*.dll' | Get-ObjectHandle
+
+gethandle -ProcessId 666
+Get-Process -Id 666 | gethandle -All
 
 PS C:\Windows\System32>_ Get-ObjectHandle csrss*
 ```
@@ -551,6 +560,70 @@ ErrorCode   HexCode    IsHResult SymbolicName               Description
 -2147024809 0x80070057 True      ERROR_INVALID_PARAMETER    The parameter is incorrect.
 -2147024809 0x80070057 False     E_INVALIDARG               One or more arguments are invalid
 -2147024809 0x80070057 True      LDAP_FILTER_ERROR
+```
+
+### Get-MsiSummaryInfo
+
+This Cmdlet gets the summary information from a Windows Installer.
+Summary data contains information about the author, languages, platforms, creation time, UAC compliance and more.
+
+```powershell
+Get-MsiSummaryInfo -Path 'C:\Path\To\Installer.msi'
+```
+
+### Get-MsiTableInfo
+
+This Cmdlet gets table information from a Windows Installer's database.
+You can list information about a single table, multiple tables, or all tables in the database. Contains the table name and column information,
+like type, position, if it's key, nullable, etc.
+
+```powershell
+Get-MsiTableInfo -Path 'C:\Path\To\Installer.msi' -Table 'Feature', 'Registry'
+```
+
+```powershell
+Get-MsiTableInfo 'C:\Path\To\Installer.msi'
+```
+
+### Get-MsiTableData
+
+This Cmdlet gets the data from a table in a Windows Installer's Database.
+This works for built-in, and custom tables.
+
+```powershell
+Get-MsiTableData -Path 'C:\Path\To\Installer.msi' -Table 'Feature', 'Registry'
+```
+
+```powershell
+Get-MsiTableData 'C:\Path\To\Installer.msi' 'Feature'
+```
+
+```powershell
+Get-MsiTableInfo -Path 'C:\Path\To\Installer.msi' -Table 'Feature', 'Registry' | Get-MsiTableData
+```
+
+### Invoke-MsiQuery (imsisql)
+
+This Cmdlet executes a query in a Windows Installer MSI database.
+ATTENTION! The SQL language used in the installer database is quite finicky. Be sure to check the notes, and related links for more information.
+You can reach that information with `Get-Help Invoke-MsiQuery -Full`.
+
+```powershell
+Invoke-MsiQuery -Path 'C:\SuperInstaller.msi' -Query 'SELECT * FROM Registry' | Format-Table -AutoSize
+```
+
+```powershell
+Invoke-MsiQuery 'C:\SuperInstaller.msi' "INSERT INTO Registry (Registry, Root, ``Key``, Name, Value, Component_) VALUES ('NeatNewKey', 0, 'SOFTWARE\NeatKey', 'NeatKey', 'KeyValue', 'KeyComponent')"
+```
+
+```powershell
+$parameter = [WindowsUtils.Installer.InstallerCommandParameter]::new('String', 'ProductCode')
+imsisql 'C:\SuperInstaller.msi' 'Select * From Property Where Property = ?' -Parameters $parameter
+```
+
+```powershell
+$parameter = [WindowsUtils.Installer.InstallerCommandParameter]::new('File', 'C:\Path\To\InstallerIcon.ico')
+imsisql 'C:\SuperInstaller.msi' "INSERT INTO Icon (Name, Data) VALUES ('IconName', ?)" -Parameters $parameter
 ```
 
 ## Changelog

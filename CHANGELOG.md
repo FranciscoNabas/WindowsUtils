@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
 
+## [1.11.0] - 2024-06-04
+
+### Added
+
+- New Windows Installer API.
+- New Windows Installer Cmdlets: `Get-MsiSummaryInfo`, `Get-MsiTableInfo`, `Get-MsiTableDump`, and `Invoke-MsiQuery`.
+- Added methods `CompareTo`, `ToUpper`, `ToLower` to `WuBaseString`.
+- Added an unmanaged class called `NtFunctions` to handle dynamic linking to 'ntdll.dll'. Until we figure out a better way.
+
+### Changed
+
+- Rebuilt `Get-MsiProperties` to use the new Installer API and to conform to the Installer Cmdlets.
+- The managed class `CmdletNativeContext` was serving no purpose other than adding extra steps, and was removed.
+  The `CoreCommandBase` class now hosts an instance of the old `CmdletContextBase`, which was renamed to `CmdletContextProxy`.
+  This change removes extra steps and avoid calling unnecessary methods and operators.
+- Functionalities in the 'WuCore' were reorganized together with the header / source files. The Cmdlet class files were also reorganized.
+- `Get-ObjectHandle` now lists all handles opened for a process, given its process ID or the `System.Diagnostics.Process` object.
+  Similar to the option '-p' from 'handle.exe'.
+- `Get-ObjectHandle` was re-written to account for exception handling, optimization, and other issues, like when told to close a handle
+  the function gets process information anyway, despite the results being discarted.
+
+### Bugs
+
+- `Get-ObjectHandle` did not try to close some handles when told to, such as owned by the System process.
+- `Get-ObjectHandle` couldn't deal with long paths (bigger than MAX_PATH). This was fixed by prepending `\\?\` before big paths.
+
 ## [1.10.0] - 2023-09-27
 
 ### Added

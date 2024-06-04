@@ -1,27 +1,24 @@
 #include "../../pch.h"
 
 #include "../../Headers/Support/NtUtilities.h"
-#include "../../Headers/Support/WuStdException.h"
 
 #include <TlHelp32.h>
 
 namespace WindowsUtils::Core
 {
-	void GetProcessUsingFile(const WWuString& fileName, wuvector<DWORD>& processIdList)
+	void NtUtilities::GetProcessUsingFile(const WWuString& fileName, wuvector<DWORD>& processIdList)
 	{
-		NTSTATUS statusResult = STATUS_SUCCESS;
 		IO_STATUS_BLOCK ioStatusBlock { };
-
-		HMODULE hModule = GetModuleHandleW(L"ntdll.dll");
-		if (INVALID_HANDLE_VALUE == hModule || 0 == hModule)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-
-		_NtQueryInformationFile NtQueryInformationFile = (_NtQueryInformationFile)GetProcAddress(hModule, "NtQueryInformationFile");
-		if (NULL == NtQueryInformationFile)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		NTSTATUS statusResult = STATUS_SUCCESS;
+		
+		WWuString finalFileName;
+		if (fileName.Length() > MAX_PATH)
+			finalFileName = L"\\\\?\\" + fileName;
+		else
+			finalFileName = fileName;
 
 		HANDLE hFile = CreateFileW(
-			fileName.GetBuffer(),
+			finalFileName.GetBuffer(),
 			FILE_READ_ATTRIBUTES,
 			FILE_SHARE_READ,
 			NULL,
@@ -36,14 +33,14 @@ namespace WindowsUtils::Core
 		std::unique_ptr<BYTE[]> buffer;
 		do {
 			buffer = std::make_unique<BYTE[]>(bufferSize);
-			statusResult = NtQueryInformationFile(hFile, &ioStatusBlock, buffer.get(), bufferSize, FileProcessIdsUsingFileInformation);
+			statusResult = NtFunctions::GetInstance()->NtQueryInformationFile(hFile, &ioStatusBlock, buffer.get(), bufferSize, FILE_INFORMATION_CLASS::FileProcessIdsUsingFileInformation);
 			if (statusResult == STATUS_SUCCESS)
 				break;
 
 			if (statusResult != STATUS_INFO_LENGTH_MISMATCH)
 				throw WuStdException(statusResult, __FILEW__, __LINE__, CoreErrorType::NtError);
 
-			bufferSize = (ULONG)ioStatusBlock.Information;
+			bufferSize = static_cast<ULONG>(ioStatusBlock.Information);
 
 		} while (statusResult == STATUS_INFO_LENGTH_MISMATCH);
 
@@ -54,178 +51,149 @@ namespace WindowsUtils::Core
 		CloseHandle(hFile);
 	}
 
-	void GetProcessUsingKey(const WWuString& ntKeyName, wuvector<DWORD>& resultPidList, bool closeHandle)
+	void NtUtilities::GetProcessUsingKey(const WWuString& ntKeyName, wuvector<DWORD>& resultPidList, std::unordered_map<DWORD, WWuString>& allProcessMap, bool closeHandle)
 	{
-		NTSTATUS status = STATUS_SUCCESS;
-		ULONG bytesNeeded;
+		NTSTATUS status;
+		NtFunctions* ntdll = NtFunctions::GetInstance();
 
-		wuvector<DWORD> procIdList;
-		GetRunnningProcessIdList(procIdList);
-
-		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
-		if (hNtdll == NULL) {
-			hNtdll = LoadLibrary(L"ntdll.dll");
-			if (hNtdll == NULL)
-				throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-		}
-
-		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hNtdll, "NtQueryObject");
-		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
-
-		HANDLE dummyEvent = CreateEvent(NULL, TRUE, FALSE, L"WuNtQueryKeyDummyEvent");
-
-		for (DWORD pid : procIdList) {
-			HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_DUP_HANDLE, FALSE, pid);
-			if (hProcess == NULL)
+		for (const auto& [pid, imagePath] : allProcessMap) {
+			ProcessHandle hProcess;
+			hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_DUP_HANDLE, FALSE, pid);
+			if (hProcess.get() == NULL)
 				continue;
 
-			// Getting the initial size needed.
-			NtQueryInformationProcess(hProcess, ProcessHandleInformation, NULL, 0, &bytesNeeded);
-
+			// Querying process handle information.
+			ULONG bytesNeeded = 9216;
 			wuunique_ptr<BYTE[]> buffer;
-			bool succeeded = true;
 			do {
-				// By the second call time more handles might be opened.
-				bytesNeeded += 64;
+				bytesNeeded += 1024;
 				buffer = make_wuunique<BYTE[]>(bytesNeeded);
-
-				status = NtQueryInformationProcess(hProcess, ProcessHandleInformation, buffer.get(), bytesNeeded, &bytesNeeded);
-				if (status != STATUS_SUCCESS && status != STATUS_INFO_LENGTH_MISMATCH) {
-					succeeded = false;
-					break;
-				}
-
+				status = ntdll->NtQueryInformationProcess(hProcess, PROCESSINFOCLASS::ProcessHandleInformation, buffer.get(), bytesNeeded, &bytesNeeded);
 				if (status == STATUS_SUCCESS)
 					break;
 
+				if (status != STATUS_INFO_LENGTH_MISMATCH)
+					throw WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+
 			} while (status == STATUS_INFO_LENGTH_MISMATCH);
 
-			if (!succeeded)
-				continue;
+			// Going through each handle entry.
+			HANDLE hCurrentProcess = GetCurrentProcess();
+			auto procHandleInfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
+			for (ULONG_PTR i = 0; i < procHandleInfo->NumberOfHandles; i++) {
 
-			auto procSnapshotInfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
-
-			// Iterating through each handle.
-			for (size_t i = 0; i < procSnapshotInfo->NumberOfHandles; i++) {
-				HANDLE hTarget;
-				if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
+				// Duplicating the handle.
+				ObjectHandle hDup;
+				if (!NT_SUCCESS(ntdll->NtDuplicateObject(hProcess, procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, NULL, 0, DUPLICATE_SAME_ACCESS)))
 					continue;
 
-				////////////////////////////////////////////////////////////////////
-				//
-				// ~ TL;DR: 'NtQueryObject' hangs with certain handles.
-				//
-				// When querying information about asynchronous objects
-				// like pipes, if these objects have pending wait operations
-				// querying the handle freezes the current thread permanently.
-				// A solution is to use threads with timeout, but the overhead
-				// is immense when trying to query all objects in use, like here.
-				// 
-				// So here we are checking if the handle is a registry key
-				// before proceeding.
-				// A similar approach can be used for files, with
-				// 'CreateFileMapping'.
-				//
-				////////////////////////////////////////////////////////////////////
+				// Querying the handle object type name.
+				bytesNeeded = 1024;
+				wuunique_ptr<BYTE[]> infoBuffer = make_wuunique<BYTE[]>(bytesNeeded);
+				if (!NT_SUCCESS(status = ntdll->NtQueryObject(hDup, OBJECT_INFORMATION_CLASS::ObjectTypeInformation, infoBuffer.get(), bytesNeeded, &bytesNeeded)))
+					throw WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
 
-				if (RegNotifyChangeKeyValue((HKEY)hTarget, FALSE, REG_NOTIFY_THREAD_AGNOSTIC, dummyEvent, TRUE) != 0) {
-					CloseHandle(hTarget);
-					continue;
-				}
+				WWuString objectTypeName = reinterpret_cast<POBJECT_TYPE_INFORMATION>(infoBuffer.get())->TypeName.Buffer;
+				if (objectTypeName == L"Key") {
 
-				bytesNeeded = 1 << 10;
-				BYTE nameBuffer[1 << 10] = { 0 };
-				NtQueryObject(hTarget, OBJECT_INFORMATION_CLASS::ObjectNameInformation, nameBuffer, bytesNeeded, &bytesNeeded);
-				CloseHandle(hTarget);
+					// Checking the key name.
+					bytesNeeded = 1024;
+					if (!NT_SUCCESS(status = ntdll->NtQueryObject(hDup, OBJECT_INFORMATION_CLASS::ObjectNameInformation, infoBuffer.get(), bytesNeeded, &bytesNeeded)))
+						continue;
 
-				auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(nameBuffer);
-				if (nameInfo->Name.Buffer != NULL)
-					if (_wcsnicmp(ntKeyName.GetBuffer(), nameInfo->Name.Buffer, ntKeyName.Length()) == 0) {
-						if (closeHandle) {
-							if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
-								throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+					// Checking if it's our key.
+					auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(infoBuffer.get());
+					if (nameInfo->Name.Buffer != NULL)
+						if (_wcsnicmp(ntKeyName.GetBuffer(), nameInfo->Name.Buffer, ntKeyName.Length()) == 0) {
+							
+							// Attempting to close the original handle if requested.
+							if (closeHandle) {
+								if (!NT_SUCCESS(status = ntdll->NtDuplicateObject(hProcess, procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, NULL, 0, DUPLICATE_CLOSE_SOURCE)))
+									throw WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+							}
 
-							CloseHandle(hTarget);
+							resultPidList.push_back(pid);
 						}
-
-						resultPidList.push_back(pid);
-					}
+				}
 			}
 		}
-
-		CloseHandle(dummyEvent);
 	}
 
-	void CloseExternalHandlesToFile(HANDLE hProcess, const WWuString& fileName)
+	void NtUtilities::CloseExternalHandlesToFile(DWORD processId, const WWuString& fileName)
 	{
-		ULONG bytesNeeded;
+		ProcessHandle hProcess;
+		hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE, FALSE, processId);
+		if (hProcess.get() == NULL)
+			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+
 		NTSTATUS status;
+		NtFunctions* ntdll = NtFunctions::GetInstance();
 
-		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
-		if (hNtdll == NULL) {
-			hNtdll = LoadLibrary(L"ntdll.dll");
-			if (hNtdll == NULL)
-				throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-		}
-
-		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hNtdll, "NtQueryObject");
-		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
-
-		NtQueryInformationProcess(hProcess, ProcessHandleInformation, NULL, 0, &bytesNeeded);
-
+		// Querying process handle information.
+		ULONG bytesNeeded = 9216;
 		wuunique_ptr<BYTE[]> buffer;
 		do {
-			// By the second call time more handles might be opened.
-			bytesNeeded += 64;
+			bytesNeeded += 1024;
 			buffer = make_wuunique<BYTE[]>(bytesNeeded);
-
-			status = NtQueryInformationProcess(hProcess, ProcessHandleInformation, buffer.get(), bytesNeeded, &bytesNeeded);
-			if (status != STATUS_SUCCESS && status != STATUS_INFO_LENGTH_MISMATCH) {
-				throw WuStdException(status, __FILEW__, __LINE__, CoreErrorType::NtError);
-			}
-
+			status = ntdll->NtQueryInformationProcess(hProcess, PROCESSINFOCLASS::ProcessHandleInformation, buffer.get(), bytesNeeded, &bytesNeeded);
 			if (status == STATUS_SUCCESS)
 				break;
 
+			if (status != STATUS_INFO_LENGTH_MISMATCH)
+				throw WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+
 		} while (status == STATUS_INFO_LENGTH_MISMATCH);
 
-		auto procSnapshotInfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
+		// Going through each handle entry.
+		HANDLE hCurrentProcess = GetCurrentProcess();
+		auto procHandleInfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
+		for (ULONG_PTR i = 0; i < procHandleInfo->NumberOfHandles; i++) {
 
-		// Iterating through each handle.
-		for (size_t i = 0; i < procSnapshotInfo->NumberOfHandles; i++) {
-			HANDLE hTarget;
-			if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
+			// Duplicating the handle.
+			ObjectHandle hDup;
+			if (!NT_SUCCESS(ntdll->NtDuplicateObject(hProcess, procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, NULL, 0, DUPLICATE_SAME_ACCESS)))
 				continue;
 
-			// Checking if the handle is a file handle.
-			// Check notes in 'GetProcessUsingKey'.
-			HANDLE hFileMapping = CreateFileMapping(hTarget, NULL, PAGE_READONLY, 0, 0, L"WuCloseExtHandlesToFileDummyMap");
-			if (hFileMapping == NULL && GetLastError() == ERROR_BAD_EXE_FORMAT) {
-				CloseHandle(hTarget);
-				continue;
-			}
+			// Querying the handle object type name.
+			bytesNeeded = 1024;
+			wuunique_ptr<BYTE[]> infoBuffer = make_wuunique<BYTE[]>(bytesNeeded);
+			if (!NT_SUCCESS(status = ntdll->NtQueryObject(hDup, OBJECT_INFORMATION_CLASS::ObjectTypeInformation, infoBuffer.get(), bytesNeeded, &bytesNeeded)))
+				throw WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
 
-			CloseHandle(hFileMapping);
+			WWuString objectTypeName = reinterpret_cast<POBJECT_TYPE_INFORMATION>(infoBuffer.get())->TypeName.Buffer;
+			if (objectTypeName == L"File") {
 
-			bytesNeeded = 1 << 10;
-			BYTE nameBuffer[1 << 10] = { 0 };
-			NtQueryObject(hTarget, OBJECT_INFORMATION_CLASS::ObjectNameInformation, nameBuffer, bytesNeeded, &bytesNeeded);
-			CloseHandle(hTarget);
+				// Querying the object name.
+				try {
+					WU_QUERY_OBJECT_DATA threadData {
+						hDup,
+						OBJECT_INFORMATION_CLASS::ObjectNameInformation
+					};
 
-			auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(nameBuffer);
-			if (nameInfo->Name.Buffer != NULL) {
-				WWuString nameStr(nameInfo->Name.Buffer);
-				if (nameStr.EndsWith(fileName)) {
-					if (!DuplicateHandle(hProcess, procSnapshotInfo->Handles[i].HandleValue, GetCurrentProcess(), &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
-						throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-
-					CloseHandle(hTarget);
+					QueryObjectWithTimeout(threadData, 100);
+					if (threadData.Status != STATUS_SUCCESS)
+						continue;
+					
+					// Checking if it's our file.
+					auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(threadData.ObjectData);
+					if (nameInfo->Name.Buffer != NULL) {
+						WWuString nameStr { nameInfo->Name.Buffer };
+						if (nameStr == fileName) {
+							
+							// Attempting to close the original handle.
+							if (!NT_SUCCESS(status = ntdll->NtDuplicateObject(hProcess, procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, NULL, 0, DUPLICATE_CLOSE_SOURCE)))
+								throw WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+						}
+					}
+				}
+				catch (const WuStdException& ex) {
+					throw ex;
 				}
 			}
 		}
 	}
 
-	void GetRunnningProcessIdList(wuvector<DWORD>& procIdList)
+	void NtUtilities::GetRunnningProcessIdList(wuvector<DWORD>& procIdList)
 	{
 		HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 		if (hSnapshot == INVALID_HANDLE_VALUE)
@@ -242,113 +210,20 @@ namespace WindowsUtils::Core
 		CloseHandle(hSnapshot);
 	}
 
-	DWORD WINAPI NtQueryObjectRaw(LPVOID parameters)
-	{
-		NTSTATUS result = STATUS_SUCCESS;
-		PTHREAD_FUNC_ARGUMENTS threadArgs = reinterpret_cast<PTHREAD_FUNC_ARGUMENTS>(parameters);
-
-		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
-		if (hNtdll == NULL) {
-			hNtdll = LoadLibrary(L"ntdll.dll");
-			if (hNtdll == NULL)
-				throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-		}
-
-		_NtQueryObject NtQueryObject = (_NtQueryObject)GetProcAddress(hNtdll, "NtQueryObject");
-
-		if (threadArgs->ObjectInformationClass == OBJECT_INFORMATION_CLASS::ObjectNameInformation) {
-			ULONG bufferSize = static_cast<ULONG>(sizeof(OBJECT_NAME_INFORMATION));
-			do {
-				threadArgs->ObjectInfo = make_wuunique<BYTE[]>(bufferSize);
-
-				result = NtQueryObject(threadArgs->ObjectHandle, OBJECT_INFORMATION_CLASS::ObjectNameInformation, threadArgs->ObjectInfo.get(), bufferSize, &bufferSize);
-				if (STATUS_SUCCESS != result
-					&& STATUS_INFO_LENGTH_MISMATCH != result
-					&& result != STATUS_BUFFER_OVERFLOW
-					&& result != STATUS_BUFFER_TOO_SMALL)
-					return result;
-
-				if (STATUS_SUCCESS == result)
-					break;
-
-			} while (result == STATUS_BUFFER_TOO_SMALL || result == STATUS_BUFFER_OVERFLOW || result == STATUS_INFO_LENGTH_MISMATCH);
-		}
-		else {
-			ULONG bufferSize = static_cast<ULONG>(sizeof(OBJECT_TYPE_INFORMATION));
-			do {
-				threadArgs->ObjectInfo = make_wuunique<BYTE[]>(bufferSize);
-
-				result = NtQueryObject(threadArgs->ObjectHandle, OBJECT_INFORMATION_CLASS::ObjectTypeInformation, threadArgs->ObjectInfo.get(), bufferSize, &bufferSize);
-				if (STATUS_SUCCESS != result
-					&& STATUS_INFO_LENGTH_MISMATCH != result
-					&& result != STATUS_BUFFER_OVERFLOW
-					&& result != STATUS_BUFFER_TOO_SMALL)
-					return result;
-
-				if (STATUS_SUCCESS == result)
-					break;
-
-			} while (result == STATUS_BUFFER_TOO_SMALL || result == STATUS_BUFFER_OVERFLOW || result == STATUS_INFO_LENGTH_MISMATCH);
-		}
-
-		return result;
-	}
-
-	/*
-	* When calling NtQueryObject, the procedure hangs for certain granted accesses and object types.
-	* There isn't a pattern, nor documentation on this behavior.
-	* We use a separate thread that gets terminated after a timeout.
-	*/
-	void WINAPI NtQueryObjectWithTimeout(
-		HANDLE hObject,								// A valid handle to the object.
-		OBJECT_INFORMATION_CLASS objInfoClass,		// One of the OBJECT_INFORMATION_CLASS enumerations.
-		wuunique_ptr<BYTE[]>& objInfo,				// Object containing the queried information. The type of object depends on the object information class.
-		ULONG timeout								// Maximum timeout in milliseconds.
-	)
-	{
-		DWORD threadId { };
-		DWORD threadExitCode { STATUS_SUCCESS };
-		HANDLE hThread { };
-
-		THREAD_FUNC_ARGUMENTS threadCallArgs {
-			hObject,
-			objInfoClass,
-			objInfo
-		};
-
-		hThread = CreateThread(NULL, 0, NtQueryObjectRaw, &threadCallArgs, 0, &threadId);
-		if (NULL == hThread)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-
-		DWORD wait = WaitForSingleObject(hThread, timeout);
-		if (wait != WAIT_OBJECT_0)
-			TerminateThread(hThread, 0);
-		else {
-			GetExitCodeThread(hThread, &threadExitCode);
-			CloseHandle(hThread);
-		}
-	}
-
 	/*
 	* Alternative to QueryFullProcessImageNameW.
 	* This function returns names from processes like, System, Registry or Secure System.
 	*/
-	void WINAPI GetProcessImageName(DWORD processId, WWuString& imageName)
+	void WINAPI NtUtilities::GetProcessImageName(DWORD processId, WWuString& imageName)
 	{
-		NTSTATUS statusResult { STATUS_SUCCESS };
-		ULONG bufferSize { 1 << 12 };
 		ULONG bytesNeeded { };
-
-		HMODULE hModule = GetModuleHandleW(L"ntdll.dll");
-		if (INVALID_HANDLE_VALUE == hModule || NULL == hModule)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-
-		_NtQuerySystemInformation NtQuerySystemInformation = (_NtQuerySystemInformation)GetProcAddress(hModule, "NtQuerySystemInformation");
+		ULONG bufferSize { 1 << 12 };
+		NTSTATUS statusResult { STATUS_SUCCESS };
 
 		std::unique_ptr<BYTE[]> buffer;
 		do {
 			buffer = std::make_unique<BYTE[]>(bufferSize);
-			statusResult = NtQuerySystemInformation(SystemFullProcessInformation, buffer.get(), bufferSize, &bytesNeeded);
+			statusResult = NtFunctions::GetInstance()->NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS::SystemFullProcessInformation, buffer.get(), bufferSize, &bytesNeeded);
 			if (STATUS_SUCCESS != statusResult
 				&& STATUS_INFO_LENGTH_MISMATCH != statusResult
 				&& statusResult != STATUS_BUFFER_OVERFLOW
@@ -376,25 +251,44 @@ namespace WindowsUtils::Core
 		} while (systemProcInfo->NextEntryOffset != 0);
 	}
 
-	void GetProcessCommandLine(HANDLE hProcess, WWuString& commandLine)
+	void NtUtilities::ListRunningProcessesWithImageName(std::unordered_map<DWORD, WWuString>& processMap)
 	{
-		HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
-		if (hNtdll == NULL) {
-			hNtdll = LoadLibrary(L"ntdll.dll");
-			if (hNtdll == NULL)
-				throw WuStdException(GetLastError(), __FILEW__, __LINE__);
-		}
+		NTSTATUS status;
+		ULONG bytesNeeded = 10240;
 
-		_NtQueryInformationProcess NtQueryInformationProcess = (_NtQueryInformationProcess)GetProcAddress(hNtdll, "NtQueryInformationProcess");
-		if (NtQueryInformationProcess == NULL)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		wuunique_ptr<BYTE[]> buffer;
+		do {
+			buffer = make_wuunique<BYTE[]>(bytesNeeded);
+			if (!NT_SUCCESS(status = NtFunctions::GetInstance()->NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS::SystemFullProcessInformation, buffer.get(), bytesNeeded, &bytesNeeded))) {
+				if (status != STATUS_INFO_LENGTH_MISMATCH && status != STATUS_BUFFER_OVERFLOW && status != STATUS_BUFFER_TOO_SMALL)
+					throw WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+			}
+			else
+				break;
 
+			// More processes might have been created until the next call.
+			bytesNeeded += 1024;
+
+		} while (status == STATUS_BUFFER_TOO_SMALL || status == STATUS_BUFFER_OVERFLOW || status == STATUS_INFO_LENGTH_MISMATCH);
+
+		auto systemProcInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.get());
+		do {
+			processMap.emplace(static_cast<DWORD>(reinterpret_cast<ULONG_PTR>(systemProcInfo->UniqueProcessId)), systemProcInfo->ImageName.Buffer);
+
+			// Advancing to the next entry.
+			systemProcInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(reinterpret_cast<PBYTE>(systemProcInfo) + systemProcInfo->NextEntryOffset);
+
+		} while (systemProcInfo->NextEntryOffset != 0);
+	}
+
+	void NtUtilities::GetProcessCommandLine(HANDLE hProcess, WWuString& commandLine)
+	{
 		ULONG bytesNeeded;
-		PROCESS_BASIC_INFORMATION basicInfo;
-		NTSTATUS status = NtQueryInformationProcess(hProcess, ProcessBasicInformation, &basicInfo, sizeof(basicInfo), &bytesNeeded);
+		PROCESS_BASIC_INFORMATION basicInfo { };
+		NTSTATUS status = NtFunctions::GetInstance()->NtQueryInformationProcess(hProcess, PROCESSINFOCLASS::ProcessBasicInformation, &basicInfo, sizeof(basicInfo), &bytesNeeded);
 
 		wuunique_ptr<BYTE[]> pebBuffer = make_wuunique<BYTE[]>(sizeof(PEB));
-		if (!ReadProcessMemory(hProcess, basicInfo.PebBaseAddress, pebBuffer.get(), sizeof(PEB), (SIZE_T*)(&bytesNeeded)))
+		if (!ReadProcessMemory(hProcess, reinterpret_cast<LPCVOID>(basicInfo.PebBaseAddress), pebBuffer.get(), sizeof(PEB), (SIZE_T*)(&bytesNeeded)))
 			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
 
 		PPEB peb = reinterpret_cast<PPEB>(pebBuffer.get());
@@ -411,5 +305,422 @@ namespace WindowsUtils::Core
 		commandLine = WWuString(reinterpret_cast<LPWSTR>(cmdLineBuffer));
 
 		delete[] cmdLineBuffer;
+	}
+
+	void NtUtilities::ListProcessHandleInformation(const ProcessHandle& hProcess, wuvector<WU_OBJECT_HANDLE_INFO>& handleInfo, const bool all, const WuNativeContext* context)
+	{
+		NTSTATUS status;
+		NtFunctions* ntdll = NtFunctions::GetInstance();
+
+		// Querying process handle information.
+		ULONG bytesNeeded = 9216;
+		wuunique_ptr<BYTE[]> buffer;
+		do {
+			bytesNeeded += 1024;
+			buffer = make_wuunique<BYTE[]>(bytesNeeded);
+			status = ntdll->NtQueryInformationProcess(hProcess, PROCESSINFOCLASS::ProcessHandleInformation, buffer.get(), bytesNeeded, &bytesNeeded);
+			if (status == STATUS_SUCCESS)
+				break;
+
+			if (status != STATUS_INFO_LENGTH_MISMATCH) {
+				auto ex = WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+				ex.Cry(L"ErrorQueryInformationProcess", WriteErrorCategory::InvalidResult, L"", context);
+
+				throw ex;
+			}
+
+		} while (status == STATUS_INFO_LENGTH_MISMATCH);
+
+		// Querying information for each handle.
+		std::unordered_map<HANDLE, WWuString> processInfoMap;
+		HANDLE hCurrentProcess = GetCurrentProcess();
+		auto procHandleInfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(buffer.get());
+		for (ULONG_PTR i = 0; i < procHandleInfo->NumberOfHandles; i++) {
+
+			// Duplicating the handle.
+			ObjectHandle hDup;
+			if (!NT_SUCCESS(ntdll->NtDuplicateObject(hProcess, procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, NULL, 0, DUPLICATE_SAME_ACCESS))) {
+				WU_OBJECT_HANDLE_INFO currentInfo = {
+					procHandleInfo->Handles[i].HandleValue,
+					L"UnknownType"
+				};
+
+				if (all)
+					handleInfo.push_back(currentInfo);
+
+				continue;
+			}
+
+			// Querying the handle object type name.
+			bytesNeeded = 1024;
+			wuunique_ptr<BYTE[]> infoBuffer = make_wuunique<BYTE[]>(bytesNeeded);
+			if (!NT_SUCCESS(status = ntdll->NtQueryObject(hDup, OBJECT_INFORMATION_CLASS::ObjectTypeInformation, infoBuffer.get(), bytesNeeded, &bytesNeeded))) {
+				auto ex = WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+				ex.Cry(L"ErrorNtQueryObject", WriteErrorCategory::InvalidResult, L"", context);
+
+				throw ex;
+			}
+
+			WWuString objTypeName { reinterpret_cast<POBJECT_TYPE_INFORMATION>(infoBuffer.get())->TypeName.Buffer };
+			if (!all && objTypeName != L"File" && objTypeName != L"Key")
+				continue;
+
+			WU_OBJECT_HANDLE_INFO currentInfo = {
+				procHandleInfo->Handles[i].HandleValue,
+				objTypeName
+			};
+
+			// Querying the object name.
+			// We need to take special precaution with files because 'NtQueryObject' can hang.
+			if (currentInfo.Type == L"File") {
+				try {
+					WU_QUERY_OBJECT_DATA threadData {
+						hDup,
+						OBJECT_INFORMATION_CLASS::ObjectNameInformation
+					};
+
+					QueryObjectWithTimeout(threadData, 100);
+					if (threadData.Status != STATUS_SUCCESS)
+						continue;
+
+					currentInfo.Name = reinterpret_cast<POBJECT_NAME_INFORMATION>(threadData.ObjectData)->Name.Buffer;
+				}
+				catch (const WuStdException& ex) {
+					ex.Cry(L"ErrorQueryObjectNameWithTimeout", WriteErrorCategory::InvalidResult, L"", context);
+					throw ex;
+				}
+			}
+			else if (currentInfo.Type == L"Process") {
+				// TODO: Try to do this without duplicating the handle again.
+				if (NT_SUCCESS(ntdll->NtDuplicateObject(hProcess, procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, PROCESS_QUERY_LIMITED_INFORMATION, 0, NULL))) {
+					// Getting process ID.
+					LPCWSTR imgName { };
+					HANDLE processId { };
+					bytesNeeded = sizeof(PROCESS_BASIC_INFORMATION);
+					if (NT_SUCCESS(ntdll->NtQueryInformationProcess(hDup, PROCESSINFOCLASS::ProcessBasicInformation, infoBuffer.get(), bytesNeeded, &bytesNeeded))) {
+						processId = reinterpret_cast<PPROCESS_BASIC_INFORMATION>(infoBuffer.get())->UniqueProcessId;
+
+						// Getting the image name.
+						bytesNeeded = sizeof(UNICODE_STRING) + 1024;
+						if (NT_SUCCESS(ntdll->NtQueryInformationProcess(hDup, PROCESSINFOCLASS::ProcessImageFileName, infoBuffer.get(), bytesNeeded, &bytesNeeded))) {
+							LPCWSTR imageNtPath = reinterpret_cast<PUNICODE_STRING>(infoBuffer.get())->Buffer;
+							imgName = wcsrchr(imageNtPath, L'\\');
+							if (imgName) {
+								// Advancing the last '\'
+								imgName++;
+							}
+							else
+								imgName = L"<Process already closed>";
+						}
+						else
+							imgName = L"<Process already closed>";
+					}
+					else
+						imgName = L"<Process already closed>";
+
+					processInfoMap.emplace(processId, imgName);
+					currentInfo.Name = WWuString::Format(L"%ws(%d)", imgName, processId);
+				}
+			}
+			else if (currentInfo.Type == L"Thread") {
+				// TODO: Try to do this without duplicating the handle again.
+				if (NT_SUCCESS(ntdll->NtDuplicateObject(hProcess, procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, THREAD_QUERY_LIMITED_INFORMATION, 0, NULL))) {
+					bytesNeeded = sizeof(THREAD_BASIC_INFORMATION);
+					if (NT_SUCCESS(ntdll->NtQueryInformationThread(hDup, THREADINFOCLASS::ThreadBasicInformation, infoBuffer.get(), bytesNeeded, &bytesNeeded))) {
+						auto threadInfo = reinterpret_cast<PTHREAD_BASIC_INFORMATION>(infoBuffer.get());
+						HANDLE threadId = threadInfo->ClientId.UniqueThread;
+						HANDLE processId = threadInfo->ClientId.UniqueProcess;
+						
+						// Trying to find the process ID in our map.
+						if (auto iterator = processInfoMap.find(processId); iterator != processInfoMap.end()) {
+							currentInfo.Name = WWuString::Format(L"%ws(%d): %d", iterator->second.GetBuffer(), processId, threadId);
+						}
+						else {
+							// Opening a handle to the process.
+							LPCWSTR imgName { };
+							if (HANDLE hThreadProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(reinterpret_cast<ULONG_PTR>(processId)))) {
+								
+								// Getting the image name.
+								bytesNeeded = sizeof(UNICODE_STRING) + 1024;
+								if (NT_SUCCESS(ntdll->NtQueryInformationProcess(hThreadProcess, PROCESSINFOCLASS::ProcessImageFileName, infoBuffer.get(), bytesNeeded, &bytesNeeded))) {
+									LPCWSTR imageNtPath = reinterpret_cast<PUNICODE_STRING>(infoBuffer.get())->Buffer;
+									imgName = wcsrchr(imageNtPath, L'\\');
+									if (imgName) {
+										// Advancing the last '\'
+										imgName++;
+									}
+									else
+										imgName = L"<Process already closed>";
+								}
+								else
+									imgName = L"<Process already closed>";
+							}
+							else
+								imgName = L"<Process already closed>";
+
+							processInfoMap.emplace(processId, imgName);
+							currentInfo.Name = WWuString::Format(L"%ws(%d): %d", imgName, processId, threadId);
+						}
+					}
+				}
+			}
+			else {
+				bytesNeeded = 1024;
+				if (!NT_SUCCESS(status = ntdll->NtQueryObject(hDup, OBJECT_INFORMATION_CLASS::ObjectNameInformation, infoBuffer.get(), bytesNeeded, &bytesNeeded))) {
+					auto ex = WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+					ex.Cry(L"ErrorNtQueryObject", WriteErrorCategory::InvalidResult, L"", context);
+
+					throw ex;
+				}
+
+				currentInfo.Name = reinterpret_cast<POBJECT_NAME_INFORMATION>(infoBuffer.get())->Name.Buffer;
+			}
+			
+			handleInfo.push_back(currentInfo);
+		}
+	}
+
+	void NtUtilities::QueryObjectWithTimeout(WU_QUERY_OBJECT_DATA& objectData, DWORD timeout)
+	{
+		NTSTATUS status;
+		ObjectHandle hThread;
+		CLIENT_ID clientId { };
+
+		// Creating thread.
+		if (!NT_SUCCESS(status = NtFunctions::GetInstance()->RtlCreateUserThread(
+			GetCurrentProcess(),
+			NULL,
+			FALSE,
+			0,
+			0,
+			0,
+			QueryObjectNameThread,
+			&objectData,
+			&hThread,
+			&clientId
+		))) {
+			throw WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+		}
+
+		// Waiting the thread signal or timeout.
+		DWORD waitResult = WaitForSingleObject(hThread, timeout);
+		if (waitResult == 0xFFFFFFFF) {
+			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+		}
+
+		// Timeout or error. We terminate the thread.
+		if (waitResult != WAIT_OBJECT_0) {
+			TerminateThread(hThread, STATUS_UNSUCCESSFUL);
+			objectData.Status = STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	void NtUtilities::GetThreadProcessInformation(const HANDLE hThread, WU_THREAD_PROCESS_INFORMATION& threadProcInfo)
+	{
+		NTSTATUS status;
+		NtFunctions* ntdll = NtFunctions::GetInstance();
+		ULONG bufferSize = sizeof(THREAD_BASIC_INFORMATION);
+		wuunique_ptr<THREAD_BASIC_INFORMATION> threadBuffer = make_wuunique<THREAD_BASIC_INFORMATION>();
+
+		// Querying thread basic information.
+		if (!NT_SUCCESS(status = ntdll->NtQueryInformationThread(
+			hThread,
+			THREADINFOCLASS::ThreadBasicInformation,
+			reinterpret_cast<PVOID>(threadBuffer.get()),
+			bufferSize,
+			&bufferSize
+		))) {
+			throw WuStdException { status, __FILEW__, __LINE__, CoreErrorType::NtError };
+		}
+
+		threadProcInfo.ThreadId = static_cast<DWORD>(reinterpret_cast<ULONG_PTR>(threadBuffer->ClientId.UniqueThread));
+		threadProcInfo.ProcessId = static_cast<DWORD>(reinterpret_cast<ULONG_PTR>(threadBuffer->ClientId.UniqueProcess));
+
+		// Getting the process image name.
+		GetProcessImageName(threadProcInfo.ProcessId, threadProcInfo.ModuleName);
+	}
+
+	NTSTATUS WINAPI QueryObjectNameThread(PVOID lpThreadParameter)
+	{
+		ULONG bytesNeeded = 1024;
+		PWU_QUERY_OBJECT_DATA objectData = reinterpret_cast<PWU_QUERY_OBJECT_DATA>(lpThreadParameter);
+
+		objectData->Status = NtFunctions::GetInstance()->NtQueryObject(
+			objectData->DuplicateHandle,
+			objectData->DataType,
+			objectData->ObjectData,
+			bytesNeeded,
+			&bytesNeeded
+		);
+
+		return STATUS_SUCCESS;
+	}
+
+	/*
+	*	NtFunctions
+	* 
+	*	This singleton was designed so we can access ntdll functions
+	*	minimizing the amount of time we call 'GetProcAddress'.
+	*/
+
+	NtFunctions* NtFunctions::m_instance { nullptr };
+	ModuleHandle NtFunctions::m_ntdll { ModuleHandle(L"ntdll.dll") };
+
+	NtFunctions::NtFunctions()
+		: m_ntQueryKey(nullptr), m_ntQueryObject(nullptr), m_ntResumeProcess(nullptr), m_ntSuspendProcess(nullptr), m_ntDuplicateObject(nullptr),
+		m_ntQuerySystemTime(nullptr), m_rtlCreateUserThread(nullptr), m_ntQueryInformationFile(nullptr), m_ntQuerySystemInformation(nullptr), m_ntQueryInformationProcess(nullptr),
+		m_ntQueryInformationThread(nullptr)
+	{ }
+
+	NtFunctions::~NtFunctions() { }
+
+	NtFunctions* NtFunctions::GetInstance()
+	{
+		if (m_instance == nullptr)
+			m_instance = new NtFunctions();
+
+		return m_instance;
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtResumeProcess(_In_ HANDLE ProcessHandle)
+	{
+		if (m_ntResumeProcess == nullptr)
+			m_ntResumeProcess = reinterpret_cast<_NtResumeProcess>(GetProcAddress(m_ntdll, "NtResumeProcess"));
+
+		return m_ntResumeProcess(ProcessHandle);
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtSuspendProcess(_In_ HANDLE ProcessHandle)
+	{
+		if (m_ntSuspendProcess == nullptr)
+			m_ntSuspendProcess = reinterpret_cast<_NtSuspendProcess>(GetProcAddress(m_ntdll, "NtSuspendProcess"));
+
+		return m_ntSuspendProcess(ProcessHandle);
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtQuerySystemTime(_Out_ PLARGE_INTEGER SystemTime)
+	{
+		if (m_ntQuerySystemTime == nullptr)
+			m_ntQuerySystemTime = reinterpret_cast<_NtQuerySystemTime>(GetProcAddress(m_ntdll, "NtQuerySystemTime"));
+
+		return m_ntQuerySystemTime(SystemTime);
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtQueryKey(
+		_In_ HANDLE KeyHandle,
+		_In_ KEY_INFORMATION_CLASS KeyInformationClass,
+		_Out_opt_ PVOID KeyInformation,
+		_In_ ULONG Length,
+		_Out_ PULONG ResultLength
+	)
+	{
+		if (m_ntQueryKey == nullptr)
+			m_ntQueryKey = reinterpret_cast<_NtQueryKey>(GetProcAddress(m_ntdll, "NtQueryKey"));
+
+		return m_ntQueryKey(KeyHandle, KeyInformationClass, KeyInformation, Length, ResultLength);
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtQueryObject(
+		_In_opt_ HANDLE Handle,
+		_In_ OBJECT_INFORMATION_CLASS ObjectInformationClass,
+		_Out_writes_bytes_opt_(ObjectInformationLength) PVOID ObjectInformation,
+		_In_ ULONG ObjectInformationLength,
+		_Out_opt_ PULONG ReturnLength
+	)
+	{
+		if (m_ntQueryObject == nullptr)
+			m_ntQueryObject = reinterpret_cast<_NtQueryObject>(GetProcAddress(m_ntdll, "NtQueryObject"));
+
+		return m_ntQueryObject(Handle, ObjectInformationClass, ObjectInformation, ObjectInformationLength, ReturnLength);
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtDuplicateObject(
+		_In_ HANDLE SourceProcessHandle,
+		_In_ HANDLE SourceHandle,
+		_In_opt_ HANDLE TargetProcessHandle,
+		_Out_opt_ PHANDLE TargetHandle,
+		_In_ ACCESS_MASK DesiredAccess,
+		_In_ ULONG HandleAttributes,
+		_In_ ULONG Options
+	)
+	{
+		if (m_ntDuplicateObject == nullptr)
+			m_ntDuplicateObject = reinterpret_cast<_NtDuplicateObject>(GetProcAddress(m_ntdll, "NtDuplicateObject"));
+
+		return m_ntDuplicateObject(SourceProcessHandle, SourceHandle, TargetProcessHandle, TargetHandle, DesiredAccess, HandleAttributes, Options);
+	}
+
+	NTSTATUS NTAPI NtFunctions::RtlCreateUserThread(
+		_In_ HANDLE Process,
+		_In_opt_ PSECURITY_DESCRIPTOR ThreadSecurityDescriptor,
+		_In_ BOOLEAN CreateSuspended,
+		_In_opt_ ULONG ZeroBits,
+		_In_opt_ SIZE_T MaximumStackSize,
+		_In_opt_ SIZE_T CommittedStackSize,
+		_In_ PUSER_THREAD_START_ROUTINE StartAddress,
+		_In_opt_ PVOID Parameter,
+		_Out_opt_ PHANDLE Thread,
+		_Out_opt_ PCLIENT_ID ClientId
+	)
+	{
+		if (m_rtlCreateUserThread == nullptr)
+			m_rtlCreateUserThread = reinterpret_cast<_RtlCreateUserThread>(GetProcAddress(m_ntdll, "RtlCreateUserThread"));
+
+		return m_rtlCreateUserThread(Process, ThreadSecurityDescriptor, CreateSuspended, ZeroBits, MaximumStackSize, CommittedStackSize, StartAddress, Parameter, Thread, ClientId);
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtQueryInformationFile(
+		_In_ HANDLE FileHandle,
+		_Out_ PIO_STATUS_BLOCK IoStatusBlock,
+		_Out_writes_bytes_(Length) PVOID FileInformation,
+		_In_ ULONG Length,
+		_In_ FILE_INFORMATION_CLASS FileInformationClass
+	)
+	{
+		if (m_ntQueryInformationFile == nullptr)
+			m_ntQueryInformationFile = reinterpret_cast<_NtQueryInformationFile>(GetProcAddress(m_ntdll, "NtQueryInformationFile"));
+
+		return m_ntQueryInformationFile(FileHandle, IoStatusBlock, FileInformation, Length, FileInformationClass);
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtQuerySystemInformation(
+		_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
+		_Out_writes_bytes_opt_(SystemInformationLength) PVOID SystemInformation,
+		_In_ ULONG SystemInformationLength,
+		_Out_opt_ PULONG ReturnLength
+	)
+	{
+		if (m_ntQuerySystemInformation == nullptr)
+			m_ntQuerySystemInformation = reinterpret_cast<_NtQuerySystemInformation>(GetProcAddress(m_ntdll, "NtQuerySystemInformation"));
+
+		return m_ntQuerySystemInformation(SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength);
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtQueryInformationProcess(
+		_In_ HANDLE ProcessHandle,
+		_In_ PROCESSINFOCLASS ProcessInformationClass,
+		_Out_writes_bytes_(ProcessInformationLength) PVOID ProcessInformation,
+		_In_ ULONG ProcessInformationLength,
+		_Out_opt_ PULONG ReturnLength
+	)
+	{
+		if (m_ntQueryInformationProcess == nullptr)
+			m_ntQueryInformationProcess = reinterpret_cast<_NtQueryInformationProcess>(GetProcAddress(m_ntdll, "NtQueryInformationProcess"));
+
+		return m_ntQueryInformationProcess(ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength);
+	}
+
+	NTSTATUS NTAPI NtFunctions::NtQueryInformationThread(
+		_In_ HANDLE ThreadHandle,
+		_In_ THREADINFOCLASS ThreadInformationClass,
+		_Out_writes_bytes_(ThreadInformationLength) PVOID ThreadInformation,
+		_In_ ULONG ThreadInformationLength,
+		_Out_opt_ PULONG ReturnLength
+	)
+	{
+		if (m_ntQueryInformationThread == nullptr)
+			m_ntQueryInformationThread = reinterpret_cast<_NtQueryInformationThread>(GetProcAddress(m_ntdll, "NtQueryInformationThread"));
+
+		return m_ntQueryInformationThread(ThreadHandle, ThreadInformationClass, ThreadInformation, ThreadInformationLength, ReturnLength);
 	}
 }

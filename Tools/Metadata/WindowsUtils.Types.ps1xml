@@ -204,4 +204,45 @@
       </MemberSet>
     </Members>
   </Type>
+  <Type>
+    <Name>WindowsUtils.InstallerTableInfo</Name>
+    <Members>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>TableName</Name>
+              <Name>Columns</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+    </Members>
+  </Type>
+  <Type>
+    <Name>WindowsUtils.ObjectHandleInfo</Name>
+    <Members>
+      <ScriptProperty>
+        <Name>Handle</Name>
+        <GetScriptBlock>
+          return "0x$('{0:X}' -f $this.HandleValue)"
+        </GetScriptBlock>
+      </ScriptProperty>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Handle</Name>
+              <Name>Type</Name>
+              <Name>Name</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+    </Members>
+  </Type>
 </Types>

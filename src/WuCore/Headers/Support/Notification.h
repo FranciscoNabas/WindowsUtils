@@ -178,15 +178,15 @@ namespace WindowsUtils::Core
 	// This class is a native representation of the Cmdlet context.									 //
 	// 																								 //
 	// These function pointers maps to the delegate m_wrappers.										 //
-	// These m_wrappers wrap the managed methods.														 //
+	// These m_wrappers wrap the managed methods.													 //
 	//																								 //
 	// This is the current workflow:																 //
 	//																								 //
 	//                               	 Method -> Delegate -> Fn. Ptr.								 //
 	//									   +------------------------+								 //
 	//									   |						|								 //
-	// +CMDLET-------------+      +CONTEXT-.CTOR----+      +CTXT-BASE-.CTOR--+		+m_wrapper-------+ //
-	// |   Calls m_wrapper   | +--> | Creates context | ---> |   Creates the   | ---> | Calls native | //
+	// +CMDLET-------------+      +CONTEXT-.CTOR----+      +CTXT-BASE-.CTOR--+		+m_wrapper-----+ //
+	// |   Calls m_wrapper | +--> | Creates context | ---> |   Creates the   | ---> | Calls native | //
 	// | (Context created) |      |		 base		|	   | WuNativeContext |		|   function   | //
 	// +-------------------+      +-----------------+      +-----------------+      +--------------+ //
 	//																					    |		 //

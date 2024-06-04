@@ -75,4 +75,28 @@ namespace WindowsUtils::Core
         //     wprintf(L"%ws\n", privName);
         // }
     }
+
+    WWuString AccessControl::GetCurrentTokenUserSid()
+    {
+        ObjectHandle hToken;
+        DWORD bytesNeeded = 256;
+
+        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_QUERY_SOURCE, &hToken))
+            throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+
+        // First call to determine the needed buffer size.
+        wuunique_ptr<BYTE[]> buffer = make_wuunique<BYTE[]>(bytesNeeded);
+        if (!GetTokenInformation(hToken, TOKEN_INFORMATION_CLASS::TokenUser, buffer.get(), bytesNeeded, &bytesNeeded))
+            throw WuStdException(static_cast<int>(GetLastError()), __FILEW__, __LINE__);
+
+        LPWSTR sidString;
+        auto tokenUserInfo = reinterpret_cast<PTOKEN_USER>(buffer.get());
+        if (!ConvertSidToStringSid(tokenUserInfo->User.Sid, &sidString))
+            throw WuStdException(static_cast<int>(GetLastError()), __FILEW__, __LINE__);
+
+        WWuString output { sidString };
+        LocalFree(sidString);
+
+        return output;
+    }
 }

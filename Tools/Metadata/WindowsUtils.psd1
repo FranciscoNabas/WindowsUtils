@@ -1,6 +1,6 @@
 @{
     GUID = 'C5F7B91E-668D-46AC-9F0E-23B0A74ABCBA'
-    ModuleVersion = '1.10.0'
+    ModuleVersion = '1.11.0'
     RootModule = 'WindowsUtils.dll'
     CompatiblePSEditions = @(
         'Desktop',
@@ -50,6 +50,10 @@
         'Suspend-Process'
         'Resume-Process'
         'Get-ErrorInformation'
+        'Get-MsiSummaryInfo'
+        'Get-MsiTableInfo'
+        'Get-MsiTableData'
+        'Invoke-MsiQuery'
     )
     AliasesToExport = @(
         'gethandle'
@@ -65,6 +69,7 @@
         'resume'
         'err'
         'gerrmess'
+        'imsisql'
     )
     PrivateData = @{
         PSData = @{

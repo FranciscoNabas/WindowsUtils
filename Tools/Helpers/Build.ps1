@@ -6,10 +6,10 @@ param (
 $releaseDir = '.\Release\WindowsUtils'
 $copypath = @(
     '.\LICENSE'
-    '.\Tools\PSModule\WindowsUtils.psd1'
-    '.\Tools\PSModule\WindowsUtils.psm1'
-    '.\Tools\PSModule\WindowsUtils.Types.ps1xml'
-    '.\Tools\PSModule\WindowsUtils.Format.ps1xml'
+    '.\Tools\Metadata\WindowsUtils.psd1'
+    '.\Tools\Metadata\WindowsUtils.psm1'
+    '.\Tools\Metadata\WindowsUtils.Types.ps1xml'
+    '.\Tools\Metadata\WindowsUtils.Format.ps1xml'
 )
 
 if ($Local) {
