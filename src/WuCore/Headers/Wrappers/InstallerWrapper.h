@@ -4,11 +4,13 @@
 #include <bitset>
 
 #include "../Support/IO.h"
+#include "../Stubs/InstallerStub.h"
 
 #pragma managed
 
+#include "WrapperBase.h"
+#include "NativeException.h"
 #include "UtilitiesWrapper.h"
-#include "CmdletContextProxy.h"
 #include "Types/InstallerTypes.h"
 
 namespace WindowsUtils::Wrappers
@@ -19,33 +21,36 @@ namespace WindowsUtils::Wrappers
 	using namespace System::Runtime::InteropServices;
 	using namespace WindowsUtils::Installer;
 
-	public ref class InstallerWrapper
+	public ref class InstallerWrapper : public WrapperBase
 	{
 	public:
+		InstallerWrapper(Core::CmdletContextProxy^ context)
+			: WrapperBase(context) { }
+
 		// Get-MsiProperties
-		Dictionary<String^, Object^>^ GetMsiProperties(String^ filepath, Core::CmdletContextProxy^ context);
+		Dictionary<String^, Object^>^ GetMsiProperties(String^ filepath);
 		
 		// Get-MsiSummaryInfo
-		InstallerSummaryInfo^ GetMsiSummaryInfo(String^ filePath, Core::CmdletContextProxy^ context);
+		InstallerSummaryInfo^ GetMsiSummaryInfo(String^ filePath);
 		
 		// Get-MsiTableInfo
-		List<InstallerTableInfoBase^>^ GetMsiTableInfo(String^ filePath, array<String^>^ tableNames, Core::CmdletContextProxy^ context);
+		List<InstallerTableInfoBase^>^ GetMsiTableInfo(String^ filePath, array<String^>^ tableNames);
 		
 		// Get-MsiTableData
-		void GetMsiTableDump(String^ filePath, array<String^>^ tableNames, Core::CmdletContextProxy^ context);
-		void GetMsiTableDump(String^ filePath, InstallerTableInfoBase^ tableInfo, Core::CmdletContextProxy^ context);
+		void GetMsiTableDump(String^ filePath, array<String^>^ tableNames);
+		void GetMsiTableDump(String^ filePath, InstallerTableInfoBase^ tableInfo);
 
 		// Invoke-MsiQuery
-		void InvokeMsiQuery(String^ filePath, InstallerCommand^ command, List<InstallerCommandParameter^>^ parameters, Core::CmdletContextProxy^ context);
+		void InvokeMsiQuery(String^ filePath, InstallerCommand^ command, List<InstallerCommandParameter^>^ parameters);
 		
 		// Utilities
-		static Boolean IsInstallerPackage(String^ filePath, Core::CmdletContextProxy^ context);
+		Boolean IsInstallerPackage(String^ filePath);
 
 	private:
-		List<InstallerTableInfoBase^>^ GetMsiTableInfo(Core::Installer& installer, const wuvector<WWuString>& tableNames);
-		array<InstallerColumnInfo^>^ GetMsiTableInfo(Core::Installer& installer);
-		InstallerTableInfoBase^ GetMsiSingleTableInfo(Core::Installer& installer, const WWuString& tableName);
+		List<InstallerTableInfoBase^>^ GetMsiTableInfo(Stubs::Installer& stub, const WuList<WWuString>& tableNames);
+		array<InstallerColumnInfo^>^ GetMsiTableInfo(Stubs::Installer& stub);
+		InstallerTableInfoBase^ GetMsiSingleTableInfo(Stubs::Installer& stub, const WWuString& tableName);
 
-		void ExecuteMsiCommand(Core::Installer& installer, InstallerCommand^ command, List<InstallerCommandParameter^>^ parameters, Core::CmdletContextProxy^ context);
+		void ExecuteMsiCommand(Stubs::Installer& stub, InstallerCommand^ command, List<InstallerCommandParameter^>^ parameters);
 	};
 }

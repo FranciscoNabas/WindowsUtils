@@ -2,7 +2,7 @@
 
 #include "../../Headers/Support/IO.h"
 #include "../../Headers/Engine/Installer.h"
-#include "../../Headers/Support/WuStdException.h"
+#include "../../Headers/Support/WuException.h"
 
 #include <MsiQuery.h>
 
@@ -17,76 +17,69 @@ namespace WindowsUtils::Wrappers
 	using namespace WindowsUtils::Installer;
 
 	// Get-MsiProperties
-	Dictionary<String^, Object^>^ InstallerWrapper::GetMsiProperties(String^ filePath, Core::CmdletContextProxy^ context)
+	Dictionary<String^, Object^>^ InstallerWrapper::GetMsiProperties(String^ filePath)
 	{
 		WWuString wuFileName = UtilitiesWrapper::GetWideStringFromSystemString(filePath);
 		Dictionary<String^, Object^>^ output = gcnew Dictionary<String^, Object^>(0);
 
-		try {
-			Core::Installer installer { wuFileName, Core::MsiPersistenceMode::ReadOnly, L"Select Property, Value From Property", context->GetUnderlyingContext() };
-			installer.ViewExecute(NULL);
+		_WU_START_TRY
+			Stubs::Installer stub{ wuFileName, Core::MsiPersistenceMode::ReadOnly, L"Select Property, Value From Property", Context->GetUnderlyingContext() };
+			stub.Execute(NULL);
 
 			do {
 				PMSIHANDLE hRecord;
-				if (!installer.ViewFetch(&hRecord))
+				if (!stub.Fetch(&hRecord))
 					break;
 
-				WWuString property = installer.RecordGetString(hRecord, 1);
-				WWuString value = installer.RecordGetString(hRecord, 2);
+				WWuString property = stub.GetString(hRecord, 1);
+				WWuString value = stub.GetString(hRecord, 2);
 
-				output->Add(gcnew String(property.GetBuffer()), gcnew String(value.GetBuffer()));
+				output->Add(gcnew String(property.Raw()), gcnew String(value.Raw()));
 
 			} while (true);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
-
+		_WU_MANAGED_CATCH
+		
 		return output;
 	}
 
 	// Get-MsiSummaryInfo
-	InstallerSummaryInfo^ InstallerWrapper::GetMsiSummaryInfo(String^ filePath, Core::CmdletContextProxy^ context)
+	InstallerSummaryInfo^ InstallerWrapper::GetMsiSummaryInfo(String^ filePath)
 	{
 		InstallerSummaryInfo^ output;
 		Core::WU_SUMMARY_INFO result;
 		WWuString wuFileName = UtilitiesWrapper::GetWideStringFromSystemString(filePath);
 
-		try {
-			Core::Installer installer { wuFileName, Core::MsiPersistenceMode::ReadOnly, context->GetUnderlyingContext() };
-			installer.ProcessSummaryInfo(result);
-			output = gcnew InstallerSummaryInfo(result);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
-
+		_WU_START_TRY
+			Stubs::Installer stub{ wuFileName, Core::MsiPersistenceMode::ReadOnly, Context->GetUnderlyingContext() };
+			output = gcnew InstallerSummaryInfo(stub.GetSummary());
+		_WU_MANAGED_CATCH
+		
 		return output;
 	}
 
 	// Get-MsiTableInfo
-	List<InstallerTableInfoBase^>^ InstallerWrapper::GetMsiTableInfo(String^ filePath, array<String^>^ tableNames, Core::CmdletContextProxy^ context)
+	List<InstallerTableInfoBase^>^ InstallerWrapper::GetMsiTableInfo(String^ filePath, array<String^>^ tableNames)
 	{
-		wuvector<WWuString> allTables;
+		std::vector<WWuString> allTables;
 		WWuString wFilePath = UtilitiesWrapper::GetWideStringFromSystemString(filePath);
 
-		try {
-			Core::Installer installer { wFilePath, Core::MsiPersistenceMode::ReadOnly, context->GetUnderlyingContext() };
-			installer.GetMsiTableNames(allTables);
+		_WU_START_TRY
+			Stubs::Installer stub{ wFilePath, Core::MsiPersistenceMode::ReadOnly, Context->GetUnderlyingContext() };
+			WuList<WWuString> allTables = stub.GetTables();
 
 			// List all tables.
 			if (tableNames == nullptr || tableNames->Length == 0) {
-				return GetMsiTableInfo(installer, allTables);
+				return GetMsiTableInfo(stub, allTables);
 			}
 			else {
-				wuvector<WWuString> tablesToQuery;
+				WuList<WWuString> tablesToQuery;
 				for each (String ^ table in tableNames) {
 					WWuString wTable = UtilitiesWrapper::GetWideStringFromSystemString(table);
-					
+
 					// Checking if table exists and normalizing the name.
-					if (!installer.FindTableName(wTable, allTables)) {
-						ArgumentException^ ex { gcnew ArgumentException("Invalid or unknown table identified: " + table + ".") };
-						context->WriteError(gcnew ErrorRecord(
+					if (!stub.TryGetTableName(allTables, wTable)) {
+						ArgumentException^ ex{ gcnew ArgumentException("Invalid or unknown table identified: " + table + ".") };
+						Context->WriteError(gcnew ErrorRecord(
 							ex,
 							"InstallerDatabaseTableNotFound",
 							ErrorCategory::ObjectNotFound,
@@ -96,62 +89,54 @@ namespace WindowsUtils::Wrappers
 						continue;
 					}
 
-					tablesToQuery.push_back(wTable);
+					tablesToQuery.Add(wTable);
 				}
 
-				return GetMsiTableInfo(installer, tablesToQuery);
+				return GetMsiTableInfo(stub, tablesToQuery);
 			}
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+		_WU_MANAGED_CATCH
 	}
-	List<InstallerTableInfoBase^>^ InstallerWrapper::GetMsiTableInfo(Core::Installer& installer, const wuvector<WWuString>& tableNames)
+	List<InstallerTableInfoBase^>^ InstallerWrapper::GetMsiTableInfo(Stubs::Installer& stub, const WuList<WWuString>& tableNames)
 	{
 		List<InstallerTableInfoBase^>^ output = gcnew List<InstallerTableInfoBase^>(0);
 
-		try {
+		_WU_START_TRY
 			for (const WWuString& table : tableNames) {
 				PMSIHANDLE hNamesRecord;
 				PMSIHANDLE hTypesRecord;
-				wuvector<WWuString> keys;
-				wumap<WWuString, int> positionInfo;
 
-				installer.GetMsiTableKeys(table, keys);
-				installer.GetColumnPositionInfo(table, positionInfo);
-				installer.GetMsiColumnInfo(table, &hNamesRecord, &hTypesRecord);
+				WuList<WWuString> keys = stub.GetTableKeys(table);
+				std::map<WWuString, int> positionInfo = stub.GetColumnsPosition(table);
+				stub.GetColumnInfo(table, &hNamesRecord, &hTypesRecord);
 
 				UINT recordCount = MsiRecordGetFieldCount(hNamesRecord);
 				array<InstallerColumnInfo^>^ columnInfo = gcnew array<InstallerColumnInfo^>(recordCount);
 				for (UINT i = 1; i <= recordCount; i++) {
-					WWuString name = installer.RecordGetString(hNamesRecord, i);
-					WWuString type = installer.RecordGetString(hTypesRecord, i);
+					WWuString name = stub.GetString(hNamesRecord, i);
+					WWuString type = stub.GetString(hTypesRecord, i);
 
 					bool isKey = false;
 					if (std::find(keys.begin(), keys.end(), name) != keys.end())
 						isKey = true;
 
-					columnInfo[i - 1] = gcnew InstallerColumnInfo(gcnew String(name.GetBuffer()), gcnew String(type.GetBuffer()), positionInfo[name], isKey);
+					columnInfo[i - 1] = gcnew InstallerColumnInfo(gcnew String(name.Raw()), gcnew String(type.Raw()), positionInfo[name], isKey);
 				}
 
-				output->Add(gcnew InstallerTableInfoBase(gcnew String(table.GetBuffer()), columnInfo));
+				output->Add(gcnew InstallerTableInfoBase(gcnew String(table.Raw()), columnInfo));
 			}
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+		_WU_MANAGED_CATCH
 
 		return output;
 	}
 	
 	// Get-MsiTableDump
-	void InstallerWrapper::GetMsiTableDump(String^ filePath, array<String^>^ tableNames, Core::CmdletContextProxy^ context)
+	void InstallerWrapper::GetMsiTableDump(String^ filePath, array<String^>^ tableNames)
 	{
 		// The intent is never call this function without the table names from the module, but since
 		// this is a public API better safe than sorry.
 		if (tableNames == nullptr || tableNames->Length == 0) {
 			ArgumentNullException^ ex { gcnew ArgumentNullException("'tableNames' cannot be null or empty.") };
-			context->WriteError(gcnew ErrorRecord(
+			Context->WriteError(gcnew ErrorRecord(
 				ex,
 				"GetMsiTableDumpNullOrEmptyTableNames",
 				ErrorCategory::InvalidArgument,
@@ -162,20 +147,19 @@ namespace WindowsUtils::Wrappers
 		}
 
 		WWuString wFilePath = UtilitiesWrapper::GetWideStringFromSystemString(filePath);
-		try {
+		_WU_START_TRY
 			// Creating the installer and listing all table names.
-			wuvector<WWuString> allTables;
-			Core::Installer installer { wFilePath, Core::MsiPersistenceMode::ReadOnly, context->GetUnderlyingContext() };
-			installer.GetMsiTableNames(allTables);
+			Stubs::Installer stub{ wFilePath, Core::MsiPersistenceMode::ReadOnly, Context->GetUnderlyingContext() };
+			WuList<WWuString> allTables = stub.GetTables();
 			
 			// Iterating through each name.
 			for each (String ^ table in tableNames) {
 				WWuString wTable = UtilitiesWrapper::GetWideStringFromSystemString(table);
 
 				// Checking if table exists and normalizing the name.
-				if (!installer.FindTableName(wTable, allTables)) {
+				if (!stub.TryGetTableName(allTables, wTable)) {
 					ArgumentException^ ex { gcnew ArgumentException("Invalid or unknown table identified: " + table + ".") };
-					context->WriteError(gcnew ErrorRecord(
+					Context->WriteError(gcnew ErrorRecord(
 						ex,
 						"InstallerDatabaseTableNotFound",
 						ErrorCategory::ObjectNotFound,
@@ -188,17 +172,17 @@ namespace WindowsUtils::Wrappers
 				// At this point the table exists, and we have the correct name.
 				// Here we create the data table, get the table information, and add the columns to the data table.
 				DataTable^ currentOutput = gcnew DataTable();
-				InstallerTableInfoBase^ tableInfo = GetMsiSingleTableInfo(installer, wTable);
+				InstallerTableInfoBase^ tableInfo = GetMsiSingleTableInfo(stub, wTable);
 				for each (InstallerColumnInfo ^ column in tableInfo->Columns)
 					currentOutput->Columns->Add(column->ToDataColumn());
 
 				// Querying the table.
-				installer.OpenDatabaseView(L"Select * From " + wTable);
-				installer.ViewExecute(NULL);
+				stub.OpenView(L"Select * From " + wTable);
+				stub.Execute(NULL);
 				do {
 					// If 'ViewFetch' returns false there are no more records.
 					PMSIHANDLE hRecord;
-					if (!installer.ViewFetch(&hRecord))
+					if (!stub.Fetch(&hRecord))
 						break;
 
 					// Here we iterate through each column info, and depending on the data type we read
@@ -210,7 +194,7 @@ namespace WindowsUtils::Wrappers
 						
 						// String.
 						if (column->DataType == String::typeid)
-							row[column->Name] = gcnew String(installer.RecordGetString(hRecord, column->Position).GetBuffer());
+							row[column->Name] = gcnew String(stub.GetString(hRecord, column->Position).Raw());
 						
 						// Short or int.
 						else if (column->DataType == Int16::typeid || column->DataType == Int32::typeid) {
@@ -223,13 +207,12 @@ namespace WindowsUtils::Wrappers
 
 						// Byte array.
 						else if (column->DataType == array<Byte>::typeid) {
-							wuvector<char> dataVec;
-							installer.RecordReadStream(hRecord, column->Position, dataVec);
-							int vecSize = static_cast<int>(dataVec.size());
-							if (dataVec.size() > 0) {
-								array<Byte>^ dataArray = gcnew array<Byte>(vecSize);
-								for (int i = 0; i < vecSize; i++)
-									dataArray[i] = dataVec[i];
+							WuList<char> data = stub.ReadStream(hRecord, column->Position);
+							int dataSize = static_cast<int>(data.Count());
+							if (dataSize > 0) {
+								array<Byte>^ dataArray = gcnew array<Byte>(dataSize);
+								for (int i = 0; i < dataSize; i++)
+									dataArray[i] = data[i];
 
 								row[column->Name] = dataArray;
 							}
@@ -244,20 +227,17 @@ namespace WindowsUtils::Wrappers
 				} while (true);
 
 				// Writing the object to the stream.
-				context->WriteObject(currentOutput);
+				Context->WriteObject(currentOutput);
 			}
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+		_WU_MANAGED_CATCH
 	}
-	void InstallerWrapper::GetMsiTableDump(String^ filePath, InstallerTableInfoBase^ tableInfo, Core::CmdletContextProxy^ context)
+	void InstallerWrapper::GetMsiTableDump(String^ filePath, InstallerTableInfoBase^ tableInfo)
 	{
 		// The intent is never call this function without the table information from the module, but since
 		// this is a public API better safe than sorry.
 		if (tableInfo == nullptr) {
 			ArgumentNullException^ ex { gcnew ArgumentNullException("'tableInfo' cannot be null.") };
-			context->WriteError(gcnew ErrorRecord(
+			Context->WriteError(gcnew ErrorRecord(
 				ex,
 				"GetMsiTableDumpNullTableInfo",
 				ErrorCategory::InvalidArgument,
@@ -267,9 +247,9 @@ namespace WindowsUtils::Wrappers
 			throw ex;
 		}
 
-		try {
+		_WU_START_TRY
 			// Creating the installer.
-			Core::Installer installer { UtilitiesWrapper::GetWideStringFromSystemString(filePath), Core::MsiPersistenceMode::ReadOnly, context->GetUnderlyingContext() };
+			Stubs::Installer stub{ UtilitiesWrapper::GetWideStringFromSystemString(filePath), Core::MsiPersistenceMode::ReadOnly, Context->GetUnderlyingContext() };
 
 			// We will not check for table existence here because once the 'InstallerTableInfoBase'
 			// object is created (from a real table) you can change the name. And although the constructor
@@ -281,12 +261,12 @@ namespace WindowsUtils::Wrappers
 				currentOutput->Columns->Add(column->ToDataColumn());
 
 			// Querying the table.
-			installer.OpenDatabaseView(L"Select * From " + UtilitiesWrapper::GetWideStringFromSystemString(tableInfo->TableName));
-			installer.ViewExecute(NULL);
+			stub.OpenView(L"Select * From " + UtilitiesWrapper::GetWideStringFromSystemString(tableInfo->TableName));
+			stub.Execute(NULL);
 			do {
 				// If 'ViewFetch' returns false there are no more records.
 				PMSIHANDLE hRecord;
-				if (!installer.ViewFetch(&hRecord))
+				if (!stub.Fetch(&hRecord))
 					break;
 
 				// Here we iterate through each column info, and depending on the data type we read
@@ -298,7 +278,7 @@ namespace WindowsUtils::Wrappers
 
 					// String.
 					if (column->DataType == String::typeid)
-						row[column->Name] = gcnew String(installer.RecordGetString(hRecord, column->Position).GetBuffer());
+						row[column->Name] = gcnew String(stub.GetString(hRecord, column->Position).Raw());
 
 					// Short or int.
 					else if (column->DataType == Int16::typeid || column->DataType == Int32::typeid) {
@@ -311,13 +291,12 @@ namespace WindowsUtils::Wrappers
 
 					// Byte array.
 					else if (column->DataType == array<Byte>::typeid) {
-						wuvector<char> dataVec;
-						installer.RecordReadStream(hRecord, column->Position, dataVec);
-						int vecSize = static_cast<int>(dataVec.size());
-						if (dataVec.size() > 0) {
-							array<Byte>^ dataArray = gcnew array<Byte>(vecSize);
-							for (int i = 0; i < vecSize; i++)
-								dataArray[i] = dataVec[i];
+						WuList<char> data = stub.ReadStream(hRecord, column->Position);
+						int dataSize = static_cast<int>(data.Count());
+						if (dataSize > 0) {
+							array<Byte>^ dataArray = gcnew array<Byte>(dataSize);
+							for (int i = 0; i < dataSize; i++)
+								dataArray[i] = data[i];
 
 							row[column->Name] = dataArray;
 						}
@@ -332,19 +311,16 @@ namespace WindowsUtils::Wrappers
 			} while (true);
 
 			// Writing the object to the stream.
-			context->WriteObject(currentOutput);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+			Context->WriteObject(currentOutput);
+		_WU_MANAGED_CATCH
 	}
 
 	// Invoke-MsiQuery
-	void InstallerWrapper::InvokeMsiQuery(String^ filePath, InstallerCommand^ command, List<InstallerCommandParameter^>^ parameters, Core::CmdletContextProxy^ context)
+	void InstallerWrapper::InvokeMsiQuery(String^ filePath, InstallerCommand^ command, List<InstallerCommandParameter^>^ parameters)
 	{
 		if (command->MarkerCount != parameters->Count) {
 			ArgumentException^ ex { gcnew ArgumentException("The number of parameters is different than the number of markers in the query.") };
-			context->WriteError(gcnew ErrorRecord(
+			Context->WriteError(gcnew ErrorRecord(
 				ex,
 				"InvokeMsiQueryInvalidParameterCount",
 				ErrorCategory::InvalidArgument,
@@ -354,7 +330,7 @@ namespace WindowsUtils::Wrappers
 			throw ex;
 		}
 		
-		try {
+		_WU_START_TRY
 			Core::MsiPersistenceMode databaseMode;
 			if (command->Type == SqlActionType::Select)
 				databaseMode = Core::MsiPersistenceMode::ReadOnly;
@@ -362,101 +338,77 @@ namespace WindowsUtils::Wrappers
 				databaseMode = Core::MsiPersistenceMode::Transact;
 
 			WWuString wrappedFilePath = UtilitiesWrapper::GetWideStringFromSystemString(filePath);
-			Core::Installer installer { wrappedFilePath, databaseMode, context->GetUnderlyingContext() };
+			Stubs::Installer stub{ wrappedFilePath, databaseMode, Context->GetUnderlyingContext() };
 
-			ExecuteMsiCommand(installer, command, parameters, context);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException { ex };
-		}
+			ExecuteMsiCommand(stub, command, parameters);
+		_WU_MANAGED_CATCH
 	}
 
 	// Utilities
-	Boolean InstallerWrapper::IsInstallerPackage(String^ filePath, Core::CmdletContextProxy^ context)
+	Boolean InstallerWrapper::IsInstallerPackage(String^ filePath)
 	{
 		WWuString wFilePath = UtilitiesWrapper::GetWideStringFromSystemString(filePath);
 		if (!Core::IO::FileExists(wFilePath))
 			throw gcnew System::IO::FileNotFoundException("Cannot find path '" + filePath + "' because it does not exist.");
 
-		try {
-			Core::MemoryMappedFile mappedFile { wFilePath };
-			if (*reinterpret_cast<__uint64*>(mappedFile.data()) == 0xE11AB1A1E011CFD0 &&
-				*reinterpret_cast<__uint64*>((BYTE*)mappedFile.data() + 8) == 0)
-				return true;
-		}
-		catch (const Core::WuStdException& ex) {
-			NativeException^ wrappedEx = gcnew NativeException(ex);
-			context->WriteError(gcnew ErrorRecord(
-				wrappedEx,
-				"OpenFileError",
-				ErrorCategory::OpenError,
-				filePath
-			));
-
-			throw wrappedEx;
-		}
-
-		return false;
+		_WU_START_TRY
+			return Stubs::Installer::IsInstaller(wFilePath, Context->GetUnderlyingContext());
+		_WU_MANAGED_CATCH
 	}
 
-	InstallerTableInfoBase^ InstallerWrapper::GetMsiSingleTableInfo(Core::Installer& installer, const WWuString& tableName)
+	InstallerTableInfoBase^ InstallerWrapper::GetMsiSingleTableInfo(Stubs::Installer& stub, const WWuString& tableName)
 	{
-		try {
+		_WU_START_TRY
 			PMSIHANDLE hNamesRecord;
 			PMSIHANDLE hTypesRecord;
-			wuvector<WWuString> keys;
-			wumap<WWuString, int> positionInfo;
 
-			installer.GetMsiTableKeys(tableName, keys);
-			installer.GetColumnPositionInfo(tableName, positionInfo);
-			installer.GetMsiColumnInfo(tableName, &hNamesRecord, &hTypesRecord);
+			WuList<WWuString> keys = stub.GetTableKeys(tableName);
+			std::map<WWuString, int> positionInfo = stub.GetColumnsPosition(tableName);
+			stub.GetColumnInfo(tableName, &hNamesRecord, &hTypesRecord);
 
 			UINT recordCount = MsiRecordGetFieldCount(hNamesRecord);
 			array<InstallerColumnInfo^>^ columnInfo = gcnew array<InstallerColumnInfo^>(recordCount);
 			for (UINT i = 1; i <= recordCount; i++) {
-				WWuString name = installer.RecordGetString(hNamesRecord, i);
-				WWuString type = installer.RecordGetString(hTypesRecord, i);
+				WWuString name = stub.GetString(hNamesRecord, i);
+				WWuString type = stub.GetString(hTypesRecord, i);
 
 				bool isKey = false;
 				if (std::find(keys.begin(), keys.end(), name) != keys.end())
 					isKey = true;
 
-				columnInfo[i - 1] = gcnew InstallerColumnInfo(gcnew String(name.GetBuffer()), gcnew String(type.GetBuffer()), positionInfo[name], isKey);
+				columnInfo[i - 1] = gcnew InstallerColumnInfo(gcnew String(name.Raw()), gcnew String(type.Raw()), positionInfo[name], isKey);
 			}
 
-			return gcnew InstallerTableInfoBase(gcnew String(tableName.GetBuffer()), columnInfo);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+			return gcnew InstallerTableInfoBase(gcnew String(tableName.Raw()), columnInfo);
+		_WU_MANAGED_CATCH
 	}
 
-	array<InstallerColumnInfo^>^ InstallerWrapper::GetMsiTableInfo(Core::Installer& installer)
+	array<InstallerColumnInfo^>^ InstallerWrapper::GetMsiTableInfo(Stubs::Installer& stub)
 	{
 		PMSIHANDLE hNamesRecord;
 		PMSIHANDLE hTypesRecord;
 
-		installer.GetMsiColumnInfo(&hNamesRecord, &hTypesRecord);
+		stub.GetColumnInfo(&hNamesRecord, &hTypesRecord);
 
 		UINT recordCount = MsiRecordGetFieldCount(hNamesRecord);
 		array<InstallerColumnInfo^>^ columnInfo = gcnew array<InstallerColumnInfo^>(recordCount);
 		for (UINT i = 1; i <= recordCount; i++) {
-			WWuString name = installer.RecordGetString(hNamesRecord, i);
-			WWuString type = installer.RecordGetString(hTypesRecord, i);
+			WWuString name = stub.GetString(hNamesRecord, i);
+			WWuString type = stub.GetString(hTypesRecord, i);
 
-			columnInfo[i - 1] = gcnew InstallerColumnInfo(gcnew String(name.GetBuffer()), gcnew String(type.GetBuffer()), i, false);
+			columnInfo[i - 1] = gcnew InstallerColumnInfo(gcnew String(name.Raw()), gcnew String(type.Raw()), i, false);
 		}
 
 		return columnInfo;
 	}
 
-	void InstallerWrapper::ExecuteMsiCommand(Core::Installer& installer, InstallerCommand^ command, List<InstallerCommandParameter^>^ parameters, Core::CmdletContextProxy^ context)
+	void InstallerWrapper::ExecuteMsiCommand(Stubs::Installer& stub, InstallerCommand^ command, List<InstallerCommandParameter^>^ parameters)
 	{
 		PMSIHANDLE hParams { };
 
 		// Open a database view.
 		WWuString sqlCommand = UtilitiesWrapper::GetWideStringFromSystemString(command->Command);
-		installer.OpenDatabaseView(sqlCommand);
+		stub.OpenView(sqlCommand);
 
 		// Checking if there are parameters to be passed to the view query. If so, we
 		// create a record and write all the parameters in that record.
@@ -468,13 +420,13 @@ namespace WindowsUtils::Wrappers
 			for each (InstallerCommandParameter^ param in parameters) {
 				switch (param->Type) {
 					case InstallerCommandParamType::String:
-						installer.RecordSetString(hParams, recordIndex, UtilitiesWrapper::GetWideStringFromSystemString((String^)param->Data));
+						stub.SetString(hParams, recordIndex, UtilitiesWrapper::GetWideStringFromSystemString((String^)param->Data));
 						break;
 					case InstallerCommandParamType::Integer:
-						installer.RecordSetInteger(hParams, recordIndex, (int)param->Data);
+						stub.SetInteger(hParams, recordIndex, (int)param->Data);
 						break;
 					case InstallerCommandParamType::File:
-						installer.RecordSetStream(hParams, recordIndex, UtilitiesWrapper::GetWideStringFromSystemString((String^)param->Data));
+						stub.SetStream(hParams, recordIndex, UtilitiesWrapper::GetWideStringFromSystemString((String^)param->Data));
 						break;
 					case InstallerCommandParamType::ByteArray:
 					{
@@ -484,17 +436,11 @@ namespace WindowsUtils::Wrappers
 						IntPtr buffer = Marshal::AllocHGlobal(dataLength);
 						Marshal::Copy((array<Byte>^)param->Data, 0, buffer, dataLength);
 						
-						try {
-							Core::IO::WriteByteArrayToTempFile(reinterpret_cast<BYTE*>((void*)buffer), static_cast<DWORD>(dataLength), tempFilePath);
-						}
-						catch (const Core::WuStdException& ex) {
-							ex.Cry(L"ErrorWriteBytesToTempFile", Core::WriteErrorCategory::InvalidResult, L"ParameterData", context->GetUnderlyingContext());
-							throw ex;
-						}
+						Core::IO::WriteByteArrayToTempFile(reinterpret_cast<BYTE*>((void*)buffer), static_cast<DWORD>(dataLength), tempFilePath);
 
 						// When we call 'RecordSetStream' the API opens the file and uses it up until the database commit.
 						// Since we need to cleanup the temporary file, we mark it to delete at the end.
-						installer.RecordSetStream(hParams, recordIndex, tempFilePath);
+						stub.SetStream(hParams, recordIndex, tempFilePath);
 						deleteFile = true;
 					} break;
 				}
@@ -504,21 +450,21 @@ namespace WindowsUtils::Wrappers
 		}
 
 		// Executing the view.
-		installer.ViewExecute(hParams);
+		stub.Execute(hParams);
 
 		// We only check for results if the command was a 'SELECT'.
 		if (command->Type == SqlActionType::Select) {
 			
 			// Creating the data table and adding the columns.
 			DataTable^ output = gcnew DataTable();
-			auto columnInfo = GetMsiTableInfo(installer);
+			auto columnInfo = GetMsiTableInfo(stub);
 			for each (InstallerColumnInfo^ column in columnInfo)
 				output->Columns->Add(column->ToDataColumn());
 
 			do {
 				// If 'ViewFetch' returns false there are no more records.
 				PMSIHANDLE hRecord;
-				if (!installer.ViewFetch(&hRecord))
+				if (!stub.Fetch(&hRecord))
 					break;
 
 				// Here we iterate through each column info, and depending on the data type we read
@@ -530,7 +476,7 @@ namespace WindowsUtils::Wrappers
 
 					// String.
 					if (column->DataType == String::typeid)
-						row[column->Name] = gcnew String(installer.RecordGetString(hRecord, column->Position).GetBuffer());
+						row[column->Name] = gcnew String(stub.GetString(hRecord, column->Position).Raw());
 
 					// Short or int.
 					else if (column->DataType == Int16::typeid || column->DataType == Int32::typeid) {
@@ -543,13 +489,12 @@ namespace WindowsUtils::Wrappers
 
 					// Byte array.
 					else if (column->DataType == array<Byte>::typeid) {
-						wuvector<char> dataVec;
-						installer.RecordReadStream(hRecord, column->Position, dataVec);
-						int vecSize = static_cast<int>(dataVec.size());
-						if (dataVec.size() > 0) {
-							array<Byte>^ dataArray = gcnew array<Byte>(vecSize);
-							for (int i = 0; i < vecSize; i++)
-								dataArray[i] = dataVec[i];
+						WuList<char> data = stub.ReadStream(hRecord, column->Position);
+						int dataSize = static_cast<int>(data.Count());
+						if (dataSize > 0) {
+							array<Byte>^ dataArray = gcnew array<Byte>(dataSize);
+							for (int i = 0; i < dataSize; i++)
+								dataArray[i] = data[i];
 
 							row[column->Name] = dataArray;
 						}
@@ -563,14 +508,14 @@ namespace WindowsUtils::Wrappers
 
 			} while (true);
 
-			context->WriteObject(output);
+			Context->WriteObject(output);
 		}
 
 		// Committing the database, if necessary.
 		if (command->Type != SqlActionType::Select) {
-			installer.DatabaseCommit();
+			stub.Commit();
 			if (deleteFile)
-				DeleteFile(tempFilePath.GetBuffer());
+				DeleteFile(tempFilePath.Raw());
 		}
 	}
 }

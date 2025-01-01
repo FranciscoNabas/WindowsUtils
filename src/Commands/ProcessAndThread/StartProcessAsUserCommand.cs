@@ -1,5 +1,6 @@
 ﻿using System.Security;
 using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -32,11 +33,8 @@ namespace WindowsUtils.Commands
         VerbsLifecycle.Start, "ProcessAsUser",
         DefaultParameterSetName = "withUserName"
     )]
-    [Alias("runas")]
-    public class StartProcessAsUserCommand : PSCmdlet
+    public class StartProcessAsUserCommand : CoreCommandBase
     {
-        private readonly ProcessAndThreadWrapper _unwrapper = new();
-
         private string _userName;
         private string _domain;
         private SecureString _password;
@@ -132,6 +130,6 @@ namespace WindowsUtils.Commands
         }
 
         protected override void ProcessRecord()
-            => _unwrapper.StartProcessAsUser(_userName, _domain, _password, CommandLine, _titleBar);
+            => ProcessAndThread.StartProcessAsUser(_userName, _domain, _password, CommandLine, _titleBar);
     }
 }

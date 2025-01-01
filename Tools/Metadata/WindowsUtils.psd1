@@ -1,14 +1,14 @@
 @{
     GUID = 'C5F7B91E-668D-46AC-9F0E-23B0A74ABCBA'
-    ModuleVersion = '1.11.0'
+    ModuleVersion = '1.12.0'
     RootModule = 'WindowsUtils.dll'
     CompatiblePSEditions = @(
         'Desktop',
         'Core'
     )
     Author = 'Francisco Nabas'
-    Copyright = '(c) Francisco Nabas. All rights reserved.'
-    Description = 'This module contain tools to facilitate the administration of Windows computers.'
+    Copyright = '(c) Francisco Nabas 2025.'
+    Description = 'This module contains tools to facilitate the administration of Windows computers.'
     PowerShellVersion = '5.1'
     NestedModules = @('WindowsUtils.psm1')
     RequiredAssemblies = @(
@@ -54,11 +54,11 @@
         'Get-MsiTableInfo'
         'Get-MsiTableData'
         'Invoke-MsiQuery'
+        'Get-NetworkStatistics'
     )
     AliasesToExport = @(
         'gethandle'
         'disconnect'
-        'runas'
         'psfile'
         'getnetfile'
         'closenetfile'
@@ -70,12 +70,13 @@
         'err'
         'gerrmess'
         'imsisql'
+        'getnetstat'
     )
     PrivateData = @{
         PSData = @{
-            LicenseUri = 'https://github.com/FranciscoNabas/WindowsUtils/blob/main/LICENSE'
-            ProjectUri = 'https://github.com/FranciscoNabas/WindowsUtils'
-            ReleaseNotes = 'https://github.com/FranciscoNabas/WindowsUtils/blob/main/CHANGELOG.md'
+            LicenseUri    = 'https://github.com/FranciscoNabas/WindowsUtils/blob/main/LICENSE'
+            ProjectUri    = 'https://github.com/FranciscoNabas/WindowsUtils'
+            ReleaseNotes  = 'https://github.com/FranciscoNabas/WindowsUtils/blob/main/CHANGELOG.md'
         }
     }
 }

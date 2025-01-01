@@ -6,6 +6,7 @@
 
 #pragma managed
 
+#include "Marshalers.h"
 #include "NativeException.h"
 #include "Types/NetworkTypes.h"
 #include "Types/ProcThreadTypes.h"
@@ -16,21 +17,22 @@ namespace WindowsUtils::Core
 	using namespace System::Threading;
 	using namespace System::Management::Automation;
 	using namespace System::Runtime::InteropServices;
+	using namespace WindowsUtils::Network;
+
+	public delegate void WriteProgressWrapper(ProgressRecord^ data);
+	public delegate void WriteWarningWrapper(String^ data);
+	public delegate void WriteInformationWrapper(InformationRecord^ data);
+	public delegate void WriteErrorWrapper(ErrorRecord^ data);
+	public delegate void WriteObjectWrapper(Object^ data);
 
 	// A wrapper for the Cmdlet context
 	public ref class CmdletContextProxy
 	{
 	public:
-		delegate void WriteProgressWrapper(ProgressRecord^ data);
-		delegate void WriteWarningWrapper(String^ data);
-		delegate void WriteInformationWrapper(InformationRecord^ data);
-		delegate void WriteErrorWrapper(ErrorRecord^ data);
-		delegate void WriteObjectWrapper(Object^ data);
-
 		delegate void _WriteProgressProxy(const PMAPPED_PROGRESS_DATA data);
 		delegate void _WriteWarningProxy(const WWuString& data);
 		delegate void _WriteInformationProxy(const PMAPPED_INFORMATION_DATA data);
-		delegate void _WriteErrorProxy(const PMAPPED_ERROR_DATA data);
+		delegate void _WriteExceptionProxy(const WuException& ex);
 		delegate void _WriteObjectProxy(const PVOID data, const WriteOutputType type);
 
 		CmdletContextProxy(
@@ -44,7 +46,7 @@ namespace WindowsUtils::Core
 			m_progDelegate = progWrapper;
 			_WriteProgressProxy^ progDelWrapper = gcnew _WriteProgressProxy(this, &CmdletContextProxy::WriteProgressProxy);
 			m_progHandle = GCHandle::Alloc(progDelWrapper);
-			IntPtr progressDelegatePtr = Marshal::GetFunctionPointerForDelegate(progWrapper);
+			IntPtr progressDelegatePtr = Marshal::GetFunctionPointerForDelegate(progDelWrapper);
 			auto progressPtr = static_cast<UnmanagedWriteProgress>(progressDelegatePtr.ToPointer());
 
 			m_warningDelegate = warnWrapper;
@@ -66,17 +68,17 @@ namespace WindowsUtils::Core
 			auto objPtr = static_cast<UnmanagedWriteObject>(objectDelegatePtr.ToPointer());
 
 			m_errorDelegate = errorWrapper;
-			_WriteErrorProxy^ errorDelWrapper = gcnew _WriteErrorProxy(this, &CmdletContextProxy::WriteErrorProxy);
-			m_errorHandle = GCHandle::Alloc(errorDelWrapper);
-			IntPtr errorDelegatePtr = Marshal::GetFunctionPointerForDelegate(errorDelWrapper);
-			auto errorPtr = static_cast<UnmanagedWriteError>(errorDelegatePtr.ToPointer());
+			_WriteExceptionProxy^ exDelWrapper = gcnew _WriteExceptionProxy(this, &CmdletContextProxy::WriteExceptionProxy);
+			m_exHandle = GCHandle::Alloc(exDelWrapper);
+			auto exPtr = static_cast<UnmanagedWriteException>(Marshal::GetFunctionPointerForDelegate(exDelWrapper).ToPointer());
 
 			m_nativeContext = new WuNativeContext(
 				progressPtr,
 				warningPtr,
 				infoPtr,
 				objPtr,
-				errorPtr
+				exPtr,
+				ExceptionMarshaler::NativePtr
 			);
 		}
 
@@ -99,8 +101,8 @@ namespace WindowsUtils::Core
 
 		void WriteProgressProxy(const PMAPPED_PROGRESS_DATA progressData)
 		{
-			ProgressRecord^ record = gcnew ProgressRecord(progressData->ActivityId, gcnew String(progressData->Activity.GetBuffer()), gcnew String(progressData->StatusDescription.GetBuffer()));
-			record->CurrentOperation = gcnew String(progressData->CurrentOperation.GetBuffer());
+			ProgressRecord^ record = gcnew ProgressRecord(progressData->ActivityId, gcnew String(progressData->Activity.Raw()), gcnew String(progressData->StatusDescription.Raw()));
+			record->CurrentOperation = gcnew String(progressData->CurrentOperation.Raw());
 			record->ParentActivityId = progressData->ParentActivityId;
 			record->PercentComplete = progressData->PercentComplete;
 			record->RecordType = static_cast<System::Management::Automation::ProgressRecordType>(progressData->RecordType);
@@ -111,34 +113,28 @@ namespace WindowsUtils::Core
 
 		void WriteWarningProxy(const WWuString& text)
 		{
-			m_warningDelegate(gcnew String(text.GetBuffer()));
+			m_warningDelegate(gcnew String(text.Raw()));
 		}
 
 		void WriteInformationProxy(const PMAPPED_INFORMATION_DATA infoData)
 		{
-			InformationRecord^ record = gcnew InformationRecord(gcnew String(infoData->Text.GetBuffer()), gcnew String(infoData->Source.GetBuffer()));
-			record->Computer = gcnew String(infoData->Computer.GetBuffer());
+			InformationRecord^ record = gcnew InformationRecord(gcnew String(infoData->Text.Raw()), gcnew String(infoData->Source.Raw()));
+			record->Computer = gcnew String(infoData->Computer.Raw());
 			record->ManagedThreadId = Thread::CurrentThread->ManagedThreadId;
 			record->NativeThreadId = infoData->NativeThreadId;
 			record->TimeGenerated = DateTime::FromFileTime(infoData->TimeGenerated);
-			record->User = gcnew String(infoData->User.GetBuffer());
+			record->User = gcnew String(infoData->User.Raw());
 
 			for (WWuString& tag : infoData->Tags)
-				record->Tags->Add(gcnew String(tag.GetBuffer()));
+				record->Tags->Add(gcnew String(tag.Raw()));
 
 			m_infoDelegate(record);
 		}
 
-		void WriteErrorProxy(const PMAPPED_ERROR_DATA errorData)
+		void WriteExceptionProxy(const WuException& exception)
 		{
-			ErrorRecord^ record = gcnew ErrorRecord(
-				gcnew NativeException(errorData->ErrorCode, gcnew String(errorData->ErrorMessage.GetBuffer()), gcnew String(errorData->CompactTrace.GetBuffer())),
-				gcnew String(errorData->ErrorId.GetBuffer()),
-				static_cast<ErrorCategory>(errorData->Category),
-				gcnew String(errorData->TargetObject.GetBuffer())
-			);
-
-			m_errorDelegate(record);
+			NativeException^ manEx = gcnew NativeException(exception);
+			m_errorDelegate(manEx->Record);
 		}
 
 		void WriteObjectProxy(const PVOID obj, WriteOutputType type)
@@ -165,7 +161,7 @@ namespace WindowsUtils::Core
 
 					case WriteOutputType::WWuString:
 					{
-						String^ text = gcnew String(reinterpret_cast<WWuString*>(obj)->GetBuffer());
+						String^ text = gcnew String(reinterpret_cast<WWuString*>(obj)->Raw());
 						m_objectDelegate(text);
 					} break;
 
@@ -201,5 +197,6 @@ namespace WindowsUtils::Core
 		GCHandle m_infoHandle;
 		GCHandle m_objHandle;
 		GCHandle m_errorHandle;
+		GCHandle m_exHandle;
 	};
 }

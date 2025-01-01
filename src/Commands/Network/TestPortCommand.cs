@@ -1,8 +1,12 @@
 ﻿using System.Management.Automation;
+using WindowsUtils.Engine;
+using WindowsUtils.Network;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
 {
+#pragma warning disable CS8618
+
     /// <summary>
     /// <para type="synopsis">Test if a TCP or UDP port is open.</para>
     /// <para type="description">This Cmdlet tests if TCP or UPD ports are opened in a given destination.</para>
@@ -36,7 +40,6 @@ namespace WindowsUtils.Commands
             public TransportProtocol Protocol;
         }
 
-        private readonly NetworkWrapper _unwrapper = new();
         private readonly List<SingleTestInfo> _portList = new();
 
         private string[] _destination = new string[] { "localhost" };
@@ -114,7 +117,11 @@ namespace WindowsUtils.Commands
                         continue;
                     }
 
-                    _unwrapper.TestNetworkPort(destination, (uint)port.Port, port.Protocol, (uint)Timeout, CmdletContext);
+                    try {
+                        Network.TestNetworkPort(destination, (uint)port.Port, port.Protocol, (uint)Timeout);
+                    }
+                    // Error already written to the stream.
+                    catch (NativeException) { }
                 }
             }
         }

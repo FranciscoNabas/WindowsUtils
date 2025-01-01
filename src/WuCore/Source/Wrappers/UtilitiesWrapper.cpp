@@ -1,6 +1,6 @@
 #pragma unmanaged
 
-#include "../../Headers/Support/WuStdException.h"
+#include "../../Headers/Support/WuException.h"
 
 #pragma managed
 
@@ -15,49 +15,35 @@ namespace WindowsUtils::Wrappers
 
 	String^ UtilitiesWrapper::GetFormattedError(Int32 errorCode, ErrorType source)
 	{
-		Core::WuStdException ex(errorCode, __FILEW__, __LINE__, static_cast<Core::CoreErrorType>(source));
-
-		return (gcnew String(ex.Message().GetBuffer()))->Trim();
+		// Doesn't throw.
+		return (gcnew String(Core::WuNativeException::GetErrorMessage(errorCode, static_cast<Core::CoreErrorType>(source)).Raw()))->Trim();
 	}
 	
 	// Get-LastWin32Error
 	String^ UtilitiesWrapper::GetLastWin32Error()
 	{
-		WWuString errorMessage;
-		try {
-			m_utl->GetFormattedWin32Error(errorMessage);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
-
-		return (gcnew String(errorMessage.GetBuffer()))->Trim();
+		// Doesn't throw.
+		return (gcnew String(Core::WuNativeException::GetErrorMessage(GetLastError(), Core::CoreErrorType::SystemError).Raw()))->Trim();
 	}
 
 	// Send-Click
 	Void UtilitiesWrapper::SendClick()
 	{
-		try {
-			m_utl->SendClick();
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+		_WU_START_TRY
+			Stubs::Utilities::Dispatch<UtilitiesOperation::SendClick>(Context->GetUnderlyingContext());
+		_WU_MANAGED_CATCH
 	}
 
 	// Get-ResourceMessageTable
 	array<ResourceMessageTable^>^ UtilitiesWrapper::GetResourceMessageTable(String^ libPath)
 	{
-		wuvector<Core::WU_RESOURCE_MESSAGE_TABLE> messageTable;
+		std::vector<Core::WU_RESOURCE_MESSAGE_TABLE> messageTable;
 
 		WWuString wuLibPath = GetWideStringFromSystemString(libPath);
 
-		try {
-			m_utl->GetResourceMessageTable(messageTable, wuLibPath);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+		_WU_START_TRY
+			Stubs::Utilities::Dispatch<UtilitiesOperation::GetResMesTable>(Context->GetUnderlyingContext(), messageTable, wuLibPath);
+		_WU_MANAGED_CATCH
 
 		List<ResourceMessageTable^>^ output = gcnew List<ResourceMessageTable^>(0);
 		for (auto& tableEntry : messageTable)
@@ -107,48 +93,41 @@ namespace WindowsUtils::Wrappers
 		return stringList->ToArray();
 	}
 
-	void UtilitiesWrapper::LogonAndImpersonateUser(String^ userName, SecureString^ password)
-	{
-		WWuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		LogonAndImpersonateUser(userName, wuPass);
-	}
-
 	// Logs on the given user and impersonates it.
 	// You must call 'RevertToSelf()' to revert to the caller.
 	void UtilitiesWrapper::LogonAndImpersonateUser(
-		String^ userName,	 // The user name. If the user belongs to a domain, enter the down-level logon name: 'DOMAIN\UserName'.
-		WWuString& password	 // The user's password, if any.
+		String^ userName,			 // The user name. If the user belongs to a domain, enter the down-level logon name: 'DOMAIN\UserName'.
+		SecureString^ password		 // The user's password, if any.
 	)
 	{
-		if (!String::IsNullOrEmpty(userName)) {
+		if (!String::IsNullOrEmpty(userName) && password) {
 			WWuString wuDomain;
 			WWuString wuUserName;
-			HANDLE hToken;
+			IntPtr coTaskPass = Marshal::SecureStringToCoTaskMemUnicode(password);
+			try {
+				WWuString wuPass{ (LPWSTR)coTaskPass.ToPointer() };
+				try {
+					if (userName->Contains(L"\\")) {
+						wuDomain = GetWideStringFromSystemString(userName->Split('\\')[0]);
+						wuUserName = GetWideStringFromSystemString(userName->Split('\\')[1]);
+					}
+					else
+						wuUserName = GetWideStringFromSystemString(userName);
 
-			if (userName->Contains(L"\\")) {
-				wuDomain = GetWideStringFromSystemString(userName->Split('\\')[0]);
-				wuUserName = GetWideStringFromSystemString(userName->Split('\\')[1]);
+					Core::ObjectHandle tokenHandle;
+					if (!LogonUser(wuUserName.Raw(), wuDomain.Raw(), wuPass.Raw(), LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &tokenHandle))
+						throw gcnew NativeException(GetLastError());
+
+					if (!ImpersonateLoggedOnUser(tokenHandle.Get()))
+						throw gcnew NativeException(GetLastError());
+				}
+				finally {
+					wuPass.SecureErase();
+				}
 			}
-			else
-				wuUserName = GetWideStringFromSystemString(userName);
-
-			if (!LogonUser(wuUserName.GetBuffer(), wuDomain.GetBuffer(), password.GetBuffer(), LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &hToken)) {
-				password.SecureErase();
-				throw gcnew NativeException(GetLastError());
+			finally {
+				Marshal::ZeroFreeCoTaskMemUnicode(coTaskPass);
 			}
-
-			if (!ImpersonateLoggedOnUser(hToken)) {
-				password.SecureErase();
-				CloseHandle(hToken);
-
-				throw gcnew NativeException(GetLastError());
-			}
-
-			// Zeroing the memory here instead of Marshal::ZeroFreeGlobalAllocUnicode
-			// So the plain text stays less time in memory.
-			password.SecureErase();
-
-			CloseHandle(hToken);
 		}
 	}
 
@@ -156,7 +135,7 @@ namespace WindowsUtils::Wrappers
 	{
 		WWuString wrappedPath = GetWideStringFromSystemString(path);
 
-		wuvector<Core::FS_INFO> fsInfo = Core::IO::EnumerateFileSystemInfo(wrappedPath);
+		WuList<Core::FS_INFO> fsInfo = Core::IO::EnumerateFileSystemInfo(wrappedPath);
 		for (Core::FS_INFO& info : fsInfo) {
 			if (info.Length > 0x7FFFFFFF)
 				throw gcnew ArgumentException("Cabinet does not support files bigger than 2Gb.");

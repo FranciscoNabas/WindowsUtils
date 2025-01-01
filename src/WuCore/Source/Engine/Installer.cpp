@@ -1,13 +1,13 @@
 #include "../../pch.h"
 
-#include <MsiQuery.h>
-
 #include "../../Headers/Engine/Installer.h"
-#include "../../Headers/Support/WuStdException.h"
 
 namespace WindowsUtils::Core
 {
-	Installer::Installer(const WWuString& filePath, MsiPersistenceMode mode, Core::WuNativeContext* context)
+	_WU_SUMMARY_PROPERTY::_WU_SUMMARY_PROPERTY(const LPWSTR name, const WORD index)
+		: Name(name), Index(index) { }
+
+	Installer::Installer(const WWuString& filePath, const MsiPersistenceMode mode, const Core::WuNativeContext* context)
 	{
 		m_context = context;
 		m_databasePath = filePath;
@@ -15,7 +15,7 @@ namespace WindowsUtils::Core
 		OpenDatabase(filePath, mode);
 	}
 
-	Installer::Installer(const WWuString& filePath, MsiPersistenceMode mode, const WWuString& viewQuery, Core::WuNativeContext* context)
+	Installer::Installer(const WWuString& filePath, const MsiPersistenceMode mode, const WWuString& viewQuery, const Core::WuNativeContext* context)
 	{
 		m_context = context;
 		m_databasePath = filePath;
@@ -34,31 +34,21 @@ namespace WindowsUtils::Core
 	// Views.
 	void Installer::OpenDatabaseView(const WWuString& query)
 	{
-		if (!m_hDatabase) {
-			WuStdException ex(ERROR_INVALID_HANDLE, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerInvalidDatabase", Core::WriteErrorCategory::InvalidArgument, m_databasePath, m_context);
-
-			throw ex;
-		}
+		if (!m_hDatabase)
+			_WU_RAISE_NATIVE_EXCEPTION(ERROR_INVALID_HANDLE, L"OpenDatabaseView", WriteErrorCategory::InvalidData);
 
 		if (m_hCurrentView)
 			MsiCloseHandle(m_hCurrentView);
 
-		DWORD result = MsiDatabaseOpenView(m_hDatabase, query.GetBuffer(), &m_hCurrentView);
+		DWORD result = MsiDatabaseOpenView(m_hDatabase, query.Raw(), &m_hCurrentView);
 		if (result != ERROR_SUCCESS) {
 			PMSIHANDLE hLastRecord = MsiGetLastErrorRecord();
 			if (hLastRecord) {
 				WWuString message = FormatRecord(NULL, hLastRecord);
-				Core::WuStdException ex(result, WWuString::Format(L"Error opening view: %ws", message.GetBuffer()), __FILEW__, __LINE__);
-				ex.Cry(L"InstallerOpenDatabaseView", Core::WriteErrorCategory::OpenError, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION_WMESS(result, L"MsiDatabaseOpenView", WriteErrorCategory::OpenError, WWuString::Format(L"Error opening view: %ws", message.Raw()));
 			}
 			else {
-				Core::WuStdException ex(result, __FILEW__, __LINE__);
-				ex.Cry(L"InstallerOpenDatabaseView", Core::WriteErrorCategory::OpenError, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiDatabaseOpenView", WriteErrorCategory::OpenError);
 			}
 		}
 	}
@@ -66,10 +56,7 @@ namespace WindowsUtils::Core
 	void Installer::ViewExecute(_In_opt_ MSIHANDLE hRecord)
 	{
 		if (!m_hCurrentView) {
-			WuStdException ex(ERROR_INVALID_HANDLE, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerInvalidView", Core::WriteErrorCategory::InvalidArgument, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(ERROR_INVALID_HANDLE, L"ViewExecute", WriteErrorCategory::InvalidData);
 		}
 
 		DWORD result = MsiViewExecute(m_hCurrentView, hRecord);
@@ -77,16 +64,10 @@ namespace WindowsUtils::Core
 			PMSIHANDLE hLastRecord = MsiGetLastErrorRecord();
 			if (hLastRecord) {
 				WWuString message = FormatRecord(NULL, hLastRecord);
-				Core::WuStdException ex(result, WWuString::Format(L"Error executing view: %ws", message.GetBuffer()), __FILEW__, __LINE__);
-				ex.Cry(L"InstallerExecuteView", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION_WMESS(result, L"MsiViewExecute", WriteErrorCategory::InvalidResult, WWuString::Format(L"Error executing view: %ws", message.Raw()));
 			}
 			else {
-				Core::WuStdException ex(result, __FILEW__, __LINE__);
-				ex.Cry(L"InstallerExecuteView", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiViewExecute", WriteErrorCategory::InvalidResult);
 			}
 		}
 	}
@@ -94,10 +75,7 @@ namespace WindowsUtils::Core
 	bool Installer::ViewFetch(MSIHANDLE* hRecord)
 	{
 		if (!m_hCurrentView) {
-			WuStdException ex(ERROR_INVALID_HANDLE, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerInvalidView", Core::WriteErrorCategory::InvalidArgument, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(ERROR_INVALID_HANDLE, L"ViewFetch", WriteErrorCategory::InvalidData);
 		}
 
 		DWORD result = MsiViewFetch(m_hCurrentView, hRecord);
@@ -108,16 +86,10 @@ namespace WindowsUtils::Core
 			PMSIHANDLE hLastRecord = MsiGetLastErrorRecord();
 			if (hLastRecord) {
 				WWuString message = FormatRecord(NULL, hLastRecord);
-				Core::WuStdException ex(result, WWuString::Format(L"Error fetching view: %ws", message.GetBuffer()), __FILEW__, __LINE__);
-				ex.Cry(L"InstallerFetchView", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION_WMESS(result, L"MsiViewFetch", WriteErrorCategory::InvalidResult, WWuString::Format(L"Error fetching view: %ws", message.Raw()));
 			}
 			else {
-				Core::WuStdException ex(result, __FILEW__, __LINE__);
-				ex.Cry(L"InstallerFetchView", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiViewFetch", WriteErrorCategory::InvalidResult);
 			}
 		}
 
@@ -129,28 +101,30 @@ namespace WindowsUtils::Core
 
 	
 	// Read from a record.
-	void Installer::RecordReadStream(MSIHANDLE hRecord, int fieldIndex, wuvector<char>& data)
+	WuList<char> Installer::RecordReadStream(MSIHANDLE hRecord, int fieldIndex)
 	{
 		DWORD result;
 
+		WuList<char> output(100);
 		do {
 			char buffer[1024] { };
 			DWORD buffSize = 1024;
 			result = MsiRecordReadStream(hRecord, fieldIndex, buffer, &buffSize);
 			if (result != ERROR_SUCCESS) {
-				Core::WuStdException ex(result, __FILEW__, __LINE__);
-				ex.Cry(L"InstallerRecordReadStream", Core::WriteErrorCategory::ReadError, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiRecordReadStream", WriteErrorCategory::ReadError);
 			}
 
-			if (buffSize > 0)
-				data.insert(data.end(), buffer, buffer + buffSize);
+			if (buffSize > 0) {
+				char* const start = &buffer[0];
+				output.AddRange(start, start + buffSize);
+			}
 
 			if (buffSize < 1024)
 				break;
 
 		} while (true);
+
+		return output;
 	}
 
 	WWuString Installer::RecordGetString(MSIHANDLE hRecord, int fieldIndex)
@@ -158,22 +132,14 @@ namespace WindowsUtils::Core
 		DWORD charsNeeded { };
 		DWORD result = MsiRecordGetString(hRecord, fieldIndex, NULL, &charsNeeded);
 		if (result != ERROR_SUCCESS && result != ERROR_MORE_DATA) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerRecordGetString", Core::WriteErrorCategory::ReadError, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiRecordGetString", WriteErrorCategory::ReadError);
 		}
 
 		charsNeeded++;
-		DWORD bytesNeeded = charsNeeded * 2;
-		wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
-
+		std::unique_ptr<WCHAR[]> buffer = std::make_unique<WCHAR[]>(charsNeeded);
 		result = MsiRecordGetString(hRecord, fieldIndex, buffer.get(), &charsNeeded);
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerRecordGetString", Core::WriteErrorCategory::ReadError, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiRecordGetString", WriteErrorCategory::ReadError);
 		}
 
 		return WWuString(buffer.get());
@@ -183,12 +149,9 @@ namespace WindowsUtils::Core
 	// Modify a record.
 	void Installer::RecordSetString(MSIHANDLE hRecord, UINT iField, const WWuString& szValue)
 	{
-		DWORD result = MsiRecordSetString(hRecord, iField, szValue.GetBuffer());
+		DWORD result = MsiRecordSetString(hRecord, iField, szValue.Raw());
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerRecordSetString", Core::WriteErrorCategory::OpenError, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiRecordSetString", WriteErrorCategory::WriteError);
 		}
 	}
 
@@ -196,21 +159,15 @@ namespace WindowsUtils::Core
 	{
 		DWORD result = MsiRecordSetInteger(hRecord, iField, iValue);
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerRecordSetString", Core::WriteErrorCategory::OpenError, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiRecordSetInteger", WriteErrorCategory::WriteError);
 		}
 	}
 
 	void Installer::RecordSetStream(MSIHANDLE hRecord, UINT iField, const WWuString& szFilePath)
 	{
-		DWORD result = MsiRecordSetStream(hRecord, iField, szFilePath.GetBuffer());
+		DWORD result = MsiRecordSetStream(hRecord, iField, szFilePath.Raw());
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerRecordSetString", Core::WriteErrorCategory::OpenError, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiRecordSetStream", WriteErrorCategory::WriteError);
 		}
 	}
 
@@ -223,16 +180,10 @@ namespace WindowsUtils::Core
 			PMSIHANDLE hLastRecord = MsiGetLastErrorRecord();
 			if (hLastRecord) {
 				WWuString message = FormatRecord(NULL, hLastRecord);
-				Core::WuStdException ex(result, WWuString::Format(L"Error committing to the database: %ws", message.GetBuffer()), __FILEW__, __LINE__);
-				ex.Cry(L"InstallerCommitDatabase", Core::WriteErrorCategory::OpenError, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION_WMESS(result, L"MsiDatabaseCommit", WriteErrorCategory::WriteError, WWuString::Format(L"Error committing to the database: %ws", message.Raw()));
 			}
 			else {
-				Core::WuStdException ex(result, __FILEW__, __LINE__);
-				ex.Cry(L"InstallerCommitDatabase", Core::WriteErrorCategory::OpenError, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiDatabaseCommit", WriteErrorCategory::WriteError);
 			}
 		}
 	}
@@ -244,21 +195,15 @@ namespace WindowsUtils::Core
 		DWORD charsNeeded { };
 		DWORD result = MsiFormatRecord(hInstall, hRecord, NULL, &charsNeeded);
 		if (result != ERROR_SUCCESS && result != ERROR_MORE_DATA) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerFormatRecord", Core::WriteErrorCategory::ReadError, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiFormatRecord", WriteErrorCategory::InvalidResult);
 		}
 
 		charsNeeded++;
-		wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(static_cast<size_t>(charsNeeded) * 2);
+		std::unique_ptr<WCHAR[]> buffer = std::make_unique<WCHAR[]>(charsNeeded);
 
 		result = MsiFormatRecord(hInstall, hRecord, buffer.get(), &charsNeeded);
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerFormatRecord", Core::WriteErrorCategory::ReadError, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiFormatRecord", WriteErrorCategory::InvalidResult);
 		}
 
 		return WWuString(buffer.get());
@@ -276,27 +221,21 @@ namespace WindowsUtils::Core
 			int intValue { };
 			FILETIME ftValue { };
 			DWORD charsNeeded { };
-			wuunique_ha_ptr<WCHAR> buffer;
+			std::unique_ptr<WCHAR[]> buffer;
 
 			// Windows Installer functions that return data in a user provided memory location should not
 			// be called with NULL as the value for the pointer, so we pass an empty string.
 			DWORD result = MsiSummaryInfoGetProperty(m_hSummaryInfo, pid, &dataType, &intValue, &ftValue, L"", &charsNeeded);
 			if (result != ERROR_SUCCESS) {
 				if (result != ERROR_MORE_DATA) {
-					Core::WuStdException ex(result, __FILEW__, __LINE__);
-					ex.Cry(L"InstallerGetSummaryInfoProperty", Core::WriteErrorCategory::ReadError, m_databasePath, m_context);
-
-					throw ex;
+					_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiSummaryInfoGetProperty", WriteErrorCategory::InvalidResult);
 				}
 
 				charsNeeded++;
-				buffer = make_wuunique_ha<WCHAR>(static_cast<size_t>(charsNeeded) * 2);
+				buffer = std::make_unique<WCHAR[]>(charsNeeded);
 				result = MsiSummaryInfoGetProperty(m_hSummaryInfo, pid, &dataType, &intValue, &ftValue, buffer.get(), &charsNeeded);
 				if (result != ERROR_SUCCESS) {
-					Core::WuStdException ex(result, __FILEW__, __LINE__);
-					ex.Cry(L"InstallerGetSummaryInfoProperty", Core::WriteErrorCategory::ReadError, m_databasePath, m_context);
-
-					throw ex;
+					_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiSummaryInfoGetProperty", WriteErrorCategory::InvalidResult);
 				}
 			}
 
@@ -357,50 +296,47 @@ namespace WindowsUtils::Core
 		}
 	}
 
-	void Installer::GetMsiTableNames(wuvector<WWuString>& tableNames)
+	WuList<WWuString> Installer::GetMsiTableNames()
 	{
+		WuList<WWuString> output(60);
 		OpenDatabaseView(L"Select * From _Tables");
 		ViewExecute(NULL);
 
 		PMSIHANDLE hRecord { };
 		while (ViewFetch(&hRecord)) {
-			tableNames.push_back(RecordGetString(hRecord, 1));
+			output.Add(RecordGetString(hRecord, 1));
 			MsiCloseHandle(hRecord);
 		}
+
+		return output;
 	}
 
-	void Installer::GetMsiTableKeys(const WWuString& tableName, wuvector<WWuString>& tableNames)
+	WuList<WWuString> Installer::GetMsiTableKeys(const WWuString& tableName)
 	{
 		PMSIHANDLE hRecord { };
-
-		UINT result = MsiDatabaseGetPrimaryKeys(m_hDatabase, tableName.GetBuffer(), &hRecord);
+		
+		UINT result = MsiDatabaseGetPrimaryKeys(m_hDatabase, tableName.Raw(), &hRecord);
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerDatabaseGetPrimaryKeys", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiDatabaseGetPrimaryKeys", WriteErrorCategory::InvalidResult);
 		}
 
+		WuList<WWuString> output(2);
 		for (UINT i = 1; i <= MsiRecordGetFieldCount(hRecord); i++)
-			tableNames.push_back(RecordGetString(hRecord, i));
+			output.Add(RecordGetString(hRecord, i));
+
+		return output;
 	}
 
 	void Installer::GetMsiColumnInfo(MSIHANDLE* hNames, MSIHANDLE* hTypes)
 	{
 		UINT result = MsiViewGetColumnInfo(m_hCurrentView, MSICOLINFO_NAMES, hNames);
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerViewGetColumnInfo", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiViewGetColumnInfo", WriteErrorCategory::InvalidResult);
 		}
 
 		result = MsiViewGetColumnInfo(m_hCurrentView, MSICOLINFO_TYPES, hTypes);
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerViewGetColumnInfo", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiViewGetColumnInfo", WriteErrorCategory::InvalidResult);
 		}
 	}
 	
@@ -412,22 +348,16 @@ namespace WindowsUtils::Core
 		OpenDatabaseView(L"Select * From " + tableName);
 		UINT result = MsiViewGetColumnInfo(m_hCurrentView, MSICOLINFO_NAMES, hNames);
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerViewGetColumnInfo", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiViewGetColumnInfo", WriteErrorCategory::InvalidResult);
 		}
 
 		result = MsiViewGetColumnInfo(m_hCurrentView, MSICOLINFO_TYPES, hTypes);
 		if (result != ERROR_SUCCESS) {
-			Core::WuStdException ex(result, __FILEW__, __LINE__);
-			ex.Cry(L"InstallerViewGetColumnInfo", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-			throw ex;
+			_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiViewGetColumnInfo", WriteErrorCategory::InvalidResult);
 		}
 	}
 
-	void Installer::GetColumnPositionInfo(const WWuString& tableName, wumap<WWuString, int>& positionInfo)
+	void Installer::GetColumnPositionInfo(const WWuString& tableName, std::map<WWuString, int>& positionInfo)
 	{
 		this->OpenDatabaseView(L"Select * From _Columns");
 		this->ViewExecute(NULL);
@@ -445,12 +375,12 @@ namespace WindowsUtils::Core
 		} while (true);
 	}
 
-	bool Installer::FindTableName(WWuString& table, const wuvector<WWuString>& tableNames)
+	bool Installer::TryFindTableName(const WuList<WWuString>& tableNames, WWuString& tableName)
 	{
 		for (const WWuString& currentTable : tableNames) {
-			if (currentTable.CompareTo(table, true) == 0) {
+			if (currentTable.CompareTo(tableName, true) == 0) {
 				// Normalizing the input name with the real table name.
-				table = currentTable;
+				tableName = currentTable;
 				return true;
 			}
 		}
@@ -487,21 +417,15 @@ namespace WindowsUtils::Core
 				break;
 		}
 
-		DWORD result = MsiOpenDatabase(filePath.GetBuffer(), modeStr, &m_hDatabase);
+		DWORD result = MsiOpenDatabase(filePath.Raw(), modeStr, &m_hDatabase);
 		if (result != ERROR_SUCCESS) {
 			PMSIHANDLE hLastRecord = MsiGetLastErrorRecord();
 			if (hLastRecord) {
 				WWuString message = FormatRecord(NULL, hLastRecord);
-				Core::WuStdException ex(result, WWuString::Format(L"Error opening database: %ws", message.GetBuffer()), __FILEW__, __LINE__);
-				ex.Cry(L"InstallerOpenDatabase", Core::WriteErrorCategory::OpenError, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION_WMESS(result, L"MsiOpenDatabase", WriteErrorCategory::OpenError, WWuString::Format(L"Error opening database: %ws", message.Raw()));
 			}
 			else {
-				Core::WuStdException ex(result, __FILEW__, __LINE__);
-				ex.Cry(L"InstallerOpenDatabase", Core::WriteErrorCategory::OpenError, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiOpenDatabase", WriteErrorCategory::OpenError);
 			}
 		}
 	}
@@ -513,16 +437,10 @@ namespace WindowsUtils::Core
 			PMSIHANDLE hLastRecord = MsiGetLastErrorRecord();
 			if (hLastRecord) {
 				WWuString message = FormatRecord(NULL, hLastRecord);
-				Core::WuStdException ex(result, WWuString::Format(L"Error getting summary info: %ws", message.GetBuffer()), __FILEW__, __LINE__);
-				ex.Cry(L"InstallerSummaryInformation", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION_WMESS(result, L"MsiGetSummaryInformation", WriteErrorCategory::InvalidResult, WWuString::Format(L"Error getting summary info: %ws", message.Raw()));
 			}
 			else {
-				Core::WuStdException ex(result, __FILEW__, __LINE__);
-				ex.Cry(L"InstallerSummaryInformation", Core::WriteErrorCategory::InvalidResult, m_databasePath, m_context);
-
-				throw ex;
+				_WU_RAISE_NATIVE_EXCEPTION(result, L"MsiGetSummaryInformation", WriteErrorCategory::InvalidResult);
 			}
 		}
 	}

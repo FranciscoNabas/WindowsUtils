@@ -1,4 +1,5 @@
 ﻿using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -19,8 +20,6 @@ namespace WindowsUtils.Commands
     [OutputType(typeof(PSObject))]
     public class GetMsiPropertiesCommand : CoreCommandBase
     {
-        private readonly InstallerWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The installer path.</para>
         /// </summary>
@@ -37,8 +36,8 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             try {
-                if (InstallerWrapper.IsInstallerPackage(Path, CmdletContext)) {
-                    WriteObject(Utils.PSObjectFactory(_unwrapper.GetMsiProperties(Path, CmdletContext).OrderBy(x => x.Key)));
+                if (Installer.IsInstallerPackage(Path)) {
+                    WriteObject(Utils.PSObjectFactory(Installer.GetMsiProperties(Path).OrderBy(x => x.Key)));
                 }
                 else
                     WriteError(new ErrorRecord(

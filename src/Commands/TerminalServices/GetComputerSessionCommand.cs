@@ -1,4 +1,5 @@
 ﻿using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -11,10 +12,8 @@ namespace WindowsUtils.Commands
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "ComputerSession")]
     [OutputType(typeof(ComputerSession))]
-    public class GetComputerSessionCommand : Cmdlet
+    public class GetComputerSessionCommand : CoreCommandBase
     {
-        private static readonly TerminalServicesWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The computer name.</para>
         /// <para type="description">If no computer name is informed, it returns sessions on the current computer.</para>
@@ -43,12 +42,12 @@ namespace WindowsUtils.Commands
         {
             if (string.IsNullOrEmpty(ComputerName))
             {
-                ComputerSession[] result = _unwrapper.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession);
+                ComputerSession[] result = TermServices.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession);
                 result.ToList().ForEach(x => WriteObject(x));
             }
             else
             {
-                ComputerSession[] result = _unwrapper.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession);
+                ComputerSession[] result = TermServices.GetComputerSession(ComputerName, ActiveOnly, IncludeSystemSession);
                 result.ToList().ForEach(x => WriteObject(x));
             }
         }

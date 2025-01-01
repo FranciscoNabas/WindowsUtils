@@ -1,6 +1,8 @@
 #pragma once
 #pragma unmanaged
 
+#include "WuException.h"
+
 namespace WindowsUtils::Core
 {
 	////////////////////////////////////////////////////
@@ -14,11 +16,11 @@ namespace WindowsUtils::Core
 
 	struct WuTimeSpan
 	{
-		const __int64 TicksPerDay = 864000000000LL;
-		const __int64 TicksPerHour = 36000000000LL;
-		const __int64 TicksPerMinute = 600000000LL;
-		const __int64 TicksPerSecond = 10000000LL;
-		const __int64 TicksPerMillisecond = 10000LL;
+		static constexpr __int64 TicksPerDay          = 864000000000LL;
+		static constexpr __int64 TicksPerHour         = 36000000000LL;
+		static constexpr __int64 TicksPerMinute       = 600000000LL;
+		static constexpr __int64 TicksPerSecond       = 10000000LL;
+		static constexpr __int64 TicksPerMillisecond  = 10000LL;
 
 		int Days;
 		int Hours;

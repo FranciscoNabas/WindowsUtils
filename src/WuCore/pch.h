@@ -26,8 +26,8 @@
 #define UNLEN 256
 #endif
 
-#define THROWWUSTDEXCEPTION(code) throw WuStdException(code, __FILEW__, __LINE__)
-#define THROWWUSTDEXCEPTIONMESSAGE(code, messae) throw WuStdException(code, message, __FILEW__, __LINE__)
+#define THROWWuNativeException(code) throw WuNativeException(code, __FILEW__, __LINE__)
+#define THROWWuNativeExceptionMESSAGE(code, messae) throw WuNativeException(code, message, __FILEW__, __LINE__)
 
 // Warnings
 #pragma warning(disable : 4793)			// 'function_name': function compiled as native: Found an intrinsic not supported in managed code
@@ -48,6 +48,8 @@
 #pragma comment(lib, "Dnsapi.lib")
 #pragma comment(lib, "Psapi")
 #pragma comment(lib, "Netapi32.lib")
+#pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "ntdll.lib")
 
 // Include list.
 #include <Windows.h>

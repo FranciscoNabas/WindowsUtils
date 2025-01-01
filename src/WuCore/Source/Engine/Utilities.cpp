@@ -1,36 +1,19 @@
 #include "../../pch.h"
 
 #include "../../Headers/Engine/Utilities.h"
-#include "../../Headers/Support/WuStdException.h"
-
-#include <Msi.h>
-#include <MsiQuery.h>
 
 namespace WindowsUtils::Core
 {
 	/*
-	*	~ Get-LastWin32Error
+	*	~ WU_RESOURCE_MESSAGE_TABLE ~
 	*/
 
-	void Utilities::GetFormattedWin32Error(
-		WWuString& errorMessage		// The output message string.
-	)
-	{
-		LPWSTR buffer { };
-		if (!::FormatMessageW(
-			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
-			NULL,
-			GetLastError(),
-			0,
-			(LPWSTR)&buffer,
-			0,
-			NULL
-		))
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+	_WU_RESOURCE_MESSAGE_TABLE::_WU_RESOURCE_MESSAGE_TABLE()
+		: Id(0) { }
 
-		errorMessage = buffer;
-		LocalFree(buffer);
-	}
+	_WU_RESOURCE_MESSAGE_TABLE::_WU_RESOURCE_MESSAGE_TABLE(DWORD id, LPWSTR message)
+		: Id(id), Message(message) { }
+
 
 	/*
 	*	~ Send-Click
@@ -44,7 +27,7 @@ namespace WindowsUtils::Core
 		LPINPUT pinput = new INPUT[2] { };
 
 		if (!GetCursorPos(&pointpos))
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"GetCursorPos", WriteErrorCategory::InvalidResult);
 
 		pinput[0].type, pinput[1].type = INPUT_MOUSE;
 		pinput[0].mi.dx, pinput[1].mi.dx = pointpos.x;
@@ -65,7 +48,7 @@ namespace WindowsUtils::Core
 
 		if (usendin == 0) {
 			delete[] pinput;
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"SendInput", WriteErrorCategory::InvalidResult);
 		}
 
 		delete[] pinput;
@@ -76,21 +59,21 @@ namespace WindowsUtils::Core
 	*/
 
 	void Utilities::GetResourceMessageTable(
-		wuvector<WU_RESOURCE_MESSAGE_TABLE>& messageTableOut,	// A vector of resource message table objects.
-		const WWuString& libName								// The resource path.
+		std::vector<WU_RESOURCE_MESSAGE_TABLE>& messageTableOut,	// A vector of resource message table objects.
+		const WWuString& libName									// The resource path.
 	)
 	{
-		HMODULE hModule = ::LoadLibraryExW(libName.GetBuffer(), NULL, LOAD_LIBRARY_AS_DATAFILE);
+		HMODULE hModule = ::LoadLibraryExW(libName.Raw(), NULL, LOAD_LIBRARY_AS_DATAFILE);
 		if (NULL == hModule)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"LoadLibraryEx", WriteErrorCategory::InvalidResult);
 
 		HRSRC hResource = ::FindResourceW(hModule, MAKEINTRESOURCE(1), RT_MESSAGETABLE);
 		if (NULL == hResource)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"FindResource", WriteErrorCategory::InvalidResult);
 
 		HGLOBAL hLoad = LoadResource(hModule, hResource);
 		if (NULL == hLoad)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"LoadResource", WriteErrorCategory::InvalidResult);
 
 		PVOID messageTable = LockResource(hLoad);
 		DWORD blockNumber = ((PMESSAGE_RESOURCE_DATA)messageTable)->NumberOfBlocks;
@@ -122,18 +105,16 @@ namespace WindowsUtils::Core
 	*	~ Utility functions
 	*/
 
-	void GetEnvVariable(const WWuString& variableName, WWuString& value)
+	void Utilities::GetEnvVariable(const WWuString& variableName, WWuString& value)
 	{
 		size_t bufferSize = 0;
 
-		_wgetenv_s(&bufferSize, NULL, 0, variableName.GetBuffer());
+		_wgetenv_s(&bufferSize, NULL, 0, variableName.Raw());
 		if (bufferSize == 0)
-			throw WuStdException(ERROR_FILE_NOT_FOUND, __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(ERROR_FILE_NOT_FOUND, L"_wgetenv_s", WriteErrorCategory::InvalidResult);
 
-		size_t bytesNeeded = bufferSize * 2;
-		wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
-
-		_wgetenv_s(&bufferSize, buffer.get(), bufferSize, variableName.GetBuffer());
+		std::unique_ptr<WCHAR[]> buffer = std::make_unique<WCHAR[]>(bufferSize);
+		_wgetenv_s(&bufferSize, buffer.get(), bufferSize, variableName.Raw());
 
 		value = buffer.get();
 	}

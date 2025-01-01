@@ -199,10 +199,8 @@ namespace WindowsUtils
 
     internal class Utilities
     {
-        private static readonly UtilitiesWrapper unWrapper = new();
-
-        internal static string GetLastWin32Error() => unWrapper.GetLastWin32Error();
-        internal static string GetLastWin32Error(int errorCode) => unWrapper.GetFormattedError(errorCode, ErrorType.SystemError);
+        internal static string GetLastWin32Error() => UtilitiesWrapper.GetLastWin32Error();
+        internal static string GetLastWin32Error(int errorCode) => UtilitiesWrapper.GetFormattedError(errorCode, ErrorType.SystemError);
     }
 
     public class AppType : Enumeration
@@ -433,11 +431,12 @@ namespace WindowsUtils
             }
         }
         public string SymbolicName { get; }
+        public string Source { get; }
         public string? Description { get; }
         public HResultInfo? HResultInfo { get; }
 
-        internal ErrorInformation(int errorCode, string symName, string? desc, HResultInfo? hrInfo)
-            => (_errorCode, SymbolicName, Description, HResultInfo) = (errorCode, symName, desc, hrInfo);
+        internal ErrorInformation(int errorCode, string symName, string source, string? desc, HResultInfo? hrInfo)
+            => (_errorCode, SymbolicName, Source, Description, HResultInfo) = (errorCode, symName, source, desc, hrInfo);
     }
 
     public sealed class InstallerTableInfo : InstallerTableInfoBase

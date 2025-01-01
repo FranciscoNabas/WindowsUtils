@@ -1,4 +1,5 @@
 ﻿using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 using WindowsUtils.Installer;
 
@@ -20,8 +21,6 @@ namespace WindowsUtils.Commands
     [OutputType(typeof(InstallerSummaryInfo))]
     public class GetMsiSummaryInfoCommand : CoreCommandBase
     {
-        private readonly InstallerWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The installer path.</para>
         /// </summary>
@@ -38,8 +37,8 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             try {
-                if (InstallerWrapper.IsInstallerPackage(Path, CmdletContext)) {
-                    WriteObject(_unwrapper.GetMsiSummaryInfo(Path, CmdletContext));
+                if (Installer.IsInstallerPackage(Path)) {
+                    WriteObject(Installer.GetMsiSummaryInfo(Path));
                 }
                 else
                     WriteError(new ErrorRecord(

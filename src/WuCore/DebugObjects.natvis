@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="WuList&lt;*&gt;">
+		<DisplayString>{{Count: {m_pair._Myval2.MyLast - m_pair._Myval2.MyFirst}; Capacity: {m_pair._Myval2.MyEnd - m_pair._Myval2.MyFirst}}}</DisplayString>
+		<Expand>
+			<Item Name="[Count]" ExcludeView="simple">m_pair._Myval2.MyLast - m_pair._Myval2.MyFirst</Item>
+			<Item Name="[Capacity]" ExcludeView="simple">m_pair._Myval2.MyEnd - m_pair._Myval2.MyFirst</Item>
+			<ArrayItems>
+				<Size>m_pair._Myval2.MyLast - m_pair._Myval2.MyFirst</Size>
+				<ValuePointer>m_pair._Myval2.MyFirst</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+	<Type Name="WuBaseString&lt;wchar_t,*&gt;>">
+		<Intrinsic Name="Size" Expression="m_pair._Myval2.MySize" />
+		<Intrinsic Name="Capacity" Expression="m_pair._Myval2.MyCapacity" />
+		<Intrinsic Name="BufferSize" Expression="8" />
+		<Intrinsic Name="IsShortString" Expression="Capacity() &lt; BufferSize()" />
+		<Intrinsic Name="IsLongString" Expression="Capacity() &gt;= BufferSize()" />
+		<DisplayString Condition="IsShortString()">{m_pair._Myval2.Storage.Buffer,su}</DisplayString>
+		<DisplayString Condition="IsLongString()">{m_pair._Myval2.Storage.Pointer,su}</DisplayString>
+		<StringView Condition="IsShortString()">m_pair._Myval2.Storage.Buffer,su</StringView>
+		<StringView Condition="IsLongString()">m_pair._Myval2.Storage.Pointer,su</StringView>
+		<Expand>
+			<Item Name="[size]" ExcludeView="simple">Size()</Item>
+			<Item Name="[capacity]" ExcludeView="simple">Capacity()</Item>
+			<Item Name="[allocator]" ExcludeView="simple">m_pair</Item>
+			<ArrayItems>
+				<Size>m_pair._Myval2.MySize</Size>
+				<ValuePointer Condition="IsShortString()">m_pair._Myval2.Storage.Buffer</ValuePointer>
+				<ValuePointer Condition="IsLongString()">m_pair._Myval2.Storage.Pointer</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+	<Type Name="WuBaseString&lt;char,*&gt;>">
+		<Intrinsic Name="Size" Expression="m_pair._Myval2.MySize" />
+		<Intrinsic Name="Capacity" Expression="m_pair._Myval2.MyCapacity" />
+		<Intrinsic Name="BufferSize" Expression="16" />
+		<Intrinsic Name="IsShortString" Expression="Capacity() &lt; BufferSize()" />
+		<Intrinsic Name="IsLongString" Expression="Capacity() &gt;= BufferSize()" />
+		<DisplayString Condition="IsShortString()">{m_pair._Myval2.Storage.Buffer,na}</DisplayString>
+		<DisplayString Condition="IsLongString()">{m_pair._Myval2.Storage.Pointer,na}</DisplayString>
+		<StringView Condition="IsShortString()">m_pair._Myval2.Storage.Buffer,na</StringView>
+		<StringView Condition="IsLongString()">m_pair._Myval2.Storage.Pointer,na</StringView>
+		<Expand>
+			<Item Name="[size]" ExcludeView="simple">Size()</Item>
+			<Item Name="[capacity]" ExcludeView="simple">Capacity()</Item>
+			<Item Name="[allocator]" ExcludeView="simple">m_pair</Item>
+			<ArrayItems>
+				<Size>m_pair._Myval2.MySize</Size>
+				<ValuePointer Condition="IsShortString()">m_pair._Myval2.Storage.Buffer</ValuePointer>
+				<ValuePointer Condition="IsLongString()">m_pair._Myval2.Storage.Pointer</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+</AutoVisualizer>

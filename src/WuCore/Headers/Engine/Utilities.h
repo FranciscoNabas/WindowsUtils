@@ -1,8 +1,13 @@
 #pragma once
 #pragma unmanaged
 
-#include "../Support/String.h"
+#include "../Support/WuString.h"
 #include "../Support/Expressions.h"
+#include "../Support/WuException.h"
+
+#include <Msi.h>
+#include <MsiQuery.h>
+#include <memory>
 
 namespace WindowsUtils::Core
 {
@@ -12,15 +17,11 @@ namespace WindowsUtils::Core
 
 	typedef struct _WU_RESOURCE_MESSAGE_TABLE
 	{
-		DWORD	 Id;			// Message ID.
-		WWuString Message;		// Message text.
+		DWORD	   Id;		 // Message ID.
+		WWuString  Message;	 // Message text.
 
-		_WU_RESOURCE_MESSAGE_TABLE() { }
-		_WU_RESOURCE_MESSAGE_TABLE(DWORD id, LPWSTR message)
-			: Id(id), Message(message)
-		{ }
-
-		~_WU_RESOURCE_MESSAGE_TABLE() { }
+		_WU_RESOURCE_MESSAGE_TABLE();
+		_WU_RESOURCE_MESSAGE_TABLE(DWORD id, LPWSTR message);
 
 	} WU_RESOURCE_MESSAGE_TABLE, * PWU_RESOURCE_MESSAGE_TABLE;
 
@@ -28,22 +29,16 @@ namespace WindowsUtils::Core
 	*	~ Main class
 	*/
 	
-	extern "C" public class __declspec(dllexport) Utilities
+	class Utilities
 	{
 	public:
 		//Get-ResourceMessageTable
-		void GetResourceMessageTable(wuvector<WU_RESOURCE_MESSAGE_TABLE>& messageTable, const WWuString& libName);
-
-		// Get-LastWin32Error
-		void GetFormattedWin32Error(WWuString& errorMessage);
+		static void GetResourceMessageTable(std::vector<WU_RESOURCE_MESSAGE_TABLE>& messageTable, const WWuString& libName);
 
 		// Send-Click
-		void SendClick();
-	};
+		static void SendClick();
 
-	/*
-	*	~ Utility functions
-	*/
-	
-	void GetEnvVariable(const WWuString& variableName, WWuString& value);
+		// Utilities
+		static void GetEnvVariable(const WWuString& variableName, WWuString& value);
+	};
 }

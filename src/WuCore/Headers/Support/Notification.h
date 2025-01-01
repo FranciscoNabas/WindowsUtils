@@ -1,8 +1,8 @@
 ﻿#pragma once
 #pragma unmanaged
 
-#include "String.h"
-#include "Expressions.h"
+#include "WuString.h"
+#include "WuException.h"
 
 namespace WindowsUtils::Core
 {
@@ -12,7 +12,7 @@ namespace WindowsUtils::Core
 	enum class ProgressRecordType
 	{
 		Processing,
-		Completed
+		Completed,
 	};
 
 	/// <summary>
@@ -24,7 +24,7 @@ namespace WindowsUtils::Core
 		TcpingStatistics,
 		TestportOutput,
 		WWuString,
-		ProcessModuleInfo
+		ProcessModuleInfo,
 	};
 
 	/// <summary>
@@ -36,46 +36,7 @@ namespace WindowsUtils::Core
 		Progress,
 		Object,
 		Warning,
-		Error
-	};
-
-	/// <summary>
-	/// Maps to System.Management.Automation.ErrorCategory.
-	/// </summary>
-	enum class WriteErrorCategory
-	{
-		NotSpecified = 0,
-		OpenError = 1,
-		CloseError = 2,
-		DeviceError = 3,
-		DeadlockDetected = 4,
-		InvalidArgument = 5,
-		InvalidData = 6,
-		InvalidOperation = 7,
-		InvalidResult = 8,
-		InvalidType = 9,
-		MetadataError = 10,
-		NotImplemented = 11,
-		NotInstalled = 12,
-		ObjectNotFound = 13,
-		OperationStopped = 14,
-		OperationTimeout = 15,
-		SyntaxError = 16,
-		ParserError = 17,
-		PermissionDenied = 18,
-		ResourceBusy = 19,
-		ResourceExists = 20,
-		ResourceUnavailable = 21,
-		ReadError = 22,
-		WriteError = 23,
-		FromStdErr = 24,
-		SecurityError = 25,
-		ProtocolError = 26,
-		ConnectionError = 27,
-		AuthenticationError = 28,
-		LimitsExceeded = 29,
-		QuotaExceeded = 30,
-		NotEnabled = 31
+		Error,
 	};
 
 	/// <summary>
@@ -84,14 +45,14 @@ namespace WindowsUtils::Core
 	/// </summary>
 	typedef struct _MAPPED_PROGRESS_DATA
 	{
-		WWuString Activity;
-		int ActivityId;
-		WWuString CurrentOperation;
-		int ParentActivityId;
-		int PercentComplete;
-		ProgressRecordType RecordType;
-		int SecondsRemaining;
-		WWuString StatusDescription;
+		WWuString           Activity;
+		int                 ActivityId;
+		WWuString           CurrentOperation;
+		int                 ParentActivityId;
+		int                 PercentComplete;
+		ProgressRecordType  RecordType;
+		int                 SecondsRemaining;
+		WWuString           StatusDescription;
 
 		_MAPPED_PROGRESS_DATA();
 		_MAPPED_PROGRESS_DATA(
@@ -115,13 +76,13 @@ namespace WindowsUtils::Core
 	/// </summary>
 	typedef struct _MAPPED_INFORMATION_DATA
 	{
-		WWuString Computer;
-		DWORD NativeThreadId;
-		WWuString Text;
-		WWuString Source;
-		wuvector<WWuString> Tags;
-		time_t TimeGenerated;
-		WWuString User;
+		WWuString               Computer;
+		DWORD                   NativeThreadId;
+		WWuString               Text;
+		WWuString               Source;
+		std::vector<WWuString>	Tags;
+		time_t                  TimeGenerated;
+		WWuString               User;
 
 		_MAPPED_INFORMATION_DATA();
 		_MAPPED_INFORMATION_DATA(
@@ -143,12 +104,12 @@ namespace WindowsUtils::Core
 	/// </summary>
 	typedef struct _MAPPED_ERROR_DATA
 	{
-		DWORD ErrorCode;
-		WWuString ErrorMessage;
-		WWuString CompactTrace;
-		WWuString ErrorId;
-		WriteErrorCategory Category;
-		WWuString TargetObject;
+		DWORD               ErrorCode;
+		WWuString           ErrorMessage;
+		WWuString           CompactTrace;
+		WWuString           ErrorId;
+		WriteErrorCategory  Category;
+		WWuString           TargetObject;
 
 		_MAPPED_ERROR_DATA(
 			const int errorCode,
@@ -168,8 +129,11 @@ namespace WindowsUtils::Core
 	typedef void(__stdcall* UnmanagedWriteProgress)(const PMAPPED_PROGRESS_DATA data);
 	typedef void(__stdcall* UnmanagedWriteWarning)(const WWuString& data);
 	typedef void(__stdcall* UnmanagedWriteInformation)(const PMAPPED_INFORMATION_DATA data);
-	typedef void(__stdcall* UnmanagedWriteError)(const PMAPPED_ERROR_DATA data);
+	typedef void(__stdcall* UnmanagedWriteException)(const WuException& exception);
 	typedef void(__stdcall* UnmanagedWriteObject)(const PVOID data, const WriteOutputType objType);
+
+	// Function pointer for exception marshaling.
+	typedef void(__stdcall* UnmanagedExceptionMarshaler)(const WuException& ex);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 	//																								 //
@@ -202,28 +166,32 @@ namespace WindowsUtils::Core
 
 	extern "C" public class __declspec(dllexport) WuNativeContext
 	{
-	private:
-		UnmanagedWriteProgress m_writeProgressHook;
-		UnmanagedWriteWarning m_writeWarningHook;
-		UnmanagedWriteInformation m_writeInformationHook;
-		UnmanagedWriteObject m_writeObjectHook;
-		UnmanagedWriteError m_writeErrorHook;
-
 	public:
 		WuNativeContext(
 			UnmanagedWriteProgress progPtr,
 			UnmanagedWriteWarning warnPtr,
 			UnmanagedWriteInformation infoPtr,
 			UnmanagedWriteObject objPtr,
-			UnmanagedWriteError errorPtr
+			UnmanagedWriteException exPtr,
+			UnmanagedExceptionMarshaler exMarshaler
 		);
 
 		~WuNativeContext();
 
+		const UnmanagedExceptionMarshaler& GetExceptionMarshaler() const;
+
 		void NativeWriteWarning(const WWuString& text) const;
 		void NativeWriteProgress(const PMAPPED_PROGRESS_DATA progData) const;
 		void NativeWriteInformation(const PMAPPED_INFORMATION_DATA infoData) const;
-		void NativeWriteError(const PMAPPED_ERROR_DATA errorData) const;
+		void NativeWriteError(const WuException& exception) const;
 		void NativeWriteObject(const PVOID obj, const WriteOutputType type) const;
+
+	private:
+		UnmanagedWriteProgress m_writeProgressHook;
+		UnmanagedWriteWarning m_writeWarningHook;
+		UnmanagedWriteInformation m_writeInformationHook;
+		UnmanagedWriteObject m_writeObjectHook;
+		UnmanagedWriteException m_writeExHook;
+		UnmanagedExceptionMarshaler m_exMarshalerHook;
 	};
 }

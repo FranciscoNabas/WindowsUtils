@@ -1,0 +1,1498 @@
+[
+  {
+    "Name": "clretwrc.dll",
+    "Length": 312632,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579458107,
+    "ModifiedUtc": 133746431680000000,
+    "Sha256Hash": "A9F9A9808AA897384DF90267DAB9F9FF1DC443E1ED1EEA101B13E775CD7712C9"
+  },
+  {
+    "Name": "clrgc.dll",
+    "Length": 672536,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579468163,
+    "ModifiedUtc": 133746430640000000,
+    "Sha256Hash": "CB3BE5C95F06F76D00A7934AEEECBD5707BBF511FBC14B11C41EEE2D616E5A4A"
+  },
+  {
+    "Name": "clrgcexp.dll",
+    "Length": 709432,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579468163,
+    "ModifiedUtc": 133746430660000000,
+    "Sha256Hash": "2F5A610D81ED8EBCFF82F398D49E25D74F23E0070AC0C4A5CB4E59C6D78CE6A2"
+  },
+  {
+    "Name": "clrjit.dll",
+    "Length": 1954104,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579482440,
+    "ModifiedUtc": 133746429780000000,
+    "Sha256Hash": "FD1A7C2382D7E9184C8ECCECD3B40222875303EC23C7555CC4BFBA869602862F"
+  },
+  {
+    "Name": "coreclr.dll",
+    "Length": 4838184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579482440,
+    "ModifiedUtc": 133746429400000000,
+    "Sha256Hash": "8324C9324006BD22F33AD109F8D30D677C349942AE322A5612599908D2ED8663"
+  },
+  {
+    "Name": "createdump.exe",
+    "Length": 61784,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579505788,
+    "ModifiedUtc": 133746431720000000,
+    "Sha256Hash": "37E452FE5EEECB1741A8B913F60DFDCF671A7EBB3F4CC596003984F09EB817AC"
+  },
+  {
+    "Name": "hostfxr.dll",
+    "Length": 358696,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579505788,
+    "ModifiedUtc": 133746438300000000,
+    "Sha256Hash": "82253F5F4487B9D928CD720F701066041450A22A9B9BC2A09B4A5EE539EBCCB3"
+  },
+  {
+    "Name": "hostpolicy.dll",
+    "Length": 375576,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579505788,
+    "ModifiedUtc": 133746438300000000,
+    "Sha256Hash": "34D50123269E90ECABFBD93CB08521C4746F84F40A81863426C1B025C18DA859"
+  },
+  {
+    "Name": "Microsoft.CSharp.dll",
+    "Length": 993584,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579540362,
+    "ModifiedUtc": 133746443820000000,
+    "Sha256Hash": "CD459B5C93276760A4935B46CE898C9BE5D339525FF19D4CACAEEA7437724F49"
+  },
+  {
+    "Name": "Microsoft.DiaSymReader.Native.amd64.dll",
+    "Length": 2309152,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579468163,
+    "ModifiedUtc": 133587336080000000,
+    "Sha256Hash": "7F8DCF37D9D66EAE14C48A79FA2FCD447BD0F38A21BE0203A9C4A89398AACF28"
+  },
+  {
+    "Name": "Microsoft.VisualBasic.Core.dll",
+    "Length": 1255720,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579560431,
+    "ModifiedUtc": 133746443840000000,
+    "Sha256Hash": "612DA4E05669069A7CE15AE794C607F765BCF546497AA71DFA5CA94A72890D01"
+  },
+  {
+    "Name": "Microsoft.VisualBasic.dll",
+    "Length": 17704,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579565489,
+    "ModifiedUtc": 133746441400000000,
+    "Sha256Hash": "8A0980C2A0DF5D931921A9C588FDC8839B34B09C18FF1B3CF9B3A3BDC93DB215"
+  },
+  {
+    "Name": "Microsoft.Win32.Primitives.dll",
+    "Length": 15664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579565489,
+    "ModifiedUtc": 133746440660000000,
+    "Sha256Hash": "60BE9A74ABC0D20C3319AEF76BA75020DA4B02F35BCA79A3314B8E755CB06F51"
+  },
+  {
+    "Name": "Microsoft.Win32.Registry.dll",
+    "Length": 121136,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579565489,
+    "ModifiedUtc": 133746443840000000,
+    "Sha256Hash": "D8AAC6EC0B537F2647DD2831ED346A16206E0CAAED52F12BB0C82819BE43435A"
+  },
+  {
+    "Name": "mscordaccore_amd64_amd64_9.0.24.52809.dll",
+    "Length": 1354296,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579528349,
+    "ModifiedUtc": 133746433860000000,
+    "Sha256Hash": "68EF658A4EBCD5F6CC287B58B15BF9B7A7A9AE03761FEF43D10613323D1FC05A"
+  },
+  {
+    "Name": "mscordaccore.dll",
+    "Length": 1354296,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579528349,
+    "ModifiedUtc": 133746433860000000,
+    "Sha256Hash": "68EF658A4EBCD5F6CC287B58B15BF9B7A7A9AE03761FEF43D10613323D1FC05A"
+  },
+  {
+    "Name": "mscordbi.dll",
+    "Length": 1243688,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579528349,
+    "ModifiedUtc": 133746433140000000,
+    "Sha256Hash": "971FA113B351C788951CE2A12F6BA7357F3C528B13FF6BFFF3583ABED2862D9F"
+  },
+  {
+    "Name": "mscorlib.dll",
+    "Length": 60216,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580443441,
+    "ModifiedUtc": 133746441940000000,
+    "Sha256Hash": "A1D5BA6AD00366B33EE826F39DB064D2BD8CA58E83290D71385717C02D36B16B"
+  },
+  {
+    "Name": "mscorrc.dll",
+    "Length": 135976,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579540362,
+    "ModifiedUtc": 133746431680000000,
+    "Sha256Hash": "49B955B88A6A241CCFFBE911E2988FB759DEA6711DFB33703B0F854DEBDAB652"
+  },
+  {
+    "Name": "msquic.dll",
+    "Length": 529440,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579540362,
+    "ModifiedUtc": 133675466340000000,
+    "Sha256Hash": "9DC99D27BD5F1C63DF3E6B2A7AE22DFCFAA876EDB82661F692F3616E91A8DF8C"
+  },
+  {
+    "Name": "netstandard.dll",
+    "Length": 101176,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580456524,
+    "ModifiedUtc": 133746441940000000,
+    "Sha256Hash": "265A0325F6C16E0415CAF4E77C1DD59B66D963938C57038E9316F83B76AF3B29"
+  },
+  {
+    "Name": "System.AppContext.dll",
+    "Length": 15664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579576677,
+    "ModifiedUtc": 133746441260000000,
+    "Sha256Hash": "2AAEEB919612C94F00E2E2388BF355F2FEED1A655C6927A0741CD589A2FBB6EE"
+  },
+  {
+    "Name": "System.Buffers.dll",
+    "Length": 15672,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579576677,
+    "ModifiedUtc": 133746441260000000,
+    "Sha256Hash": "EA71155035AA66A3414CCBE230B6067708D44790D19C6FDDC7CE1BA0BBD09515"
+  },
+  {
+    "Name": "System.Collections.Concurrent.dll",
+    "Length": 293144,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579576677,
+    "ModifiedUtc": 133746443860000000,
+    "Sha256Hash": "28CC7289DA3C11D5C125D10F1017B7FD1B44A8B8BBA536CE3D3CADB3AE95C040"
+  },
+  {
+    "Name": "System.Collections.dll",
+    "Length": 334136,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579589477,
+    "ModifiedUtc": 133746443880000000,
+    "Sha256Hash": "6BAE82D48F0524362E76F18A81286F0DC95633F8FCE6D32EACB7CCD05DD16165"
+  },
+  {
+    "Name": "System.Collections.Immutable.dll",
+    "Length": 903472,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579589477,
+    "ModifiedUtc": 133746443900000000,
+    "Sha256Hash": "131A9AF3B8DCBC9036A534B51CD0A5383C8F5418A47E05763F70FBD31A2401B4"
+  },
+  {
+    "Name": "System.Collections.NonGeneric.dll",
+    "Length": 108840,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579589477,
+    "ModifiedUtc": 133746443920000000,
+    "Sha256Hash": "BA8BC18AF75DE955DF5F5078C3BF7B845A331B2A212F61007B577356C27BBD43"
+  },
+  {
+    "Name": "System.Collections.Specialized.dll",
+    "Length": 104744,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579589477,
+    "ModifiedUtc": 133746443940000000,
+    "Sha256Hash": "97C0417D370B142AC48049930602B8A4E84137ABBA8A26CBE3CF719AFDC18DBD"
+  },
+  {
+    "Name": "System.ComponentModel.Annotations.dll",
+    "Length": 198968,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579601217,
+    "ModifiedUtc": 133746443940000000,
+    "Sha256Hash": "77D4A7693B1BF243B3B11EBE7840D68B298B2FD878E96307B3186E4DD77292EC"
+  },
+  {
+    "Name": "System.ComponentModel.DataAnnotations.dll",
+    "Length": 17192,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579601217,
+    "ModifiedUtc": 133746441320000000,
+    "Sha256Hash": "7098CDB0B73AAB49EDBA4F44DF59519BBA3BDBE232BCC3498B847A62F471000B"
+  },
+  {
+    "Name": "System.ComponentModel.dll",
+    "Length": 31024,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579623870,
+    "ModifiedUtc": 133746443960000000,
+    "Sha256Hash": "ACEB9792FC8DE4D3F7D5ADD78FBBB6D3B909CAC1AC984A2FAF46672F290E7C70"
+  },
+  {
+    "Name": "System.ComponentModel.EventBasedAsync.dll",
+    "Length": 47400,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579613101,
+    "ModifiedUtc": 133746443980000000,
+    "Sha256Hash": "450CBF9A6E32662FFA4A859D5291C172E341E71216BA4A99CED512B85083F111"
+  },
+  {
+    "Name": "System.ComponentModel.Primitives.dll",
+    "Length": 80168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579613101,
+    "ModifiedUtc": 133746443980000000,
+    "Sha256Hash": "773B4EE10FD3680925690A26078FD66F4D7009AA9A4EAC1A9F44ADC6F20F5578"
+  },
+  {
+    "Name": "System.ComponentModel.TypeConverter.dll",
+    "Length": 772400,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579613101,
+    "ModifiedUtc": 133746444000000000,
+    "Sha256Hash": "D2DCD447D3BB8BEA58744FF4E14B0992B2C90A01BA5CF13C821EE2CD3CE33363"
+  },
+  {
+    "Name": "System.Configuration.dll",
+    "Length": 19752,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579623870,
+    "ModifiedUtc": 133746441320000000,
+    "Sha256Hash": "7813909E787A5DEE7B17FDBCA0B4A9E49AF24F2E1A9A26EA3AD0C97D7A77CD54"
+  },
+  {
+    "Name": "System.Console.dll",
+    "Length": 174392,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579623870,
+    "ModifiedUtc": 133746444020000000,
+    "Sha256Hash": "03844752A36BCB2613B1CBC9B28AD1DEE183172B5B8406F3740EDB0B14CCAEF7"
+  },
+  {
+    "Name": "System.Core.dll",
+    "Length": 23856,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579623870,
+    "ModifiedUtc": 133746441840000000,
+    "Sha256Hash": "B732970460A105F23A2C76C0BA8DD900EB00280E3E012FD0EE44206943219875"
+  },
+  {
+    "Name": "System.Data.Common.dll",
+    "Length": 2849032,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579636261,
+    "ModifiedUtc": 133746444060000000,
+    "Sha256Hash": "2EF630600E2B7F08FA48C39DD7CDBCF0DE76F63B5B5EC7007E91FB33D9074F1D"
+  },
+  {
+    "Name": "System.Data.DataSetExtensions.dll",
+    "Length": 16176,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579636261,
+    "ModifiedUtc": 133746441760000000,
+    "Sha256Hash": "81A135E86E72FEACC4FF0763BC670F03CCE90366056BC3AC260CB84FC50F1FAF"
+  },
+  {
+    "Name": "System.Data.dll",
+    "Length": 25400,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579645926,
+    "ModifiedUtc": 133746441840000000,
+    "Sha256Hash": "55702DC7CD7C4224ED3A06B55D5209A374F5BF5ED8633C01BE6655B93A4A1803"
+  },
+  {
+    "Name": "System.Diagnostics.Contracts.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579645926,
+    "ModifiedUtc": 133746440640000000,
+    "Sha256Hash": "32122069EB2B51D97858C9D1D5A3926C2339C14AB7E612AFBAA355A77F554F24"
+  },
+  {
+    "Name": "System.Diagnostics.Debug.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579651825,
+    "ModifiedUtc": 133746441240000000,
+    "Sha256Hash": "B9286DE91ECAEACA4FFB9795D949452EB22F9DC61F3EF60C24AF2E60D43295C8"
+  },
+  {
+    "Name": "System.Diagnostics.DiagnosticSource.dll",
+    "Length": 452912,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579656906,
+    "ModifiedUtc": 133746444080000000,
+    "Sha256Hash": "144F6C0DB2D8C7A2EF2AD2CA6EB9A8C18BF799281A9F572087CD52659890A574"
+  },
+  {
+    "Name": "System.Diagnostics.FileVersionInfo.dll",
+    "Length": 47408,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579656906,
+    "ModifiedUtc": 133746444080000000,
+    "Sha256Hash": "E104BC3BDBC94128062C9B8917A2E3F69BB0885B3FADD2681E089F382D9B4A5F"
+  },
+  {
+    "Name": "System.Diagnostics.Process.dll",
+    "Length": 338216,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579656906,
+    "ModifiedUtc": 133746444100000000,
+    "Sha256Hash": "7174DFEBFDC27BC34923324000D9D921F93795E9A786628D44BC5BD41E251531"
+  },
+  {
+    "Name": "System.Diagnostics.StackTrace.dll",
+    "Length": 47416,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579666985,
+    "ModifiedUtc": 133746444120000000,
+    "Sha256Hash": "34DF410EC9F651C89417E82B25CC0D6E9CFE7AA3765C32887CF15D2403198CB3"
+  },
+  {
+    "Name": "System.Diagnostics.TextWriterTraceListener.dll",
+    "Length": 67880,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579666985,
+    "ModifiedUtc": 133746444140000000,
+    "Sha256Hash": "261F80B7D1894A07C3EE07AC8753734CDAD56803A5379EA7A50AD6F9FA1318C8"
+  },
+  {
+    "Name": "System.Diagnostics.Tools.dll",
+    "Length": 15656,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579680545,
+    "ModifiedUtc": 133746441200000000,
+    "Sha256Hash": "59206DBF52D1CB8F0C929B7B4561C3E6707798524C8A78EC7A18B43A9DEFBF58"
+  },
+  {
+    "Name": "System.Diagnostics.TraceSource.dll",
+    "Length": 145720,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579680545,
+    "ModifiedUtc": 133746444140000000,
+    "Sha256Hash": "708332DDC237B016BA72E0BE703FB58235DEA9CD2ED1110BBC57627CE8F0B83A"
+  },
+  {
+    "Name": "System.Diagnostics.Tracing.dll",
+    "Length": 16680,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579691429,
+    "ModifiedUtc": 133746440980000000,
+    "Sha256Hash": "9169544E3FA8636057C95B1728534BDEB09A2CF15E5BA2C5EB1FA7DED8BFD961"
+  },
+  {
+    "Name": "System.dll",
+    "Length": 50992,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580443441,
+    "ModifiedUtc": 133746441920000000,
+    "Sha256Hash": "1CD9F7AF5E174BCAFF132EAD9B8BBAE920DE5543743116567ED2D48F22C53822"
+  },
+  {
+    "Name": "System.Drawing.dll",
+    "Length": 20776,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579691429,
+    "ModifiedUtc": 133746441540000000,
+    "Sha256Hash": "F0496312AF89588A475941887B74B8A404FEE5F17352C806E8969903F1ED5183"
+  },
+  {
+    "Name": "System.Drawing.Primitives.dll",
+    "Length": 137528,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579691429,
+    "ModifiedUtc": 133746444160000000,
+    "Sha256Hash": "D01EFD19A3D9647F3F3ABF8C58C8C21794FD89CAA43712970C41A1ECD44949DB"
+  },
+  {
+    "Name": "System.Dynamic.Runtime.dll",
+    "Length": 16688,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579703235,
+    "ModifiedUtc": 133746441380000000,
+    "Sha256Hash": "1AE4689ADD0CB74F23A06F2E0902D364C8BE3EB947B78978E105B68146A2B5D6"
+  },
+  {
+    "Name": "System.Formats.Asn1.dll",
+    "Length": 239888,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579703235,
+    "ModifiedUtc": 133746444180000000,
+    "Sha256Hash": "3A5272C70F03DCDC24B9699185AC50F34AC795F9C740D373738472CA859BFB18"
+  },
+  {
+    "Name": "System.Formats.Tar.dll",
+    "Length": 272688,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579703235,
+    "ModifiedUtc": 133746444200000000,
+    "Sha256Hash": "0F8B4DC23F73B2AEC7E120946EC840D94EB832E2C365E1A71CF41FC1B260357C"
+  },
+  {
+    "Name": "System.Globalization.Calendars.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579714551,
+    "ModifiedUtc": 133746441240000000,
+    "Sha256Hash": "CD06B0BB34CBF7FFE95CD22C841A74C43E2397270DBE175186BD44B3E481FE47"
+  },
+  {
+    "Name": "System.Globalization.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579714551,
+    "ModifiedUtc": 133746441180000000,
+    "Sha256Hash": "A059863CE2C4B5F41EB2BAA0D490E8FB628DFA1349C832FC9556FAF3FF3EAF15"
+  },
+  {
+    "Name": "System.Globalization.Extensions.dll",
+    "Length": 15632,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579714551,
+    "ModifiedUtc": 133746441240000000,
+    "Sha256Hash": "696E62C931F8D63723FAFEE8585E88D563383B9B0B039A3F55FEA4174F95B441"
+  },
+  {
+    "Name": "System.IO.Compression.Brotli.dll",
+    "Length": 84264,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579724632,
+    "ModifiedUtc": 133746444200000000,
+    "Sha256Hash": "410C38DBCFCF955CDFDDD1FC30D16E378A51ED1C78EFC44D891206BE62B89C30"
+  },
+  {
+    "Name": "System.IO.Compression.dll",
+    "Length": 268584,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579738298,
+    "ModifiedUtc": 133746444220000000,
+    "Sha256Hash": "5B69BFC7892A435C66C51B06B64DAEBC01492FA6660B4B3A11E6BF9F23846F19"
+  },
+  {
+    "Name": "System.IO.Compression.FileSystem.dll",
+    "Length": 15656,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579724632,
+    "ModifiedUtc": 133746441380000000,
+    "Sha256Hash": "ACB621CFD8AF1FB90FD81FFCC074D2999D2ABB26582588D25DC20EC3618145D9"
+  },
+  {
+    "Name": "System.IO.Compression.Native.dll",
+    "Length": 926504,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579468163,
+    "ModifiedUtc": 133746438780000000,
+    "Sha256Hash": "3C28019758FD16A1B67E035E5AA91F4BE92DF345B87FE1360C4D905E6F74339C"
+  },
+  {
+    "Name": "System.IO.Compression.ZipFile.dll",
+    "Length": 55600,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579724632,
+    "ModifiedUtc": 133746444240000000,
+    "Sha256Hash": "8325720E459F9F539C0A1EAE1E322881F1562CC8A9FFA9D94AD809DB1DD183DC"
+  },
+  {
+    "Name": "System.IO.dll",
+    "Length": 16184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579792434,
+    "ModifiedUtc": 133746441240000000,
+    "Sha256Hash": "DF1FD0F69171C8065951C185C60BEE17A115D78EFCB8186F9574CE38EF1A080F"
+  },
+  {
+    "Name": "System.IO.FileSystem.AccessControl.dll",
+    "Length": 104760,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579748371,
+    "ModifiedUtc": 133746444260000000,
+    "Sha256Hash": "8B9E2A7187415C73E8E1C56620F3F72CA0D1F7B9B722C09849C1966DAC1F9FC7"
+  },
+  {
+    "Name": "System.IO.FileSystem.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579758379,
+    "ModifiedUtc": 133746441240000000,
+    "Sha256Hash": "A79A5A056152350EDA68CB540DEBB38F59C3C19E8E7BA932A0D0B8788AB2E232"
+  },
+  {
+    "Name": "System.IO.FileSystem.DriveInfo.dll",
+    "Length": 55576,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579748371,
+    "ModifiedUtc": 133746444260000000,
+    "Sha256Hash": "833A87ED80E05A4B33A0238F88AC0C3110E350EBD69BE5E96F5722558C35B556"
+  },
+  {
+    "Name": "System.IO.FileSystem.Primitives.dll",
+    "Length": 15664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579748371,
+    "ModifiedUtc": 133746441160000000,
+    "Sha256Hash": "BDD605148F4C3CB5FFB263A9EB5BE39BD589B2D51DD2167D0C2A2885EB314435"
+  },
+  {
+    "Name": "System.IO.FileSystem.Watcher.dll",
+    "Length": 88376,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579758379,
+    "ModifiedUtc": 133746444280000000,
+    "Sha256Hash": "9A2F0BD0436C8B9BAF0132907A6441216E552F28791730EFD40BFD8249E748D6"
+  },
+  {
+    "Name": "System.IO.IsolatedStorage.dll",
+    "Length": 92440,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579763438,
+    "ModifiedUtc": 133746444300000000,
+    "Sha256Hash": "4652CC9BE67249D8F25B419135C8C3A36CB1A49939045AB17780047E52A68217"
+  },
+  {
+    "Name": "System.IO.MemoryMappedFiles.dll",
+    "Length": 84264,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579763438,
+    "ModifiedUtc": 133746444320000000,
+    "Sha256Hash": "9B63BA374A2F1F0071053600C43BEE31159BB986293242E1C9829EB85610CD6C"
+  },
+  {
+    "Name": "System.IO.Pipelines.dll",
+    "Length": 194872,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579763438,
+    "ModifiedUtc": 133746444320000000,
+    "Sha256Hash": "3FA6905059B1518383E6C5FA2FE7AE5588DD57A1D8CA20AC3DAF82B8784FABD0"
+  },
+  {
+    "Name": "System.IO.Pipes.AccessControl.dll",
+    "Length": 16136,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579778006,
+    "ModifiedUtc": 133746439880000000,
+    "Sha256Hash": "76B1679013D780CB09BACF9083D44359472B793BA2EDF5D4983C07D330EAF60F"
+  },
+  {
+    "Name": "System.IO.Pipes.dll",
+    "Length": 170288,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579778006,
+    "ModifiedUtc": 133746444340000000,
+    "Sha256Hash": "13394B456107599F378ED70832535B8A7DE8D20F19EF3EE3C7B11D80D953CC3E"
+  },
+  {
+    "Name": "System.IO.UnmanagedMemoryStream.dll",
+    "Length": 15672,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579778006,
+    "ModifiedUtc": 133746441640000000,
+    "Sha256Hash": "B830C5A554C78FD66B83D16F0EAB3307B3BEAC998A2B243F33A663F0B1B56800"
+  },
+  {
+    "Name": "System.Linq.dll",
+    "Length": 657720,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579802617,
+    "ModifiedUtc": 133746444360000000,
+    "Sha256Hash": "4F6C5D22321813B7BB80F72255A7E5F07C0DB4D7DFBF5CE9620CA2169604E1AF"
+  },
+  {
+    "Name": "System.Linq.Expressions.dll",
+    "Length": 3668256,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579792434,
+    "ModifiedUtc": 133746444400000000,
+    "Sha256Hash": "45E04AB734DB36D2FFD39D96B4FC88FBD9AF7B61ACA2A77D5429184FE8E5AA01"
+  },
+  {
+    "Name": "System.Linq.Parallel.dll",
+    "Length": 801032,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579792434,
+    "ModifiedUtc": 133746444420000000,
+    "Sha256Hash": "6F55CE1CC823DB6ACB4E345A743823361051EEC4DDDD76D38D8EB8DB87518593"
+  },
+  {
+    "Name": "System.Linq.Queryable.dll",
+    "Length": 178456,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579802617,
+    "ModifiedUtc": 133746444440000000,
+    "Sha256Hash": "27BCFE1A27F942D8BD184B0F8057B6CB198A81F4F422347DDAD3A120C2C4EB21"
+  },
+  {
+    "Name": "System.Memory.dll",
+    "Length": 162088,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579802617,
+    "ModifiedUtc": 133746444460000000,
+    "Sha256Hash": "EA3B6B7E57463CC275AEE01E147F45EA5C3A329F8E95D5EAC40CF656EA2813D7"
+  },
+  {
+    "Name": "System.Net.dll",
+    "Length": 17712,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579910549,
+    "ModifiedUtc": 133746441540000000,
+    "Sha256Hash": "10C78135B6BF67AC9E5EE041877B0F4ECA717921B77D8ED86445EA471569CC73"
+  },
+  {
+    "Name": "System.Net.Http.dll",
+    "Length": 1788200,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579816487,
+    "ModifiedUtc": 133746444480000000,
+    "Sha256Hash": "83810AD647F1E7A62C8FCE3571FBAFA8584E0FDB90DD8FF98472DD9E33A06B3E"
+  },
+  {
+    "Name": "System.Net.Http.Json.dll",
+    "Length": 133432,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579816487,
+    "ModifiedUtc": 133746444500000000,
+    "Sha256Hash": "4AA663D36A2B39C4FFE4B70345FDE307F9CAFCF4D7C5F1279EB64452E2A90319"
+  },
+  {
+    "Name": "System.Net.HttpListener.dll",
+    "Length": 547112,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579826585,
+    "ModifiedUtc": 133746444520000000,
+    "Sha256Hash": "62EFAB7BC7339F51896526DD72F758F1A19CD35351ABAD2CB55DE1324E5634CA"
+  },
+  {
+    "Name": "System.Net.Mail.dll",
+    "Length": 432440,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579826585,
+    "ModifiedUtc": 133746444520000000,
+    "Sha256Hash": "756038E03770B6993B25F9B695B160D71B76D3AF45FE42D0848DA06230C3688B"
+  },
+  {
+    "Name": "System.Net.NameResolution.dll",
+    "Length": 125200,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579836593,
+    "ModifiedUtc": 133746444540000000,
+    "Sha256Hash": "40643E0051ACFF7E074DCADF95E9FBDD4CA5183203C9B2BA436E77C545A6DA09"
+  },
+  {
+    "Name": "System.Net.NetworkInformation.dll",
+    "Length": 158008,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579846577,
+    "ModifiedUtc": 133746444560000000,
+    "Sha256Hash": "FCFD5AE2F20E29296DDE3965D52F1C9EDA81DD738B5159D40569520CFF55E9E0"
+  },
+  {
+    "Name": "System.Net.Ping.dll",
+    "Length": 96560,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579846577,
+    "ModifiedUtc": 133746444580000000,
+    "Sha256Hash": "F8D05751497647B91153CC16603C0B25569E71A7F24BE0B6459B25C71BEFBE7A"
+  },
+  {
+    "Name": "System.Net.Primitives.dll",
+    "Length": 227640,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579846577,
+    "ModifiedUtc": 133746444600000000,
+    "Sha256Hash": "EC4D3F76563B1CA2240672D7F243E2A177C7B283D19348FCE32B479159281644"
+  },
+  {
+    "Name": "System.Net.Quic.dll",
+    "Length": 371000,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579872861,
+    "ModifiedUtc": 133746444600000000,
+    "Sha256Hash": "5F110A0C1198C0211EB0464FA07FB9BD8DD56BFF31B8BE231ACEAE6F0907DBB8"
+  },
+  {
+    "Name": "System.Net.Requests.dll",
+    "Length": 383288,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579856585,
+    "ModifiedUtc": 133746444620000000,
+    "Sha256Hash": "8ABDD3B37AE4F520A24142FCB559F0032B7A5F0E5B754D021613C8D3D8E4C60B"
+  },
+  {
+    "Name": "System.Net.Security.dll",
+    "Length": 678184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579861644,
+    "ModifiedUtc": 133746444640000000,
+    "Sha256Hash": "083F8EA819785BA32C45905FB612CF9E2E0819A54B5188EBC87EC2CF1A3724D7"
+  },
+  {
+    "Name": "System.Net.ServicePoint.dll",
+    "Length": 15656,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579861644,
+    "ModifiedUtc": 133746441200000000,
+    "Sha256Hash": "31688683DF221DD820BA2AE994BE5BEE36774EBED944AD3AB6D85BBDE5700DE1"
+  },
+  {
+    "Name": "System.Net.Sockets.dll",
+    "Length": 547120,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579872861,
+    "ModifiedUtc": 133746444660000000,
+    "Sha256Hash": "5504D844371520CDB9B23DE3E43FFC5B60D7D1C290DF4605B599650382636543"
+  },
+  {
+    "Name": "System.Net.WebClient.dll",
+    "Length": 170280,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579872861,
+    "ModifiedUtc": 133746444680000000,
+    "Sha256Hash": "601AB2726C4A4AEA1B12FCB3352DD70CA3A5DFC65BCC300D0D746B8D7F794908"
+  },
+  {
+    "Name": "System.Net.WebHeaderCollection.dll",
+    "Length": 63792,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579884992,
+    "ModifiedUtc": 133746444700000000,
+    "Sha256Hash": "EC38B20BD2BDC62367D9C4F2004114B95AB4A483FF9A9678C4E4D0D9B751D321"
+  },
+  {
+    "Name": "System.Net.WebProxy.dll",
+    "Length": 43304,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579884992,
+    "ModifiedUtc": 133746444700000000,
+    "Sha256Hash": "99446549381C7A52E13F33E69BC7E839A8DE49638F8E9A364C11C3B673A08DCF"
+  },
+  {
+    "Name": "System.Net.WebSockets.Client.dll",
+    "Length": 104752,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579898329,
+    "ModifiedUtc": 133746444720000000,
+    "Sha256Hash": "3A1EDEE8820F543BC65114B7AC7BA71699FF385B48C29721EE3C42A3328225A9"
+  },
+  {
+    "Name": "System.Net.WebSockets.dll",
+    "Length": 235832,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579898329,
+    "ModifiedUtc": 133746444740000000,
+    "Sha256Hash": "9F869FD6444774F6BADB3117F18A4E2B2E904F7137BFF89114B21B3C3BBF3690"
+  },
+  {
+    "Name": "System.Numerics.dll",
+    "Length": 15656,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579910549,
+    "ModifiedUtc": 133746441560000000,
+    "Sha256Hash": "E73B8DFF5E27FF61A92B1E79897D1E360B8257C7773B74F27AED2E6D234FD716"
+  },
+  {
+    "Name": "System.Numerics.Vectors.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579910549,
+    "ModifiedUtc": 133746441440000000,
+    "Sha256Hash": "E269E3A30AE24B97C3881A2213BC846679362CDF73A0A82721AFAA9719D0777F"
+  },
+  {
+    "Name": "System.ObjectModel.dll",
+    "Length": 84264,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579928782,
+    "ModifiedUtc": 133746444760000000,
+    "Sha256Hash": "739E1A5A023CC2C6DF628977C4561A700208B87F49DB20FA50CFFEB1070361E3"
+  },
+  {
+    "Name": "System.Private.CoreLib.dll",
+    "Length": 15272200,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579922752,
+    "ModifiedUtc": 133746436940000000,
+    "Sha256Hash": "1843C1C812FB7A32F24876F9581F420670D0D5B5B83C2F287A0474DD1E2DF512"
+  },
+  {
+    "Name": "System.Private.DataContractSerialization.dll",
+    "Length": 2070840,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579928782,
+    "ModifiedUtc": 133746444780000000,
+    "Sha256Hash": "CA8A347A23CF7F5FD31178304186FE957CAB00910F65CC914134AB6C540D6C8A"
+  },
+  {
+    "Name": "System.Private.Uri.dll",
+    "Length": 260400,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579928782,
+    "ModifiedUtc": 133746444800000000,
+    "Sha256Hash": "F744FDB1E007298D53BF1F175C8D022531BE05C21B223216A9CDD17373CE9718"
+  },
+  {
+    "Name": "System.Private.Xml.dll",
+    "Length": 7915824,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579942190,
+    "ModifiedUtc": 133746444840000000,
+    "Sha256Hash": "EBF4881A5F76A8A524A74D9808C587DE97896238873AACC84A58A4A00F65959B"
+  },
+  {
+    "Name": "System.Private.Xml.Linq.dll",
+    "Length": 399672,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579928782,
+    "ModifiedUtc": 133746444860000000,
+    "Sha256Hash": "F35BC7E2EF5B8F7C1E0D9153FE9B3B4C99A67AA4C00A52D5E3BC628C80A3A75C"
+  },
+  {
+    "Name": "System.Reflection.DispatchProxy.dll",
+    "Length": 76056,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579952419,
+    "ModifiedUtc": 133746444880000000,
+    "Sha256Hash": "BFC8A1C5ED32D6D8A10285271F0F7F585D74E3AE018874ADAA4FE908E0D8C60E"
+  },
+  {
+    "Name": "System.Reflection.dll",
+    "Length": 16696,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580001417,
+    "ModifiedUtc": 133746441220000000,
+    "Sha256Hash": "35C69EC0C94D58E105F587162A33707D70475141774A39771090D34AC422C206"
+  },
+  {
+    "Name": "System.Reflection.Emit.dll",
+    "Length": 301360,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579967737,
+    "ModifiedUtc": 133746444880000000,
+    "Sha256Hash": "15BC0312F595EAD64A786DB2A91583DE623B1F24751CDCC4675103E76E2AE41B"
+  },
+  {
+    "Name": "System.Reflection.Emit.ILGeneration.dll",
+    "Length": 16160,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579957486,
+    "ModifiedUtc": 133746441660000000,
+    "Sha256Hash": "4C6935370FF39470A60A35E03B82105E7711B79B672BA9129C5D6BB45CD0D48E"
+  },
+  {
+    "Name": "System.Reflection.Emit.Lightweight.dll",
+    "Length": 16136,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579957486,
+    "ModifiedUtc": 133746440500000000,
+    "Sha256Hash": "5B4D370529E68AB28859697633FFCAFC21351FB02D060F6B4B53201451B1545E"
+  },
+  {
+    "Name": "System.Reflection.Extensions.dll",
+    "Length": 15656,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579977852,
+    "ModifiedUtc": 133746441220000000,
+    "Sha256Hash": "9C2915CCB42FD2DEBA399AEF9E376920FFB46DF4BDA2020CB361E21DB100D5B7"
+  },
+  {
+    "Name": "System.Reflection.Metadata.dll",
+    "Length": 1173808,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579977852,
+    "ModifiedUtc": 133746444920000000,
+    "Sha256Hash": "88273FAC6C2FACFBC5E6865ADCEA90740839E055C347CCEF6E0417BE569817E8"
+  },
+  {
+    "Name": "System.Reflection.Primitives.dll",
+    "Length": 16184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579977852,
+    "ModifiedUtc": 133746441520000000,
+    "Sha256Hash": "06A6800B6648F46037C7B8660839039AE6E43550D263DF516DE7BC8C1A9AD521"
+  },
+  {
+    "Name": "System.Reflection.TypeExtensions.dll",
+    "Length": 43304,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579987909,
+    "ModifiedUtc": 133746444920000000,
+    "Sha256Hash": "1D41A69111E072F411B3F16ECE0DCB51C425663979210883BD0611C6A1F281C3"
+  },
+  {
+    "Name": "System.Resources.Reader.dll",
+    "Length": 15672,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580001417,
+    "ModifiedUtc": 133746441220000000,
+    "Sha256Hash": "A9AEFA2AD57B7870A3EC7C635EBA7ACE3AA810680D36EA0D810D4D20515C8E05"
+  },
+  {
+    "Name": "System.Resources.ResourceManager.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580026576,
+    "ModifiedUtc": 133746441160000000,
+    "Sha256Hash": "670725CFD54C2E52F9FA6B1A4DC7584DF89E688BB48D3AC3B076D7E8EC384C8A"
+  },
+  {
+    "Name": "System.Resources.Writer.dll",
+    "Length": 51504,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580026576,
+    "ModifiedUtc": 133746444940000000,
+    "Sha256Hash": "FB0978EF9381B0F6E4CD89459554F2E4F58CF94EE42FA3E7FA441B6F39B04C1A"
+  },
+  {
+    "Name": "System.Runtime.CompilerServices.Unsafe.dll",
+    "Length": 15664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580040110,
+    "ModifiedUtc": 133746441160000000,
+    "Sha256Hash": "DB3AABD9C0F8A5D5A97A5E4BD6064EF7D8AA86DFA93463264B7441B82BDCE24A"
+  },
+  {
+    "Name": "System.Runtime.CompilerServices.VisualC.dll",
+    "Length": 31000,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580060194,
+    "ModifiedUtc": 133746444960000000,
+    "Sha256Hash": "3F709EA40408DA4A9139A1FE296BCF7CE52C5DFF8C836057E5ED6396F0DE5E66"
+  },
+  {
+    "Name": "System.Runtime.dll",
+    "Length": 44848,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580150642,
+    "ModifiedUtc": 133746440980000000,
+    "Sha256Hash": "2FF1309149BBC5F1E68200A9E3D14CD9F10E346E501FCD8DF6AC9956DEA339F1"
+  },
+  {
+    "Name": "System.Runtime.Extensions.dll",
+    "Length": 18224,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580040110,
+    "ModifiedUtc": 133746441180000000,
+    "Sha256Hash": "8A244088BCEB2DFBA3108FBCC13E596C1410869CD90231BC879955A5AC826B1B"
+  },
+  {
+    "Name": "System.Runtime.Handles.dll",
+    "Length": 15656,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580065252,
+    "ModifiedUtc": 133746441220000000,
+    "Sha256Hash": "167B00F830BD414EBC83DCD13D28D4AA570DA4B5BE4406BD7192A7CB0ED51112"
+  },
+  {
+    "Name": "System.Runtime.InteropServices.dll",
+    "Length": 112952,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580080003,
+    "ModifiedUtc": 133746444960000000,
+    "Sha256Hash": "D6C984657A7171427DCEC5AA202AFEEF498A943D11E0A125675F7B8729059788"
+  },
+  {
+    "Name": "System.Runtime.InteropServices.JavaScript.dll",
+    "Length": 51496,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580065252,
+    "ModifiedUtc": 133746444980000000,
+    "Sha256Hash": "18C3DEFB8A7A706E9B256A481F43CC114CC697DD65C3342557C6A782387601BF"
+  },
+  {
+    "Name": "System.Runtime.InteropServices.RuntimeInformation.dll",
+    "Length": 15664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580065252,
+    "ModifiedUtc": 133746441200000000,
+    "Sha256Hash": "E39335916FC1109AE8A7836CB0826646E858C05049E9B79D2BF81CDDBC77E8A6"
+  },
+  {
+    "Name": "System.Runtime.Intrinsics.dll",
+    "Length": 17704,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580080003,
+    "ModifiedUtc": 133746441500000000,
+    "Sha256Hash": "987351DF3F2D4859D6892777A3813D93FE6C1E213A3AE1F3579ED8D34637CD25"
+  },
+  {
+    "Name": "System.Runtime.Loader.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580090081,
+    "ModifiedUtc": 133746440640000000,
+    "Sha256Hash": "EDE4623DAEDB76614BF412EAEFF1EC9794FC13F87B3079BF25618455E0EE8BDF"
+  },
+  {
+    "Name": "System.Runtime.Numerics.dll",
+    "Length": 354600,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580100084,
+    "ModifiedUtc": 133746445000000000,
+    "Sha256Hash": "C599B2FF306062336D6075512921C2726CE868887FB0C47734DBA3565520ADEE"
+  },
+  {
+    "Name": "System.Runtime.Serialization.dll",
+    "Length": 17208,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580132735,
+    "ModifiedUtc": 133746441380000000,
+    "Sha256Hash": "D268099654E05844BA13725B9B2C5F7548889F2E0349AFB30CDACBE68D827DF3"
+  },
+  {
+    "Name": "System.Runtime.Serialization.Formatters.dll",
+    "Length": 125216,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580100084,
+    "ModifiedUtc": 133746445020000000,
+    "Sha256Hash": "67781F798CF5D99E094EE87678E47600C802A8B6EC450BF902714F572FB53BD0"
+  },
+  {
+    "Name": "System.Runtime.Serialization.Json.dll",
+    "Length": 16184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580110089,
+    "ModifiedUtc": 133746440480000000,
+    "Sha256Hash": "32D590C6F19B443CC4483CFE2511B5F8DB4B1CAD275E10845E5594F53F09F9A1"
+  },
+  {
+    "Name": "System.Runtime.Serialization.Primitives.dll",
+    "Length": 39216,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580132735,
+    "ModifiedUtc": 133746445020000000,
+    "Sha256Hash": "15877BC50E601A67CDA141D71D0EABA56272977EB65C8D039D11C799F66C8A54"
+  },
+  {
+    "Name": "System.Runtime.Serialization.Xml.dll",
+    "Length": 17200,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580120096,
+    "ModifiedUtc": 133746440600000000,
+    "Sha256Hash": "199B9771362AD3B4B65DB49E6397BD9E97271BA3D24D51F2CCA35E34EEAEF4E6"
+  },
+  {
+    "Name": "System.Security.AccessControl.dll",
+    "Length": 231720,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580150642,
+    "ModifiedUtc": 133746445040000000,
+    "Sha256Hash": "54CF41CF7771CDDF9FC206BF4CA92CD4E0AFD6F16E0EF9F03A497EBCC06A79E4"
+  },
+  {
+    "Name": "System.Security.Claims.dll",
+    "Length": 100664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580145582,
+    "ModifiedUtc": 133746445060000000,
+    "Sha256Hash": "B3EEDC79480AE165D9EA9B5CC9580E5362155AEAD68E6D87977F5A1F906211AE"
+  },
+  {
+    "Name": "System.Security.Cryptography.Algorithms.dll",
+    "Length": 17704,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580150642,
+    "ModifiedUtc": 133746441300000000,
+    "Sha256Hash": "F50321AB7516372A8A8D84E4FB577086DB4B547882338D10E92B084338F5DF2E"
+  },
+  {
+    "Name": "System.Security.Cryptography.Cng.dll",
+    "Length": 16688,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580170792,
+    "ModifiedUtc": 133746441200000000,
+    "Sha256Hash": "EE35E9BD0EA0D8DFA42C2A2A1C2E818DAC30E4E936896B2E319B0789DB26B166"
+  },
+  {
+    "Name": "System.Security.Cryptography.Csp.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580160707,
+    "ModifiedUtc": 133746441200000000,
+    "Sha256Hash": "5CA519AEB26C1B8593BB54D0DC72E1CA6B8D5271BA8EA6BE06176C3EE364CDB4"
+  },
+  {
+    "Name": "System.Security.Cryptography.dll",
+    "Length": 2128168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580184840,
+    "ModifiedUtc": 133746445080000000,
+    "Sha256Hash": "DD469B08DF2650600391892711AB6A00BD6705EBD9BA9010A9372F21DB98DE73"
+  },
+  {
+    "Name": "System.Security.Cryptography.Encoding.dll",
+    "Length": 16176,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580160707,
+    "ModifiedUtc": 133746441280000000,
+    "Sha256Hash": "0BA87013AF2A9F37D024B64FBF983360B76B0B2F473C5E0602D41E0578658B38"
+  },
+  {
+    "Name": "System.Security.Cryptography.OpenSsl.dll",
+    "Length": 15656,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580170792,
+    "ModifiedUtc": 133746441260000000,
+    "Sha256Hash": "982AD29F98123B40E8C191A4E9C27DA8C94C3CC8ACC27D1C1993BC7511AFC5C8"
+  },
+  {
+    "Name": "System.Security.Cryptography.Primitives.dll",
+    "Length": 16184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580194932,
+    "ModifiedUtc": 133746441200000000,
+    "Sha256Hash": "A1BBA9FAF0FA4F8418F71DC0C16B3CE5D25CDF3D01DF5CEBE97060E43994DA59"
+  },
+  {
+    "Name": "System.Security.Cryptography.X509Certificates.dll",
+    "Length": 17200,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580184840,
+    "ModifiedUtc": 133746441260000000,
+    "Sha256Hash": "03C590ABE6133B597825CFF9A51431EE4B2C1CF60DEFB7B07816FD3F430DD79C"
+  },
+  {
+    "Name": "System.Security.dll",
+    "Length": 18736,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580204927,
+    "ModifiedUtc": 133746441320000000,
+    "Sha256Hash": "AF4D4A8C2AF903D856844B37A0955CC3839BAE43C4A011612789A4EBED717FA2"
+  },
+  {
+    "Name": "System.Security.Principal.dll",
+    "Length": 15664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580219176,
+    "ModifiedUtc": 133746441180000000,
+    "Sha256Hash": "E85FE25A1AAEEC7C036D9C6D6447F52B9EEF915F2C308302F2015CA75713B766"
+  },
+  {
+    "Name": "System.Security.Principal.Windows.dll",
+    "Length": 186664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580204927,
+    "ModifiedUtc": 133746445100000000,
+    "Sha256Hash": "0369726D2A6968FA46B43CD513399CDF7CBDFB860FF486D61905BFC19DFD33BA"
+  },
+  {
+    "Name": "System.Security.SecureString.dll",
+    "Length": 15664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580231480,
+    "ModifiedUtc": 133746441640000000,
+    "Sha256Hash": "5A59D1251B7E4130E6214185B777867E3A5BCF71F77192ED9D2596C4D75F609C"
+  },
+  {
+    "Name": "System.ServiceModel.Web.dll",
+    "Length": 17208,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580243647,
+    "ModifiedUtc": 133746441320000000,
+    "Sha256Hash": "943E583A891CF8617B08A0C80EA85702938A082779D26F4A2261FFDE77E32F6D"
+  },
+  {
+    "Name": "System.ServiceProcess.dll",
+    "Length": 16176,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580231480,
+    "ModifiedUtc": 133746441320000000,
+    "Sha256Hash": "0765336D6E4FAE069CD10F746888920F0027845BD5847E15C9EAEB6D276AB03F"
+  },
+  {
+    "Name": "System.Text.Encoding.CodePages.dll",
+    "Length": 862512,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580243647,
+    "ModifiedUtc": 133746445120000000,
+    "Sha256Hash": "64B65451ACC293B124EF22CAC8B2DB44DA05C13F75EE1A10BED46C2FE890FE4C"
+  },
+  {
+    "Name": "System.Text.Encoding.dll",
+    "Length": 16144,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580257131,
+    "ModifiedUtc": 133746441180000000,
+    "Sha256Hash": "A4C29B373CA5A1C5DD1F132CCEA9DDA86C3978597E30887F5C313026C1DE6E23"
+  },
+  {
+    "Name": "System.Text.Encoding.Extensions.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580257131,
+    "ModifiedUtc": 133746441540000000,
+    "Sha256Hash": "BDBD9FF910F111734B443A4E74B7613AB137ACF9FC55465850AFCE8B34CE2E39"
+  },
+  {
+    "Name": "System.Text.Encodings.Web.dll",
+    "Length": 133432,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580269576,
+    "ModifiedUtc": 133746445140000000,
+    "Sha256Hash": "DD7CC3EFAD3BEA8F30786A4AC3595FE9A880806A1AB2E6C44F8332F80F52C93A"
+  },
+  {
+    "Name": "System.Text.Json.dll",
+    "Length": 1796392,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580269576,
+    "ModifiedUtc": 133746445160000000,
+    "Sha256Hash": "65D0A85275A5A48AC5AE9ABDDBA62891FCA78EC8E1BC9F2974CBF74C03884E29"
+  },
+  {
+    "Name": "System.Text.RegularExpressions.dll",
+    "Length": 1022248,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580291336,
+    "ModifiedUtc": 133746445180000000,
+    "Sha256Hash": "586FD1EB62C1E15A5389227B7FB327BF830E057F7283FAE3C05AECB9B6072340"
+  },
+  {
+    "Name": "System.Threading.Channels.dll",
+    "Length": 141624,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580281245,
+    "ModifiedUtc": 133746445200000000,
+    "Sha256Hash": "12504403FABD840CD14FA4537F52613001B7CAEBE82C94D5B46CF2A960E0AEAB"
+  },
+  {
+    "Name": "System.Threading.dll",
+    "Length": 84272,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580327338,
+    "ModifiedUtc": 133746445200000000,
+    "Sha256Hash": "4426FB4DA1BEAEDA44D3B31806D98179D7598964ECB3B414FA2DCEE1201DD06C"
+  },
+  {
+    "Name": "System.Threading.Overlapped.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580281245,
+    "ModifiedUtc": 133746440640000000,
+    "Sha256Hash": "5BF897912D8A28EE3204648FB0B7AB55F72198B13653EA385E7BBCC2350A6D77"
+  },
+  {
+    "Name": "System.Threading.Tasks.Dataflow.dll",
+    "Length": 493880,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580291336,
+    "ModifiedUtc": 133746445220000000,
+    "Sha256Hash": "D2401C6AB58A13984015FE0DE6CAC81C618BD0018B90834AC07E9208DA4818F7"
+  },
+  {
+    "Name": "System.Threading.Tasks.dll",
+    "Length": 17192,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580313118,
+    "ModifiedUtc": 133746441220000000,
+    "Sha256Hash": "7CF5204D31C97C47D4FB3EA271DF829876F2FFCFFCF28FE7D7F1598330F5BAB7"
+  },
+  {
+    "Name": "System.Threading.Tasks.Extensions.dll",
+    "Length": 16144,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580313118,
+    "ModifiedUtc": 133746441180000000,
+    "Sha256Hash": "5B3D90239F8BD67E58208C747104F231DE8D76511EA4D6F0FAED054AE3C7F64F"
+  },
+  {
+    "Name": "System.Threading.Tasks.Parallel.dll",
+    "Length": 133416,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580313118,
+    "ModifiedUtc": 133746445240000000,
+    "Sha256Hash": "B5E407F815D649C7871B79DF9A8AFD579A8A57DA2A5C87F505C481A9965A6184"
+  },
+  {
+    "Name": "System.Threading.Thread.dll",
+    "Length": 16184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580313118,
+    "ModifiedUtc": 133746440500000000,
+    "Sha256Hash": "00AD422B60028F4A56A9EC05B911345977511ACC8B80A7E877347BEBA24E3FDE"
+  },
+  {
+    "Name": "System.Threading.ThreadPool.dll",
+    "Length": 16184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580345879,
+    "ModifiedUtc": 133746440320000000,
+    "Sha256Hash": "5CE532D23D2D5636B082947136ABB9743FF2CD1176C7F06D0A080488AA985788"
+  },
+  {
+    "Name": "System.Threading.Timer.dll",
+    "Length": 15664,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580340812,
+    "ModifiedUtc": 133746441220000000,
+    "Sha256Hash": "BD82D6B420F41994081B86BDA66AA97463640D17596AFE21F68BEAA9E81D877F"
+  },
+  {
+    "Name": "System.Transactions.dll",
+    "Length": 16688,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580368163,
+    "ModifiedUtc": 133746441320000000,
+    "Sha256Hash": "76F1DBE00995FE2A8ECE21C94BB458A74E8613F2D27BD00E46DB6C431186EE33"
+  },
+  {
+    "Name": "System.Transactions.Local.dll",
+    "Length": 653608,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580356501,
+    "ModifiedUtc": 133746445260000000,
+    "Sha256Hash": "177A2C039B9ADF469EF5BD0B5B28172628649138FA7DA172E5E395C4D5FE1C31"
+  },
+  {
+    "Name": "System.ValueTuple.dll",
+    "Length": 15656,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580368163,
+    "ModifiedUtc": 133746441180000000,
+    "Sha256Hash": "C7F0DF8451C6B203A29FEA99AB510C2912F676A9247698B09620A0A8B1217F6A"
+  },
+  {
+    "Name": "System.Web.dll",
+    "Length": 15672,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580382033,
+    "ModifiedUtc": 133746441420000000,
+    "Sha256Hash": "18BE5F712C6728F20801C2FD287925A9157E7E5E0A4406BCFF4186B73B7C55E9"
+  },
+  {
+    "Name": "System.Web.HttpUtility.dll",
+    "Length": 63784,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580382033,
+    "ModifiedUtc": 133746445280000000,
+    "Sha256Hash": "54E8C83D6DC731F554BE5484F3AD9B26FD073319C89E33A859ED3B64F9EE4711"
+  },
+  {
+    "Name": "System.Windows.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580382033,
+    "ModifiedUtc": 133746441400000000,
+    "Sha256Hash": "5A7E8FE4176763F7B7F755E160CD6763289B8ED44193FE684C705C2BFD3B7B45"
+  },
+  {
+    "Name": "System.Xml.dll",
+    "Length": 23856,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580443441,
+    "ModifiedUtc": 133746441400000000,
+    "Sha256Hash": "8BBE6BAD70C2ABDE03FFC5140282973818702E3080C0BDF839BCC8C54216C956"
+  },
+  {
+    "Name": "System.Xml.Linq.dll",
+    "Length": 16184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580394520,
+    "ModifiedUtc": 133746441560000000,
+    "Sha256Hash": "2501EA397080C44827E63AE09A51BE83DFE962D0400946AC226607484B75AE0E"
+  },
+  {
+    "Name": "System.Xml.ReaderWriter.dll",
+    "Length": 22320,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580394520,
+    "ModifiedUtc": 133746441060000000,
+    "Sha256Hash": "60C8A8EB814FC7F9EE602D09DB0DDF84C2649F5BBE4262EDCC2E43D56D72BCE9"
+  },
+  {
+    "Name": "System.Xml.Serialization.dll",
+    "Length": 16680,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580406847,
+    "ModifiedUtc": 133746441380000000,
+    "Sha256Hash": "27014B42E3D237D3094244521D4B7D30C02811AB4773F9F38DBA36CC2D211E92"
+  },
+  {
+    "Name": "System.Xml.XDocument.dll",
+    "Length": 16184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580406847,
+    "ModifiedUtc": 133746441420000000,
+    "Sha256Hash": "1442DCFE1F9818C62F3D940672B2210FEA377EAD805973DCD1B63DCB5D4BD572"
+  },
+  {
+    "Name": "System.Xml.XmlDocument.dll",
+    "Length": 16184,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580433370,
+    "ModifiedUtc": 133746441380000000,
+    "Sha256Hash": "69A811FD1D545A488C17B715DC80ECD888E1B18B4F6F3357DA985C6CB5C61084"
+  },
+  {
+    "Name": "System.Xml.XmlSerializer.dll",
+    "Length": 18216,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580420342,
+    "ModifiedUtc": 133746440980000000,
+    "Sha256Hash": "DA60FE7F7885F4C3D33390F1C277D1F2A27580DEC006BA3B1277821BB018811C"
+  },
+  {
+    "Name": "System.Xml.XPath.dll",
+    "Length": 16168,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580406847,
+    "ModifiedUtc": 133746441000000000,
+    "Sha256Hash": "BF6850149BE3ADEDF24D32B4E39274689235FE5BF90ED2978294B30238867A97"
+  },
+  {
+    "Name": "System.Xml.XPath.XDocument.dll",
+    "Length": 31032,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580420342,
+    "ModifiedUtc": 133746445280000000,
+    "Sha256Hash": "71C33E0EB0EA294FBB917D86AEB6383CCB9632A272B56E9A8693CC06196AFC69"
+  },
+  {
+    "Name": "WindowsBase.dll",
+    "Length": 16680,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580443441,
+    "ModifiedUtc": 133746441520000000,
+    "Sha256Hash": "19CAF8D29BA591F6670E137D092F9EB9CD06108006A85FBC70A2B9299D7674BF"
+  },
+  {
+    "Name": "WuPesterHelper.deps.json",
+    "Length": 27387,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580624625,
+    "ModifiedUtc": 133802224579215115,
+    "Sha256Hash": "DA6F0625012875EA64D540A85344822626D19ED416A60538889EFE243A9C5212"
+  },
+  {
+    "Name": "WuPesterHelper.dll",
+    "Length": 94208,
+    "Attributes": 32,
+    "CreatedUtc": 133802224580456524,
+    "ModifiedUtc": 133802224578641401,
+    "Sha256Hash": "C2533A7D635A523A666D71D9381823766749F4F987A43B9A2EAFCBEC524AC3CC"
+  },
+  {
+    "Name": "WuPesterHelper.pdb",
+    "Length": 24404,
+    "Attributes": 32,
+    "CreatedUtc": 133802224579468163,
+    "ModifiedUtc": 133802224575367429,
+    "Sha256Hash": "C269AE4195A69E0F083F6B486D9BABFFDBDFF5BC52C2967CF6E810F6129E2235"
+  }
+]

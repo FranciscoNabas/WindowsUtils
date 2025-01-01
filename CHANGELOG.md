@@ -3,16 +3,151 @@
 All notable changes to this project will be documented in this file.  
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/), from version **1.3.0** on.  
 
+<!-- omit in toc -->
+## Version History
+
+- [Changelog](#changelog)
+  - [\[1.12.0\] - 2025-01-01](#1120---2025-01-01)
+    - [\[1.12.0\] - Added](#1120---added)
+    - [\[1.12.0\] - Changed](#1120---changed)
+    - [\[1.12.0\] - Removed](#1120---removed)
+    - [\[1.12.0\] - Bugs](#1120---bugs)
+  - [\[1.11.0\] - 2024-06-04](#1110---2024-06-04)
+    - [\[1.11.0\] - Added](#1110---added)
+    - [\[1.11.0\] - Changed](#1110---changed)
+    - [\[1.11.0\] - Bugs](#1110---bugs)
+  - [\[1.10.0\] - 2023-09-27](#1100---2023-09-27)
+    - [\[1.10.0\] - Added](#1100---added)
+    - [\[1.10.0\] - Changed](#1100---changed)
+    - [\[1.10.0\] - Bugs](#1100---bugs)
+  - [\[1.9.0\] - 2023-09-17](#190---2023-09-17)
+    - [\[1.9.0\] - Added](#190---added)
+  - [\[1.8.7\] - 2023-09-09](#187---2023-09-09)
+    - [\[1.8.7\] - Added](#187---added)
+    - [\[1.8.7\] - Changed](#187---changed)
+    - [\[1.8.7\] - Bugs](#187---bugs)
+  - [\[1.8.6\] - 2023-09-06](#186---2023-09-06)
+    - [\[1.8.6\] - Bugs](#186---bugs)
+  - [\[1.8.5\] - 2023-09-06](#185---2023-09-06)
+    - [\[1.8.5\] - Changed](#185---changed)
+  - [\[1.8.3 - 1.8.4\] - 2023-09-04](#183---184---2023-09-04)
+    - [\[1.8.3 - 1.8.4\] - Bugs](#183---184---bugs)
+  - [\[1.8.2\] - 2023-09-03](#182---2023-09-03)
+    - [\[1.8.2\] - Added](#182---added)
+    - [\[1.8.2\] - Changed](#182---changed)
+  - [\[1.8.1\] - 2023-09-01](#181---2023-09-01)
+    - [\[1.8.1\] - Added](#181---added)
+  - [\[1.8.0\] - 2023-09-01](#180---2023-09-01)
+    - [\[1.8.0\] - Added](#180---added)
+    - [\[1.8.0\] - Changed](#180---changed)
+  - [\[1.7.0\] - 2023-08-21](#170---2023-08-21)
+    - [\[1.7.0\] - Added](#170---added)
+    - [\[1.7.0\] - Changed](#170---changed)
+    - [\[1.7.0\] - Bugs](#170---bugs)
+  - [\[1.6.2\] - 2023-06-22](#162---2023-06-22)
+    - [\[1.6.2\] - Added](#162---added)
+    - [\[1.6.2\] - Bugs](#162---bugs)
+  - [\[1.6.1\] - 2023-06-21](#161---2023-06-21)
+    - [\[1.6.1\] - Bugs](#161---bugs)
+  - [\[1.6.0\] - 2023-06-20](#160---2023-06-20)
+    - [\[1.6.0\] - Changed](#160---changed)
+    - [\[1.6.0\] - Added](#160---added)
+    - [\[1.6.0\] - Bugs](#160---bugs)
+  - [\[1.5.1\] - 2023-01-18](#151---2023-01-18)
+    - [\[1.5.1\] - Changed](#151---changed)
+    - [\[1.5.1\] - Added](#151---added)
+    - [\[1.5.1\] - Bugs](#151---bugs)
+  - [\[1.4.0\] - 2022-10-12](#140---2022-10-12)
+    - [\[1.4.0\] - Bugs](#140---bugs)
+    - [\[1.4.0\] - Added](#140---added)
+    - [\[1.4.0\] - Changed](#140---changed)
+    - [\[1.4.0\] - Removed](#140---removed)
+  - [\[1.3.4\] - 2022-10-08](#134---2022-10-08)
+    - [\[1.3.4\] - Changed](#134---changed)
+  - [\[1.3.3\] - 2022-10-07](#133---2022-10-07)
+    - [\[1.3.3\] - Changed](#133---changed)
+    - [\[1.3.3\] - Bugs](#133---bugs)
+  - [\[1.3.2\] - 2022-10-05](#132---2022-10-05)
+    - [\[1.3.2\] - Added](#132---added)
+    - [\[1.3.2\] - Bugs](#132---bugs)
+  - [\[1.3.1\] - 2022-10-04](#131---2022-10-04)
+    - [\[1.3.1\] - Added](#131---added)
+    - [\[1.3.1\] - Bugs](#131---bugs)
+  - [\[1.3.0\] - 2022-10-02](#130---2022-10-02)
+    - [\[1.3.0\] - Added](#130---added)
+    - [\[1.3.0\] - Changed](#130---changed)
+    - [\[1.3.0\] - Removed](#130---removed)
+
+## [1.12.0] - 2025-01-01
+
+### [1.12.0] - Added
+
+- New Cmdlet `Get-NetworkStatistics` (getnetstat), to mimic `netstat.exe` with some changes and extra features.
+- Added new `ScopedBuffer` class on `WuCore` to use for generic buffers instead of unique pointers.
+- Added `PrivilegeCookie` class representing a temporary token privilege acquired for a given operation.
+- Added new `WuList` template class to replace vectors.
+- Added `DebugObjects.natvis` to help visualizing objects during debugging.
+- New stub system to dispatch calls and intercept exceptions. Although polluting the stack trace it does catch exceptions normally now.
+  For more information see [Stubs README](/src/WuCore/Headers/Stubs/README.md).
+- Added `ScopedBuffer` class to use when allocating memory on the heap for interop calls. I recently started using this in all my projects, it makes
+  unmanaged memory management in .NET easier.
+- Added pester test cases documentation.
+- Created the `WuPesterHelper` library with APIs to help with Pester tests.
+- Symbol files in the final release.
+
+### [1.12.0] - Changed
+
+- The `Get-ErrorInformation` Cmdlet output object `ErrorInformation` gained a new property `Source`.
+  This property contains also comes from `Err.exe`, and contains the source header file where the error is stored.
+  To accommodate this change the script `ErrorExtractor.ps1` was also modified to store this information on the `ErrorLibrary.dll`.
+- The `WuCore` was re-written to replace expressions like `wuvector`, and `wumap` with the actual standard type `std::vector`, and `std::map`.
+  With this change some functions where unique pointers were used without need were changed.
+  The only 'expression' left is for the type `__uint64`.
+- Some functions from the `Services` core were adapted to use `ScmHandle`.
+- Updated packages for `System.Text.Json`, `System.ServiceProcess.ServiceController`, and `System.Security.AccessControl`.
+- New C++ generic exception so we can extend on new exceptions.
+- Standardized safe handles.
+- Various optimizations and increased memory safety in `NtUtilities.cpp`.
+- Segregation of NT structures and functions.
+- Improved the exception system to throw CLR exceptions from unmanaged code, and to include more information.  
+  We also included an `ErrorRecord` in the `NativeException` to seamlessly translate it to `WriteError`.
+- The .NET engine got some much deserved love. Restructured interop APIs and made the whole thing safer and more efficient.
+- Bumped C# language version to 13.
+- Changes to `WuBaseString`:
+  - Added iterators.
+  - Converted to constexpr.
+  - Changed storage and allocation strategies.
+  - Added trim.
+  - Added templated addition operator overload.
+  - Moved 'IsNullOrWhiteSpace' logic to traits due the character type.
+  - Rewrote the char traits to conform to constexpr and new allocator semantics.
+  - Added ToUpper, ToLower, Trim, TrimStart, TrimEnd.
+  - Added IndexOfAny.
+
+### [1.12.0] - Removed
+
+- Removed the `Start-ProcessAsUser` alias `runas` to avoid conflicts with the tool of the same name.
+  
+### [1.12.0] - Bugs
+
+- `Get-ErrorInformation` had a parameter called `Source` that did nothing. This came when I copied from the `Get-ErrorString` Cmdlet.
+- Rewrote the cabinet APIs, it was a real mess. Both `Expand-Cabinet` and `New-Cabinet`.
+- Wrong help information for `Get-ErrorInformation`.
+- `Test-Port` shallow copy of `Core::TESTPORT_OUTPUT` was causing the same pointer to be deleted twice, thus corrupting the heap. Replaced raw pointers with `WWuString`s.
+- Although not showing the same symptoms the same problem with the shallow copy was found on `Start-Tcping`'s `Core::TCPING_OUTPUT`.
+- Unmanaged function `LookupAccountName` called via P/Invoke for `IsAdministrator` was doing something funky with the heap eventually corrupting it.  
+  Changed the signature to use raw pointers and stuck as close as the definition as possible and it seemed to solve the problem (famous last words).
+
 ## [1.11.0] - 2024-06-04
 
-### Added
+### [1.11.0] - Added
 
 - New Windows Installer API.
 - New Windows Installer Cmdlets: `Get-MsiSummaryInfo`, `Get-MsiTableInfo`, `Get-MsiTableDump`, and `Invoke-MsiQuery`.
 - Added methods `CompareTo`, `ToUpper`, `ToLower` to `WuBaseString`.
 - Added an unmanaged class called `NtFunctions` to handle dynamic linking to 'ntdll.dll'. Until we figure out a better way.
 
-### Changed
+### [1.11.0] - Changed
 
 - Rebuilt `Get-MsiProperties` to use the new Installer API and to conform to the Installer Cmdlets.
 - The managed class `CmdletNativeContext` was serving no purpose other than adding extra steps, and was removed.
@@ -22,22 +157,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `Get-ObjectHandle` now lists all handles opened for a process, given its process ID or the `System.Diagnostics.Process` object.
   Similar to the option '-p' from 'handle.exe'.
 - `Get-ObjectHandle` was re-written to account for exception handling, optimization, and other issues, like when told to close a handle
-  the function gets process information anyway, despite the results being discarted.
+  the function gets process information anyway, despite the results being discarded.
 
-### Bugs
+### [1.11.0] - Bugs
 
 - `Get-ObjectHandle` did not try to close some handles when told to, such as owned by the System process.
 - `Get-ObjectHandle` couldn't deal with long paths (bigger than MAX_PATH). This was fixed by prepending `\\?\` before big paths.
 
 ## [1.10.0] - 2023-09-27
 
-### Added
+### [1.10.0] - Added
 
 - `Suspend-Process` (suspend).
 - `Resume-Process` (resume).
 - `Get-ErrorInformation` (err).
 
-### Changed
+### [1.10.0] - Changed
 
 - `WuCore` is now C++20!! (no modules in C++/CLI yet though)
 - The C++/CLI core was completely rewritten to refactor, organize, and conform to C++ programming guidelines.
@@ -46,13 +181,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   This system allowed us to get rid of shared memory reading/writing. It's all done using wrappers.
 - All Cmdlet classes were given their own file. The main `Commands.cs` was almost 3000 lines long.
 
-### Bugs
+### [1.10.0] - Bugs
 
 - Tied up the error handling in `Close-NetworkFile`, who was throwing from an external component instead of wrapping in a `NativeException`.
 
 ## [1.9.0] - 2023-09-17
 
-### Added
+### [1.9.0] - Added
 
 - `Get-NetworkFile`
 - `Close-NetworkFile`
@@ -66,7 +201,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.8.7] - 2023-09-09
 
-### Added
+### [1.8.7] - Added
 
 - Pester tests for the following commands:
   - `Get-ComputerSession`
@@ -81,7 +216,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `Remove-Service`
   - Implemented the `NoWait` switch parameter for when stopping services prior to deletion.
 
-### Changed
+### [1.8.7] - Changed
 
 - `Remove-Service`
   - Cmdlet now uses the new `ScmHandle` class to manage Service Control Manager handles.
@@ -92,7 +227,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
     To mitigate that we were using threads, but this way is too slow and unreliable. Now we use `CreateFileMapping` on the handle, and check the result for error
     `ERROR_BAD_EXE_FORMAT` to check if the handle is a file handle. Idea from this [question](https://stackoverflow.com/questions/16127948/hang-on-ntquerysysteminformation-in-winxpx32-but-works-fine-in-win7x64).
 
-### Bugs
+### [1.8.7] - Bugs
 
 - `Get-ObjectHandle` was not closing file handles because it was not finding the handles listed. Fixed that with the new helper function to close external handles.
 - `Remove-Service`
@@ -107,6 +242,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.8.6] - 2023-09-06
 
+### [1.8.6] - Bugs
+
 - Get-ObjectHandle
   - The condition to see if the open handle is a handle to our key was wrong, thus returning processes that does not have handles opened to our object.
     Fixing that caused performance issues, because we are querying every single object opened, and using threads to avoid freeze in `NtQueryObject`.
@@ -114,7 +251,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.8.5] - 2023-09-06
 
-### Changed
+### [1.8.5] - Changed
 
 - Start-Tcping.
   - When canceling via Ctrl + C while probing an unreachable port, sometimes the last result is a false positive. Also, the cancel took forever.
@@ -123,43 +260,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.8.3 - 1.8.4] - 2023-09-04
 
-### Bugs
+### [1.8.3 - 1.8.4] - Bugs
 
 - Get-ObjectHandle.
   - Checking if the user is running as administrator required the use of `WindowsIdentity`, which is not supported anymore, so everything was moved to C++.
 
 ## [1.8.2] - 2023-09-03
 
-### Added
+### [1.8.2] - Added
 
 - Get-ObjectHandle.
   Proudly announce that `Get-ObjectHandle` now returns handles opened for registry keys, with full
   provider awareness.
 
-### Changed
+### [1.8.2] - Changed
 
 - Get-ObjectHandle.
   Improved the provider awareness both to support registry keys, and handle unsupported PS providers.
 
 ## [1.8.1] - 2023-09-01
 
-### Added
+### [1.8.1] - Added
 
 - Start-Tcping.
   Added alias 'tcping'.
 
 ## [1.8.0] - 2023-09-01
 
-### Added
+### [1.8.0] - Added
 
 - Start-Tcping.
   - New cmdlet that 'pings' a destination server(s) in the specified port(s).
 - WuStdException.
   - Implementing `Start-Tcping` brought a lot of challenges, the most noticeable one was the performance while
-    returning from functions. `WuStdException` is a C++ `std::exception` based class to slowly shift from 
+    returning from functions. `WuStdException` is a C++ `std::exception` based class to slowly shift from  
     return codes to proper error handling.
 
-### Changed
+### [1.8.0] - Changed
 
 - NATIVE_CONTEXT -> WuNativeContext.
   - `WuNativeContext` is an improved version of the old `NATIVE_CONTEXT`, again to make the whole process more
@@ -167,7 +304,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Shared Memory.
   - The shared memory scheme changed from using memory mapped IO to using `System.IO.UnmanagedMemoryStream`,
     which is basically a memory space to be used between Managed/Unmanaged code.
- 
 
 ## [1.7.0] - 2023-08-21
 
@@ -212,7 +348,7 @@ From the changes, these deserve to be highlighted.
   the delegate from the Cmdlet context base class. When we wrap the command base into the C++/CLI context base, we pass our methods "casted" as
   these delegates. These methods also creates a view of the file, reads the data and calls the actual PSCmdlet methods.
 
-### Added
+### [1.7.0] - Added
 
 - New `Expand-Cabinet` Cmdlet.
 - New `Get-InstalledDotnet` function.
@@ -226,7 +362,7 @@ From the changes, these deserve to be highlighted.
   a reason to exist, but I had fun. Plus it brings some functionalities from .NET's `System.String`.
 - The new `WuResult`, and `NativeException` have a new property called `CompactTrace` exposed only in the Debug version. This contains the file name, and line where the error occurred.
 
-### Changed
+### [1.7.0] - Changed
 
 - `Remove-Service`
   - When `Stop` is used, the Cmdlet doesn't time out anymore. Instead, it writes warnings, much like when using `Stop-Service.`
@@ -239,14 +375,14 @@ From the changes, these deserve to be highlighted.
 - `NativeException` moved to C++/CLI completely. This allowed me from removing the `NativeExceptionBase`, and creating
   exceptions from the new `WuResult` object.
 
-### Bugs
+### [1.7.0] - Bugs
 
 - Calling `Get-ObjectHandle` with insufficient privileges to an object caused access violation. The function was not parsing the `NTSTATUS` from the subroutine.
 - `Get-ServiceSecurity` failing to get the SDDL from a "cross-function" SECURITY_DESCRIPTOR pointer. Moved the SDDL formation to the native function.
 
 ## [1.6.2] - 2023-06-22
 
-### Added
+### [1.6.2] - Added
   
 - `Get-ServiceSecurity`
   - Parameter `Name` accepts multiple names.
@@ -254,25 +390,25 @@ From the changes, these deserve to be highlighted.
   - Added support for wildcard on `Name` and `DisplayName` parameters.
 - Added tab completion for `Get-ServiceSecurity`, `Set-ServiceSecurity`, and `Remove-Service`, both on `Name` and `DisplayName` parameters.
   
-### Bugs
+### [1.6.2] - Bugs
   
 - Fixed issue with ownership change when using the `Sddl` parameter with `Set-ServiceSecurity`.
 
 ## [1.6.1] - 2023-06-21
 
-### Bugs
+### [1.6.1] - Bugs
   
 - Fixing assembly loading and dependency issues.
 
 ## [1.6.0] - 2023-06-20
 
-### Changed
+### [1.6.0] - Changed
   
 - WtsSession:
   - From a static class to an IDisposable class. Not only safer, but allows us to manage multiple sessions with multiple servers at the same time.
 - `Get-FormattedError` renamed to `Get-ErrorString`.
 
-### Added
+### [1.6.0] - Added
   
 - `Remove-Service` Cmdlet.
 - `Get-ServiceSecurity` Cmdlet.
@@ -287,7 +423,7 @@ From the changes, these deserve to be highlighted.
 - Added `Format.ps1xml` for the new type `WindowsUtils.AccessControl.ServiceSecurity`.
 - Added type support on `Types.ps1xml` for `WindowsUtils.AccessControl.ServiceSecurity`.
 
-### Bugs
+### [1.6.0] - Bugs
   
 - Get-ResourceMessageTable:
   - "s" was being used as a format specifier, which was breaking the message strings. Replaced with "S".  
@@ -295,7 +431,7 @@ From the changes, these deserve to be highlighted.
 
 ## [1.5.1] - 2023-01-18
 
-### Changed
+### [1.5.1] - Changed
   
 - Structure:  
   - Rewriting the functions, removing stupid mistakes from when I was beginning with MS C++.  
@@ -307,14 +443,14 @@ From the changes, these deserve to be highlighted.
 - `Disconnect-Session`
   - Cannot use session ID 0 when disconnecting a session on a remote computer.  
   
-### Added
+### [1.5.1] - Added
   
 - `Get-ObjectHandle`:  
   - Implement `CloseHandle`.  
   - Implemented `NtQuerySystemInformation` with `SystemProcessInformation` to cover information missing from `QueryFullProcessImageName`.  
   - New Switch Parameter `Force` to be used with `CloseHandle`. Avoids confirmation.  
 
-### Bugs
+### [1.5.1] - Bugs
   
 - `Get-ComputerSession`  
   - When ran on the local computer, `IdleTime` should be zero for the current session. It was returning a random `filetime`. Now if `hsession = WTS_CURRENT_SERVER_HANDLE`, and the user is the running the *Cmdlet*, it returns `TimeSpan.Zero`.  
@@ -328,7 +464,7 @@ From the changes, these deserve to be highlighted.
 
 ## [1.4.0] - 2022-10-12
   
-### Bugs
+### [1.4.0] - Bugs
   
 - Some module functionalities depend on VC++ libraries. To avoid having to install the redistributable runtime, these assemblies are provided with the module.  
 - `Invoke-RemoteMessage`:  
@@ -337,13 +473,13 @@ From the changes, these deserve to be highlighted.
     This causes the console to hang if there were missing responses.  
     Now, if Wait is specified, Timeout is mandatory, and an error is thrown if the user inputs zero.  
 
-### Added Features
+### [1.4.0] - Added
   
 - `StageComputerSession` method added to `WtsSession` to manage persistent WTS computer sessions.  
 - `Get-ObjectHandle` new alias `gethandle`.  
 - New output object for `Invoke-RemoteMessage`. `MessageResponse`, with Session ID and Response.  
   
-### Changed Features
+### [1.4.0] - Changed
   
 - Release notes on the module manifest, thus also on PowerShell Gallery now points to this document.  
 - `WtsSession` as a static class to use it as a 'Global Object'.  
@@ -357,7 +493,7 @@ From the changes, these deserve to be highlighted.
   - Unmanaged function now returns a DWORD and receives arguments as reference. This is part of the unmanaged code, and error handling standardization.  
   - Ignoring response type 0. This is returned when the session does not support message boxes.  
   
-### Removed Features
+### [1.4.0] - Removed
   
 - `UtilitiesLibrary` was completely removed from the project. All functionalities were migrated to the module itself. The 'Wrapper' library now is called 'Core', contained in its own namespace.  
   This solves cyclical dependency issues, and helps standardize the output objects.  
@@ -366,7 +502,7 @@ From the changes, these deserve to be highlighted.
 
 Version 1.3.4 improves interoperability between existing WTS *Cmdlets*.  
   
-### Changed Features
+### [1.3.4] - Changed
   
 - `Get-ComputerSession` had an additional property on its output object. `ComputerName` returns a value when the *Cmdlet* is run for a remote computer.  
   This allows the output to be passed to Disconnect-Session.  
@@ -374,12 +510,12 @@ Version 1.3.4 improves interoperability between existing WTS *Cmdlets*.
   
 ## [1.3.3] - 2022-10-07
   
-### Changed Features
+### [1.3.3] - Changed
   
 - `Get-FileHandle` changed to `Get-ObjectHandle`. This *Cmdlet* also works with directories, and allow future expansion to other system objects.  
 - `Get-ObjectHandle` `FileName` property changed to `InputObject` to comply with the *Cmdlet* scope.  
   
-### Bugs
+### [1.3.3] - Bugs
   
 - `Get-ObjectHandle` was not returning a considerable number of image properties. This was due the *Cmdlet* using a Shell interface to get properties from the files themselves.  
   This implementation was replaced by [VerQueryValue](https://learn.microsoft.com/en-us/windows/win32/api/winver/nf-winver-verqueryvaluew).  
@@ -389,11 +525,11 @@ Version 1.3.4 improves interoperability between existing WTS *Cmdlets*.
   
 Version 1.3.2 fixes bugs with `Get-FileHandle` *Cmdlet*
   
-### Added Features
+### [1.3.2] - Added
   
 - Get-FileHandle accepts wildcard.  
   
-### Bugs
+### [1.3.2] - Bugs
   
 - `Get-FileHandle` crashed when receiving pipeline input from `Get-ChildItem`, only on Windows PowerShell.  
   *Cmdlet* was adapted to be "Provider-Aware". Recommendations found on [this](https://stackoverflow.com/questions/8505294/how-do-i-deal-with-paths-when-writing-a-powershell-cmdlet) question.  
@@ -402,11 +538,11 @@ Version 1.3.2 fixes bugs with `Get-FileHandle` *Cmdlet*
   
 Version 1.3.1 fixes bugs with the PS help engine.
   
-### Added Features
+### [1.3.1] - Added
   
 - Using *XmlDoc2CmdletDoc* for creating and managing help files.  
 
-### Bugs
+### [1.3.1] - Bugs
   
 - Help result not showing proper parameter information, and examples in the wrong category.
   
@@ -414,16 +550,16 @@ Version 1.3.1 fixes bugs with the PS help engine.
   
 Version 1.3.0 fixes major bugs and changes features.  
   
-### Added Features
+### [1.3.0] - Added
   
 - This project now have a *Readme*, and a *Changelog*!  
 - Adhering to Semantic Versioning.
 
-### Changed Features
+### [1.3.0] - Changed
   
 - `Get-FileHandle` engine migrated from using the [Restart Manager](https://learn.microsoft.com/en-us/windows/win32/rstmgr/restart-manager-portal), to using [NtQueryInformationFile](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/nf-ntifs-ntqueryinformationfile).  
-- I`nvoke-RemoteMessage` parameter Wait was changed from _bool_ to _SwitchParameter_.
+- I`nvoke-RemoteMessage` parameter Wait was changed from *bool* to *SwitchParameter*.
   
-### Removed Features
+### [1.3.0] - Removed
   
 - `Get-LastWinSockError` Cmdlet was removed. It is effectively the same as Get-LastWin32Error.

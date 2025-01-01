@@ -24,8 +24,6 @@ namespace WindowsUtils.Commands
     [Alias("gerrmess")]
     public class GetErrorStringCommand : Cmdlet
     {
-        private static readonly UtilitiesWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The error code.</para>
         /// <para type="description">This value will be passed to the 'FormatMessage' function, with the system message parameter..</para>
@@ -46,7 +44,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            WriteObject(_unwrapper.GetFormattedError(ErrorCode, Source));
+            WriteObject(UtilitiesWrapper.GetFormattedError(ErrorCode, Source));
         }
     }
 }

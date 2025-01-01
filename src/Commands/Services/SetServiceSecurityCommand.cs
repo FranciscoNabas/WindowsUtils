@@ -1,9 +1,10 @@
 ﻿using System.ServiceProcess;
 using System.Management.Automation;
 using System.Security.AccessControl;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
-using WindowsUtils.AccessControl;
-using WindowsUtils.ArgumentCompletion;
+using WindowsUtils.Engine.AccessControl;
+using WindowsUtils.Engine.ArgumentCompletion;
 
 namespace WindowsUtils.Commands
 {
@@ -37,11 +38,10 @@ namespace WindowsUtils.Commands
         ConfirmImpact = ConfirmImpact.Medium,
         DefaultParameterSetName = "ByNameAndSecurityObject"
     )]
-    public class SetServiceSecurityCommand : PSCmdlet
+    public class SetServiceSecurityCommand : CoreCommandBase
     {
         private string _serviceFinalName;
         private ServiceSecurity _finalSecurityObject;
-        private ServicesWrapper _unwrapper = new();
 
         /// <summary>
         /// <para type="description">The service name.</para>
@@ -179,7 +179,7 @@ namespace WindowsUtils.Commands
                     break;
 
                 case "ByNameAndSddl":
-                    _finalSecurityObject = new(_unwrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                    _finalSecurityObject = new(ServicesWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
                     _finalSecurityObject.SetSecurityDescriptorSddlForm(Sddl);
                     _serviceFinalName = Name;
                     break;
@@ -189,7 +189,7 @@ namespace WindowsUtils.Commands
                         ?? throw new ItemNotFoundException($"No service with display name '{DisplayName}' found.");
 
                     _serviceFinalName = serviceName;
-                    _finalSecurityObject = new(_unwrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                    _finalSecurityObject = new(ServicesWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
                     _finalSecurityObject.SetSecurityDescriptorSddlForm(Sddl);
                     break;
 
@@ -201,7 +201,7 @@ namespace WindowsUtils.Commands
                         throw new ArgumentException("Invalid input object service handle.");
 
                     _serviceFinalName = InputObject.ServiceName;
-                    _finalSecurityObject = new(_unwrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
+                    _finalSecurityObject = new(ServicesWrapper.GetServiceSecurityDescriptorString(Name, SetSacl), Name);
                     _finalSecurityObject.SetSecurityDescriptorSddlForm(Sddl);
                     break;
             }
@@ -213,7 +213,7 @@ namespace WindowsUtils.Commands
                     $"Are you sure you want to set security for service {Name} on the local computer?",
                     "Setting Service Security"
                 ))
-                    _unwrapper.SetServiceSecurity(_serviceFinalName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
+                    Services.SetServiceSecurity(_serviceFinalName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
             }
             else
             {
@@ -222,7 +222,7 @@ namespace WindowsUtils.Commands
                     $"Are you sure you want to set security for service {Name} on {ComputerName}?",
                     "Setting Service Security"
                 ))
-                    _unwrapper.SetServiceSecurity(_serviceFinalName, ComputerName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
+                    Services.SetServiceSecurity(_serviceFinalName, ComputerName, _finalSecurityObject.Sddl, SetSacl, _finalSecurityObject.OwnerModified);
             }
         }
     }

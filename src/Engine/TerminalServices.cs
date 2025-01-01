@@ -1,34 +1,25 @@
 ﻿using System.Runtime.InteropServices;
+using WindowsUtils.Engine.Interop;
 
-namespace WindowsUtils.Interop
+namespace WindowsUtils.TerminalServices;
+
+internal sealed class WtsSession : IDisposable
 {
-    internal partial class NativeFunctions
+    internal string ComputerName { get; }
+    internal SafeWtsServerHandle SessionHandle { get; }
+
+    internal WtsSession(string computerName)
     {
-        [DllImport("Wtsapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "WTSOpenServerW")]
-        internal extern static SafeSystemHandle WTSOpenServer(string pServerName);
+        SessionHandle = NativeWts.WTSOpenServer(computerName);
+        if (SessionHandle is null || SessionHandle.IsInvalid || SessionHandle.IsClosed)
+            throw new NativeException(Marshal.GetLastWin32Error());
+
+        ComputerName = computerName;
     }
-}
 
-namespace WindowsUtils.TerminalServices
-{
-    internal sealed class WtsSession : IDisposable
+    public void Dispose()
     {
-        internal string ComputerName { get; set; }
-        internal Interop.SafeSystemHandle SessionHandle { get; set; }
-
-        internal WtsSession(string computerName)
-        {
-            SessionHandle = Interop.NativeFunctions.WTSOpenServer(computerName);
-            if (SessionHandle is null || SessionHandle.IsInvalid || SessionHandle.IsClosed)
-                throw new NativeException(Marshal.GetLastWin32Error());
-
-            ComputerName = computerName;
-        }
-
-        public void Dispose()
-        {
-            SessionHandle.Dispose();
-            GC.SuppressFinalize(this);
-        }
+        SessionHandle.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

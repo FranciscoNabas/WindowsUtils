@@ -3,6 +3,9 @@
 .vscode/
 .vscode/*
 
+.git
+.git/**
+
 # Local History for Visual Studio Code
 .history/
 
@@ -16,21 +19,47 @@ bin/*
 TestConsole/
 TestConsole/*
 Release/
-Release/*
-Preview/*
-Preview/
+Release/**
+Preview
+Preview/**
 src/Debug/**
 */x64/**
 src/x64/**
-!src/WuCore/Release
+src/obj
+src/obj/**
+src/bin
+src/bin/**
+x64/
+src/WindowsUtils.csproj.user
+
+# wu core
+src/WuCore/.vs
+src/WuCore/.vs/**
+src/WuCore/obj
+src/WuCore/obj/**
 src/WuCore/DawnCache
 src/WuCore/Debug
 src/WuCore/GPUCache
 src/WuCore/debug.log
-src/WuCore/Release/x64/
-src/obj/Debug/
-src/bin/
-x64/
+src/WuCore/Release
+src/WuCore/Release/**
+src/WuCore/WuCore
+src/WuCore/WuCore/**
+src/WuCore/x64
+src/WuCore/x64/**
+src/WuCore/WuCore.vcxproj.filters
+src/WuCore/WuCore.vcxproj.user
+
+# pester helper
+src/WuPesterHelper/.vs
+src/WuPesterHelper/.vs/**
+src/WuPesterHelper/bin
+src/WuPesterHelper/bin/**
+src/WuPesterHelper/obj
+src/WuPesterHelper/obj/**
+src/WuPesterHelper/Properties
+src/WuPesterHelper/Properties/**
+src/WuPesterHelper/WuPesterHelper.csproj.user
 
 # Package
 packages/

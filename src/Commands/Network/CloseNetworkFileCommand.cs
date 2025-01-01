@@ -1,9 +1,12 @@
 ﻿using System.Management.Automation;
+using WindowsUtils.Engine;
+using WindowsUtils.Network;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
 {
 #pragma warning disable CS8618
+
     /// <summary>
     /// <para type="synopsis">Closes a network file.</para>
     /// <para type="description">This Cmdlet closes a file opened remotely on the current or remote computer.</para>
@@ -34,10 +37,8 @@ namespace WindowsUtils.Commands
         ConfirmImpact = ConfirmImpact.High
     )]
     [Alias("closenetfile")]
-    public class CloseNetworkFileCommand : PSCmdlet
+    public class CloseNetworkFileCommand : CoreCommandBase
     {
-        public readonly NetworkWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The computer name. If not present, the current computer is used.</para>
         /// </summary>
@@ -85,9 +86,9 @@ namespace WindowsUtils.Commands
                 {
                     foreach (int id in FileId)
                         if (string.IsNullOrEmpty(ComputerName))
-                            _unwrapper.CloseNetworkFile(string.Empty, id);
+                            Network.CloseNetworkFile(string.Empty, id);
                         else
-                            _unwrapper.CloseNetworkFile(ComputerName, id);
+                            Network.CloseNetworkFile(ComputerName, id);
                 }
                 else
                 {
@@ -99,7 +100,7 @@ namespace WindowsUtils.Commands
                                 $"Closing file id {id} on the current computer.",
                                 $"Are you sure you want to close the remote file id {id}?",
                                 "Closing remote file"))
-                                _unwrapper.CloseNetworkFile(string.Empty, id);
+                                Network.CloseNetworkFile(string.Empty, id);
                         }
                         else
                         {
@@ -107,7 +108,7 @@ namespace WindowsUtils.Commands
                                 $"Closing file id {id} on computer '{ComputerName}'.",
                                 $"Are you sure you want to close the remote file id {id}?",
                                 "Closing remote file"))
-                                _unwrapper.CloseNetworkFile(ComputerName, id);
+                                Network.CloseNetworkFile(ComputerName, id);
                         }
                     }
                 }
@@ -118,9 +119,9 @@ namespace WindowsUtils.Commands
                 {
                     foreach (NetworkFileInfo info in InputObject)
                         if (string.IsNullOrEmpty(info.ComputerName))
-                            _unwrapper.CloseNetworkFile(string.Empty, info.Id);
+                            Network.CloseNetworkFile(string.Empty, info.Id);
                         else
-                            _unwrapper.CloseNetworkFile(info.ComputerName, info.Id);
+                            Network.CloseNetworkFile(info.ComputerName, info.Id);
                 }
                 else
                 {
@@ -132,7 +133,7 @@ namespace WindowsUtils.Commands
                                 $"Closing file id {info.Id} on the current computer.",
                                 $"Are you sure you want to close the remote file id {info.Id}?",
                                 "Closing remote file"))
-                                _unwrapper.CloseNetworkFile(string.Empty, info.Id);
+                                Network.CloseNetworkFile(string.Empty, info.Id);
                         }
                         else
                         {
@@ -140,7 +141,7 @@ namespace WindowsUtils.Commands
                                 $"Closing file id {info.Id} on computer '{info.ComputerName}'.",
                                 $"Are you sure you want to close the remote file id {info.Id}?",
                                 "Closing remote file"))
-                                _unwrapper.CloseNetworkFile(info.ComputerName, info.Id);
+                                Network.CloseNetworkFile(info.ComputerName, info.Id);
                         }
                     }
                 }

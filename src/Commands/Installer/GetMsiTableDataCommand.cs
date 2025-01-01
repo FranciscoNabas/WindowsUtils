@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -33,8 +34,6 @@ namespace WindowsUtils.Commands
     [OutputType(typeof(DataTable))]
     public class GetMsiTableDataCommand : CoreCommandBase
     {
-        private readonly InstallerWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The installer path.</para>
         /// </summary>
@@ -77,7 +76,7 @@ namespace WindowsUtils.Commands
             switch (ParameterSetName) {
                 case "withInputObject":
                     try {
-                        _unwrapper.GetMsiTableDump(InputObject.InstallerPath, InputObject, CmdletContext);
+                        Installer.GetMsiTableDump(InputObject.InstallerPath, InputObject);
                     }
                     // Error record already written to the stream.
                     catch (NativeException) { }
@@ -85,8 +84,8 @@ namespace WindowsUtils.Commands
                     break;
                 case "withPathAndTable":
                     try {
-                        if (InstallerWrapper.IsInstallerPackage(Path, CmdletContext)) {
-                            _unwrapper.GetMsiTableDump(Path, Table, CmdletContext);
+                        if (Installer.IsInstallerPackage(Path)) {
+                            Installer.GetMsiTableDump(Path, Table);
                         }
                         else
                             WriteError(new ErrorRecord(

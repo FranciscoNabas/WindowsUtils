@@ -1,6 +1,7 @@
 ﻿using System.Management.Automation;
-using WindowsUtils.Installer;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
+using WindowsUtils.Installer;
 
 namespace WindowsUtils.Commands
 {
@@ -27,8 +28,6 @@ namespace WindowsUtils.Commands
     [OutputType(typeof(InstallerTableInfo))]
     public class GetMsiTableInfoCommand : CoreCommandBase
     {
-        private static readonly InstallerWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The installer's path.</para>
         /// </summary>
@@ -54,9 +53,9 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             try {
-                if (InstallerWrapper.IsInstallerPackage(Path, CmdletContext)) {
+                if (Installer.IsInstallerPackage(Path)) {
                     // If 'Table' is null or empty we list all the tables.
-                    foreach (InstallerTableInfoBase info in _unwrapper.GetMsiTableInfo(Path, Table, CmdletContext))
+                    foreach (InstallerTableInfoBase info in Installer.GetMsiTableInfo(Path, Table))
                         WriteObject(new InstallerTableInfo(Path, info));
                 }
                 else

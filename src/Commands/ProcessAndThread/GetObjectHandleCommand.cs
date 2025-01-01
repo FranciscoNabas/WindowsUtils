@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -51,7 +52,6 @@ namespace WindowsUtils.Commands
     [Alias("gethandle")]
     public class GetObjectHandleCommand : CoreCommandBase
     {
-        private readonly ProcessAndThreadWrapper _unwrapper = new();
         private readonly List<ObjectHandleInput> _validInput = new();
 
         private string[] _path;
@@ -148,7 +148,7 @@ namespace WindowsUtils.Commands
             switch (ParameterSetName) {
                 case "byProcessId":
                     try {
-                        _unwrapper.ListProcessHandleInfo((uint)ProcessId, All, CmdletContext);
+                        ProcessAndThread.ListProcessHandleInfo((uint)ProcessId, All);
                     }
                     // Error record already written to the stream.
                     catch (NativeException) { }
@@ -156,13 +156,14 @@ namespace WindowsUtils.Commands
 
                 case "byProcessObject":
                     try {
-                        _unwrapper.ListProcessHandleInfo((uint)InputObject.Id, All, CmdletContext);
+                        ProcessAndThread.ListProcessHandleInfo((uint)InputObject.Id, All);
                     }
                     // Error record already written to the stream.
                     catch (NativeException) { }
                     break;
 
-                case "byPath": case "byLiteral":
+                case "byPath":
+                case "byLiteral":
                     List<string> pathList = new();
                     _validInput.Clear();
 
@@ -213,12 +214,22 @@ namespace WindowsUtils.Commands
                             "",
                             "Are you sure you want to close all handles for the input object(s)?",
                             "ATTENTION! Closing handles can lead to system malfunction.\n"
-                            )) {
-                            _unwrapper.GetProcessObjectHandle(_validInput.ToArray(), true, CmdletContext);
+                        )) {
+                            try {
+                                ProcessAndThread.GetProcessObjectHandle(_validInput.ToArray(), true);
+                            }
+                            // Error record already written to the stream.
+                            catch (NativeException) { }
                         }
                     }
                     else {
-                        List<ObjectHandle> output = _unwrapper.GetProcessObjectHandle(_validInput.ToArray(), false, CmdletContext);
+                        List<ObjectHandle>? output = null;
+                        try {
+                            output = ProcessAndThread.GetProcessObjectHandle(_validInput.ToArray(), false);
+                        }
+                        // Error record already written to the stream.
+                        catch (NativeException) { }
+
                         if (output is not null)
                             WriteObject(output.OrderBy(o => o.Type).ThenBy(o => o.Name), true);
                     }
