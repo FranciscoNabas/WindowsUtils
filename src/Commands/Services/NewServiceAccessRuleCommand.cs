@@ -1,8 +1,8 @@
 ﻿using System.Security.Principal;
 using System.Management.Automation;
 using System.Security.AccessControl;
-using WindowsUtils.Services;
-using WindowsUtils.AccessControl;
+using WindowsUtils.Engine.Interop;
+using WindowsUtils.Engine.AccessControl;
 
 namespace WindowsUtils.Commands
 {

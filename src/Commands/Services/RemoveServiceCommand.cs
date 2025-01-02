@@ -1,8 +1,7 @@
 ﻿using System.ServiceProcess;
 using System.Management.Automation;
-using WindowsUtils.Core;
-using WindowsUtils.Wrappers;
-using WindowsUtils.ArgumentCompletion;
+using WindowsUtils.Engine;
+using WindowsUtils.Engine.ArgumentCompletion;
 
 namespace WindowsUtils.Commands
 {
@@ -38,8 +37,6 @@ namespace WindowsUtils.Commands
     )]
     public class RemoveServiceCommand : CoreCommandBase
     {
-        private readonly ServicesWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The service controller input object.</para>
         /// </summary>
@@ -98,7 +95,7 @@ namespace WindowsUtils.Commands
             if (ParameterSetName == "WithServiceController")
             {
                 if (Force)
-                    _unwrapper.RemoveService(InputObject.ServiceName, InputObject.MachineName, Stop, CmdletContext, NoWait);
+                    Services.RemoveService(InputObject.ServiceName, InputObject.MachineName, Stop, NoWait);
                 else
                 {
                     if (InputObject.MachineName == ".")
@@ -107,7 +104,7 @@ namespace WindowsUtils.Commands
                            $"Removing service {InputObject.ServiceName} from the local computer.",
                            $"Are you sure you want to remove service {InputObject.ServiceName}?",
                            "Removing Service"))
-                            _unwrapper.RemoveService(InputObject.ServiceName, InputObject.MachineName, Stop, CmdletContext, NoWait);
+                            Services.RemoveService(InputObject.ServiceName, InputObject.MachineName, Stop, NoWait);
                     }
                     else
                     {
@@ -115,7 +112,7 @@ namespace WindowsUtils.Commands
                            $"Removing service {InputObject.ServiceName} on computer {InputObject.MachineName}",
                            $"Are you sure you want to remove service {InputObject.ServiceName} on {InputObject.MachineName}?",
                            "Removing Service"))
-                            _unwrapper.RemoveService(InputObject.ServiceName, InputObject.MachineName, Stop, CmdletContext, NoWait);
+                            Services.RemoveService(InputObject.ServiceName, InputObject.MachineName, Stop, NoWait);
                     }
                 }
 
@@ -126,27 +123,27 @@ namespace WindowsUtils.Commands
                 if (string.IsNullOrEmpty(ComputerName))
                 {
                     if (Force)
-                        _unwrapper.RemoveService(Name, Stop, CmdletContext, NoWait);
+                        Services.RemoveService(Name, Stop, NoWait);
                     else
                     {
                         if (ShouldProcess(
                            $"Removing service {Name} from the local computer.",
                            $"Are you sure you want to remove service {Name}?",
                            "Removing Service"))
-                            _unwrapper.RemoveService(Name, Stop, CmdletContext, NoWait);
+                            Services.RemoveService(Name, Stop, NoWait);
                     }
                 }
                 else
                 {
                     if (Force)
-                        _unwrapper.RemoveService(Name, ComputerName, Stop, CmdletContext, NoWait);
+                        Services.RemoveService(Name, ComputerName, Stop, NoWait);
                     else
                     {
                         if (ShouldProcess(
                            $"Removing service {Name} on computer {ComputerName}",
                            $"Are you sure you want to remove service {Name} on {ComputerName}?",
                            "Removing Service"))
-                            _unwrapper.RemoveService(Name, ComputerName, Stop, CmdletContext, NoWait);
+                            Services.RemoveService(Name, ComputerName, Stop, NoWait);
                     }
                 }
             }

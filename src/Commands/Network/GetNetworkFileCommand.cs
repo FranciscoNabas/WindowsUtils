@@ -1,4 +1,6 @@
 ﻿using System.Management.Automation;
+using WindowsUtils.Engine;
+using WindowsUtils.Network;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -36,10 +38,8 @@ namespace WindowsUtils.Commands
     [Cmdlet(VerbsCommon.Get, "NetworkFile")]
     [OutputType(typeof(NetworkFileInfo))]
     [Alias(new string[] { "psfile", "getnetfile" })]
-    public class GetNetworkFileCommand : PSCmdlet
+    public class GetNetworkFileCommand : CoreCommandBase
     {
-        private readonly NetworkWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The computer name. If not present, the current computer is used.</para>
         /// </summary>
@@ -75,7 +75,7 @@ namespace WindowsUtils.Commands
             if (string.IsNullOrWhiteSpace(BasePath)) { BasePath = string.Empty; }
             if (string.IsNullOrWhiteSpace(UserConnectionFilter)) { UserConnectionFilter = string.Empty; }
 
-            WriteObject(_unwrapper.GetNetworkFile(ComputerName, BasePath, UserConnectionFilter, IncludeConnectionName), true);
+            WriteObject(Network.GetNetworkFile(ComputerName, BasePath, UserConnectionFilter, IncludeConnectionName), true);
         }
     }
 }

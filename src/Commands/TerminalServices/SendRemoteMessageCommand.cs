@@ -1,4 +1,5 @@
 ﻿using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 using WindowsUtils.TerminalServices;
 
@@ -16,10 +17,8 @@ namespace WindowsUtils.Commands
         DefaultParameterSetName = "NoWait"
     )]
     [OutputType(typeof(MessageResponse))]
-    public class SendRemoteMessageCommand : Cmdlet
+    public class SendRemoteMessageCommand : CoreCommandBase
     {
-        private readonly TerminalServicesWrapper _unwrapper = new();
-
         private int _timeout = 0;
 
         /// <summary>
@@ -123,13 +122,13 @@ namespace WindowsUtils.Commands
                         "Sending message to all sessions on the current computer."
                         ))
                     {
-                        MessageResponse[] result = _unwrapper.SendRemoteMessage(IntPtr.Zero, null, Title, Message, nativeStyle, Timeout, Wait);
+                        MessageResponse[] result = TermServices.SendRemoteMessage(IntPtr.Zero, null, Title, Message, nativeStyle, Timeout, Wait);
                         result.Where(q => q is not null).ToList().ForEach(WriteObject);
                     }
                 }
                 else
                 {
-                    MessageResponse[] result = _unwrapper.SendRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativeStyle, Timeout, Wait);
+                    MessageResponse[] result = TermServices.SendRemoteMessage(IntPtr.Zero, SessionId, Title, Message, nativeStyle, Timeout, Wait);
                     result.Where(q => q is not null).ToList().ForEach(WriteObject);
                 }
             }
@@ -144,7 +143,7 @@ namespace WindowsUtils.Commands
                         "Sending message to all sessions on computer \" + ComputerName + \"."
                         ))
                     {
-                        MessageResponse[] result = _unwrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
+                        MessageResponse[] result = TermServices.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
                         result.Where(q => q is not null).ToList().ForEach(WriteObject);
                     }
                 }
@@ -158,13 +157,13 @@ namespace WindowsUtils.Commands
                         "Session '0' represent all sessions on the computer"
                         ))
                         {
-                            MessageResponse[] result = _unwrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
+                            MessageResponse[] result = TermServices.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), null, Title, Message, nativeStyle, Timeout, Wait);
                             result.Where(q => q is not null).ToList().ForEach(WriteObject);
                         }
                     }
                     else
                     {
-                        MessageResponse[] result = _unwrapper.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), SessionId, Title, Message, nativeStyle, Timeout, Wait);
+                        MessageResponse[] result = TermServices.SendRemoteMessage(session.SessionHandle.DangerousGetHandle(), SessionId, Title, Message, nativeStyle, Timeout, Wait);
                         result.Where(q => q is not null).ToList().ForEach(WriteObject);
                     }
                 }

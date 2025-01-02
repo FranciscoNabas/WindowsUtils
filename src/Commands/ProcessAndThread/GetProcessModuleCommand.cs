@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Management.Automation;
-using WindowsUtils.Core;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -36,7 +36,6 @@ namespace WindowsUtils.Commands
     [Alias("listdlls")]
     public class GetProcessModuleCommand : CoreCommandBase
     {
-        private readonly ProcessAndThreadWrapper _unwrapper = new();
         private readonly List<uint> _processIdList = new();
 
         /// <summary>
@@ -88,9 +87,9 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             if (!_processIdList.Any())
-                _unwrapper.ListProcessModule(IncludeVersionInfo, CmdletContext);
+                ProcessAndThread.ListProcessModule(IncludeVersionInfo);
             else
-                _unwrapper.ListProcessModule(_processIdList.ToArray(), IncludeVersionInfo, CmdletContext);
+                ProcessAndThread.ListProcessModule(_processIdList.ToArray(), IncludeVersionInfo);
         }
     }
 }

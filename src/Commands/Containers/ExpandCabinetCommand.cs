@@ -1,5 +1,5 @@
 ﻿using System.Management.Automation;
-using WindowsUtils.Core;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -27,9 +27,7 @@ namespace WindowsUtils.Commands
     [Cmdlet(VerbsData.Expand, "Cabinet")]
     public class ExpandCabinetCommand : CoreCommandBase
     {
-        private readonly ContainersWrapper _unwrapper = new();
         private readonly List<string> _validPaths = new();
-        private readonly List<string> _processedCabinetPaths = new();
 
         private string[] _path;
         private string _destination;
@@ -129,12 +127,11 @@ namespace WindowsUtils.Commands
 
             foreach (string path in _validPaths)
             {
-                WuManagedCabinet cabinet = new(path, CmdletContext);
-                if (!_processedCabinetPaths.Contains(cabinet.BundleCabinetPaths[0]))
-                {
-                    _processedCabinetPaths.AddRange(cabinet.BundleCabinetPaths);
-                    _unwrapper.ExpandArchiveFile(cabinet, Destination, ArchiveFileType.Cabinet);
+                try {
+                    Containers.ExpandArchiveFile(path, Destination, ArchiveFileType.Cabinet);
                 }
+                // Error already written to the stream.
+                catch (NativeException) { }
             }
         }
     }

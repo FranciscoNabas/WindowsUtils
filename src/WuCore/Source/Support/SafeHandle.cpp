@@ -1,7 +1,6 @@
 #include "../../pch.h"
 
 #include "../../Headers/Support/SafeHandle.h"
-#include "../../Headers/Support/WuStdException.h"
 
 namespace WindowsUtils::Core
 {
@@ -10,60 +9,59 @@ namespace WindowsUtils::Core
 	*/
 
 	ScmHandle::ScmHandle()
-	{
-		m_h = NULL;
-		m_isValid = false;
-	}
+		: m_handle{ nullptr }, m_ownsHandle{ false } { }
+
+	ScmHandle::ScmHandle(const ScmHandle& other)
+		: m_handle{ other.m_handle }, m_ownsHandle{ other.m_ownsHandle } { }
 
 	ScmHandle::ScmHandle(const WWuString& computerName, DWORD desiredAccess, ScmHandleType type)
 	{
-		if (type != ScmHandleType::ServiceControlManager)
-			throw WuStdException(-1, (LPWSTR)L"This constructor can only be used for SCM handles.", __FILEW__, __LINE__);
+		_WU_ASSERT(type == ScmHandleType::ServiceControlManager, L"This constructor can only be used for SCM handles!");
 
-		m_h = OpenSCManager(computerName.GetBuffer(), SERVICES_ACTIVE_DATABASE, desiredAccess);
-		if (m_h == NULL)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		m_handle = OpenSCManager(computerName.Raw(), SERVICES_ACTIVE_DATABASE, desiredAccess);
+		if (!m_handle)
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"OpenSCManager", WriteErrorCategory::OpenError);
 
-		m_isValid = true;
+		m_ownsHandle = true;
 	}
 
 	ScmHandle::ScmHandle(const ScmHandle& scm, const WWuString& computerName, const WWuString& serviceName, DWORD desiredAccess, ScmHandleType type)
 	{
-		if (type != ScmHandleType::Service)
-			throw WuStdException(-1, L"This constructor can only be used for service handles.", __FILEW__, __LINE__);
+		_WU_ASSERT(type == ScmHandleType::Service, L"This constructor can only be used for service handles!");
 
-		m_h = OpenService(scm.m_h, serviceName.GetBuffer(), desiredAccess);
-		if (m_h == NULL)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		m_handle = OpenService(scm.m_handle, serviceName.Raw(), desiredAccess);
+		if (!m_handle)
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"OpenService", WriteErrorCategory::OpenError);
 
-		m_isValid = true;
+		m_ownsHandle = true;
 	}
 
 	ScmHandle::~ScmHandle()
 	{
-		if (m_h)
-			CloseServiceHandle(m_h);
+		if (m_handle && m_ownsHandle)
+			CloseServiceHandle(m_handle);
 
-		m_h = NULL;
-		m_isValid = false;
+		m_handle = nullptr;
+		m_ownsHandle = false;
 	}
 
-	const SC_HANDLE ScmHandle::get() const { return m_h; }
+	const SC_HANDLE ScmHandle::Get() const { return m_handle; }
+
 
 	/*
-	*	~ File handle
+	*	~ File handle ~
 	*/
 
 	FileHandle::FileHandle()
-	{
-		m_hFile = NULL;
-		m_isValid = false;
-	}
+		: m_handle{ nullptr }, m_ownsHandle{ false } { }
+
+	FileHandle::FileHandle(const FileHandle& other)
+		: m_handle{ other.m_handle }, m_ownsHandle{ other.m_ownsHandle } { }
 
 	FileHandle::FileHandle(const WWuString& fileName, DWORD desiredAccess, DWORD shareMode, LPSECURITY_ATTRIBUTES secAttr, DWORD disposition, DWORD flagsAndAttr, HANDLE hTemplate)
 	{
-		m_hFile = CreateFile(
-			fileName.GetBuffer(),
+		m_handle = CreateFile(
+			fileName.Raw(),
 			desiredAccess,
 			shareMode,
 			secAttr,
@@ -72,56 +70,74 @@ namespace WindowsUtils::Core
 			hTemplate
 		);
 
-		if (m_hFile == INVALID_HANDLE_VALUE)
-			throw WuStdException(static_cast<int>(GetLastError()), __FILEW__, __LINE__);
+		if (m_handle == INVALID_HANDLE_VALUE)
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"CreateFile", WriteErrorCategory::OpenError);
 
-		m_isValid = true;
+		m_ownsHandle = true;
 	}
 
 	FileHandle::~FileHandle()
 	{
-		if (m_hFile != NULL && m_hFile != INVALID_HANDLE_VALUE)
-			CloseHandle(m_hFile);
+		if (m_handle && m_handle != INVALID_HANDLE_VALUE && m_ownsHandle)
+			NtClose(m_handle);
 
-		m_hFile = NULL;
-		m_isValid = false;
+		m_handle = nullptr;
+		m_ownsHandle = false;
 	}
 
-	const HANDLE FileHandle::get() const { return m_hFile; }
+	const HANDLE FileHandle::Get() const { return m_handle; }
+
+	PHANDLE FileHandle::operator &()
+	{
+		if (m_handle && m_ownsHandle) {
+			NtClose(m_handle);
+			m_handle = nullptr;
+		}
+
+		m_ownsHandle = true;
+		
+		return &m_handle;
+	}
+
 
 	/*
-	*	~ Module handle
+	*	~ Module handle ~
 	*/
 
 	ModuleHandle::ModuleHandle()
-		: m_hModule(NULL), m_isLoaded(false), m_isValid(false), m_error(ERROR_SUCCESS)
-	{ }
+		: m_handle { nullptr }, m_isValid{ false }, m_ownsHandle{ false }, m_error{ } { }
+
+	ModuleHandle::ModuleHandle(const ModuleHandle& other)
+	{
+		m_handle = other.m_handle;
+		m_isValid = other.m_isValid;
+		m_ownsHandle = other.m_ownsHandle;
+		m_error = other.m_error;
+	}
 
 	ModuleHandle::ModuleHandle(const WWuString& name, bool forceLoad)
+		: m_error{ }, m_isValid{ false }, m_ownsHandle{ false }
 	{
-		m_error = ERROR_SUCCESS;
-		m_isValid = false;
-		m_isLoaded = false;
 		if (forceLoad) {
-			m_hModule = LoadLibrary(name.GetBuffer());
-			if (m_hModule == NULL) {
+			m_handle = LoadLibrary(name.Raw());
+			if (!m_handle) {
 				m_error = GetLastError();
 			}
 			else {
 				m_isValid = true;
-				m_isLoaded = true;
+				m_ownsHandle = true;
 			}
 		}
 		else {
-			m_hModule = GetModuleHandle(name.GetBuffer());
-			if (m_hModule == NULL) {
-				m_hModule = LoadLibrary(name.GetBuffer());
-				if (m_hModule == NULL) {
+			m_handle = GetModuleHandle(name.Raw());
+			if (!m_handle) {
+				m_handle = LoadLibrary(name.Raw());
+				if (!m_handle) {
 					m_error = GetLastError();
 				}
 				else {
 					m_isValid = true;
-					m_isLoaded = true;
+					m_ownsHandle = true;
 				}
 			}
 			else {
@@ -132,44 +148,152 @@ namespace WindowsUtils::Core
 
 	ModuleHandle::~ModuleHandle()
 	{
-		if (m_hModule != NULL && m_isLoaded)
-			FreeLibrary(m_hModule);
+		if (m_handle && m_isValid && m_ownsHandle)
+			FreeLibrary(m_handle);
 	}
 
-	const HMODULE ModuleHandle::get() const { return m_hModule; }
-	const bool ModuleHandle::IsValid() const { return m_isValid; }
 	const int ModuleHandle::Error() const { return m_error; }
+	const HMODULE ModuleHandle::Get() const { return m_handle; }
+	const bool ModuleHandle::IsValid() const { return m_isValid; }
+
 
 	/*
-	*	~ Process handle
+	*	~ Process handle ~
 	*/
 
 	ProcessHandle::ProcessHandle()
-		: m_hProcess(NULL) { }
+		: m_handle{ nullptr }, m_ownsHandle{ false } { }
 
-	ProcessHandle::ProcessHandle(DWORD desiredAccess, BOOL inherit, DWORD processId)
+	ProcessHandle::ProcessHandle(HANDLE handle)
+		: m_handle{ handle }, m_ownsHandle{ true } { }
+
+	ProcessHandle::ProcessHandle(const ProcessHandle& other)
+		: m_handle{ other.m_handle }, m_ownsHandle{ other.m_ownsHandle } { }
+
+	ProcessHandle::ProcessHandle(DWORD processId, ACCESS_MASK desiredAccess, bool inherit)
 	{
-		m_hProcess = OpenProcess(desiredAccess, inherit, processId);
-		if (m_hProcess == NULL) {
-			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+		m_ownsHandle = false;
+		m_handle = WuOpenProcess(processId, desiredAccess, inherit);
+		if (!m_handle) {
+			return;
 		}
+
+		m_ownsHandle = true;
 	}
 
 	ProcessHandle::~ProcessHandle()
 	{
-		if (m_hProcess != NULL)
-			CloseHandle(m_hProcess);
+		if (m_handle && m_ownsHandle)
+			NtClose(m_handle);
 	}
 
-	const HANDLE ProcessHandle::get() const { return m_hProcess; }
+	const HANDLE ProcessHandle::Get() const { return m_handle; }
+	const bool ProcessHandle::IsValid() const { return m_handle != 0 && m_handle != INVALID_HANDLE_VALUE; }
+	
+	PHANDLE ProcessHandle::operator &()
+	{
+		if (m_handle && m_ownsHandle) {
+			NtClose(m_handle);
+			m_handle = nullptr;
+		}
+
+		m_ownsHandle = true;
+
+		return &m_handle;
+	}
+
+	HANDLE ProcessHandle::WuOpenProcess(DWORD processId, ACCESS_MASK desiredAccess, bool inherit)
+	{
+		HANDLE handle;
+		OBJECT_ATTRIBUTES objAttr{
+			sizeof(OBJECT_ATTRIBUTES),
+			nullptr,
+			nullptr,
+			inherit ? OBJ_INHERIT : 0,
+			nullptr,
+			nullptr
+		};
+
+		CLIENT_ID clientId{
+			reinterpret_cast<HANDLE>(static_cast<ULONG_PTR>(processId)),
+			nullptr
+		};
+
+		NTSTATUS status = NtOpenProcess(&handle, desiredAccess, &objAttr, &clientId);
+		if (status) {
+			ULONG error = RtlNtStatusToDosError(status);
+			SetLastError(error);
+
+			return nullptr;
+		}
+
+		return handle;
+	}
+
 
 	/*
-	*	~ Object handle
+	*	~ Object handle ~
 	*/
 
-	ObjectHandle::ObjectHandle() { m_hObject = 0; }
-	ObjectHandle::ObjectHandle(HANDLE hObject) { m_hObject = hObject; }
-	ObjectHandle::~ObjectHandle() { if (m_hObject) CloseHandle(m_hObject); }
+	ObjectHandle::ObjectHandle()
+		: m_handle{ nullptr }, m_ownsHandle{ false } { }
 
-	const HANDLE ObjectHandle::get() const { return m_hObject; }
+	ObjectHandle::ObjectHandle(const ObjectHandle& other)
+		: m_handle{ other.m_handle }, m_ownsHandle{ other.m_ownsHandle } { }
+
+	ObjectHandle::ObjectHandle(HANDLE hObject, bool ownsHandle)
+		: m_handle{ hObject }, m_ownsHandle{ ownsHandle } { }
+
+	ObjectHandle::~ObjectHandle()
+	{
+		if (m_handle && m_ownsHandle)
+			NtClose(m_handle);
+	}
+
+	const HANDLE ObjectHandle::Get() const { return m_handle; }
+
+	PHANDLE ObjectHandle::operator &()
+	{
+		if (m_handle && m_ownsHandle) {
+			NtClose(m_handle);
+			m_handle = nullptr;
+		}
+
+		m_ownsHandle = true;
+
+		return &m_handle;
+	}
+
+	/*
+	*	~ Registry handle ~
+	*/
+
+	RegistryHandle::RegistryHandle()
+		: m_handle{ nullptr }, m_ownsHandle{ false } { }
+
+	RegistryHandle::RegistryHandle(const RegistryHandle& other)
+		: m_handle{ other.m_handle }, m_ownsHandle{ other.m_ownsHandle } { }
+
+	RegistryHandle::RegistryHandle(HKEY handle, bool ownsHandle)
+		: m_handle{ handle }, m_ownsHandle{ ownsHandle } { }
+
+	RegistryHandle::~RegistryHandle()
+	{
+		if (m_handle && m_ownsHandle)
+			RegCloseKey(m_handle);
+	}
+
+	const HKEY RegistryHandle::Get() const { return m_handle; }
+
+	PHKEY RegistryHandle::operator &()
+	{
+		if (m_handle && m_ownsHandle) {
+			RegCloseKey(m_handle);
+			m_handle = nullptr;
+		}
+
+		m_ownsHandle = true;
+
+		return &m_handle;
+	}
 }

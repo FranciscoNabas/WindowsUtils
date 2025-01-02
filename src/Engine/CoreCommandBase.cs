@@ -1,40 +1,87 @@
 ﻿using System.Management.Automation;
-using System.Management.Automation.Provider;
 using WindowsUtils.Core;
+using WindowsUtils.Wrappers;
 
-namespace WindowsUtils.Commands;
+namespace WindowsUtils.Engine;
 
-public abstract class CoreCommandBase : PSCmdlet
+public class CoreCommandBase : PSCmdlet
 {
-    private bool _suppressWildcardExpansion;
-    private CmdletProvider? _providerInstance;
+    private CmdletContextProxy?       m_context;
 
-    private CmdletContextProxy? _nativeContext;
+    private ContainersWrapper?        m_containers;
+    private InstallerWrapper?         m_installer;
+    private NetworkWrapper?           m_network;
+    private ProcessAndThreadWrapper?  m_processAndThread;
+    private ServicesWrapper?          m_services;
+    private TerminalServicesWrapper?  m_terminalServices;
+    private UtilitiesWrapper?         m_utils;
 
-    internal virtual CmdletContextProxy CmdletContext
-    {
-        get
-        {
-            _nativeContext ??= new(
-                WriteProgress,
-                WriteWarning,
-                WriteInformation,
-                WriteObject,
-                WriteError
-            );
+    protected ContainersWrapper Containers {
+        get {
+            m_containers ??= new(EnsureProxyAllocated());
 
-            return _nativeContext;
+            return m_containers;
         }
     }
 
-    internal virtual SwitchParameter SuppressWildcardExpansion
-    {
-        get { return _suppressWildcardExpansion; }
-        set { _suppressWildcardExpansion = value; }
+    protected InstallerWrapper Installer {
+        get {
+            m_installer ??= new(EnsureProxyAllocated());
+
+            return m_installer;
+        }
     }
 
-    internal CmdletProvider? ProviderInstance {
-        get { return _providerInstance; }
-        set { _providerInstance = value; }
+    protected NetworkWrapper Network {
+        get {
+            m_network ??= new(EnsureProxyAllocated());
+
+            return m_network;
+        }
+    }
+
+    protected ProcessAndThreadWrapper ProcessAndThread {
+        get {
+            m_processAndThread ??= new(EnsureProxyAllocated());
+
+            return m_processAndThread;
+        }
+    }
+
+    protected ServicesWrapper Services {
+        get {
+            m_services ??= new(EnsureProxyAllocated());
+
+            return m_services;
+        }
+    }
+
+    protected TerminalServicesWrapper TermServices {
+        get {
+            m_terminalServices ??= new(EnsureProxyAllocated());
+
+            return m_terminalServices;
+        }
+    }
+
+    protected UtilitiesWrapper Utilities {
+        get {
+            m_utils ??= new(EnsureProxyAllocated());
+
+            return m_utils;
+        }
+    }
+
+    private CmdletContextProxy EnsureProxyAllocated()
+    {
+        m_context ??= new(
+            WriteProgress,
+            WriteWarning,
+            WriteInformation,
+            WriteObject,
+            WriteError
+        );
+
+        return m_context;
     }
 }

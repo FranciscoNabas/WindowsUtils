@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 using WindowsUtils.Installer;
 
@@ -70,8 +71,6 @@ namespace WindowsUtils.Commands
     [Alias(new string[] {"imsisql"})]
     public class InvokeMsiQueryCommand : CoreCommandBase
     {
-        private readonly InstallerWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The installer path.</para>
         /// </summary>
@@ -112,7 +111,7 @@ namespace WindowsUtils.Commands
                 parameters = new();
 
             try {
-                _unwrapper.InvokeMsiQuery(Path, command, parameters, CmdletContext);
+                Installer.InvokeMsiQuery(Path, command, parameters);
             }
             // Error record already written to the stream.
             catch (ArgumentException) { }

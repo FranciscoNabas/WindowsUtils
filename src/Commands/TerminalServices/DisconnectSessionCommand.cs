@@ -1,4 +1,5 @@
 ﻿using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 using WindowsUtils.TerminalServices;
 
@@ -25,19 +26,16 @@ namespace WindowsUtils.Commands
     [Cmdlet(
         VerbsCommunications.Disconnect, "Session",
         SupportsShouldProcess = true,
-        ConfirmImpact = ConfirmImpact.High,
-        DefaultParameterSetName = "NoComputerName"
+        ConfirmImpact = ConfirmImpact.High
     )]
     [Alias("disconnect")]
-    public class DisconnectSessionCommand : Cmdlet
+    public class DisconnectSessionCommand : CoreCommandBase
     {
         /// <summary>
         /// <para type="description">The computer name to disconnect a session.</para>
         /// <para type="description">If not informed, it disconnects the session from the local computer.</para>
         /// </summary>
         [Parameter(
-            Mandatory = true,
-            ParameterSetName = "WithComputerName",
             ValueFromPipelineByPropertyName = true,
             HelpMessage = "The computer name to disconnect the session."
         )]
@@ -49,13 +47,6 @@ namespace WindowsUtils.Commands
         /// </summary>
         [Parameter(
             Mandatory = true,
-            ParameterSetName = "WithComputerName",
-            ValueFromPipelineByPropertyName = true,
-            HelpMessage = "The session ID to disconnect."
-        )]
-        [Parameter(
-            Mandatory = false,
-            ParameterSetName = "NoComputerName",
             ValueFromPipelineByPropertyName = true,
             HelpMessage = "The session ID to disconnect."
         )]
@@ -65,19 +56,12 @@ namespace WindowsUtils.Commands
         /// <para type="description">If called, the Cmdlet waits the logoff process to finish before returning.</para>
         /// </summary>
         [Parameter(
-            ParameterSetName = "WithComputerName",
-            HelpMessage = "Waits for the logon process to finish."
-        )]
-        [Parameter(
-            ParameterSetName = "NoComputerName",
             HelpMessage = "Waits for the logon process to finish."
         )]
         public SwitchParameter Wait { get; set; }
 
         protected override void ProcessRecord()
         {
-            TerminalServicesWrapper unWrapper = new();
-
             if (string.IsNullOrEmpty(ComputerName))
             {
                 if (SessionId == 0)
@@ -86,7 +70,7 @@ namespace WindowsUtils.Commands
                     "Disconnecting current session from this computer.",
                     "Are you sure you want to disconnect the current session on this computer?",
                     "Disconnect session"))
-                        unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
+                        TermServices.DisconnectSession(IntPtr.Zero, SessionId, Wait);
                 }
                 else
                 {
@@ -94,7 +78,7 @@ namespace WindowsUtils.Commands
                    "Disconnecting session ID " + SessionId + " from current computer.",
                    "Are you sure you want to disconnect sesion ID " + SessionId + " on the current computer?",
                    "Disconnect session"))
-                        unWrapper.DisconnectSession(IntPtr.Zero, SessionId, Wait);
+                        TermServices.DisconnectSession(IntPtr.Zero, SessionId, Wait);
                 }
             }
             else
@@ -104,7 +88,7 @@ namespace WindowsUtils.Commands
                    "Disconnecting session ID " + SessionId + " from computer " + ComputerName + ".",
                    "Are you sure you want to disconnect session ID " + SessionId + " on computer " + ComputerName + "?",
                    "Disconnect session"))
-                    unWrapper.DisconnectSession(session.SessionHandle.DangerousGetHandle(), SessionId, Wait);
+                    TermServices.DisconnectSession(session.SessionHandle.DangerousGetHandle(), SessionId, Wait);
             }
         }
     }

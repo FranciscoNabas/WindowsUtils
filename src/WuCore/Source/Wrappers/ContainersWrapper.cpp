@@ -1,7 +1,7 @@
 #pragma unmanaged
 
 #include "../../Headers/Support/IO.h"
-#include "../../Headers/Support/WuStdException.h"
+#include "../../Headers/Support/WuException.h"
 
 #pragma managed
 
@@ -11,42 +11,51 @@
 namespace WindowsUtils::Wrappers
 {
 	// Expand-Cabinet
-	void ContainersWrapper::ExpandArchiveFile(Object^ archiveObject, String^ destination, Core::ArchiveFileType fileType)
+	void ContainersWrapper::ExpandArchiveFile(String^ path, String^ destination, ArchiveFileType type)
 	{
-		switch (fileType) {
-			case WindowsUtils::Core::ArchiveFileType::Cabinet:
-			{
-				Core::WuManagedCabinet^ cabinet = (Core::WuManagedCabinet^)archiveObject;
-				try {
-					cabinet->ExpandCabinetFile(destination);
-				}
-				catch (const Core::WuStdException& ex) {
-					throw gcnew NativeException(ex);
-				}
-			} break;
+		WWuString wrappedPath = UtilitiesWrapper::GetWideStringFromSystemString(path);
+		WWuString wrappedDest = UtilitiesWrapper::GetWideStringFromSystemString(destination);
 
-			default:
-				throw gcnew NotSupportedException(fileType.ToString());
+		switch (type) {
+		case ArchiveFileType::Cabinet:
+		{
+			try {
+				Stubs::Containers::Dispatch<ContainersOperation::Expand>(wrappedPath, wrappedDest, Context->GetUnderlyingContext());
+			}
+			catch (NativeException^ ex) {
+				Context->WriteError(ex->Record);
+				throw;
+			}
+		} break;
+
+		default:
+			throw gcnew NotSupportedException();
 		}
 	}
 
 	// Compress-ArchiveFile
-	void ContainersWrapper::CompressArchiveFile(String^ path, String^ destination, String^ namePrefix, int maxCabSize, Core::CabinetCompressionType compressionType, Core::ArchiveFileType type, Core::CmdletContextProxy^ context)
+	void ContainersWrapper::CompressArchiveFile(String^ path, String^ destination, String^ namePrefix, int maxCabSize, CabinetCompressionType compressionType, ArchiveFileType type)
 	{
+		WWuString wrappedDest     = UtilitiesWrapper::GetWideStringFromSystemString(destination);
+		WWuString wrappedNamPref  = UtilitiesWrapper::GetWideStringFromSystemString(namePrefix);
 		switch (type) {
-			case WindowsUtils::Core::ArchiveFileType::Cabinet:
+			case ArchiveFileType::Cabinet:
 			{
 				Core::AbstractPathTree apt;
 				UtilitiesWrapper::GetAptFromPath(path, &apt);
-				Core::WuCabinet cabinet(apt, UtilitiesWrapper::GetWideStringFromSystemString(namePrefix), static_cast<USHORT>(compressionType), context->GetUnderlyingContext());
 
 				try {
-					cabinet.CompressCabinetFile(UtilitiesWrapper::GetWideStringFromSystemString(destination), maxCabSize);
+					Stubs::Containers::Dispatch<ContainersOperation::Compress>(apt, wrappedDest, wrappedNamPref,
+						maxCabSize, static_cast<const Core::CabinetCompressionType>(compressionType), Context->GetUnderlyingContext());
 				}
-				catch (const Core::WuStdException& ex) {
-					throw gcnew NativeException(ex);
+				catch (NativeException^ ex) {
+					Context->WriteError(ex->Record);
+					throw;
 				}
 			} break;
+
+			default:
+				throw gcnew NotSupportedException();
 		}
 	}
 }

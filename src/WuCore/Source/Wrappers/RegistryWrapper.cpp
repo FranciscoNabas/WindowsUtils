@@ -1,7 +1,7 @@
 #pragma unmanaged
 
-#include "../../Headers/Support/WuStdException.h"
-#include "../../Headers/Support/NtUtilities.h"
+#include "../../Headers/Support/WuException.h"
+#include "../../Headers/Support/Nt/NtUtilities.h"
 
 #pragma managed
 
@@ -18,124 +18,34 @@ namespace WindowsUtils::Wrappers
 	// Registry operations
 	Object^ RegistryWrapper::GetRegistryValue(RegistryHive hive, String^ subKey, String^ valueName)
 	{
-		WWuString wuPass = L"";
-		return GetRegistryValue(L"", L"", wuPass, hive, subKey, valueName);
+		return GetRegistryValue(nullptr, nullptr, nullptr, hive, subKey, valueName);
 	}
 
 	Object^ RegistryWrapper::GetRegistryValue(String^ computerName, RegistryHive hive, String^ subKey, String^ valueName)
 	{
-		WWuString wuPass = L"";
-		return GetRegistryValue(computerName, L"", wuPass, hive, subKey, valueName);
+		return GetRegistryValue(computerName, nullptr, nullptr, hive, subKey, valueName);
 	}
 
 	Object^ RegistryWrapper::GetRegistryValue(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName)
 	{
-		WWuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistryValue(L"", userName, wuPass, hive, subKey, valueName);
-	}
-
-	Object^ RegistryWrapper::GetRegistryValue(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, String^ valueName)
-	{
-		WWuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistryValue(computerName, userName, wuPass, hive, subKey, valueName);
+		return GetRegistryValue(nullptr, userName, password, hive, subKey, valueName);
 	}
 
 	Object^ RegistryWrapper::GetRegistryValue(IntPtr hRegistry, String^ subKey, String^ valueName)
 	{
-		DWORD dwValueType = 0;
-		DWORD dwBytesReturned = 0;
-		wuunique_ha_ptr<void> data;
-
-		WWuString wuSubKey = UtilitiesWrapper::GetWideStringFromSystemString(subKey);
-		WWuString wuValueName = UtilitiesWrapper::GetWideStringFromSystemString(valueName);
-
-		HKEY whReg = (HKEY)hRegistry.ToPointer();
-		try {
-			m_reg->GetRegistryKeyValue(whReg, wuSubKey, wuValueName, dwValueType, data, dwBytesReturned);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
-
-		Object^ output;
-		switch (dwValueType) {
-			case REG_BINARY:
-			{
-				output = gcnew array<Byte>(dwBytesReturned);
-				Marshal::Copy((IntPtr)data.get(), (array<Byte>^)output, 0, dwBytesReturned);
-			}
-			break;
-
-			case REG_DWORD:
-			{
-				DWORD* dwData = reinterpret_cast<DWORD*>(data.get());
-				output = gcnew Int32(*dwData);
-			}
-			break;
-
-			case REG_EXPAND_SZ:
-			{
-				// Getting the necessary buffer.
-				LPCWSTR strData = reinterpret_cast<LPCWSTR>(data.get());
-				DWORD charCount = ExpandEnvironmentStrings(strData, NULL, 0);
-				if (charCount == 0)
-					throw gcnew NativeException(GetLastError());
-
-
-				DWORD bytesNeeded = charCount * 2;
-				wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
-				charCount = ExpandEnvironmentStrings(strData, buffer.get(), bytesNeeded);
-				if (charCount == 0)
-					throw gcnew NativeException(GetLastError());
-
-				output = gcnew String(buffer.get());
-			}
-			break;
-
-			case REG_LINK:
-				output = gcnew String(reinterpret_cast<LPWSTR>(data.get()));
-				break;
-
-			case REG_MULTI_SZ:
-				output = UtilitiesWrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray(reinterpret_cast<LPWSTR>(data.get()), dwBytesReturned);
-				break;
-
-			case REG_QWORD:
-			{
-				long long* qwData = reinterpret_cast<long long*>(data.get());
-				output = gcnew Int64(*qwData);
-			}
-			break;
-
-			case REG_SZ:
-				output = gcnew String(reinterpret_cast<LPWSTR>(data.get()));
-				break;
-
-			default:
-				throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", dwValueType));
-				break;
-		}
-
-		return output;
+		return GetRegistryValue(nullptr, nullptr, nullptr, static_cast<RegistryHive>(static_cast<Int64>(hRegistry)), subKey, valueName);
 	}
 
 	Object^ RegistryWrapper::GetRegistryValue(
-		String^ computerName,	  // The computer name. If the computer is remote, it needs Remote Registry enabled.
-		String^ userName,		  // User name to impersonate before connecting to the registry.
-		WWuString& password,		  // User password.
-		RegistryHive hive,		  // The root hive.
-		String^ subKey,			  // The subkey path.
-		String^ valueName		  // The value property name.
+		String^ computerName,		// The computer name. If the computer is remote, it needs Remote Registry enabled.
+		String^ userName,			// User name to impersonate before connecting to the registry.
+		SecureString^ password,     // User password.
+		RegistryHive hive,			// The root hive.
+		String^ subKey,				// The subkey path.
+		String^ valueName			// The value property name.
 	)
 	{
-		DWORD dwValueType = 0;
-		DWORD dwBytesReturned = 0;
-		wuunique_ha_ptr<void> data;
-
-		// Managing logon.
-		if (!String::IsNullOrEmpty(userName))
-			UtilitiesWrapper::LogonAndImpersonateUser(userName, password);
-
+		DWORD valueType{ };
 		WWuString wuComputerName;
 		if (!String::IsNullOrEmpty(computerName))
 			wuComputerName = UtilitiesWrapper::GetWideStringFromSystemString(computerName);
@@ -143,72 +53,71 @@ namespace WindowsUtils::Wrappers
 		WWuString wuSubKey = UtilitiesWrapper::GetWideStringFromSystemString(subKey);
 		WWuString wuValueName = UtilitiesWrapper::GetWideStringFromSystemString(valueName);
 
-
+		Core::ScopedBuffer data;
 		try {
-			m_reg->GetRegistryKeyValue(wuComputerName, (HKEY)hive, wuSubKey, wuValueName, dwValueType, data, dwBytesReturned);
+			// Managing logon.
+			if (!String::IsNullOrEmpty(userName))
+				UtilitiesWrapper::LogonAndImpersonateUser(userName, password);
+
+			Core::RegistryHandle regHandle{ (HKEY)hive, false };
+			data = Stubs::Registry::Dispatch<RegistryOperation::GetValue>(Core::ExceptionMarshaler::NativePtr,
+				&wuComputerName, regHandle, wuSubKey, wuValueName, &valueType);
 		}
-		catch (const Core::WuStdException& ex) {
+		catch (...) {
 			RevertToSelf();
-			throw gcnew NativeException(ex);
+			throw;
 		}
 
 		Object^ output;
-		switch (dwValueType) {
-			case REG_BINARY:
-			{
-				output = gcnew array<Byte>(dwBytesReturned);
-				Marshal::Copy((IntPtr)data.get(), (array<Byte>^)output, 0, dwBytesReturned);
-			}
+		switch (valueType) {
+		case REG_BINARY:
+		{
+			output = gcnew array<Byte>(static_cast<int>(data.Size()));
+			pin_ptr<Byte> outputPtr = &((array<Byte>^)output)[0];
+			RtlCopyMemory(outputPtr, data.Get(), data.Size());
+		} break;
+
+		case REG_DWORD:
+			output = gcnew Int32(*reinterpret_cast<PDWORD>(data.Get()));
 			break;
 
-			case REG_DWORD:
-			{
-				DWORD* dwData = reinterpret_cast<DWORD*>(data.get());
-				output = gcnew Int32(*dwData);
-			}
+		case REG_EXPAND_SZ:
+		{
+			// Getting the necessary buffer.
+			LPCWSTR strData = reinterpret_cast<LPCWSTR>(data.Get());
+			DWORD charCount = ExpandEnvironmentStrings(strData, NULL, 0);
+			if (charCount == 0)
+				throw gcnew NativeException(GetLastError());
+
+			charCount++;
+			std::unique_ptr<WCHAR[]> buffer = std::make_unique<WCHAR[]>(charCount);
+			charCount = ExpandEnvironmentStrings(strData, buffer.get(), charCount);
+			if (charCount == 0)
+				throw gcnew NativeException(GetLastError());
+
+			output = gcnew String(buffer.get());
+		}
+		break;
+
+		case REG_LINK:
+			output = gcnew String(reinterpret_cast<LPWSTR>(data.Get()));
 			break;
 
-			case REG_EXPAND_SZ:
-			{
-				// Getting the necessary buffer.
-				LPCWSTR strData = reinterpret_cast<LPCWSTR>(data.get());
-				DWORD charCount = ExpandEnvironmentStrings(strData, NULL, 0);
-				if (charCount == 0)
-					throw gcnew NativeException(GetLastError());
-
-
-				DWORD bytesNeeded = charCount * 2;
-				wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
-				charCount = ExpandEnvironmentStrings(strData, buffer.get(), bytesNeeded);
-				if (charCount == 0)
-					throw gcnew NativeException(GetLastError());
-
-				output = gcnew String(buffer.get());
-			}
+		case REG_MULTI_SZ:
+			output = UtilitiesWrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray(reinterpret_cast<LPWSTR>(data.Get()), static_cast<DWORD>(data.Size()));
 			break;
 
-			case REG_LINK:
-				output = gcnew String(reinterpret_cast<LPWSTR>(data.get()));
-				break;
-
-			case REG_MULTI_SZ:
-				output = UtilitiesWrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray(reinterpret_cast<LPWSTR>(data.get()), dwBytesReturned);
-				break;
-
-			case REG_QWORD:
-			{
-				long long* qwData = reinterpret_cast<long long*>(data.get());
-				output = gcnew Int64(*qwData);
-			}
+		case REG_QWORD:
+			output = gcnew Int64(*reinterpret_cast<__int64*>(data.Get()));
 			break;
 
-			case REG_SZ:
-				output = gcnew String(reinterpret_cast<LPWSTR>(data.get()));
-				break;
+		case REG_SZ:
+			output = gcnew String(reinterpret_cast<LPWSTR>(data.Get()));
+			break;
 
-			default:
-				throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", dwValueType));
-				break;
+		default:
+			throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", valueType));
+			break;
 		}
 
 		RevertToSelf();
@@ -218,76 +127,50 @@ namespace WindowsUtils::Wrappers
 
 	array<String^>^ RegistryWrapper::GetRegistrySubKeyNames(RegistryHive hive, String^ subKey)
 	{
-		WWuString wuPass = L"";
-		return GetRegistrySubKeyNames(L"", L"", wuPass, hive, subKey);
+		return GetRegistrySubKeyNames(nullptr, nullptr, nullptr, hive, subKey);
 	}
 
 	array<String^>^ RegistryWrapper::GetRegistrySubKeyNames(String^ computerName, RegistryHive hive, String^ subKey)
 	{
-		WWuString wuPass = L"";
-		return GetRegistrySubKeyNames(computerName, L"", wuPass, hive, subKey);
+		return GetRegistrySubKeyNames(computerName, nullptr, nullptr, hive, subKey);
 	}
 
 	array<String^>^ RegistryWrapper::GetRegistrySubKeyNames(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey)
 	{
-		WWuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistrySubKeyNames(L"", userName, wuPass, hive, subKey);
-	}
-
-	array<String^>^ RegistryWrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey)
-	{
-		WWuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistrySubKeyNames(computerName, userName, wuPass, hive, subKey);
+		return GetRegistrySubKeyNames(nullptr, userName, password, hive, subKey);
 	}
 
 	array<String^>^ RegistryWrapper::GetRegistrySubKeyNames(IntPtr hRegistry, String^ subKey)
 	{
-		wusunique_vector<WWuString> subkeyNameVec = make_wusunique_vector<WWuString>();
-
-		WWuString wuSubKey = UtilitiesWrapper::GetWideStringFromSystemString(subKey);
-
-		HKEY whReg = (HKEY)hRegistry.ToPointer();
-		try {
-			m_reg->GetRegistrySubkeyNames(whReg, wuSubKey, 0, subkeyNameVec.get());
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
-
-		List<String^>^ output = gcnew List<String^>(0);
-		for (WWuString singleName : *subkeyNameVec)
-			output->Add(gcnew String(singleName.GetBuffer()));
-
-		RevertToSelf();
-
-		return output->ToArray();
+		return GetRegistrySubKeyNames(nullptr, nullptr, nullptr, static_cast<RegistryHive>(static_cast<Int32>(hRegistry)), subKey);
 	}
 
-	array<String^>^ RegistryWrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, WWuString& password, RegistryHive hive, String^ subKey)
+	array<String^>^ RegistryWrapper::GetRegistrySubKeyNames(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey)
 	{
-		wusunique_vector<WWuString> subkeyNameVec = make_wusunique_vector<WWuString>();
-
-		// Managing logon.
-		if (!String::IsNullOrEmpty(userName))
-			UtilitiesWrapper::LogonAndImpersonateUser(userName, password);
-
 		WWuString wuComputerName;
+		WuList<WWuString> subkeyNameVec;
 		if (!String::IsNullOrEmpty(computerName))
 			wuComputerName = UtilitiesWrapper::GetWideStringFromSystemString(computerName);
 
 		WWuString wuSubKey = UtilitiesWrapper::GetWideStringFromSystemString(subKey);
 
 		try {
-			m_reg->GetRegistrySubkeyNames(wuComputerName, (HKEY)hive, wuSubKey, 0, subkeyNameVec.get());
+			// Managing logon.
+			if (!String::IsNullOrEmpty(userName))
+				UtilitiesWrapper::LogonAndImpersonateUser(userName, password);
+
+			Core::RegistryHandle regHandle{ (HKEY)hive, false };
+			Stubs::Registry::Dispatch<RegistryOperation::GetSubkeys>(Core::ExceptionMarshaler::NativePtr,
+				&wuComputerName, regHandle, wuSubKey, 0, subkeyNameVec);
 		}
-		catch (const Core::WuStdException& ex) {
+		catch (...) {
 			RevertToSelf();
-			throw gcnew NativeException(ex);
+			throw;
 		}
 
 		List<String^>^ output = gcnew List<String^>(0);
-		for (WWuString singleName : *subkeyNameVec)
-			output->Add(gcnew String(singleName.GetBuffer()));
+		for (const WWuString& singleName : subkeyNameVec)
+			output->Add(gcnew String(singleName.Raw()));
 
 		RevertToSelf();
 
@@ -296,204 +179,107 @@ namespace WindowsUtils::Wrappers
 
 	array<Object^>^ RegistryWrapper::GetRegistryValueList(String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		WWuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistryValueList(L"", userName, wuPass, hive, subKey, valueNameList);
-	}
-
-	array<Object^>^ RegistryWrapper::GetRegistryValueList(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
-	{
-		WWuString wuPass = (LPWSTR)Marshal::SecureStringToCoTaskMemUnicode(password).ToPointer();
-		return GetRegistryValueList(computerName, userName, wuPass, hive, subKey, valueNameList);
+		return GetRegistryValueList(nullptr, userName, password, hive, subKey, valueNameList);
 	}
 
 	array<Object^>^ RegistryWrapper::GetRegistryValueList(String^ computerName, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		WWuString wuPass = L"";
-		return GetRegistryValueList(computerName, L"", wuPass, hive, subKey, valueNameList);
+		return GetRegistryValueList(computerName, nullptr, nullptr, hive, subKey, valueNameList);
 	}
 
 	array<Object^>^ RegistryWrapper::GetRegistryValueList(RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		WWuString wuPass = L"";
-		return GetRegistryValueList(L"", L"", wuPass, hive, subKey, valueNameList);
+		return GetRegistryValueList(nullptr, nullptr, nullptr, hive, subKey, valueNameList);
 	}
 
 	array<Object^>^ RegistryWrapper::GetRegistryValueList(IntPtr hRegistry, String^ subKey, array<String^>^ valueNameList)
 	{
-		DWORD dwValCount = valueNameList->Length;
-		PVALENT pValList = new VALENT[valueNameList->Length];
-		WWuString* wuValueNames = new WWuString[valueNameList->Length];
-
-		wuunique_ha_ptr<void> buffer;
-		WWuString wuSubKey = UtilitiesWrapper::GetWideStringFromSystemString(subKey);
-
-		for (DWORD i = 0; i < dwValCount; i++) {
-			wuValueNames[i] = UtilitiesWrapper::GetWideStringFromSystemString(valueNameList[i]);
-			pValList[i].ve_valuename = wuValueNames[i].GetBuffer();
-		}
-
-		HKEY whReg = (HKEY)hRegistry.ToPointer();
-		try {
-			m_reg->GetRegistryKeyValueList(whReg, wuSubKey, pValList, dwValCount, buffer);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
-
-		array<Object^>^ output = gcnew array<Object^>(dwValCount);
-		for (DWORD i = 0; i < dwValCount; i++) {
-			PVOID pvData = (PVOID)pValList[i].ve_valueptr;
-			switch (pValList[i].ve_type) {
-				case REG_BINARY:
-				{
-					output[i] = gcnew array<Byte>(pValList[i].ve_valuelen);
-					Marshal::Copy((IntPtr)pvData, (array<Byte>^)output[i], 0, pValList[i].ve_valuelen);
-				}
-				break;
-
-				case REG_DWORD:
-				{
-					DWORD* dwData = static_cast<DWORD*>(pvData);
-					output[i] = gcnew Int32(*dwData);
-				}
-				break;
-
-				case REG_EXPAND_SZ:
-				{
-					LPCWSTR strData = reinterpret_cast<LPCWSTR>((LPCWSTR)pvData);
-					DWORD charCount = ExpandEnvironmentStrings(strData, NULL, 0);
-					if (charCount == 0)
-						throw gcnew NativeException(GetLastError());
-
-
-					DWORD bytesNeeded = charCount * 2;
-					wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
-					charCount = ExpandEnvironmentStrings(strData, buffer.get(), bytesNeeded);
-					if (charCount == 0)
-						throw gcnew NativeException(GetLastError());
-
-					output[i] = gcnew String(buffer.get());
-				}
-				break;
-
-				case REG_LINK:
-					output[i] = gcnew String((LPWSTR)pvData);
-					break;
-
-				case REG_MULTI_SZ:
-					output[i] = UtilitiesWrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray((LPWSTR)pvData, pValList[i].ve_valuelen);
-					break;
-
-				case REG_QWORD:
-				{
-					long long* qwData = static_cast<long long*>(pvData);
-					output[i] = gcnew Int64(*qwData);
-				}
-				break;
-
-				case REG_SZ:
-					output[i] = gcnew String((LPWSTR)pvData);
-					break;
-
-				default:
-					throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", pValList[i].ve_type));
-			}
-		}
-
-		return output;
+		return GetRegistryValueList(nullptr, nullptr, nullptr, static_cast<RegistryHive>(static_cast<Int32>(hRegistry)), subKey, valueNameList);
 	}
 
-	array<Object^>^ RegistryWrapper::GetRegistryValueList(String^ computerName, String^ userName, WWuString& password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
+	array<Object^>^ RegistryWrapper::GetRegistryValueList(String^ computerName, String^ userName, SecureString^ password, RegistryHive hive, String^ subKey, array<String^>^ valueNameList)
 	{
-		DWORD dwValCount = valueNameList->Length;
-		PVALENT pValList = new VALENT[valueNameList->Length];
-		WWuString* wuValueNames = new WWuString[valueNameList->Length];
-		wuunique_ha_ptr<void> buffer;
-
-		// Managing logon.
-		if (!String::IsNullOrEmpty(userName))
-			UtilitiesWrapper::LogonAndImpersonateUser(userName, password);
-
 		WWuString wuComputerName;
 		if (!String::IsNullOrEmpty(computerName))
 			wuComputerName = UtilitiesWrapper::GetWideStringFromSystemString(computerName);
 
 		WWuString wuSubKey = UtilitiesWrapper::GetWideStringFromSystemString(subKey);
 
-		for (DWORD i = 0; i < dwValCount; i++) {
-			wuValueNames[i] = UtilitiesWrapper::GetWideStringFromSystemString(valueNameList[i]);
-			pValList[i].ve_valuename = wuValueNames[i].GetBuffer();
+		DWORD valueCount = valueNameList->Length;
+		std::unique_ptr<VALENT[]> valList = std::make_unique<VALENT[]>(valueCount);
+		std::unique_ptr<WWuString[]> valueNames = std::make_unique<WWuString[]>(valueCount);
+		for (DWORD i = 0; i < valueCount; i++) {
+			valueNames[i] = UtilitiesWrapper::GetWideStringFromSystemString(valueNameList[i]);
+			valList[i].ve_valuename = valueNames[i].Raw();
 		}
 
+		Core::ScopedBuffer buffer;
 		try {
-			m_reg->GetRegistryKeyValueList(wuComputerName, (HKEY)hive, wuSubKey, pValList, dwValCount, buffer);
+			// Managing logon.
+			if (!String::IsNullOrEmpty(userName))
+				UtilitiesWrapper::LogonAndImpersonateUser(userName, password);
+
+			Core::RegistryHandle regHandle{ (HKEY)hive, false };
+			buffer = Stubs::Registry::Dispatch<RegistryOperation::GetValueList>(Core::ExceptionMarshaler::NativePtr,
+				&wuComputerName, regHandle, wuSubKey, valList.get(), valueCount);
 		}
-		catch (const Core::WuStdException& ex) {
+		catch (...) {
 			RevertToSelf();
-			throw gcnew NativeException(ex);
+			throw;
 		}
 
-		array<Object^>^ output = gcnew array<Object^>(dwValCount);
-		for (DWORD i = 0; i < dwValCount; i++) {
-			PVOID pvData = (PVOID)pValList[i].ve_valueptr;
-			switch (pValList[i].ve_type) {
+		array<Object^>^ output = gcnew array<Object^>(valueCount);
+		for (DWORD i = 0; i < valueCount; i++) {
+			PVOID data = (PVOID)valList[i].ve_valueptr;
+			switch (valList[i].ve_type) {
 				case REG_BINARY:
 				{
-					output[i] = gcnew array<Byte>(pValList[i].ve_valuelen);
-					Marshal::Copy((IntPtr)pvData, (array<Byte>^)output[i], 0, pValList[i].ve_valuelen);
-				}
-				break;
+					output[i] = gcnew array<Byte>(valList[i].ve_valuelen);
+					pin_ptr<Byte> dataPtr = &((array<Byte>^)output[i])[0];
+					RtlCopyMemory(dataPtr, data, valList[i].ve_valuelen);
+				} break;
 
 				case REG_DWORD:
-				{
-					DWORD* dwData = static_cast<DWORD*>(pvData);
-					output[i] = gcnew Int32(*dwData);
-				}
-				break;
+					output[i] = gcnew Int32(*reinterpret_cast<PDWORD>(data));
+					break;
 
 				case REG_EXPAND_SZ:
 				{
-					LPCWSTR strData = reinterpret_cast<LPCWSTR>((LPCWSTR)pvData);
+					LPCWSTR strData = reinterpret_cast<LPCWSTR>(data);
 					DWORD charCount = ExpandEnvironmentStrings(strData, NULL, 0);
 					if (charCount == 0)
 						throw gcnew NativeException(GetLastError());
 
-
-					DWORD bytesNeeded = charCount * 2;
-					wuunique_ha_ptr<WCHAR> buffer = make_wuunique_ha<WCHAR>(bytesNeeded);
-					charCount = ExpandEnvironmentStrings(strData, buffer.get(), bytesNeeded);
+					charCount++;
+					std::unique_ptr<WCHAR[]> buffer = std::make_unique<WCHAR[]>(charCount);
+					charCount = ExpandEnvironmentStrings(strData, buffer.get(), charCount);
 					if (charCount == 0)
 						throw gcnew NativeException(GetLastError());
 
 					output[i] = gcnew String(buffer.get());
-				}
-				break;
+				} break;
 
 				case REG_LINK:
-					output[i] = gcnew String((LPWSTR)pvData);
+					output[i] = gcnew String(reinterpret_cast<LPWSTR>(data));
 					break;
 
 				case REG_MULTI_SZ:
-					output[i] = UtilitiesWrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray((LPWSTR)pvData, pValList[i].ve_valuelen);
+					output[i] = UtilitiesWrapper::GetStringArrayFromDoubleNullTerminatedCStyleArray(reinterpret_cast<LPWSTR>(data), valList[i].ve_valuelen);
 					break;
 
 				case REG_QWORD:
-				{
-					long long* qwData = static_cast<long long*>(pvData);
-					output[i] = gcnew Int64(*qwData);
-				}
-				break;
+					output[i] = gcnew Int64(*reinterpret_cast<__int64*>(data));
+					break;
 
 				case REG_SZ:
-					output[i] = gcnew String((LPWSTR)pvData);
+					output[i] = gcnew String(reinterpret_cast<LPWSTR>(data));
 					break;
 
 				default:
 				{
 					RevertToSelf();
-					throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", pValList[i].ve_type));
-				}
-				break;
+					throw gcnew ArgumentException(String::Format("Invalid registry type '{0}'.", valList[i].ve_type));
+				} break;
 			}
 		}
 
@@ -516,28 +302,22 @@ namespace WindowsUtils::Wrappers
 		else if (splitPath[0] == "HKEY_CURRENT_CONFIG") { hiveKey = HKEY_CURRENT_CONFIG; }
 		else { throw gcnew ArgumentException("Invalid hive '" + splitPath[0] + "'."); }
 
-		HKEY subKey;
+		Core::RegistryHandle subKey;
 		pin_ptr<const wchar_t> wrappedKey = PtrToStringChars(subkeyPath);
 		LSTATUS regStatus = RegOpenKey(hiveKey, wrappedKey, &subKey);
 		if (regStatus != ERROR_SUCCESS)
 			throw gcnew NativeException(regStatus);
 
 		ULONG bufferSize = 1 << 10;
-		wuunique_ptr<BYTE[]> buffer = make_wuunique<BYTE[]>(bufferSize);
-		NTSTATUS result = Core::NtFunctions::GetInstance()->NtQueryKey(subKey, KEY_INFORMATION_CLASS::KeyNameInformation, buffer.get(), bufferSize, &bufferSize);
-		if (result != STATUS_SUCCESS) {
-			RegCloseKey(subKey);
-			throw gcnew NativeException(Core::WuStdException(result, __FILEW__, __LINE__, Core::CoreErrorType::NtError));
-		}
+		Core::ScopedBuffer buffer{ bufferSize };
+		NTSTATUS result = NtQueryKey(subKey.Get(), KEY_INFORMATION_CLASS::KeyNameInformation, buffer.Get(), bufferSize, &bufferSize);
+		if (result != STATUS_SUCCESS)
+			throw gcnew NativeException(Core::WuNativeException(result, L"QueryKey", Core::WriteErrorCategory::InvalidResult, __FILEW__, __LINE__, Core::CoreErrorType::NtError));
 
-		auto keyNameInfo = reinterpret_cast<PKEY_NAME_INFORMATION>(buffer.get());
+		auto keyNameInfo = reinterpret_cast<PKEY_NAME_INFORMATION>(buffer.Get());
 
-		if (keyNameInfo->NameLength > 0) {
-			RegCloseKey(subKey);
+		if (keyNameInfo->NameLength > 0)
 			return gcnew String(keyNameInfo->Name);
-		}
-
-		RegCloseKey(subKey);
 
 		return nullptr;
 	}
@@ -555,7 +335,7 @@ namespace WindowsUtils::Wrappers
 			return path;
 		}
 		else if (root == "USER") {
-			String^ currentUserRoot = "\\REGISTRY\\USER\\" + gcnew String(Core::AccessControl::GetCurrentTokenUserSid().GetBuffer());
+			String^ currentUserRoot = "\\REGISTRY\\USER\\" + gcnew String(Core::AccessControl::GetCurrentTokenUserSid().Raw());
 			String^ path;
 			if (ntKeyPath->StartsWith(currentUserRoot))
 				path = ntKeyPath->Replace(currentUserRoot, "HKCU:");

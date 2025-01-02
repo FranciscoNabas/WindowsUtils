@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <Configuration>
     <ViewDefinitions>
         <View>
@@ -15,8 +15,8 @@
                     <TableColumnHeader>
                         <Label>Access</Label>
                     </TableColumnHeader>
-                 </TableHeaders>
-                 <TableRowEntries>
+                </TableHeaders>
+                <TableRowEntries>
                     <TableRowEntry>
                         <TableColumnItems>
                             <TableColumnItem>
@@ -30,7 +30,7 @@
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
-                 </TableRowEntries>
+                </TableRowEntries>
             </TableControl>
         </View>
         <View>
@@ -213,19 +213,16 @@
                 <Autosize />
                 <TableHeaders>
                     <TableColumnHeader />
-                    <TableColumnHeader />
                     <TableColumnHeader>
-                        <Label>IsHResult</Label>
+                        <Label>HaveHResult</Label>
                     </TableColumnHeader>
+                    <TableColumnHeader />
                     <TableColumnHeader />
                     <TableColumnHeader />
                 </TableHeaders>
                 <TableRowEntries>
                     <TableRowEntry>
                         <TableColumnItems>
-                            <TableColumnItem>
-                                <PropertyName>ErrorCode</PropertyName>
-                            </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>HexCode</PropertyName>
                             </TableColumnItem>
@@ -238,10 +235,95 @@
                                 </ScriptBlock>
                             </TableColumnItem>
                             <TableColumnItem>
+                                <PropertyName>Source</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
                                 <PropertyName>SymbolicName</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>Description</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
+            <Name>WindowsUtils.Network.TransportTableInfo</Name>
+            <ViewSelectedBy>
+                <TypeName>WindowsUtils.Network.TransportTableInfo</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <AutoSize />
+                <TableHeaders>
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>Protocol</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>LocalAddress</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>LocalPort</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>RemoteAddress</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>RemotePort</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>State</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
+            <Name>WindowsUtils.Network.IpRoute</Name>
+            <ViewSelectedBy>
+                <TypeName>WindowsUtils.Network.IpRoute</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <AutoSize />
+                <TableHeaders>
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                    <TableColumnHeader />
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>InterfaceIndex</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>NetworkDestination</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>NetworkMask</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Gateway</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Metric</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Persistent</PropertyName>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>

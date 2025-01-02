@@ -1,8 +1,7 @@
 ﻿using System.ServiceProcess;
 using System.Management.Automation;
-using WindowsUtils.Services;
-using WindowsUtils.AccessControl;
-using WindowsUtils.ArgumentCompletion;
+using WindowsUtils.Engine.AccessControl;
+using WindowsUtils.Engine.ArgumentCompletion;
 
 namespace WindowsUtils.Commands
 {

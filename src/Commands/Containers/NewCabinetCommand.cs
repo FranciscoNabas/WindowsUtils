@@ -1,5 +1,5 @@
 ﻿using System.Management.Automation;
-using WindowsUtils.Core;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -28,8 +28,6 @@ namespace WindowsUtils.Commands
     [Cmdlet(VerbsCommon.New, "Cabinet")]
     public class CompressArchiveFileCommand : CoreCommandBase
     {
-        private readonly ContainersWrapper _unwrapper = new();
-
         private string _path;
         private string _destination;
 
@@ -93,6 +91,12 @@ namespace WindowsUtils.Commands
         public CabinetCompressionType CompressionType { get; set; } = CabinetCompressionType.MSZip;
 
         protected override void ProcessRecord()
-            => _unwrapper.CompressArchiveFile(Path, _destination, NamePrefix, (MaxCabSize * 1024), CompressionType, ArchiveFileType.Cabinet, CmdletContext);
+        {
+            try {
+                Containers.CompressArchiveFile(Path, _destination, NamePrefix, (MaxCabSize * 1024), CompressionType, ArchiveFileType.Cabinet);
+            }
+            // Exception already written to the stream.
+            catch (NativeException) { }
+        }
     }
 }

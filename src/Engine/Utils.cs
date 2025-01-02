@@ -1,94 +1,66 @@
 ﻿using System.Text;
 using System.Security;
 using System.Management.Automation;
-using System.Runtime.InteropServices;
-using WindowsUtils.Interop;
+using WindowsUtils.Engine.Interop;
 
-namespace WindowsUtils
+namespace WindowsUtils.Engine;
+
+public static class Utils
 {
-    public static class Utils
+    internal static bool IsAdministrator()
     {
-        internal static bool IsAdministrator()
-        {
-            string account = "Administrators";
-            byte[] Sid = new byte[0];
-            uint cbSid = 0;
-            StringBuilder referencedDomainName = new();
-            uint cchReferencedDomainName = (uint)referencedDomainName.Capacity;
+        using ScopedBuffer sid = NativeAccessControl.GetAccountSid(null, "Administrators");
+        return NativeAccessControl.CheckCurrentTokenMembership(sid);
+    }
 
-            int err;
-            if (!NativeFunctions.LookupAccountName(string.Empty, account, Sid, ref cbSid, referencedDomainName, ref cchReferencedDomainName, out _)) {
-                err = Marshal.GetLastWin32Error();
-                if (err == NativeConstants.ERROR_INSUFFICIENT_BUFFER || err == NativeConstants.ERROR_INVALID_FLAGS) {
-                    Sid = new byte[cbSid];
-                    referencedDomainName.EnsureCapacity((int)cchReferencedDomainName);
-                    err = NativeConstants.ERROR_SUCCESS;
-                    if (!NativeFunctions.LookupAccountName(string.Empty, account, Sid, ref cbSid, referencedDomainName, ref cchReferencedDomainName, out _))
-                        err = Marshal.GetLastWin32Error();
+    internal static SecureString ReadPassword()
+    {
+        var pwd = new SecureString();
+        while (true) {
+            ConsoleKeyInfo i = Console.ReadKey(true);
+            if (i.Key == ConsoleKey.Enter) {
+                break;
+            }
+            else if (i.Key == ConsoleKey.Backspace) {
+                if (pwd.Length > 0) {
+                    pwd.RemoveAt(pwd.Length - 1);
+                    Console.Write("\b \b");
                 }
             }
-            else
-                return false;
-
-            if (err == NativeConstants.ERROR_SUCCESS) {
-                if (!NativeFunctions.CheckTokenMembership(IntPtr.Zero, Sid, out bool isAdmin))
-                    throw new NativeException(Marshal.GetLastWin32Error());
-
-                return isAdmin;
+            // KeyChar == '\u0000' if the key pressed does not correspond to a printable character, e.g. F1, Pause-Break, etc
+            else if (i.KeyChar != '\u0000') {
+                pwd.AppendChar(i.KeyChar);
+                Console.Write("*");
             }
-            else
-                throw new NativeException(err);
+        }
+        return pwd;
+    }
+
+    internal static PSObject PSObjectFactory(Dictionary<string, object> properties)
+    {
+        PSObject output = new();
+
+        foreach (KeyValuePair<string, object> property in properties) {
+            if (string.IsNullOrEmpty(property.Key))
+                throw new ArgumentException("Property name cannot be null");
+
+            output.Members.Add(new PSNoteProperty(property.Key, property.Value));
         }
 
-        internal static SecureString ReadPassword()
-        {
-            var pwd = new SecureString();
-            while (true) {
-                ConsoleKeyInfo i = Console.ReadKey(true);
-                if (i.Key == ConsoleKey.Enter) {
-                    break;
-                }
-                else if (i.Key == ConsoleKey.Backspace) {
-                    if (pwd.Length > 0) {
-                        pwd.RemoveAt(pwd.Length - 1);
-                        Console.Write("\b \b");
-                    }
-                }
-                // KeyChar == '\u0000' if the key pressed does not correspond to a printable character, e.g. F1, Pause-Break, etc
-                else if (i.KeyChar != '\u0000') {
-                    pwd.AppendChar(i.KeyChar);
-                    Console.Write("*");
-                }
-            }
-            return pwd;
+        return output;
+    }
+
+    internal static PSObject PSObjectFactory(IOrderedEnumerable<KeyValuePair<string, object>> properties)
+    {
+        PSObject output = new();
+
+        foreach (KeyValuePair<string, object> property in properties) {
+            if (string.IsNullOrEmpty(property.Key))
+                throw new ArgumentException("Property name cannot be null");
+
+            output.Members.Add(new PSNoteProperty(property.Key, property.Value));
         }
 
-        internal static PSObject PSObjectFactory(Dictionary<string, object> properties)
-        {
-            PSObject output = new();
-
-            foreach (KeyValuePair<string, object> property in properties) {
-                if (string.IsNullOrEmpty(property.Key))
-                    throw new ArgumentException("Property name cannot be null");
-
-                output.Members.Add(new PSNoteProperty(property.Key, property.Value));
-            }
-
-            return output;
-        }
-
-        internal static PSObject PSObjectFactory(IOrderedEnumerable<KeyValuePair<string, object>> properties)
-        {
-            PSObject output = new();
-
-            foreach (KeyValuePair<string, object> property in properties) {
-                if (string.IsNullOrEmpty(property.Key))
-                    throw new ArgumentException("Property name cannot be null");
-
-                output.Members.Add(new PSNoteProperty(property.Key, property.Value));
-            }
-
-            return output;
-        }
+        return output;
     }
 }

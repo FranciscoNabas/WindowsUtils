@@ -1,6 +1,6 @@
 #pragma unmanaged
 
-#include "../../Headers/Support/WuStdException.h"
+#include "../../Headers/Support/WuException.h"
 
 #pragma managed
 
@@ -10,29 +10,24 @@
 namespace WindowsUtils::Wrappers
 {
 	// Remove-Service
-	void ServicesWrapper::RemoveService(String^ serviceName, String^ computerName, bool stopService, Core::CmdletContextProxy^ context, bool noWait)
+	void ServicesWrapper::RemoveService(String^ serviceName, String^ computerName, bool stopService, bool noWait)
 	{
 		WWuString wuComputerName = UtilitiesWrapper::GetWideStringFromSystemString(computerName);
 		WWuString wuServiceName = UtilitiesWrapper::GetWideStringFromSystemString(serviceName);
-
-		try {
-			m_svc->RemoveService(wuServiceName, wuComputerName, stopService, context->GetUnderlyingContext(), noWait);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+		_WU_START_TRY
+			Stubs::Services::Dispatch<ServicesOperation::RemoveService>(Context->GetUnderlyingContext(),
+				wuServiceName, wuComputerName, stopService, noWait);
+		_WU_MANAGED_CATCH
 	}
 
-	void ServicesWrapper::RemoveService(String^ serviceName, bool stopService, Core::CmdletContextProxy^ context, bool noWait)
+	void ServicesWrapper::RemoveService(String^ serviceName, bool stopService, bool noWait)
 	{
 		WWuString wuServiceName = UtilitiesWrapper::GetWideStringFromSystemString(serviceName);
 
-		try {
-			m_svc->RemoveService(wuServiceName, L"", stopService, context->GetUnderlyingContext(), noWait);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+		_WU_START_TRY
+			Stubs::Services::Dispatch<ServicesOperation::RemoveService>(Context->GetUnderlyingContext(),
+				wuServiceName, L"", stopService, noWait);
+		_WU_MANAGED_CATCH
 	}
 
 	// Get-ServiceSecurity
@@ -47,17 +42,10 @@ namespace WindowsUtils::Wrappers
 
 		WWuString sddl;
 		DWORD size = 0;
-		try {
-			if (audit)
-				m_svc->GetServiceSecurity(wuServiceName, wuComputerName, sddl, &size, TRUE);
-			else
-				m_svc->GetServiceSecurity(wuServiceName, wuComputerName, sddl, &size);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
 
-		String^ manSddl = gcnew String(sddl.GetBuffer());
+		Stubs::Services::Dispatch<ServicesOperation::GetSecurity>(Core::ExceptionMarshaler::NativePtr, wuServiceName, wuComputerName, sddl, &size, audit);
+
+		String^ manSddl = gcnew String(sddl.Raw());
 
 		return manSddl;
 	}
@@ -72,17 +60,10 @@ namespace WindowsUtils::Wrappers
 
 		WWuString sddl;
 		DWORD size = 0;
-		try {
-			if (audit)
-				m_svc->GetServiceSecurity(wuServiceName, L"", sddl, &size, TRUE);
-			else
-				m_svc->GetServiceSecurity(wuServiceName, L"", sddl, &size);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
 
-		String^ manSddl = gcnew String(sddl.GetBuffer());
+		Stubs::Services::Dispatch<ServicesOperation::GetSecurity>(Core::ExceptionMarshaler::NativePtr, wuServiceName, L"", sddl, &size, audit);
+
+		String^ manSddl = gcnew String(sddl.Raw());
 
 		return manSddl;
 	}
@@ -98,17 +79,10 @@ namespace WindowsUtils::Wrappers
 
 		WWuString sddl;
 		DWORD size = 0;
-		try {
-			if (audit)
-				m_svc->GetServiceSecurity(whService, sddl, &size, TRUE);
-			else
-				m_svc->GetServiceSecurity(whService, sddl, &size);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
 
-		String^ manSddl = gcnew String(sddl.GetBuffer());
+		Stubs::Services::Dispatch<ServicesOperation::GetSecurity>(Core::ExceptionMarshaler::NativePtr, whService, sddl, &size, audit);
+
+		String^ manSddl = gcnew String(sddl.Raw());
 
 		return manSddl;
 	}
@@ -120,12 +94,10 @@ namespace WindowsUtils::Wrappers
 		WWuString wuComputerName = UtilitiesWrapper::GetWideStringFromSystemString(computerName);
 		WWuString wuSddl = UtilitiesWrapper::GetWideStringFromSystemString(sddl);
 
-		try {
-			m_svc->SetServiceSecurity(wuServiceName, wuComputerName, wuSddl, audit, changeOwner);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+		_WU_START_TRY
+			Stubs::Services::Dispatch<ServicesOperation::SetSecurity>(Context->GetUnderlyingContext(),
+				wuServiceName, wuComputerName, wuSddl, audit, changeOwner);
+		_WU_MANAGED_CATCH
 	}
 
 	void ServicesWrapper::SetServiceSecurity(String^ serviceName, String^ sddl, bool audit, bool changeOwner)
@@ -133,11 +105,9 @@ namespace WindowsUtils::Wrappers
 		WWuString wuServiceName = UtilitiesWrapper::GetWideStringFromSystemString(serviceName);
 		WWuString wuSddl = UtilitiesWrapper::GetWideStringFromSystemString(sddl);
 
-		try {
-			m_svc->SetServiceSecurity(wuServiceName, L"", wuSddl, audit, changeOwner);
-		}
-		catch (const Core::WuStdException& ex) {
-			throw gcnew NativeException(ex);
-		}
+		_WU_START_TRY
+			Stubs::Services::Dispatch<ServicesOperation::SetSecurity>(Context->GetUnderlyingContext(),
+				wuServiceName, L"", wuSddl, audit, changeOwner);
+		_WU_MANAGED_CATCH
 	}
 }

@@ -1,125 +1,51 @@
 #pragma once
 #pragma unmanaged
 
-#include "../../pch.h"
-
-#include <memory>
-#include <queue>
-#include <map>
+#include <type_traits>
+#include <cstdint>
 
 using __uint64 = unsigned __int64;
 
-template <typename T>
-using wuqueue = std::queue<T>;
+template<class> struct is_bounded_char_array : std::false_type {};
 
-template <typename T>
-using wusunique_queue = std::unique_ptr<std::queue<T>>;
+template<class> struct is_bounded_wide_char_array : std::false_type {};
 
-template <typename T>
-using wusshared_queue = std::shared_ptr<std::queue<T>>;
+template<size_t N>
+struct is_bounded_char_array<char[N]> : std::true_type {};
 
-template <class T>
-using wuvector = std::vector<T>;
+template<size_t N>
+struct is_bounded_wide_char_array<wchar_t[N]> : std::true_type {};
 
-template <class T>
-using wusunique_vector = std::unique_ptr<std::vector<T>>;
+template<class T>
+constexpr bool is_binary_digit = std::_Is_any_of_v<std::remove_cv_t<T>,
+	signed char, unsigned char, short, unsigned short, int, unsigned int, long, unsigned long,
+	const signed char, const unsigned char, const short, const unsigned short, const int, const unsigned int, const long, const unsigned long,
+	int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t,
+	const int8_t, const uint8_t, const int16_t, const uint16_t, const int32_t, const uint32_t,
+	long long, __int64, int64_t, const long long, const __int64, const int64_t,
+	unsigned long long, unsigned __int64, uint64_t, const unsigned long long, const unsigned __int64, const uint64_t>;
 
-template <class T>
-using wusshared_vector = std::shared_ptr<std::vector<T>>;
+template<class T>
+constexpr bool is_floating_point = std::_Is_any_of_v <std::remove_cv_t<T>,
+	float, double, const float, const double>;
 
-template <class T, class U>
-using wumap = std::map<T, U>;
+template<class T>
+constexpr bool is_single_byte_character = std::_Is_any_of_v<std::remove_cv_t<T>, char, const char>;
 
-template <class T, class U>
-using wusunique_map = std::unique_ptr<std::map<T, U>>;
+template<class T>
+constexpr bool is_double_byte_character = std::_Is_any_of_v<std::remove_cv_t<T>, wchar_t, const wchar_t>;
 
-template <class T, class U>
-using wusshared_map = std::shared_ptr<std::map<T, U>>;
+template<class T>
+constexpr bool is_character = is_single_byte_character<T> || is_double_byte_character<T>;
 
-template <class T>
-[[nodiscard]] wusunique_vector<T> make_wusunique_vector() noexcept
-{
-	return std::make_unique<std::vector<T>>();
-}
+template<class T>
+constexpr bool is_single_byte_character_array = std::_Is_any_of_v<std::remove_cv_t<T>, char*, const char*> || is_bounded_char_array<T>{};
 
-template <class T>
-[[nodiscard]] wusshared_vector<T> make_wusshared_vector() noexcept
-{
-	return std::make_shared<std::vector<T>>();
-}
+template<class T>
+constexpr bool is_double_byte_character_array = std::_Is_any_of_v<std::remove_cv_t<T>, wchar_t*, const wchar_t*> || is_bounded_wide_char_array<T>{};
 
-template <class T, class U>
-[[nodiscard]] wusunique_map<T, U> make_wusunique_map() noexcept
-{
-	return std::make_unique<std::map<T, U>>();
-}
+template<class T>
+constexpr bool is_character_array = is_single_byte_character_array<T> || is_double_byte_character_array<T>;
 
-template <class T, class U>
-[[nodiscard]] wusshared_map<T, U> make_wusshared_map() noexcept
-{
-	return std::make_shared<std::map<T, U>>();
-}
-
-/*
-*	These are helpers to allow using smart pointers with custom allocators.
-*	This is mainly so we can create smart pointers with custom sizes.
-*/
-struct HeapAllocFreer
-{
-	void operator()(void* p) const noexcept
-	{
-		HeapFree(GetProcessHeap(), 0, p);
-	}
-};
-
-template <class T>
-using wuunique_ptr = std::unique_ptr<T>;
-
-template <class T>
-using wuunique_ha_ptr = std::unique_ptr<T, HeapAllocFreer>;
-
-template <class T>
-using wushared_ptr = std::shared_ptr<T>;
-
-template <class T>
-[[nodiscard]] wuunique_ptr<T> make_wuunique()
-{
-	return std::make_unique<T>();
-}
-
-template <class T, class... Args>
-[[nodiscard]] wuunique_ptr<T> make_wuunique(Args&&... args)
-{
-	return std::make_unique<T>(std::forward<Args>(args)...);
-}
-
-template <class T>
-[[nodiscard]] wuunique_ha_ptr<T> make_wuunique_ha(size_t size) noexcept
-{
-	return wuunique_ha_ptr<T>{
-		static_cast<T*>(HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size))
-	};
-}
-
-template <class T, class... Args>
-[[nodiscard]] wushared_ptr<T> make_wushared(Args&&... args)
-{
-	return std::make_shared<T>(std::forward<Args>(args)...);
-}
-
-template <class T>
-[[nodiscard]] wushared_ptr<T> make_wushared()
-{
-	return std::make_shared<T>();
-}
-
-template <class T>
-[[nodiscard]] wushared_ptr<T> make_wushared_ha(size_t size) noexcept
-{
-	return wushared_ptr<T> {
-		std::shared_ptr<T>(
-			static_cast<T*>(HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size)),
-			HeapAllocFreer()
-		)
-	};
-}
+template<class T>
+concept is_addition_supported = is_binary_digit<T> || is_character<T> || is_character_array<T> || is_floating_point<T>;

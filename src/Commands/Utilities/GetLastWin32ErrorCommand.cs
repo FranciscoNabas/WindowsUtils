@@ -11,9 +11,7 @@ namespace WindowsUtils.Commands
     [OutputType(typeof(string))]
     public class GetLastWin32ErrorCommand : Cmdlet
     {
-        private static readonly UtilitiesWrapper _unwrapper = new();
-
         protected override void ProcessRecord()
-            => WriteObject(_unwrapper.GetLastWin32Error());
+            => WriteObject(UtilitiesWrapper.GetLastWin32Error());
     }
 }

@@ -3,12 +3,25 @@
 
 #include <Shlwapi.h>
 
-#include "../../Support/NtUtilities.h"
+#include "../../Support/Nt/NtUtilities.h"
 #include "../../Engine/ProcessAndThread.h"
 #include "../../Support/IO.h"
 #include "../../Engine/Registry.h"
 
 #pragma managed
+
+/*
+*	Important note about types:
+*
+*	PowerShell for some reason lists the properties in the reverse order than declared here.
+*	An easy way to deal with it is to declare properties 'upside-down'.
+*	This avoids us having to mess with 'format'/'types' files.
+*
+*	For classes with inheritance, it seems to list first the child properties, then
+*	the parent ones.
+*
+*	Remember: what matters is what shows up to the user.
+*/
 
 namespace WindowsUtils
 {
@@ -24,12 +37,12 @@ namespace WindowsUtils
 	{
 	public:
 		property ObjectHandleType Type { ObjectHandleType get() { return static_cast<ObjectHandleType>(m_wrapper->Type); } }
-		property String^ InputObject { String^ get() { return gcnew String(m_wrapper->InputObject.GetBuffer()); } }
+		property String^ InputObject { String^ get() { return gcnew String(m_wrapper->InputObject.Raw()); } }
 		property String^ Name {
 			String^ get()
 			{
 				if (!WWuString::IsNullOrEmpty(m_wrapper->Name))
-					return gcnew String(m_wrapper->Name.GetBuffer());
+					return gcnew String(m_wrapper->Name.Raw());
 
 				return nullptr;
 			}
@@ -44,20 +57,20 @@ namespace WindowsUtils
 					if (WWuString::IsNullOrEmpty(search->second)) {
 						if (!WWuString::IsNullOrEmpty(m_wrapper->Name)) {
 							WWuString name = m_wrapper->Name;
-							PathStripPath(name.GetBuffer());
+							PathStripPath(name.Raw());
 
-							return gcnew String(name.GetBuffer());
+							return gcnew String(name.Raw());
 						}
 					}
 					else
-						return gcnew String(search->second.GetBuffer());
+						return gcnew String(search->second.Raw());
 				}
 				else {
 					if (!WWuString::IsNullOrEmpty(m_wrapper->Name)) {
 						WWuString name = m_wrapper->Name;
-						PathStripPath(name.GetBuffer());
+						PathStripPath(name.Raw());
 
-						return gcnew String(name.GetBuffer());
+						return gcnew String(name.Raw());
 					}
 				}
 
@@ -71,7 +84,7 @@ namespace WindowsUtils
 				auto search = m_wrapper->VersionInfo.find(Core::VersionInfoProperty::ProductName);
 				if (search != m_wrapper->VersionInfo.end())
 					if (!WWuString::IsNullOrEmpty(search->second))
-						return gcnew String(search->second.GetBuffer());
+						return gcnew String(search->second.Raw());
 
 				return nullptr;
 			}
@@ -83,7 +96,7 @@ namespace WindowsUtils
 				auto search = m_wrapper->VersionInfo.find(Core::VersionInfoProperty::FileVersion);
 				if (search != m_wrapper->VersionInfo.end())
 					if (!WWuString::IsNullOrEmpty(search->second))
-						return gcnew String(search->second.GetBuffer());
+						return gcnew String(search->second.Raw());
 
 				return nullptr;
 			}
@@ -95,7 +108,7 @@ namespace WindowsUtils
 				auto search = m_wrapper->VersionInfo.find(Core::VersionInfoProperty::CompanyName);
 				if (search != m_wrapper->VersionInfo.end())
 					if (!WWuString::IsNullOrEmpty(search->second))
-						return gcnew String(search->second.GetBuffer());
+						return gcnew String(search->second.Raw());
 
 				return nullptr;
 			}
@@ -104,7 +117,7 @@ namespace WindowsUtils
 			String^ get()
 			{
 				if (!WWuString::IsNullOrEmpty(m_wrapper->ImagePath))
-					return gcnew String(m_wrapper->ImagePath.GetBuffer());
+					return gcnew String(m_wrapper->ImagePath.Raw());
 
 				return nullptr;
 			}
@@ -179,8 +192,8 @@ namespace WindowsUtils
 	public ref class ModuleInfo
 	{
 	public:
-		property String^ ModuleName { String^ get() { return gcnew String(m_wrapper->ModuleName.GetBuffer()); } }
-		property String^ ModulePath { String^ get() { return gcnew String(m_wrapper->ModulePath.GetBuffer()); } }
+		property String^ ModuleName { String^ get() { return gcnew String(m_wrapper->ModuleName.Raw()); } }
+		property String^ ModulePath { String^ get() { return gcnew String(m_wrapper->ModulePath.Raw()); } }
 		property ImageVersionInfo^ VersionInfo { ImageVersionInfo^ get() { return m_versionInfo; } }
 
 		ModuleInfo(const Core::WU_MODULE_INFO& info)
@@ -188,10 +201,10 @@ namespace WindowsUtils
 			m_wrapper = new Core::WU_MODULE_INFO(info);
 
 			m_versionInfo = gcnew ImageVersionInfo();
-			m_versionInfo->FileDescription = gcnew String(info.VersionInfo.FileDescription.GetBuffer());
-			m_versionInfo->ProductName = gcnew String(info.VersionInfo.ProductName.GetBuffer());
-			m_versionInfo->FileVersion = gcnew String(info.VersionInfo.FileVersion.GetBuffer());
-			m_versionInfo->CompanyName = gcnew String(info.VersionInfo.CompanyName.GetBuffer());
+			m_versionInfo->FileDescription = gcnew String(info.VersionInfo.FileDescription.Raw());
+			m_versionInfo->ProductName = gcnew String(info.VersionInfo.ProductName.Raw());
+			m_versionInfo->FileVersion = gcnew String(info.VersionInfo.FileVersion.Raw());
+			m_versionInfo->CompanyName = gcnew String(info.VersionInfo.CompanyName.Raw());
 		}
 
 		~ModuleInfo() { delete m_wrapper; }
@@ -208,9 +221,9 @@ namespace WindowsUtils
 	{
 	public:
 		property UInt32 ProcessId { UInt32 get() { return m_wrapper->ProcessId; } }
-		property String^ ImagePath { String^ get() { return gcnew String(m_wrapper->ImagePath.GetBuffer()); } }
-		property String^ ImageName { String^ get() { return gcnew String(m_wrapper->ImageFileName.GetBuffer()); } }
-		property String^ CommandLine { String^ get() { return gcnew String(m_wrapper->CommandLine.GetBuffer()); } }
+		property String^ ImagePath { String^ get() { return gcnew String(m_wrapper->ImagePath.Raw()); } }
+		property String^ ImageName { String^ get() { return gcnew String(m_wrapper->ImageFileName.Raw()); } }
+		property String^ CommandLine { String^ get() { return gcnew String(m_wrapper->CommandLine.Raw()); } }
 		property array<ModuleInfo^>^ Info { array<ModuleInfo^>^ get() { return m_moduleInfo; } }
 
 		ProcessModuleInfo(const Core::PROCESS_MODULE_INFO& info)
@@ -248,7 +261,7 @@ namespace WindowsUtils
 				if (m_wrapper->Type == L"Key")
 					return "Registry";
 
-				return gcnew String(m_wrapper->Type.GetBuffer());
+				return gcnew String(m_wrapper->Type.Raw());
 			}
 		}
 		property String^ Name {
@@ -257,16 +270,16 @@ namespace WindowsUtils
 				if (!WWuString::IsNullOrEmpty(m_wrapper->Name)) {
 					if (m_wrapper->Type == L"File") {
 						Core::IO::GetFileDosPathFromDevicePath(m_wrapper->Name);
-						return gcnew String(m_wrapper->Name.GetBuffer());
+						return gcnew String(m_wrapper->Name.Raw());
 					}
 					else if (m_wrapper->Type == L"Key") {
 						WWuString path;
 						Core::Registry::GetRegistryPathFromNtPath(m_wrapper->Name, path);
 						
-						return gcnew String(path.GetBuffer());
+						return gcnew String(path.Raw());
 					}
 
-					return (gcnew String(m_wrapper->Name.GetBuffer()))->Trim();
+					return (gcnew String(m_wrapper->Name.Raw()))->Trim();
 				}
 
 				return String::Empty;

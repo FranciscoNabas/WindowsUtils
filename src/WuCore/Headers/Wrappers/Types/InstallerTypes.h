@@ -1,6 +1,22 @@
 #pragma once
+#pragma unmanaged
+
+#include "../../Support/WuList.h"
 
 #pragma managed
+
+/*
+*	Important note about types:
+*
+*	PowerShell for some reason lists the properties in the reverse order than declared here.
+*	An easy way to deal with it is to declare properties 'upside-down'.
+*	This avoids us having to mess with 'format'/'types' files.
+*
+*	For classes with inheritance, it seems to list first the child properties, then
+*	the parent ones.
+*
+*	Remember: what matters is what shows up to the user.
+*/
 
 namespace WindowsUtils::Installer
 {
@@ -125,15 +141,15 @@ namespace WindowsUtils::Installer
 	{
 	public:
 		property Int32 Codepage { Int32 get() { return m_wrapper->Codepage; } }
-		property String^ Title { String^ get() { return gcnew String(m_wrapper->Title.GetBuffer()); } }
-		property String^ Subject { String^ get() { return gcnew String(m_wrapper->Subject.GetBuffer()); } }
-		property String^ Author { String^ get() { return gcnew String(m_wrapper->Author.GetBuffer()); } }
-		property String^ Keywords { String^ get() { return gcnew String(m_wrapper->Keywords.GetBuffer()); } }
-		property String^ Comments { String^ get() { return gcnew String(m_wrapper->Comments.GetBuffer()); } }
+		property String^ Title { String^ get() { return gcnew String(m_wrapper->Title.Raw()); } }
+		property String^ Subject { String^ get() { return gcnew String(m_wrapper->Subject.Raw()); } }
+		property String^ Author { String^ get() { return gcnew String(m_wrapper->Author.Raw()); } }
+		property String^ Keywords { String^ get() { return gcnew String(m_wrapper->Keywords.Raw()); } }
+		property String^ Comments { String^ get() { return gcnew String(m_wrapper->Comments.Raw()); } }
 		property String^ Platform { String^ get() { return m_platform; } }
 		property String^ Languages { String^ get() { return m_languages; } }
-		property String^ LastSavedBy { String^ get() { return gcnew String(m_wrapper->LastSavedBy.GetBuffer()); } }
-		property String^ PackageCode { String^ get() { return gcnew String(m_wrapper->RevisionNumber.GetBuffer()); } }
+		property String^ LastSavedBy { String^ get() { return gcnew String(m_wrapper->LastSavedBy.Raw()); } }
+		property String^ PackageCode { String^ get() { return gcnew String(m_wrapper->RevisionNumber.Raw()); } }
 		property DateTime^ LastPrinted { DateTime^ get() { return Wrappers::UtilitiesWrapper::GetDateTimeFromFileTime(m_wrapper->LastPrinted); } }
 		property DateTime^ CreateTime { DateTime^ get() { return Wrappers::UtilitiesWrapper::GetDateTimeFromFileTime(m_wrapper->CreateTimeDate); } }
 		property DateTime^ LastSaveTime { DateTime^ get() { return Wrappers::UtilitiesWrapper::GetDateTimeFromFileTime(m_wrapper->LastSaveTimeDate); } }
@@ -143,18 +159,18 @@ namespace WindowsUtils::Installer
 		property Boolean Administrative { Boolean get() { return m_admin; } }
 		property Boolean UacCompliant { Boolean get() { return m_uacCompliant; } }
 		property Int32 CharacterCount { Int32 get() { return m_wrapper->CharacterCount; } }
-		property String^ CreatingApplication { String^ get() { return gcnew String(m_wrapper->CreatingApplication.GetBuffer()); } }
+		property String^ CreatingApplication { String^ get() { return gcnew String(m_wrapper->CreatingApplication.Raw()); } }
 		property InstallerPackageSecurity Security { InstallerPackageSecurity get() { return static_cast<InstallerPackageSecurity>(m_wrapper->Security); } }
 
 		InstallerSummaryInfo(const Core::WU_SUMMARY_INFO& summaryInfo)
 		{
 			m_wrapper = new Core::WU_SUMMARY_INFO(summaryInfo);
 
-			wuvector<WWuString> templateSplit = m_wrapper->Template.Split(';');
-			if (templateSplit.size() > 0) {
-				m_platform = gcnew String(templateSplit[0].GetBuffer());
-				if (templateSplit.size() > 1) {
-					m_languages = gcnew String(templateSplit[1].GetBuffer());
+			WuList<WWuString> templateSplit = m_wrapper->Template.Split(';');
+			if (templateSplit.Count() > 0) {
+				m_platform = gcnew String(templateSplit[0].Raw());
+				if (templateSplit.Count() > 1) {
+					m_languages = gcnew String(templateSplit[1].Raw());
 				}
 			}
 

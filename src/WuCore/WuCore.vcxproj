@@ -62,6 +62,7 @@
       <ForcedIncludeFiles>pch.h</ForcedIncludeFiles>
       <AdditionalOptions>/Zo</AdditionalOptions>
       <ConformanceMode>false</ConformanceMode>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <AdditionalDependencies>
@@ -100,18 +101,34 @@
     <ClInclude Include="Headers\Engine\Services.h" />
     <ClInclude Include="Headers\Engine\TerminalServices.h" />
     <ClInclude Include="Headers\Engine\Utilities.h" />
+    <ClInclude Include="Headers\Stubs\ContainersStub.h" />
+    <ClInclude Include="Headers\Stubs\InstallerStub.h" />
+    <ClInclude Include="Headers\Stubs\NetworkStub.h" />
+    <ClInclude Include="Headers\Stubs\ProcessAndThreadStub.h" />
+    <ClInclude Include="Headers\Stubs\RegistryStub.h" />
+    <ClInclude Include="Headers\Stubs\ServicesStub.h" />
+    <ClInclude Include="Headers\Stubs\StubUtils.h" />
+    <ClInclude Include="Headers\Stubs\TerminalServicesStub.h" />
+    <ClInclude Include="Headers\Stubs\UtilitiesStub.h" />
+    <ClInclude Include="Headers\Support\Assertion.h" />
     <ClInclude Include="Headers\Support\CoreUtils.h" />
     <ClInclude Include="Headers\Support\Expressions.h" />
     <ClInclude Include="Headers\Support\IO.h" />
-    <ClInclude Include="Headers\Support\MemoryManagement.h" />
+    <ClInclude Include="Headers\Support\WuList.h" />
     <ClInclude Include="Headers\Support\Notification.h" />
-    <ClInclude Include="Headers\Support\NtUtilities.h" />
+    <ClInclude Include="Headers\Support\Nt\NtUtilities.h" />
+    <ClInclude Include="Headers\Support\Nt\NtFunctions.h" />
+    <ClInclude Include="Headers\Support\Nt\NtStructures.h" />
+    <ClInclude Include="Headers\Support\Nt\PebTeb.h" />
     <ClInclude Include="Headers\Support\SafeHandle.h" />
-    <ClInclude Include="Headers\Support\String.h" />
-    <ClInclude Include="Headers\Support\WuStdException.h" />
+    <ClInclude Include="Headers\Support\ScopedBuffer.h" />
+    <ClInclude Include="Headers\Support\WuString.h" />
+    <ClInclude Include="Headers\Support\WuException.h" />
     <ClInclude Include="Headers\Wrappers\CmdletContextProxy.h" />
     <ClInclude Include="Headers\Wrappers\ContainersWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\DummyWrapper.h" />
     <ClInclude Include="Headers\Wrappers\InstallerWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\Marshalers.h" />
     <ClInclude Include="Headers\Wrappers\NetworkWrapper.h" />
     <ClInclude Include="Headers\Wrappers\NativeException.h" />
     <ClInclude Include="Headers\Wrappers\ProcessAndThreadWrapper.h" />
@@ -125,6 +142,7 @@
     <ClInclude Include="Headers\Wrappers\Types\WuManagedCabinet.h" />
     <ClInclude Include="Headers\Wrappers\Types\WuManagedContainer.h" />
     <ClInclude Include="Headers\Wrappers\UtilitiesWrapper.h" />
+    <ClInclude Include="Headers\Wrappers\WrapperBase.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resources\resource1.h" />
     <ClInclude Include="Resources\VersionInfo.h" />
@@ -145,13 +163,16 @@
     <ClCompile Include="Source\Engine\Services.cpp" />
     <ClCompile Include="Source\Engine\TerminalServices.cpp" />
     <ClCompile Include="Source\Engine\Utilities.cpp" />
+    <ClCompile Include="Source\Stubs\ProcessAndThreadStub.cpp" />
     <ClCompile Include="Source\Support\CoreUtils.cpp" />
     <ClCompile Include="Source\Support\IO.cpp" />
     <ClCompile Include="Source\Support\Notification.cpp" />
     <ClCompile Include="Source\Support\SafeHandle.cpp" />
     <ClCompile Include="Source\Support\NtUtilities.cpp" />
-    <ClCompile Include="Source\Support\WuStdException.cpp" />
+    <ClCompile Include="Source\Support\ScopedBuffer.cpp" />
+    <ClCompile Include="Source\Support\WuException.cpp" />
     <ClCompile Include="Source\Wrappers\ContainersWrapper.cpp" />
+    <ClCompile Include="Source\Wrappers\DummyWrapper.cpp" />
     <ClCompile Include="Source\Wrappers\InstallerWrapper.cpp" />
     <ClCompile Include="Source\Wrappers\NetworkWrapper.cpp" />
     <ClCompile Include="Source\Wrappers\ProcessAndThreadWrapper.cpp" />
@@ -175,6 +196,9 @@
       <HintPath>..\..\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation\v4.0_3.0.0.0__31bf3856ad364e35\System.Management.Automation.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="DebugObjects.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

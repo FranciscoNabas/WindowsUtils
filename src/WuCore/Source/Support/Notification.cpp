@@ -32,7 +32,7 @@ namespace WindowsUtils::Core
 	*/
 
 	_MAPPED_INFORMATION_DATA::_MAPPED_INFORMATION_DATA()
-		: Computer(NULL), NativeThreadId(0), Source(NULL), Tags(NULL), TimeGenerated(0), User(NULL)
+		: Computer(), NativeThreadId(0), Source(), Tags(NULL), TimeGenerated(0), User()
 	{ }
 
 	_MAPPED_INFORMATION_DATA::_MAPPED_INFORMATION_DATA(
@@ -73,15 +73,19 @@ namespace WindowsUtils::Core
 		UnmanagedWriteWarning warnPtr,
 		UnmanagedWriteInformation infoPtr,
 		UnmanagedWriteObject objPtr,
-		UnmanagedWriteError errorPtr
-	) : m_writeProgressHook(progPtr), m_writeWarningHook(warnPtr), m_writeInformationHook(infoPtr), m_writeObjectHook(objPtr), m_writeErrorHook(errorPtr)
+		UnmanagedWriteException exPtr,
+		UnmanagedExceptionMarshaler exMarshalerPtr
+	) : m_writeProgressHook(progPtr), m_writeWarningHook(warnPtr), m_writeInformationHook(infoPtr), m_writeObjectHook(objPtr),
+		m_writeExHook(exPtr), m_exMarshalerHook(exMarshalerPtr)
 	{ }
 
 	WuNativeContext::~WuNativeContext() { }
 
+	const UnmanagedExceptionMarshaler& WuNativeContext::GetExceptionMarshaler() const { return m_exMarshalerHook; }
+
 	void WuNativeContext::NativeWriteProgress(PMAPPED_PROGRESS_DATA progData) const { m_writeProgressHook(progData); }
 	void WuNativeContext::NativeWriteWarning(const WWuString& text) const { m_writeWarningHook(text); }
 	void WuNativeContext::NativeWriteInformation(const PMAPPED_INFORMATION_DATA infoData) const { m_writeInformationHook(infoData); }
-	void WuNativeContext::NativeWriteError(const PMAPPED_ERROR_DATA errorData) const { m_writeErrorHook(errorData); }
+	void WuNativeContext::NativeWriteError(const WuException& exception) const { m_writeExHook(exception); }
 	void WuNativeContext::NativeWriteObject(const PVOID obj, const WriteOutputType type) const { m_writeObjectHook(obj, type); }
 }

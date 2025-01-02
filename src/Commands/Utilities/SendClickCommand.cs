@@ -1,4 +1,5 @@
 ﻿using System.Management.Automation;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -8,11 +9,9 @@ namespace WindowsUtils.Commands
     /// <para type="description">When called, this cmdlet sends a click on the current desktop.</para>
     /// </summary>
     [Cmdlet(VerbsCommunications.Send, "Click")]
-    public class SendClickCommand : Cmdlet
+    public class SendClickCommand : CoreCommandBase
     {
-        private readonly UtilitiesWrapper _unwrapper = new();
-
         protected override void ProcessRecord()
-            => _unwrapper.SendClick();
+            => Utilities.SendClick();
     }
 }

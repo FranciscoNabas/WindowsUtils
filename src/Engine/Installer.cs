@@ -9,13 +9,13 @@ namespace WindowsUtils.Installer
         internal static InstallerCommand Parse(string command)
         {
             SqlActionType type = ReadFirstWord(command) switch {
-                "SELECT" => SqlActionType.Select,
-                "DELETE" => SqlActionType.Delete,
-                "UPDATE" => SqlActionType.Update,
-                "INSERT" => SqlActionType.Insert,
-                "CREATE" => SqlActionType.Create,
-                "DROP" => SqlActionType.Drop,
-                "ALTER" => SqlActionType.Alter,
+                "SELECT"  => SqlActionType.Select,
+                "DELETE"  => SqlActionType.Delete,
+                "UPDATE"  => SqlActionType.Update,
+                "INSERT"  => SqlActionType.Insert,
+                "CREATE"  => SqlActionType.Create,
+                "DROP"    => SqlActionType.Drop,
+                "ALTER"   => SqlActionType.Alter,
                 _ => throw new InvalidCommandException(command)
             };
 

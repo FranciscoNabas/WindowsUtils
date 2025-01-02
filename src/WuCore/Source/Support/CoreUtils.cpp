@@ -1,7 +1,6 @@
 #include "../../pch.h"
 
 #include "../../Headers/Support/CoreUtils.h"
-#include "../../Headers/Support/WuStdException.h"
 
 #include <cmath>
 
@@ -27,7 +26,7 @@ namespace WindowsUtils::Core
 	{
 		__int64 num = (static_cast<__int64>(days) * 3600L * 24 + static_cast<__int64>(hours) * 3600L + static_cast<__int64>(minutes) * 60L + seconds) * 1000;
 		if (num > 922337203685477L || num < -922337203685477L) {
-			throw "TimeSpan to long";
+			_WU_RAISE_NATIVE_EXCEPTION_WMESS(-1, L"Add", WriteErrorCategory::InvalidOperation, L"TimeSpan to long.");
 		}
 		m_ticks = num * 10000;
 		SetValues();
@@ -37,7 +36,7 @@ namespace WindowsUtils::Core
 	{
 		__int64 num = (static_cast<__int64>(days) * 3600L * 24 + static_cast<__int64>(hours) * 3600L + static_cast<__int64>(minutes) * 60L + seconds) * 1000 + milliseconds;
 		if (num > 922337203685477L || num < -922337203685477L) {
-			throw "TimeSpan to long";
+			_WU_RAISE_NATIVE_EXCEPTION_WMESS(-1, L"Add", WriteErrorCategory::InvalidOperation, L"TimeSpan to long.");
 		}
 		m_ticks = num * 10000;
 		SetValues();
@@ -54,7 +53,7 @@ namespace WindowsUtils::Core
 	{
 		__int64 ticks = m_ticks + other.m_ticks;
 		if (m_ticks >> 63 == other.m_ticks >> 63 && m_ticks >> 63 != ticks >> 63) {
-			throw WuStdException(-1, L"Overflow exception. TimeSpan to long.", __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION_WMESS(-1, L"Add", WriteErrorCategory::InvalidOperation, L"TimeSpan to long.");
 		}
 		
 		return WuTimeSpan(ticks);
@@ -64,7 +63,7 @@ namespace WindowsUtils::Core
 	{
 		__int64 num = static_cast<__int64>(hour) * 3600L + static_cast<__int64>(minute) * 60L + second;
 		if (num > 922337203685L || num < -922337203685L) {
-			throw "TimeSpan to long";
+			_WU_RAISE_NATIVE_EXCEPTION_WMESS(-1, L"Add", WriteErrorCategory::InvalidOperation, L"TimeSpan to long.");
 		}
 		num *= -10000000;
 
@@ -73,18 +72,18 @@ namespace WindowsUtils::Core
 
 	void WuTimeSpan::SetValues()
 	{
-		Days = std::lround(static_cast<double>(m_ticks) / 864000000000L);
-		Hours = static_cast<int>(m_ticks / 36000000000L % 24);
-		Minutes = static_cast<int>(m_ticks / 600000000 % 60);
-		Seconds = static_cast<int>(m_ticks / 10000000 % 60);
-		Milliseconds = static_cast<int>(m_ticks / 10000 % 1000);
+		Days               = std::lround(static_cast<double>(m_ticks) / 864000000000L);
+		Hours              = static_cast<int>(m_ticks / 36000000000L % 24);
+		Minutes            = static_cast<int>(m_ticks / 600000000 % 60);
+		Seconds            = static_cast<int>(m_ticks / 10000000 % 60);
+		Milliseconds       = static_cast<int>(m_ticks / 10000 % 1000);
 
-		TotalDays = static_cast<double>(m_ticks) / 864000000000.0;
-		TotalHours = static_cast<double>(m_ticks) / 36000000000.0;
-		TotalMinutes = static_cast<double>(m_ticks) / 600000000.0;
-		TotalSeconds = static_cast<double>(m_ticks) / 10000000.0;
-		TotalMicroseconds = static_cast<double>(m_ticks) / 10.0;
-		TotalNanoseconds = static_cast<double>(m_ticks) * 100.0;
+		TotalDays          = static_cast<double>(m_ticks) / 864000000000.0;
+		TotalHours         = static_cast<double>(m_ticks) / 36000000000.0;
+		TotalMinutes       = static_cast<double>(m_ticks) / 600000000.0;
+		TotalSeconds       = static_cast<double>(m_ticks) / 10000000.0;
+		TotalMicroseconds  = static_cast<double>(m_ticks) / 10.0;
+		TotalNanoseconds   = static_cast<double>(m_ticks) * 100.0;
 
 		double num = static_cast<double>(m_ticks) / 10000.0;
 		if (num > 922337203685477.0)

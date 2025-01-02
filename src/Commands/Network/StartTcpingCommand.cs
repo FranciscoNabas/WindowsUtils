@@ -1,5 +1,6 @@
 ﻿using System.Management.Automation;
-using WindowsUtils.Core;
+using WindowsUtils.Engine;
+using WindowsUtils.Network;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -40,7 +41,6 @@ namespace WindowsUtils.Commands
     [Alias("tcping")]
     public class StartTcpingCommand : CoreCommandBase
     {
-        private readonly NetworkWrapper _unwrapper = new();
         private int? _count;
         private int _failedThreshold = -1;
 
@@ -244,11 +244,11 @@ namespace WindowsUtils.Commands
                         _append = true;
 
                     if (_ignoreSingle)
-                        _unwrapper.StartTcpPing(server, singlePort, Count, Timeout, Interval, FailedThreshold, Continuous,
-                            IncludeJitter, PrintFqdn, Force, false, OutputFile, Append, CmdletContext, out isCancel);
+                        Network.StartTcpPing(server, singlePort, Count, Timeout, Interval, FailedThreshold, Continuous,
+                            IncludeJitter, PrintFqdn, Force, false, OutputFile, Append, out isCancel);
                     else
-                        _unwrapper.StartTcpPing(server, singlePort, Count, Timeout, Interval, FailedThreshold, Continuous,
-                            IncludeJitter, PrintFqdn, Force, Single, OutputFile, Append, CmdletContext, out isCancel);
+                        Network.StartTcpPing(server, singlePort, Count, Timeout, Interval, FailedThreshold, Continuous,
+                            IncludeJitter, PrintFqdn, Force, Single, OutputFile, Append, out isCancel);
 
                     if (isCancel)
                         return;

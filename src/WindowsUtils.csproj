@@ -4,13 +4,13 @@
 	<TargetFrameworks>netstandard2.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>1.11.0</Version>
+    <Version>1.12.0</Version>
     <Authors>Francisco Nabas</Authors>
     <Platforms>x64</Platforms>
     <AssemblyName>WindowsUtils</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <BaseIntermediateOutputPath />
-    <LangVersion>11.0</LangVersion>
+    <LangVersion>13.0</LangVersion>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <DocumentationFile>bin\WindowsUtils\WindowsUtils.xml</DocumentationFile>
@@ -23,7 +23,7 @@
     <NoWarn>CS1591</NoWarn>
     <UserSecretsId>8ca38eb4-7555-4d88-9f6e-41028e265cc4</UserSecretsId>
     <Company>Frank Nabas Labs</Company>
-    <Copyright>Copyright (C) Francisco Nabas 2023</Copyright>
+    <Copyright>Copyright (C) Francisco Nabas 2025</Copyright>
     <PackageProjectUrl>https://github.com/FranciscoNabas/WindowsUtils</PackageProjectUrl>
     <Title>WindowsUtils</Title>
     <Product>WindowsUtils</Product>
@@ -39,12 +39,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="WuPesterHelper\**" />
+    <EmbeddedResource Remove="WuPesterHelper\**" />
+    <None Remove="WuPesterHelper\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Win32.Primitives" Version="4.3.0" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
-    <PackageReference Include="System.Security.AccessControl" Version="6.0.0" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="7.0.1" />
-    <PackageReference Include="System.Text.Json" Version="7.0.3" />
+    <PackageReference Include="System.Security.AccessControl" Version="6.0.1" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.0" />
+    <PackageReference Include="System.Text.Json" Version="9.0.0" />
     <PackageReference Include="XmlDoc2CmdletDoc" Version="0.3.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -73,5 +79,13 @@
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="powershell.exe -ExecutionPolicy Bypass -File &quot;..\Tools\Helpers\PostBuild.ps1&quot;" />
   </Target>
+
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\LocalRepositories\.WindowsUtils\src\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="C:\LocalRepositories\.WindowsUtils\src\.editorconfig" />
+  </ItemGroup>
 
 </Project>

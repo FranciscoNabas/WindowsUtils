@@ -3,9 +3,11 @@
 
 #include "../Support/IO.h"
 #include "../Engine/Utilities.h"
+#include "../Stubs/UtilitiesStub.h"
 
 #pragma managed
 
+#include "WrapperBase.h"
 #include "NativeException.h"
 
 namespace WindowsUtils
@@ -14,14 +16,14 @@ namespace WindowsUtils
 	{
 	public:
 		property Int64 Id { Int64 get() { return m_wrapper->Id; } }
-		property String^ Message { String^ get() { return (gcnew String(m_wrapper->Message.GetBuffer()))->Trim(); } }
+		property String^ Message { String^ get() { return (gcnew String(m_wrapper->Message.Raw()))->Trim(); } }
 
 		ResourceMessageTable()
 			: m_wrapper { new Core::WU_RESOURCE_MESSAGE_TABLE }
 		{ }
 
 		ResourceMessageTable(Core::WU_RESOURCE_MESSAGE_TABLE& messageTable)
-			: m_wrapper { new Core::WU_RESOURCE_MESSAGE_TABLE(messageTable.Id, messageTable.Message.GetBuffer()) }
+			: m_wrapper { new Core::WU_RESOURCE_MESSAGE_TABLE(messageTable.Id, messageTable.Message.Raw()) }
 		{ }
 
 		~ResourceMessageTable() { delete m_wrapper; }
@@ -38,14 +40,17 @@ namespace WindowsUtils::Wrappers
 {
 	using namespace System::Security;
 
-	public ref class UtilitiesWrapper
+	public ref class UtilitiesWrapper : public WrapperBase
 	{
 	public:
+		UtilitiesWrapper(Core::CmdletContextProxy^ context)
+			: WrapperBase(context) { }
+
 		// Get-FormattedError
-		String^ GetFormattedError(Int32 errorcode, ErrorType source);
+		static String^ GetFormattedError(Int32 errorcode, ErrorType source);
 
 		// Get-LastWin32Error
-		String^ GetLastWin32Error();
+		static String^ GetLastWin32Error();
 
 		// Send-Click
 		Void SendClick();
@@ -56,7 +61,6 @@ namespace WindowsUtils::Wrappers
 		static array<String^>^ GetStringArrayFromDoubleNullTerminatedCStyleArray(const LPWSTR pvNativeArray, DWORD dwszBytes);
 		static array<String^>^ GetStringArrayFromDoubleNullTerminatedCStyleArray(IntPtr nativeArray, DWORD dwszBytes);
 		static void LogonAndImpersonateUser(String^ userName, SecureString^ password);
-		static void LogonAndImpersonateUser(String^ userName, WWuString& password);
 		static WWuString GetWideStringFromSystemString(String^ string);
 		static void GetAptFromPath(String^ path, Core::AbstractPathTree* apt);
 
@@ -65,8 +69,5 @@ namespace WindowsUtils::Wrappers
 			__int64 ftQuadPart = static_cast<__int64>(fileTime.dwHighDateTime) << 32 | fileTime.dwLowDateTime;
 			return DateTime::FromFileTime(ftQuadPart);
 		}
-
-	private:
-		Core::Utilities* m_utl;
 	};
 }

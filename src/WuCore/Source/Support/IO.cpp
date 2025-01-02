@@ -1,11 +1,6 @@
 #include "../../pch.h"
 
 #include "../../Headers/Support/IO.h"
-#include "../../Headers/Support/WuStdException.h"
-#include "../../Headers/Support/SafeHandle.h"
-
-#include <PathCch.h>
-#include <Shlwapi.h>
 
 namespace WindowsUtils::Core
 {
@@ -13,29 +8,59 @@ namespace WindowsUtils::Core
 	*	~ IO functions ~
 	*/
 
+	_NODISCARD WWuString IO::StripPath(const WWuString& path)
+	{
+		wchar_t buffer[MAX_PATH]{ };
+		size_t len = path.Length() + 1;
+		wcscpy_s(buffer, len, path.Raw());
+		PathStripPath(buffer);
+
+		return WWuString(buffer);
+	}
+
+	_NODISCARD WWuString IO::RemoveFileSpec(const WWuString& path, const bool throwOnFail)
+	{
+		wchar_t buffer[MAX_PATH]{ };
+		size_t len = path.Length() + 1;
+		wcscpy_s(buffer, len, path.Raw());
+		HRESULT res = PathCchRemoveFileSpec(buffer, len);
+		if (FAILED(res)) {
+			if (res == S_FALSE) {
+				if (throwOnFail)
+					_WU_RAISE_NATIVE_EXCEPTION(res, L"PathCchRemoveFileSpec", WriteErrorCategory::InvalidResult);
+
+				return WWuString(path);
+			}
+
+			_WU_RAISE_NATIVE_EXCEPTION(res, L"PathCchRemoveFileSpec", WriteErrorCategory::InvalidResult);
+		}
+
+		return WWuString(buffer);
+	}
+
 	void IO::CreateFolderTree(const WWuString& path)
 	{
 		if (CheckDirectoryExists(path))
 			return;
 
 		WWuString parent(path);
-		PathCchRemoveFileSpec(parent.GetBuffer(), parent.Length());
+		PathCchRemoveFileSpec(parent.Raw(), parent.Length());
 
 		if (!parent.Contains('\\'))
-			throw WuStdException(ERROR_INVALID_DRIVE, __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(ERROR_INVALID_DRIVE, L"PathCchRemoveFileSpec", WriteErrorCategory::InvalidArgument);
 
 		CreateFolderTree(parent);
 
-		if (!CreateDirectoryW(path.GetBuffer(), NULL)) {
+		if (!CreateDirectoryW(path.Raw(), NULL)) {
 			DWORD dwResult = GetLastError();
 			if (dwResult != ERROR_ALREADY_EXISTS)
-				throw WuStdException(dwResult, __FILEW__, __LINE__);
+				_WU_RAISE_NATIVE_EXCEPTION(dwResult, L"CreateDirectory", WriteErrorCategory::InvalidResult);
 		}
 	}
 
 	BOOL IO::CheckDirectoryExists(const WWuString& path)
 	{
-		DWORD result = GetFileAttributes(path.GetBuffer());
+		DWORD result = GetFileAttributes(path.Raw());
 		if (result == INVALID_FILE_ATTRIBUTES)
 			return FALSE;
 
@@ -45,7 +70,7 @@ namespace WindowsUtils::Core
 	void IO::TrimEndingDirectorySeparator(WWuString& path)
 	{
 		if (path.EndsWith('\\'))
-			path.Remove(path.Length() - 1, 1);
+			path = path.Remove(path.Length() - 1, 1);
 	}
 
 	void IO::SplitPath(const WWuString& path, WWuString& directory, WWuString& fileName)
@@ -53,25 +78,25 @@ namespace WindowsUtils::Core
 		directory = WWuString(path);
 		fileName = WWuString(path);
 
-		PathStripPath(fileName.GetBuffer());
-		PathCchRemoveFileSpec(directory.GetBuffer(), directory.Length());
+		PathStripPath(fileName.Raw());
+		PathCchRemoveFileSpec(directory.Raw(), directory.Length());
 
 		fileName.Length();
 		directory.Length();
 	}
 
-	void IO::CreatePath(wuvector<WWuString> strVector, WWuString& path)
+	void IO::CreatePath(WuList<WWuString> strList, WWuString& path)
 	{
-		for (WWuString piece : strVector) {
+		for (WWuString& piece : strList) {
 			if (path.EndsWith('\\') && piece.StartsWith('\\')) {
 				path += piece.Remove(0);
 			}
 			else if (!path.EndsWith('\\') && !piece.StartsWith('\\')) {
 				if (path.Length() == 0) {
-					path += WWuString::Format(L"%ws", piece.GetBuffer());
+					path += WWuString::Format(L"%ws", piece.Raw());
 				}
 				else
-					path += WWuString::Format(L"\\%ws", piece.GetBuffer());
+					path += WWuString::Format(L"\\%ws", piece.Raw());
 			}
 			else {
 				path += piece;
@@ -82,7 +107,7 @@ namespace WindowsUtils::Core
 	void IO::SetFileAttributesAndDate(const WWuString& filePath, USHORT date, USHORT time, USHORT attributes)
 	{
 		HANDLE hFile = CreateFile(
-			filePath.GetBuffer(),
+			filePath.Raw(),
 			GENERIC_READ | GENERIC_WRITE,
 			FILE_SHARE_READ,
 			NULL,
@@ -91,7 +116,7 @@ namespace WindowsUtils::Core
 			NULL
 		);
 		if (hFile == INVALID_HANDLE_VALUE)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"CreateFile", WriteErrorCategory::OpenError);
 
 		FILETIME dateTime;
 		if (DosDateTimeToFileTime(date, time, &dateTime)) {
@@ -104,18 +129,18 @@ namespace WindowsUtils::Core
 		CloseHandle(hFile);
 
 		attributes &= FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE;
-		SetFileAttributes(filePath.GetBuffer(), attributes);
+		SetFileAttributes(filePath.Raw(), attributes);
 	}
 
 	void IO::AppendTextToFile(const HANDLE hFile, const WWuString& text)
 	{
 		if (hFile == INVALID_HANDLE_VALUE)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(ERROR_INVALID_HANDLE, L"AppendTextToFile", WriteErrorCategory::InvalidData);
 
-		WuString mbText = WWuStringToMultiByte(text.GetBuffer(), CP_UTF8);
+		WuString mbText = text.ToMb(CP_UTF8);
 		DWORD bytesWritten;
-		if (!WriteFile(hFile, mbText.GetBuffer(), static_cast<DWORD>(mbText.Length()), &bytesWritten, NULL))
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		if (!WriteFile(hFile, mbText.Raw(), static_cast<DWORD>(mbText.Length()), &bytesWritten, NULL))
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"WriteFile", WriteErrorCategory::WriteError);
 	}
 
 	__uint64 IO::GetFileSize(const WWuString& filePath)
@@ -132,30 +157,27 @@ namespace WindowsUtils::Core
 			NULL
 		);
 
-		if (!GetFileSizeEx(hFile.get(), &size))
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+		if (!GetFileSizeEx(hFile.Get(), &size))
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"GetFileSizeEx", WriteErrorCategory::InvalidResult);
 
 		return size.QuadPart;
 	}
 
-	wuvector<FS_INFO> IO::EnumerateFileSystemInfo(WWuString& path)
+	WuList<FS_INFO> IO::EnumerateFileSystemInfo(WWuString& path)
 	{
-		std::vector<FS_INFO> output;
+		WuList<FS_INFO> output(20);
 		WIN32_FIND_DATA data;
 
-		HANDLE hFind = FindFirstFile(path.GetBuffer(), &data);
+		HANDLE hFind = FindFirstFile(path.Raw(), &data);
 		if (hFind != INVALID_HANDLE_VALUE && (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
 			WWuString name = path;
-			PathStripPath(name.GetBuffer());
+			PathStripPath(name.Raw());
 
-			FS_INFO info = {
-				FsObjectType::File,
+			output.Add(FsObjectType::File,
 				name,
 				path,
 				(static_cast<__uint64>(data.nFileSizeHigh) << 32) | data.nFileSizeLow
-			};
-
-			output.push_back(info);
+			);
 
 			FindClose(hFind);
 		}
@@ -169,8 +191,8 @@ namespace WindowsUtils::Core
 			}
 
 			// 'FindFirstFileEx' have a slight better performance than 'FindFirstFile' when used with 'FindExInfoBasic'.
-			// It mapped the whole C: drive in 24 sec, in opose of 45 from 'FindFirstFile'.
-			hFind = FindFirstFileEx(globbedPath.GetBuffer(), FindExInfoBasic, &data, FindExSearchNameMatch, NULL, 0);
+			// It mapped the whole C: drive in 24 sec, in oppose of 45 from 'FindFirstFile'.
+			hFind = FindFirstFileEx(globbedPath.Raw(), FindExInfoBasic, &data, FindExSearchNameMatch, NULL, 0);
 			if (hFind == INVALID_HANDLE_VALUE)
 				return output;
 
@@ -182,27 +204,21 @@ namespace WindowsUtils::Core
 				bool isDir = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) > 0;
 				WWuString fullPath = path + name;
 				if (isDir) {
-					FS_INFO info = {
-						FsObjectType::Directory,
+					output.Add(FsObjectType::Directory,
 						name,
 						fullPath,
 						0
-					};
-
-					output.push_back(info);
+					);
 
 					auto recVec = EnumerateFileSystemInfo(fullPath);
-					output.insert(output.end(), recVec.begin(), recVec.end());
+					output.InsertRange(output.end(), recVec.begin(), recVec.end());
 				}
 				else {
-					FS_INFO info = {
-						FsObjectType::File,
+					output.Add(FsObjectType::File,
 						name,
 						fullPath,
 						(static_cast<__uint64>(data.nFileSizeHigh) << 32) | data.nFileSizeLow
-					};
-
-					output.push_back(info);
+					);
 				}
 
 			} while (FindNextFile(hFind, &data));
@@ -215,7 +231,7 @@ namespace WindowsUtils::Core
 
 	bool IO::FileExists(const WWuString& filePath)
 	{
-		DWORD attributes = GetFileAttributes(filePath.GetBuffer());
+		DWORD attributes = GetFileAttributes(filePath.Raw());
 		return (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
 	}
 
@@ -225,21 +241,21 @@ namespace WindowsUtils::Core
 		constexpr DWORD deviceBuffSize = 256;
 		WCHAR logicalDrives[drivesBuffSize] { };
 
-		WWuString deviceName = WWuString::Format(L"\\Device\\%ws", devicePath.Split(L'\\')[1].GetBuffer());
+		WWuString deviceName = WWuString::Format(L"\\Device\\%ws", devicePath.Split(L'\\')[1].Raw());
 
 		DWORD charCount = GetLogicalDriveStrings(drivesBuffSize, logicalDrives);
 		if (!charCount)
-			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"GetLogicalDriveStrings", WriteErrorCategory::InvalidResult);
 
 		for (WWuString& drive : SplitDriveStrings(logicalDrives, charCount)) {
 			const WCHAR trimmedChar[3] { drive[0], L':', L'\0' };
 			WCHAR currentDevice[deviceBuffSize] { };
 			if (!QueryDosDevice(trimmedChar, currentDevice, deviceBuffSize))
-				throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+				_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"QueryDosDevice", WriteErrorCategory::InvalidResult);
 
 			if (deviceName == currentDevice) {
 				WWuString relativePath = devicePath.Remove(0, deviceName.Length() + 1);
-				devicePath = WWuString::Format(L"%ws\\%ws", trimmedChar, relativePath.GetBuffer());
+				devicePath = WWuString::Format(L"%ws\\%ws", trimmedChar, relativePath.Raw());
 			}
 		}
 
@@ -250,11 +266,11 @@ namespace WindowsUtils::Core
 	{
 		WWuString drive = WWuString::Format(L"%c:", dosPath[0]);
 		WCHAR device[256] { };
-		if (!QueryDosDevice(drive.GetBuffer(), device, 256))
-			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+		if (!QueryDosDevice(drive.Raw(), device, 256))
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"QueryDosDevice", WriteErrorCategory::InvalidResult);
 
 		WWuString relativePath = dosPath.Remove(0, 3);
-		dosPath = WWuString::Format(L"%ws\\%ws", device, relativePath.GetBuffer());
+		dosPath = WWuString::Format(L"%ws\\%ws", device, relativePath.Raw());
 	}
 
 	void IO::WriteByteArrayToTempFile(BYTE* data, DWORD length, _Out_ WWuString& filePath)
@@ -264,24 +280,24 @@ namespace WindowsUtils::Core
 		WCHAR tempFullPath[MAX_PATH] { };
 
 		if (!GetTempPath(MAX_PATH, tempPathBuffer))
-			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"GetTempPath", WriteErrorCategory::InvalidResult);
 
 		if (!GetTempFileName(tempPathBuffer, L"tmp", 0, tempFileBuffer))
-			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"GetTempFileName", WriteErrorCategory::InvalidResult);
 
 		filePath = tempFileBuffer;
 		FileHandle hFile { filePath, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL };
 
 		DWORD bytesWritten { };
-		if (!WriteFile(hFile.get(), reinterpret_cast<LPCVOID>(data), length, &bytesWritten, NULL))
-			throw WuStdException { static_cast<int>(GetLastError()), __FILEW__, __LINE__ };
+		if (!WriteFile(hFile.Get(), reinterpret_cast<LPCVOID>(data), length, &bytesWritten, NULL))
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"WriteFile", WriteErrorCategory::WriteError);
 	}
 
-	wuvector<WWuString> IO::SplitDriveStrings(const LPWSTR drives, const DWORD charCount)
+	WuList<WWuString> IO::SplitDriveStrings(const LPWSTR drives, const DWORD charCount)
 	{
-		wuvector<WWuString> output;
+		WuList<WWuString> output(4);
 		if (charCount <= 4) {
-			output.push_back(WWuString(drives));
+			output.Add(drives);
 			return output;
 		}
 
@@ -289,7 +305,7 @@ namespace WindowsUtils::Core
 			LPWSTR currentOffset = drives + i;
 			WCHAR currentDrive[4] { };
 			wcscpy_s(currentDrive, 4, currentOffset);
-			output.push_back(currentDrive);
+			output.Add(currentDrive);
 		}
 
 		return output;
@@ -302,21 +318,21 @@ namespace WindowsUtils::Core
 	MemoryMappedFile::MemoryMappedFile(const WWuString& filePath)
 		: m_mappedFile(NULL), m_view(NULL), m_length(0)
 	{
-		m_hFile = CreateFile(filePath.GetBuffer(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		m_hFile = CreateFile(filePath.Raw(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (m_hFile == INVALID_HANDLE_VALUE)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"CreateFile", WriteErrorCategory::OpenError);
 
 		LARGE_INTEGER length;
 		if (!GetFileSizeEx(m_hFile, &length))
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"GetFileSizeEx", WriteErrorCategory::InvalidResult);
 
 		m_mappedFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
 		if (m_mappedFile == NULL)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"CreateFileMapping", WriteErrorCategory::InvalidResult);
 
 		m_view = MapViewOfFile(m_mappedFile, FILE_MAP_READ, 0, 0, length.QuadPart);
 		if (m_view == NULL)
-			throw WuStdException(GetLastError(), __FILEW__, __LINE__);
+			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"MapViewOfFile", WriteErrorCategory::InvalidResult);
 
 		m_length = length.QuadPart;
 	}
@@ -386,14 +402,14 @@ namespace WindowsUtils::Core
 	{ }
 
 	AbstractPathTree::~AbstractPathTree() { }
-	wuvector<AbstractPathTree::AptEntry>& AbstractPathTree::GetApt() { return m_apt; }
+	std::vector<AbstractPathTree::AptEntry>& AbstractPathTree::GetApt() { return m_apt; }
 
 	AbstractPathTree::_AptEntry::_AptEntry(const WWuString& name, const WWuString& filePath, const WWuString& rootPath, __uint64 length, FsObjectType type)
 	{
 		WWuString relPath;
 		WWuString finalRoot;
-		std::vector<WWuString>fpSplit;
-		std::vector<WWuString>rpSplit;
+		WuList<WWuString> fpSplit;
+		WuList<WWuString> rpSplit;
 
 		// It's a file.
 		if (filePath == rootPath) {
@@ -402,16 +418,16 @@ namespace WindowsUtils::Core
 		}
 
 		if (!rootPath.EndsWith('\\'))
-			finalRoot = WWuString::Format(L"%ws\\", rootPath.GetBuffer());
+			finalRoot = WWuString::Format(L"%ws\\", rootPath.Raw());
 		else
 			finalRoot = rootPath;
 
 		fpSplit = filePath.Split('\\');
 		rpSplit = finalRoot.Split('\\');
 
-		for (size_t i = 0; i < fpSplit.size(); i++) {
-			if (i >= rpSplit.size())
-				relPath = WWuString::Format(L"%ws\\%ws", relPath.GetBuffer(), fpSplit[i].GetBuffer());
+		for (size_t i = 0; i < fpSplit.Count(); i++) {
+			if (i >= rpSplit.Count())
+				relPath = WWuString::Format(L"%ws\\%ws", relPath.Raw(), fpSplit[i].Raw());
 		}
 
 	END:

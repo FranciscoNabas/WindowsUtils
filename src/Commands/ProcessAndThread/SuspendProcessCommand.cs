@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Management.Automation;
-using WindowsUtils.Core;
+using WindowsUtils.Engine;
 using WindowsUtils.Wrappers;
 
 namespace WindowsUtils.Commands
@@ -30,7 +30,6 @@ namespace WindowsUtils.Commands
     [Alias("suspend")]
     public class SuspendProcessCommand : CoreCommandBase
     {
-        private readonly ProcessAndThreadWrapper _unwrapper = new();
         private readonly List<uint> _processIdList = new();
 
         /// <summary>
@@ -78,7 +77,7 @@ namespace WindowsUtils.Commands
         protected override void ProcessRecord()
         {
             foreach (uint processId in _processIdList)
-                _unwrapper.SuspendProcess(processId, CmdletContext);
+                ProcessAndThread.SuspendProcess(processId);
         }
     }
 }

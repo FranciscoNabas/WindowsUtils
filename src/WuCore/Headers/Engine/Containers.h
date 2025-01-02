@@ -1,107 +1,131 @@
 #pragma once
 #pragma unmanaged
 
-#include "../Support/String.h"
-#include "../Support/Expressions.h"
-#include "../Support/Notification.h"
-#include "../Support/IO.h"
+#include <memory>
+#include <variant>
 
 #include <fci.h>
 #include <fdi.h>
+#include <PathCch.h>
+#include <Shlwapi.h>
+#include <io.h>
+#include <fcntl.h>
+#include <strsafe.h>
 
-constexpr WORD cfhdrPREV_CABINET = 0x0001;
-constexpr WORD cfhdrNEXT_CABINET = 0x0002;
-constexpr WORD cfhdrRESERVE_PRESENT = 0x0004;
+#include "../Support/WuString.h"
+#include "../Support/Expressions.h"
+#include "../Support/Notification.h"
+#include "../Support/IO.h"
+#include "../Support/WuException.h"
+
+constexpr WORD cfhdrPREV_CABINET     = 0x0001;
+constexpr WORD cfhdrNEXT_CABINET     = 0x0002;
+constexpr WORD cfhdrRESERVE_PRESENT  = 0x0004;
 
 namespace WindowsUtils::Core
 {
-	typedef struct _FDI_PROGRESS
+	enum class CabinetOperation
 	{
-		DWORD CabinetSetCount;
-		DWORD CompletedCabinetCount;
-		WWuString CabinetName;
-		WWuString CurrentFile;
-		DWORD CurrentUncompressedSize;
-		__uint64 CompletedSize;
-		__uint64 TotalUncompressedSize;
-
-		_FDI_PROGRESS();
-		~_FDI_PROGRESS();
-
-		void Notify(WuNativeContext* context);
-
-	} FDI_PROGRESS, * PFDI_PROGRESS;
-
-	typedef struct _FCI_PROGRESS
-	{
-		WWuString CabinetName;
-		WWuString CurrentFile;
-		DWORD CompletedFileCount;
-		DWORD TotalFileCount;
-		__uint64 CurrentUncompressedSize;
-		__uint64 CompletedSize;
-		__uint64 TotalUncompressedSize;
-
-		_FCI_PROGRESS();
-		~_FCI_PROGRESS();
-
-		void Notify(WuNativeContext* context);
-
-	} FCI_PROGRESS, * PFCI_PROGRESS;
-
-	class CABINET_PROCESSING_INFO
-	{
-	public:
-		WWuString Name;
-		WWuString Path;
-		WORD CabinetIndex;
-		WORD FileCount;
-		DWORD CFFileOffset;
-		WuString PreviousCabinet;
-		WuString NextCabinet;
+		FDI,
+		FCI,
 	};
 
-	class WuCabinet
+	enum class CabinetCompressionType : USHORT
 	{
-	public:
-		const bool IsCurrentUnicode() const;
-		void ExpandCabinetFile(const WWuString& destination);
-		void CompressCabinetFile(const WWuString& destination, ULONG splitSize);
-		const wuvector<CABINET_PROCESSING_INFO>& GetCabinetInfo();
-		INT_PTR NotifyCallback(FDINOTIFICATIONTYPE fdint, PFDINOTIFICATION pfdin);
+		None     = tcompTYPE_NONE,
+		MSZip    = tcompTYPE_MSZIP,
+		LZXLow   = tcompTYPE_LZX | tcompLZX_WINDOW_LO,
+		LZXHigh  = tcompTYPE_LZX | tcompLZX_WINDOW_HI
+	};
 
-		WuCabinet(const WWuString& filePath, WuNativeContext* context);
-		WuCabinet(const AbstractPathTree& apt, const WWuString& cabNameTemplate, USHORT compressionType, WuNativeContext* context);
-		~WuCabinet();
+	struct FDIProgress
+	{
+		DWORD      CabinetSetCount;
+		DWORD      CompletedCabinetCount;
+		WWuString  CabinetName;
+		WWuString  CurrentFile;
+		DWORD      CurrentUncompressedSize;
+		__uint64   CompletedSize;
+		__uint64   TotalUncompressedSize;
 
-		WuCabinet(WuCabinet const&) = delete;
-		void operator=(WuCabinet const&) = delete;
+		FDIProgress(const WuNativeContext* context, const DWORD cabSetCount, const __uint64 totalUncSize);
+		~FDIProgress();
+
+		void Notify();
 
 	private:
-		static WuCabinet* m_instance;
+		const WuNativeContext* m_context;
+	};
 
-		bool m_isUnicode;
-		WWuString m_filePath;
-		WuString m_directory;
-		WWuString m_destination;
-		WWuString m_nextCabinet;
-		USHORT m_compressionType;
-		WuNativeContext* m_context;
-		FDI_PROGRESS m_progressInfo;
-		AbstractPathTree m_apt;
-		WWuString m_newCabNameTemplate;
-		FCI_PROGRESS m_compProgressInfo;
-		__uint64 m_totalUncompressedSize;
-		wuvector<CABINET_PROCESSING_INFO> m_processedCabinet;
+	struct FCIProgress
+	{
+		WWuString  CabinetName;
+		WWuString  CurrentFile;
+		DWORD      CompletedFileCount;
+		DWORD      TotalFileCount;
+		__uint64   CurrentUncompressedSize;
+		__uint64   CompletedSize;
+		__uint64   TotalUncompressedSize;
 
-		void GetCabinetTotalUncompressedSize(const WWuString& filePath);
-		void GetCabinetInformation(const MemoryMappedFile& mappedFile, CABINET_PROCESSING_INFO* cabInfo);
-		_NODISCARD CABINET_PROCESSING_INFO* GetInfoByPath(const WWuString& filePath);
-		_NODISCARD CABINET_PROCESSING_INFO* GetInfoByName(const WWuString& cabName);
+		FCIProgress(const WuNativeContext* context, const DWORD totalFileCount, const __uint64 totalUncSize);
+		~FCIProgress();
 
-		INT_PTR OnCabinetInfo();
-		INT_PTR OnCopyFile(PFDINOTIFICATION cabInfo);
-		INT_PTR OnCloseFileInfo(PFDINOTIFICATION cabInfo);
+		void Notify();
+
+	private:
+		const WuNativeContext* m_context;
+	};
+
+	struct CabinetOperationInfo
+	{
+		struct FDI
+		{
+			FDIProgress* Progress;
+			WWuString NextCabinet;
+		};
+
+		struct FCI
+		{
+			FCIProgress* Progress;
+			const WWuString* NameTemplate;
+		};
+
+		const CabinetOperation Operation;
+		const WWuString* Destination;
+		std::variant<FDI, FCI> Info;
+
+		CabinetOperationInfo(const WWuString* destination, FDIProgress* progress);
+		CabinetOperationInfo(const WWuString* destination, FCIProgress* progress, const WWuString* nameTemplate);
+		~CabinetOperationInfo();
+	};
+
+	struct CabinetProcessingInfo
+	{
+		WWuString  Name;
+		WWuString  Path;
+		WORD       CabinetIndex;
+		WORD       FileCount;
+		DWORD      CFFileOffset;
+		WuString   PreviousCabinet;
+		WuString   NextCabinet;
+	};
+
+	class Containers
+	{
+	public:
+		static void ExpandCabinetFile(const WWuString& path, const WWuString& destination, const WuNativeContext* context);
+		static void CreateCabinetFile(AbstractPathTree& apt, const WWuString& destination, const WWuString& nameTemplate,
+			const CabinetCompressionType compressionType, ULONG splitSize, const WuNativeContext* context);
+
+	private:
+		static std::tuple<__uint64, WWuString> GetCabinetTotalUncompressedSize(const WWuString& path, const WWuString& directory, WuList<CabinetProcessingInfo>& cabInfoList);
+		static CabinetProcessingInfo GetCabinetInformation(const MemoryMappedFile& mappedFile);
+		static bool TryGetInfoByPath(const WWuString& path, const WuList<CabinetProcessingInfo>& list, CabinetProcessingInfo& info);
+		static bool TryGetInfoByName(const WWuString& name, const WuList<CabinetProcessingInfo>& list, CabinetProcessingInfo& info);
+
+		static INT_PTR OnCabinetInfo(PFDINOTIFICATION cabInfo);
+		static INT_PTR OnCopyFile(PFDINOTIFICATION cabInfo);
+		static INT_PTR OnCloseFileInfo(PFDINOTIFICATION cabInfo);
 
 		static void* __cdecl CabAlloc(UINT cb);
 		static void __cdecl CabFree(void* pv);

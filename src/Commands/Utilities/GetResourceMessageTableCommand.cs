@@ -1,6 +1,6 @@
 ﻿using System.Management.Automation;
-using WindowsUtils.Attributes;
-using WindowsUtils.Wrappers;
+using WindowsUtils.Engine;
+using WindowsUtils.Engine.Attributes;
 
 namespace WindowsUtils.Commands
 {
@@ -13,10 +13,8 @@ namespace WindowsUtils.Commands
     /// </summary>
     [Cmdlet(VerbsCommon.Get, "ResourceMessageTable")]
     [OutputType(typeof(ResourceMessageTable))]
-    public class GetResourceMessageTableCommand : Cmdlet
+    public class GetResourceMessageTableCommand : CoreCommandBase
     {
-        private readonly UtilitiesWrapper _unwrapper = new();
-
         /// <summary>
         /// <para type="description">The path to the file containing the message table.</para>
         /// </summary>
@@ -31,7 +29,7 @@ namespace WindowsUtils.Commands
 
         protected override void ProcessRecord()
         {
-            ResourceMessageTable[] result = _unwrapper.GetResourceMessageTable(Path);
+            ResourceMessageTable[] result = Utilities.GetResourceMessageTable(Path);
             result.ToList().ForEach(x => WriteObject(x));
         }
     }
