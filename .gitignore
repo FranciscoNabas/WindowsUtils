@@ -32,6 +32,10 @@ src/bin/**
 x64/
 src/WindowsUtils.csproj.user
 
+# temp
+src/Pester/Utilities
+src/Pester/Utilities/**
+
 # wu core
 src/WuCore/.vs
 src/WuCore/.vs/**
