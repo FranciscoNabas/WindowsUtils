@@ -45,8 +45,8 @@ namespace WindowsUtils::Core
 		static __uint64 GetFileSize(const WWuString& filePath);
 		static WuList<FS_INFO> EnumerateFileSystemInfo(WWuString& path);
 		static bool FileExists(const WWuString& filePath);
-		static void GetFileDosPathFromDevicePath(WWuString& devicePath);
-		static void GetFileDevicePathFromDosPath(WWuString& dosPath);
+		static WWuString GetFileDosPathFromDevicePath(const WWuString& devicePath);
+		static WWuString GetFileDevicePathFromDosPath(const WWuString& dosPath);
 		static void WriteByteArrayToTempFile(BYTE* data, DWORD length, _Out_ WWuString& filePath);
 
 		static constexpr bool ContainsInvalidFileNameChars(const WWuString& name)

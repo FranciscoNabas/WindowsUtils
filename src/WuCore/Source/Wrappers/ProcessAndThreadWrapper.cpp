@@ -16,10 +16,9 @@ namespace WindowsUtils::Wrappers
 	using namespace System::Runtime::InteropServices;
 
 	// Get-ObjectHandle
-	List<ObjectHandle^>^ ProcessAndThreadWrapper::GetProcessObjectHandle(array<ObjectHandleInput^>^ inputList, bool closeHandle)
+	void ProcessAndThreadWrapper::GetProcessObjectHandle(array<ObjectHandleInput^>^ inputList, bool closeHandle, bool isAdmin)
 	{
-		WuList<Core::WU_OBJECT_HANDLE> ppOutput;
-		WuList<Core::OBJECT_INPUT> reslist;
+		WuList<Core::GETHANDLE_INPUT> reslist;
 
 		for each (ObjectHandleInput ^ input in inputList) {
 			reslist.Add(
@@ -29,19 +28,8 @@ namespace WindowsUtils::Wrappers
 		}
 
 		_WU_START_TRY
-			Stubs::ProcessAndThread::Dispatch<PatOperation::GetHandle>(Context->GetUnderlyingContext(), reslist, static_cast<bool>(closeHandle), ppOutput);
+			Stubs::ProcessAndThread::Dispatch<PatOperation::GetHandle>(Context->GetUnderlyingContext(), reslist, closeHandle, isAdmin);
 		_WU_MANAGED_CATCH
-		
-		if (!ppOutput.Count())
-			return nullptr;
-
-		List<ObjectHandle^>^ output = gcnew List<ObjectHandle^>(0);
-		for (const auto& handleInfo : ppOutput) {
-			if (!WWuString::IsNullOrEmpty(handleInfo.Name))
-				output->Add(gcnew ObjectHandle(handleInfo));
-		}
-
-		return output;
 	}
 
 	void ProcessAndThreadWrapper::ListProcessHandleInfo(UInt32 processId, bool all)

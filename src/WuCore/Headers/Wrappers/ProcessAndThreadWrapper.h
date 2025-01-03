@@ -20,7 +20,7 @@ namespace WindowsUtils::Wrappers
 			: WrapperBase(context) { }
 
 		// Get-ObjectHandle
-		List<ObjectHandle^>^ GetProcessObjectHandle(array<ObjectHandleInput^>^ inputList, bool closeHandle);
+		void GetProcessObjectHandle(array<ObjectHandleInput^>^ inputList, bool closeHandle, bool isAdmin);
 		void ListProcessHandleInfo(UInt32 processId, bool all);
 
 		// Start-ProcessAsUser

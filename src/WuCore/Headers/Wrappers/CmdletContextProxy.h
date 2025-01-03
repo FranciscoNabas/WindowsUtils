@@ -167,8 +167,14 @@ namespace WindowsUtils::Core
 
 					case WriteOutputType::ProcessModuleInfo:
 					{
-						ProcessModuleInfo^ modInfo = gcnew ProcessModuleInfo(*reinterpret_cast<PPROCESS_MODULE_INFO>(obj));
+						ProcessModuleInfo^ modInfo = gcnew ProcessModuleInfo(*reinterpret_cast<PROCESS_MODULE_INFO*>(obj));
 						m_objectDelegate(modInfo);
+					} break;
+
+					case WriteOutputType::ObjectHandle:
+					{
+						ObjectHandle^ objHandle = gcnew ObjectHandle(*reinterpret_cast<OBJECT_HANDLE*>(obj));
+						m_objectDelegate(objHandle);
 					} break;
 				}
 			}

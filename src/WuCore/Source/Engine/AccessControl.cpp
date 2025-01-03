@@ -6,7 +6,7 @@ namespace WindowsUtils::Core
 {
     WWuString AccessControl::GetCurrentTokenUserSid()
     {
-        ObjectHandle hToken;
+        SafeObjectHandle hToken;
         DWORD bytesNeeded;
 
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_QUERY_SOURCE, &hToken))

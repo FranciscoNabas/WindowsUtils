@@ -872,6 +872,58 @@ public:
         return output;
     }
 
+    _NODISCARD constexpr WuBaseString Remove(const size_type index, size_type count) const
+    {
+        const size_type mySize = m_pair._Myval2.MySize;
+        /*
+        *   !!CHANGE FOR EXCEPTION!!
+        */
+        if (count > mySize)
+            throw "Count can't be greater than the string length.";
+
+        /*
+        *   !!CHANGE FOR EXCEPTION!!
+        */
+        if (index < 0 || index + count > mySize - 1)
+            throw "Index outside of string boundaries.";
+
+
+        WuBaseString output(*this);
+
+        count = output.m_pair._Myval2.ClampSuffixSize(index, count);
+        const size_type old_size = output.m_pair._Myval2.MySize;
+        _char_type* const my_ptr = output.m_pair._Myval2.GetStorage();
+        _char_type* const erase_at = my_ptr + index;
+        const size_type new_size = old_size - count;
+        _traits::move(erase_at, erase_at + count, new_size - index + 1);
+        output.m_pair._Myval2.MySize = new_size;
+
+        return output;
+    }
+
+    _NODISCARD constexpr WuBaseString Remove(const size_type index) const
+    {
+        const size_type mySize = m_pair._Myval2.MySize;
+        /*
+        *   !!CHANGE FOR EXCEPTION!!
+        */
+        if (index < 0 || index + 1 > mySize - 1)
+            throw "Index outside of string boundaries.";
+
+        WuBaseString output(*this);
+
+        size_type count = 1;
+        count = output.m_pair._Myval2.ClampSuffixSize(index, count);
+        const size_type old_size = output.m_pair._Myval2.MySize;
+        _char_type* const my_ptr = output.m_pair._Myval2.GetStorage();
+        _char_type* const erase_at = my_ptr + index;
+        const size_type new_size = old_size - count;
+        _traits::move(erase_at, erase_at + count, new_size - index + 1);
+        output.m_pair._Myval2.MySize = new_size;
+
+        return output;
+    }
+
     constexpr bool Contains(const _char_type t_char) const
     {
         auto& data = m_pair._Myval2;

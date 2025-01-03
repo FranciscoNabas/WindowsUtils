@@ -76,7 +76,7 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='Release'">
     <Exec Command="powershell.exe -ExecutionPolicy Bypass -File &quot;..\Tools\Helpers\PostBuild.ps1&quot;" />
   </Target>
 

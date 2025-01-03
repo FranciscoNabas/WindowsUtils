@@ -1,6 +1,13 @@
 #pragma once
 #pragma unmanaged
 
+#include <unordered_map>
+#include <memory>
+#include <stdexcept>
+
+#include <Shlwapi.h>
+#include <Psapi.h>
+
 #include "AccessControl.h"
 #include "Utilities.h"
 
@@ -10,58 +17,59 @@
 #include "../Support/Nt/NtUtilities.h"
 #include "../Support/IO.h"
 #include "../Support/WuException.h"
-#include "../Support/Notification.h"
 #include "../Support/SafeHandle.h"
 
-#include <unordered_map>
-#include <vector>
-#include <memory>
-#include <Shlwapi.h>
-#include <Psapi.h>
-#include <stdexcept>
 
 namespace WindowsUtils::Core
 {
-	/*
-	*	~ Get-ObjectHandle
-	*/
+#pragma region Get-ObjectHandle
 
+	/// <summary>
+	/// An identifier for a file's version information.
+	/// </summary>
 	enum class VersionInfoProperty
 	{
 		FileDescription  = 1,
 		ProductName      = 2,
 		FileVersion      = 3,
-		CompanyName      = 4
+		CompanyName      = 4,
 	};
 
-	typedef struct _OBJECT_INPUT
+	/// <summary>
+	/// Input for querying open handles to objects.
+	/// </summary>
+	struct GETHANDLE_INPUT
 	{
 		WWuString            ObjectName;
 		SupportedHandleType  Type;
 
-	} OBJECT_INPUT, * POBJECT_INPUT;
+		GETHANDLE_INPUT(const WWuString& objName, const SupportedHandleType type);
+	};
 
-	typedef struct _WU_OBJECT_HANDLE
+	/// <summary>
+	/// Object open handle information.
+	/// </summary>
+	struct OBJECT_HANDLE
 	{
 		SupportedHandleType		Type;											// The path type. 'FileSystem' or 'Registry'.
+		HANDLE					HandleValue;									// The handle value.
 		WWuString				InputObject;									// Input object path. Helps tracking which handle belongs to which object, when querying multiple objects.
 		DWORD					ProcessId;										// ID from the process owning the handle.
 		WWuString				Name;											// Process image name. File base name.
 		WWuString				ImagePath;										// Process image path.
 		std::unordered_map<VersionInfoProperty, const WWuString> VersionInfo;	// Image version information.
 
-		_WU_OBJECT_HANDLE();
-		_WU_OBJECT_HANDLE(SupportedHandleType type, const WWuString& inputObj, DWORD pid, const WWuString& name,
-			const WWuString& imagePath, const std::unordered_map<VersionInfoProperty, const WWuString>& versionInfo);
+		OBJECT_HANDLE(const SupportedHandleType type, const HANDLE value, const WWuString& inputObj, const DWORD pid);
+	};
 
-	} WU_OBJECT_HANDLE, * PWU_OBJECT_HANDLE;
+#pragma endregion
 
+#pragma region Get-ProcessModule
 
-	/*
-	*	~ Get-ProcessModule
-	*/
-
-	typedef struct _WU_MODULE_INFO
+	/// <summary>
+	/// Contains information about a module.
+	/// </summary>
+	struct MODULE_INFORMATION
 	{
 		WWuString ModuleName;
 		WWuString ModulePath;
@@ -74,48 +82,87 @@ namespace WindowsUtils::Core
 
 		} VersionInfo;
 
-	} WU_MODULE_INFO, * PWU_MODULE_INFO;
+		MODULE_INFORMATION(const WWuString& name, const WWuString& path);
+	};
 
-	typedef struct _PROCESS_MODULE_INFO
+	/// <summary>
+	/// Information about modules loaded for a process.
+	/// </summary>
+	struct PROCESS_MODULE_INFO
 	{
 		DWORD                        ProcessId;
 		WWuString                    ImagePath;
 		WWuString                    ImageFileName;
 		WWuString                    CommandLine;
-		std::vector<WU_MODULE_INFO>  ModuleInfo;
+		WuList<MODULE_INFORMATION>	 ModuleInfo;
 
-		_PROCESS_MODULE_INFO();
+		PROCESS_MODULE_INFO(const DWORD processId, const WWuString& imagePath, const WWuString& fileName, const WWuString& commandLine);
+	};
 
-	} PROCESS_MODULE_INFO, * PPROCESS_MODULE_INFO;
+#pragma endregion
 
-
-	/*
-	*	~ Main class
-	*/
-
+#pragma region MainAPI
+	
 	class ProcessAndThread
 	{
 	public:
-		// Get-ObjectHandle
-		static void GetProcessObjectHandle(const WuList<OBJECT_INPUT>& inputList, const bool closeHandle, WuList<WU_OBJECT_HANDLE>& output, const WuNativeContext* context);
+		/// <summary>
+		/// Writes to the stream open handle information for an object.
+		/// </summary>
+		/// <cmdlet>Get-ObjectHandle</cmdlet>
+		/// <param name="inputList">The object input list.</param>
+		/// <param name="closeHandle">True to close open handles.</param>
+		/// <param name="context">The native Cmdlet context.</param>
+		static void GetProcessObjectHandle(const WuList<GETHANDLE_INPUT>& inputList, const bool closeHandle, const bool isAdmin, const WuNativeContext* context);
 
-		// Get-ProcessModule
+		/// <summary>
+		/// Writes to the stream information about modules loaded for one or more processes.
+		/// </summary>
+		/// <cmdlet>Get-ProcessModule</cmdlet>
+		/// <param name="processIdList">The input process id list.</param>
+		/// <param name="includeVersionInfo">True to include file version information for the modules.</param>
+		/// <param name="suppressError">Silently continues on errors.</param>
+		/// <param name="context">The native Cmdlet context.</param>
 		static void GetProcessLoadedModuleInformation(const WuList<DWORD>& processIdList, const bool includeVersionInfo, const bool suppressError, const WuNativeContext* context);
 
-		// Suspend-Process
+		/// <summary>
+		/// Suspends a process.
+		/// </summary>
+		/// <cmdlet>Suspend-Process</cmdlet>
+		/// <param name="processId">The process id.</param>
+		/// <param name="context">The native Cmdlet context.</param>
 		static void SuspendProcess(const DWORD processId, const WuNativeContext* context);
 
-		// Resume-Process
+		/// <summary>
+		/// Resumes a process.
+		/// </summary>
+		/// <cmdlet>Resume-Process</cmdlet>
+		/// <param name="processId">The process id.</param>
+		/// <param name="context">The native Cmdlet context.</param>
 		static void ResumeProcess(const DWORD processId, const WuNativeContext* context);
 
-		// Start-ProcessAsUser
-		static void RunAs(const WWuString& userName, const WWuString& domain, WWuString& password, WWuString& commandLine, WWuString& titleBar);
+		/// <summary>
+		/// Starts a process as another user.
+		/// </summary>
+		/// <cmdlet>Start-ProcessAsUser</cmdlet>
+		/// <param name="userName">The user account name.</param>
+		/// <param name="domain">The user account domain name.</param>
+		/// <param name="password">The user account password.</param>
+		/// <param name="commandLine">The process command line.</param>
+		/// <param name="titleBar">The title for the title bar.</param>
+		static void RunAs(const WWuString& userName, const WWuString& domain, const WWuString& password, const WWuString& commandLine, const WWuString& titleBar);
+
+
+		// Utilities.
+
+		/// <summary>
+		/// Gets version information property value for an image file.
+		/// </summary>
+		/// <param name="imagePath">The image path.</param>
+		/// <param name="propertyName">The version information property name.</param>
+		/// <returns>The version information property value.</returns>
+		static WWuString GetProccessVersionInfo(const WWuString& imagePath, const VersionInfoProperty propertyName);
 	};
 
-
-	/*
-	*	~ Utility functions
-	*/
-
-	void GetProccessVersionInfo(const WWuString& imagePath, VersionInfoProperty propertyName, WWuString& value);
+#pragma endregion
 }

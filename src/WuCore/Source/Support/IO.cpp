@@ -235,7 +235,7 @@ namespace WindowsUtils::Core
 		return (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
 	}
 
-	void IO::GetFileDosPathFromDevicePath(WWuString& devicePath)
+	WWuString IO::GetFileDosPathFromDevicePath(const WWuString& devicePath)
 	{
 		constexpr DWORD drivesBuffSize = 512;
 		constexpr DWORD deviceBuffSize = 256;
@@ -255,14 +255,15 @@ namespace WindowsUtils::Core
 
 			if (deviceName == currentDevice) {
 				WWuString relativePath = devicePath.Remove(0, deviceName.Length() + 1);
-				devicePath = WWuString::Format(L"%ws\\%ws", trimmedChar, relativePath.Raw());
+				return WWuString::Format(L"%ws\\%ws", trimmedChar, relativePath.Raw());
 			}
 		}
 
 		// We didn't found the drive, so we return the same string.
+		return WWuString(devicePath);
 	}
 
-	void IO::GetFileDevicePathFromDosPath(WWuString& dosPath)
+	WWuString IO::GetFileDevicePathFromDosPath(const WWuString& dosPath)
 	{
 		WWuString drive = WWuString::Format(L"%c:", dosPath[0]);
 		WCHAR device[256] { };
@@ -270,7 +271,7 @@ namespace WindowsUtils::Core
 			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"QueryDosDevice", WriteErrorCategory::InvalidResult);
 
 		WWuString relativePath = dosPath.Remove(0, 3);
-		dosPath = WWuString::Format(L"%ws\\%ws", device, relativePath.Raw());
+		return WWuString::Format(L"%ws\\%ws", device, relativePath.Raw());
 	}
 
 	void IO::WriteByteArrayToTempFile(BYTE* data, DWORD length, _Out_ WWuString& filePath)

@@ -25,6 +25,7 @@ namespace WindowsUtils::Core
 		TestportOutput,
 		WWuString,
 		ProcessModuleInfo,
+		ObjectHandle,
 	};
 
 	/// <summary>
@@ -132,7 +133,7 @@ namespace WindowsUtils::Core
 	typedef void(__stdcall* UnmanagedWriteException)(const WuException& exception);
 	typedef void(__stdcall* UnmanagedWriteObject)(const PVOID data, const WriteOutputType objType);
 
-	// Function pointer for exception marshaling.
+	// Function pointer for exception marshalSing.
 	typedef void(__stdcall* UnmanagedExceptionMarshaler)(const WuException& ex);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////
