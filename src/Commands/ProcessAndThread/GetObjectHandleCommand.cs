@@ -55,6 +55,7 @@ namespace WindowsUtils.Commands
         private readonly List<ObjectHandleInput> _validInput = new();
 
         private string[] _path;
+        private bool _isAdmin = false;
         private bool _shouldExpandWildcards = true;
 
         /// <summary>
@@ -137,8 +138,9 @@ namespace WindowsUtils.Commands
 
         protected override void BeginProcessing()
         {
-            if (!Utils.IsAdministrator())
-                WriteWarning("This PowerShell process is not elevated. 'Get-ObjectHandle' might return incomplete results due the lack of privileges to open certain processes.");
+            _isAdmin = Utils.IsAdministrator();
+            if (!_isAdmin)
+                WriteWarning("This PowerShell process is not elevated. 'Get-ObjectHandle' might return incomplete information due the lack of privileges to open certain processes.");
 
             if (Force && !CloseHandle)
                 throw new ArgumentException("'Force' can only be used with 'CloseHandle'.");
@@ -216,22 +218,18 @@ namespace WindowsUtils.Commands
                             "ATTENTION! Closing handles can lead to system malfunction.\n"
                         )) {
                             try {
-                                ProcessAndThread.GetProcessObjectHandle(_validInput.ToArray(), true);
+                                ProcessAndThread.GetProcessObjectHandle([.. _validInput], true, _isAdmin);
                             }
                             // Error record already written to the stream.
                             catch (NativeException) { }
                         }
                     }
                     else {
-                        List<ObjectHandle>? output = null;
                         try {
-                            output = ProcessAndThread.GetProcessObjectHandle(_validInput.ToArray(), false);
+                            ProcessAndThread.GetProcessObjectHandle([.. _validInput], false, _isAdmin);
                         }
                         // Error record already written to the stream.
                         catch (NativeException) { }
-
-                        if (output is not null)
-                            WriteObject(output.OrderBy(o => o.Type).ThenBy(o => o.Name), true);
                     }
                     break;
             }

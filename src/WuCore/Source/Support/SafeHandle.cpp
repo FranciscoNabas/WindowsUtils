@@ -235,24 +235,24 @@ namespace WindowsUtils::Core
 	*	~ Object handle ~
 	*/
 
-	ObjectHandle::ObjectHandle()
+	SafeObjectHandle::SafeObjectHandle()
 		: m_handle{ nullptr }, m_ownsHandle{ false } { }
 
-	ObjectHandle::ObjectHandle(const ObjectHandle& other)
+	SafeObjectHandle::SafeObjectHandle(const SafeObjectHandle& other)
 		: m_handle{ other.m_handle }, m_ownsHandle{ other.m_ownsHandle } { }
 
-	ObjectHandle::ObjectHandle(HANDLE hObject, bool ownsHandle)
+	SafeObjectHandle::SafeObjectHandle(HANDLE hObject, bool ownsHandle)
 		: m_handle{ hObject }, m_ownsHandle{ ownsHandle } { }
 
-	ObjectHandle::~ObjectHandle()
+	SafeObjectHandle::~SafeObjectHandle()
 	{
 		if (m_handle && m_ownsHandle)
 			NtClose(m_handle);
 	}
 
-	const HANDLE ObjectHandle::Get() const { return m_handle; }
+	const HANDLE SafeObjectHandle::Get() const { return m_handle; }
 
-	PHANDLE ObjectHandle::operator &()
+	PHANDLE SafeObjectHandle::operator &()
 	{
 		if (m_handle && m_ownsHandle) {
 			NtClose(m_handle);

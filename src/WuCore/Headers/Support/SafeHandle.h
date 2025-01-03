@@ -122,14 +122,14 @@ namespace WindowsUtils::Core
 	*	Generic object handle that is closed by 'CloseHandle'.
 	*/
 
-	class ObjectHandle
+	class SafeObjectHandle
 	{
 	public:
-		ObjectHandle();
-		ObjectHandle(const ObjectHandle& other);
+		SafeObjectHandle();
+		SafeObjectHandle(const SafeObjectHandle& other);
 
-		ObjectHandle(HANDLE hObject, bool ownsHandle);
-		~ObjectHandle();
+		SafeObjectHandle(HANDLE hObject, bool ownsHandle);
+		~SafeObjectHandle();
 
 		const HANDLE Get() const;
 

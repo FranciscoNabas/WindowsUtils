@@ -38,6 +38,7 @@ namespace WindowsUtils
 	public:
 		property ObjectHandleType Type { ObjectHandleType get() { return static_cast<ObjectHandleType>(m_wrapper->Type); } }
 		property String^ InputObject { String^ get() { return gcnew String(m_wrapper->InputObject.Raw()); } }
+		property IntPtr^ HandleValue { IntPtr^ get() { return gcnew IntPtr(m_wrapper->HandleValue); } }
 		property String^ Name {
 			String^ get()
 			{
@@ -123,13 +124,8 @@ namespace WindowsUtils
 			}
 		}
 
-		ObjectHandle()
-			: m_wrapper { new Core::WU_OBJECT_HANDLE }
-		{ }
-
-		ObjectHandle(const Core::WU_OBJECT_HANDLE& objectHandle)
-			: m_wrapper { new Core::WU_OBJECT_HANDLE(objectHandle) }
-		{ }
+		ObjectHandle(const Core::OBJECT_HANDLE& objectHandle)
+			: m_wrapper { new Core::OBJECT_HANDLE(objectHandle) } { }
 
 		~ObjectHandle() { delete m_wrapper; }
 
@@ -137,7 +133,7 @@ namespace WindowsUtils
 		!ObjectHandle() { delete m_wrapper; }
 
 	private:
-		Core::PWU_OBJECT_HANDLE m_wrapper;
+		Core::OBJECT_HANDLE* m_wrapper;
 	};
 
 	public ref class ObjectHandleInput
@@ -196,9 +192,9 @@ namespace WindowsUtils
 		property String^ ModulePath { String^ get() { return gcnew String(m_wrapper->ModulePath.Raw()); } }
 		property ImageVersionInfo^ VersionInfo { ImageVersionInfo^ get() { return m_versionInfo; } }
 
-		ModuleInfo(const Core::WU_MODULE_INFO& info)
+		ModuleInfo(const Core::MODULE_INFORMATION& info)
 		{
-			m_wrapper = new Core::WU_MODULE_INFO(info);
+			m_wrapper = new Core::MODULE_INFORMATION(info);
 
 			m_versionInfo = gcnew ImageVersionInfo();
 			m_versionInfo->FileDescription = gcnew String(info.VersionInfo.FileDescription.Raw());
@@ -213,7 +209,7 @@ namespace WindowsUtils
 		!ModuleInfo() { delete m_wrapper; }
 
 	private:
-		Core::PWU_MODULE_INFO m_wrapper;
+		Core::MODULE_INFORMATION* m_wrapper;
 		ImageVersionInfo^ m_versionInfo;
 	};
 
@@ -230,9 +226,9 @@ namespace WindowsUtils
 		{
 			m_wrapper = new Core::PROCESS_MODULE_INFO(info);
 
-			m_moduleInfo = gcnew array<ModuleInfo^>(static_cast<int>(info.ModuleInfo.size()));
+			m_moduleInfo = gcnew array<ModuleInfo^>(static_cast<int>(info.ModuleInfo.Count()));
 			int index = 0;
-			for (const Core::WU_MODULE_INFO& modInfo : info.ModuleInfo) {
+			for (const Core::MODULE_INFORMATION& modInfo : info.ModuleInfo) {
 				m_moduleInfo[index] = gcnew ModuleInfo(modInfo);
 				index++;
 			}
@@ -244,7 +240,7 @@ namespace WindowsUtils
 		!ProcessModuleInfo() { delete m_wrapper; }
 
 	private:
-		Core::PPROCESS_MODULE_INFO m_wrapper;
+		Core::PROCESS_MODULE_INFO* m_wrapper;
 		array<ModuleInfo^>^ m_moduleInfo;
 	};
 

@@ -132,12 +132,10 @@ internal static class NativeAccessControl
                 LookupAccountName(null, namePtr, null, &sidSize, null, &refDomSize, &sidUse);
 
                 ScopedBuffer sid = new(sidSize);
-                Span<char> refDomain = stackalloc char[refDomSize];
-                fixed (char* refDomPtr = &MemoryMarshal.GetReference(refDomain)) {
-                    if (!LookupAccountName(null, namePtr, sid, &sidSize, refDomPtr, &refDomSize, &sidUse)) {
-                        sid.Dispose();
-                        throw new NativeException(Marshal.GetLastWin32Error());
-                    }
+                char* refDomain = stackalloc char[refDomSize];
+                if (!LookupAccountName(null, namePtr, sid, &sidSize, refDomain, &refDomSize, &sidUse)) {
+                    sid.Dispose();
+                    throw new NativeException(Marshal.GetLastWin32Error());
                 }
 
                 return sid;

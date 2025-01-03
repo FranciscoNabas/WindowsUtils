@@ -94,7 +94,7 @@ namespace WindowsUtils::Core
 
     private:
         DWORD m_bufferSize;
-        ObjectHandle m_token;
+        SafeObjectHandle m_token;
         PTOKEN_PRIVILEGES m_enabledPrivileges;
     };
 

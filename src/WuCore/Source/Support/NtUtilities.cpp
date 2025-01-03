@@ -40,60 +40,13 @@ namespace WindowsUtils::Core
 #pragma region NtUtilities
 
 	HANDLE NtUtilities::s_currentProcess = GetCurrentProcess();
-	LPWSTR NtUtilities::s_objTypeRegistryKey = L"\\REGISTRY\\MACHINE\\SOFTWARE\\Microsoft\\Windows";
+	WWuString NtUtilities::s_objTypeRegistryKey = L"\\REGISTRY\\MACHINE\\SOFTWARE\\Microsoft\\Windows";
+	WWuString NtUtilities::s_objTypeFile = NtUtilities::GetEnvVariable(L"SystemDrive") + L"\\Windows\\System32\\kernel32.dll";
 
-	WuList<DWORD> NtUtilities::GetProcessUsingFile(const WWuString& fileName)
-	{
-		IO_STATUS_BLOCK ioStatusBlock { };
-		NTSTATUS statusResult = STATUS_SUCCESS;
-		
-		WWuString finalFileName;
-		if (fileName.Length() > MAX_PATH)
-			finalFileName = L"\\\\?\\" + fileName;
-		else
-			finalFileName = fileName;
-
-		HANDLE hFile = CreateFileW(
-			finalFileName.Raw(),
-			FILE_READ_ATTRIBUTES,
-			FILE_SHARE_READ,
-			NULL,
-			OPEN_EXISTING,
-			FILE_FLAG_BACKUP_SEMANTICS,
-			NULL
-		);
-		if (INVALID_HANDLE_VALUE == hFile)
-			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"CreateFile", WriteErrorCategory::OpenError);
-
-		WuList<DWORD> output(10);
-		ULONG bufferSize = 1 << 10;
-		ScopedBuffer buffer{ bufferSize };
-		do {
-			statusResult = NtQueryInformationFile(hFile, &ioStatusBlock, buffer.Get(), bufferSize, FILE_INFORMATION_CLASS::FileProcessIdsUsingFileInformation);
-			if (statusResult == STATUS_SUCCESS)
-				break;
-
-			if (statusResult != STATUS_INFO_LENGTH_MISMATCH)
-				_WU_RAISE_NATIVE_NT_EXCEPTION(statusResult, L"QueryInformationFile", WriteErrorCategory::InvalidResult);
-
-			bufferSize = static_cast<ULONG>(ioStatusBlock.Information);
-			buffer.Resize(bufferSize);
-
-		} while (statusResult == STATUS_INFO_LENGTH_MISMATCH);
-
-		auto info = reinterpret_cast<PFILE_PROCESS_IDS_USING_FILE_INFORMATION>(buffer.Get());
-		for (ULONG i = 0; i < info->NumberOfProcessIdsInList; i++)
-			output.Add(static_cast<DWORD>(info->ProcessIdList[i]));
-
-		CloseHandle(hFile);
-
-		return output;
-	}
-
-	WuList<DWORD> NtUtilities::GetProcessUsingKey(const WWuString& keyName, bool closeHandle)
+	std::unordered_map<HANDLE, DWORD> NtUtilities::GetProcessUsingObject(const WWuString& objectName, const SupportedHandleType type, const bool closeHandle)
 	{
 		NTSTATUS status;
-		UCHAR keyTypeIndex = GetRegistryKeyObjectTypeIndex();
+		UCHAR typeIndex = GetObjectTypeIndex(type);
 
 		// Enough for a little more than 200k handles.
 		ULONG handleInfoBufferSize = 1 << 23;
@@ -113,19 +66,24 @@ namespace WindowsUtils::Core
 
 		} while (status == STATUS_INFO_LENGTH_MISMATCH);
 
-		WuList<DWORD> output(10);
+		std::unordered_map<HANDLE, DWORD> output(10);
 		auto handleInfo = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION_EX>(handleInfoBuffer.Get());
 		ULONG_PTR numberOfHandles = handleInfo->NumberOfHandles;
 		PSYSTEM_HANDLE_TABLE_ENTRY_INFO_EX handles = handleInfo->Handles;
 		do {
-			if (handles->ObjectTypeIndex == keyTypeIndex) {
+			if (handles->ObjectTypeIndex == typeIndex) {
 				DWORD currentProcessId = static_cast<DWORD>(handles->UniqueProcessId);
 				ProcessHandle process{ currentProcessId, PROCESS_QUERY_INFORMATION | PROCESS_DUP_HANDLE, false };
 				if (!process.Get())
 					continue;
 
-				ObjectHandle duplicateHandle;
+				SafeObjectHandle duplicateHandle;
 				if (!NT_SUCCESS(NtDuplicateObject(process.Get(), (HANDLE)handles->HandleValue, s_currentProcess, &duplicateHandle, NULL, 0, DUPLICATE_SAME_ACCESS)))
+					continue;
+
+				// Checking if the file object is an on disk file.
+				// NtQueryObject hangs indefinitely with some asynchronous file handles like pipes.
+				if (type == SupportedHandleType::FileSystem && GetFileType(duplicateHandle.Get()) != FILE_TYPE_DISK)
 					continue;
 
 				objectInfoBufferSize = 1 << 10;
@@ -133,13 +91,13 @@ namespace WindowsUtils::Core
 					continue;
 
 				auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(objectInfoBuffer.Get());
-				if (nameInfo->Name.Buffer && _wcsnicmp(keyName.Raw(), nameInfo->Name.Buffer, keyName.Length()) == 0) {
+				if (nameInfo->Name.Buffer && _wcsnicmp(objectName.Raw(), nameInfo->Name.Buffer, objectName.Length()) == 0) {
 					if (closeHandle) {
 						if (!NT_SUCCESS(status = NtDuplicateObject(process.Get(), (HANDLE)handles->HandleValue, s_currentProcess, &duplicateHandle, NULL, 0, DUPLICATE_CLOSE_SOURCE)))
 							_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"DuplicateObject", WriteErrorCategory::InvalidResult);
 					}
 
-					output.Add(currentProcessId);
+					output.emplace(reinterpret_cast<HANDLE>(handles->HandleValue), currentProcessId);
 				}
 			}
 
@@ -148,129 +106,13 @@ namespace WindowsUtils::Core
 		return output;
 	}
 
-	void NtUtilities::CloseExternalHandlesToFile(DWORD processId, const WWuString& fileName)
-	{
-		ProcessHandle hProcess{ processId, PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE, false };
-		if (!hProcess.IsValid())
-			_WU_RAISE_NATIVE_EXCEPTION(GetLastError(), L"OpenProcess", WriteErrorCategory::OpenError);
-
-		NTSTATUS status;
-
-		// Querying process handle information.
-		ULONG handleInfoBufferSize = 1 << 14;
-		ULONG objectInfoBufferSize = 1 << 10;
-		ScopedBuffer handleInfoBuffer{ handleInfoBufferSize };
-		ScopedBuffer objectInfoBuffer{ objectInfoBufferSize };
-		do {
-			status = NtQueryInformationProcess(hProcess.Get(), PROCESSINFOCLASS::ProcessHandleInformation, handleInfoBuffer.Get(), handleInfoBufferSize, &handleInfoBufferSize);
-			if (status == STATUS_SUCCESS)
-				break;
-
-			if (status != STATUS_INFO_LENGTH_MISMATCH)
-				_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"QueryInformationProcess", WriteErrorCategory::InvalidResult);
-
-			handleInfoBufferSize += 1 << 10;
-			handleInfoBuffer.Resize(handleInfoBufferSize);
-
-		} while (status == STATUS_INFO_LENGTH_MISMATCH);
-
-		// Going through each handle entry.
-		HANDLE hCurrentProcess = GetCurrentProcess();
-		auto procHandleInfo = reinterpret_cast<PPROCESS_HANDLE_SNAPSHOT_INFORMATION>(handleInfoBuffer.Get());
-		for (ULONG_PTR i = 0; i < procHandleInfo->NumberOfHandles; i++) {
-
-			// Duplicating the handle.
-			ObjectHandle hDup;
-			if (!NT_SUCCESS(NtDuplicateObject(hProcess.Get(), procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, NULL, 0, DUPLICATE_SAME_ACCESS)))
-				continue;
-
-			// Querying the handle object type name.
-			objectInfoBufferSize = 1 << 10;
-			if (!NT_SUCCESS(status = NtQueryObject(hDup.Get(), OBJECT_INFORMATION_CLASS::ObjectTypeInformation, objectInfoBuffer.Get(), objectInfoBufferSize, &objectInfoBufferSize)))
-				_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"QueryObject", WriteErrorCategory::InvalidResult);
-
-			WWuString objectTypeName = reinterpret_cast<POBJECT_TYPE_INFORMATION>(objectInfoBuffer.Get())->TypeName.Buffer;
-			if (objectTypeName == L"File") {
-
-				// Querying the object name.
-				try {
-					WU_QUERY_OBJECT_DATA threadData {
-						hDup.Get(),
-						OBJECT_INFORMATION_CLASS::ObjectNameInformation
-					};
-
-					QueryObjectWithTimeout(threadData, 100);
-					if (threadData.Status != STATUS_SUCCESS)
-						continue;
-					
-					// Checking if it's our file.
-					auto nameInfo = reinterpret_cast<POBJECT_NAME_INFORMATION>(threadData.ObjectData);
-					if (nameInfo->Name.Buffer != NULL) {
-						WWuString nameStr { nameInfo->Name.Buffer };
-						if (nameStr == fileName) {
-							
-							// Attempting to close the original handle.
-							if (!NT_SUCCESS(status = NtDuplicateObject(hProcess.Get(), procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, NULL, 0, DUPLICATE_CLOSE_SOURCE)))
-								_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"DuplicateObject", WriteErrorCategory::InvalidResult);
-						}
-					}
-				}
-				catch (const WuNativeException& ex) {
-					throw ex;
-				}
-			}
-		}
-	}
-		
-	/*
-	* Alternative to QueryFullProcessImageNameW.
-	* This function returns names from processes like, System, Registry or Secure System.
-	*/
-	void WINAPI NtUtilities::GetProcessImageName(DWORD processId, WWuString& imageName)
-	{
-		ULONG bytesNeeded;
-		ULONG bufferSize = 1 << 12;
-		NTSTATUS statusResult = STATUS_SUCCESS;
-
-		ScopedBuffer buffer{ bufferSize };
-		do {
-			statusResult = NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS::SystemFullProcessInformation, buffer.Get(), bufferSize, &bytesNeeded);
-			if (STATUS_SUCCESS != statusResult
-				&& STATUS_INFO_LENGTH_MISMATCH != statusResult
-				&& statusResult != STATUS_BUFFER_OVERFLOW
-				&& statusResult != STATUS_BUFFER_TOO_SMALL)
-				_WU_RAISE_NATIVE_NT_EXCEPTION(statusResult, L"QuerySystemInformation", WriteErrorCategory::InvalidResult);
-
-			if (STATUS_SUCCESS == statusResult)
-				break;
-
-			bufferSize = bytesNeeded;
-			buffer.Resize(bufferSize);
-
-		} while (statusResult == STATUS_BUFFER_TOO_SMALL || statusResult == STATUS_BUFFER_OVERFLOW || statusResult == STATUS_INFO_LENGTH_MISMATCH);
-
-		PSYSTEM_PROCESS_INFORMATION systemProcInfo = reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>(buffer.Get());
-		do {
-			if (systemProcInfo->UniqueProcessId == (HANDLE)(UINT_PTR)processId) {
-				size_t imgNameSize = wcslen(systemProcInfo->ImageName.Buffer) + 1;
-				if (imgNameSize > 1)
-					imageName = systemProcInfo->ImageName.Buffer;
-
-				break;
-			}
-
-			systemProcInfo = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)systemProcInfo + systemProcInfo->NextEntryOffset);
-
-		} while (systemProcInfo->NextEntryOffset != 0);
-	}
-
 	WuList<DWORD> NtUtilities::ListRunningProcesses()
 	{
 		NTSTATUS status;
 		ULONG bytesNeeded = 1 << 14;
 		ScopedBuffer buffer{ bytesNeeded };
 		do {
-			if (!NT_SUCCESS(status = NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS::SystemFullProcessInformation, buffer.Get(), bytesNeeded, &bytesNeeded))) {
+			if (!NT_SUCCESS(status = NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS::SystemProcessInformation, buffer.Get(), bytesNeeded, &bytesNeeded))) {
 				if (status != STATUS_INFO_LENGTH_MISMATCH && status != STATUS_BUFFER_OVERFLOW && status != STATUS_BUFFER_TOO_SMALL)
 					_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"QuerySystemInformation", WriteErrorCategory::InvalidResult);
 			}
@@ -289,13 +131,14 @@ namespace WindowsUtils::Core
 			output.Add(static_cast<DWORD>(reinterpret_cast<ULONG_PTR>(systemProcInfo->UniqueProcessId)));
 
 			// Advancing to the next entry.
-			systemProcInfo = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)systemProcInfo + systemProcInfo->NextEntryOffset);
+			systemProcInfo = GetNextProcess(systemProcInfo);
 
-		} while (systemProcInfo->NextEntryOffset != 0);
+		} while (systemProcInfo);
 
 		return output;
 	}
 
+	// Requires administrator! (SystemFullProcessInformation).
 	std::unordered_map<DWORD, WWuString> NtUtilities::ListRunningProcessIdAndNames()
 	{
 		NTSTATUS status;
@@ -321,9 +164,9 @@ namespace WindowsUtils::Core
 			output.emplace(static_cast<DWORD>((ULONG_PTR)systemProcInfo->UniqueProcessId), systemProcInfo->ImageName.Buffer);
 
 			// Advancing to the next entry.
-			systemProcInfo = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)systemProcInfo + systemProcInfo->NextEntryOffset);
+			systemProcInfo = GetNextProcess(systemProcInfo);
 
-		} while (systemProcInfo->NextEntryOffset != 0);
+		} while (systemProcInfo);
 
 		return output;
 	}
@@ -414,7 +257,7 @@ namespace WindowsUtils::Core
 		for (ULONG_PTR i = 0; i < procHandleInfo->NumberOfHandles; i++) {
 
 			// Duplicating the handle.
-			ObjectHandle hDup;
+			SafeObjectHandle hDup;
 			if (!NT_SUCCESS(NtDuplicateObject(hProcess.Get(), procHandleInfo->Handles[i].HandleValue, hCurrentProcess, &hDup, NULL, 0, DUPLICATE_SAME_ACCESS))) {
 				if (all)
 					output.Add(procHandleInfo->Handles[i].HandleValue, L"UnknownType", L"");
@@ -543,7 +386,7 @@ namespace WindowsUtils::Core
 	void NtUtilities::QueryObjectWithTimeout(WU_QUERY_OBJECT_DATA& objectData, DWORD timeout)
 	{
 		NTSTATUS status;
-		ObjectHandle hThread;
+		SafeObjectHandle hThread;
 		CLIENT_ID clientId { };
 
 		// Creating thread.
@@ -575,53 +418,70 @@ namespace WindowsUtils::Core
 		}
 	}
 
-	void NtUtilities::GetThreadProcessInformation(const HANDLE hThread, WU_THREAD_PROCESS_INFORMATION& threadProcInfo)
+	UCHAR NtUtilities::GetObjectTypeIndex(const SupportedHandleType type)
 	{
-		NTSTATUS status;
-		ULONG bufferSize = sizeof(THREAD_BASIC_INFORMATION);
-		THREAD_BASIC_INFORMATION threadBuffer { };
+		UCHAR typeIndex;
 
-		// Querying thread basic information.
-		if (!NT_SUCCESS(status = NtQueryInformationThread(
-			hThread,
-			THREADINFOCLASS::ThreadBasicInformation,
-			&threadBuffer,
-			bufferSize,
-			&bufferSize
-		))) {
-			_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"QueryInformationThread", WriteErrorCategory::InvalidResult);
+		switch (type) {
+		case SupportedHandleType::FileSystem:
+		{
+			FileHandle hFile(s_objTypeFile.Raw(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+			
+			ULONG bufferSize = 1 << 10;
+			ScopedBuffer buffer(bufferSize);
+			NTSTATUS status = NtQueryObject(hFile.Get(), OBJECT_INFORMATION_CLASS::ObjectTypeInformation, buffer.Get(), bufferSize, &bufferSize);
+			if (status)
+				_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"QueryObject", WriteErrorCategory::InvalidResult);
+
+			typeIndex = reinterpret_cast<POBJECT_TYPE_INFORMATION>(buffer.Get())->TypeIndex;
+
+		} break;
+
+		case SupportedHandleType::Registry:
+		{
+			UNICODE_STRING keyName{
+				s_objectTypeRegistryKeyLength,
+				s_objectTypeRegistryKeyMaxLength,
+				s_objTypeRegistryKey.Raw()
+			};
+
+			SafeObjectHandle keyHandle;
+			OBJECT_ATTRIBUTES objAttributes{ };
+			objAttributes.Length = sizeof(OBJECT_ATTRIBUTES);
+			objAttributes.ObjectName = &keyName;
+			NTSTATUS status = NtOpenKey(&keyHandle, KEY_QUERY_VALUE, &objAttributes);
+			if (status)
+				_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"OpenKey", WriteErrorCategory::OpenError);
+
+			ULONG bufferSize = 1 << 10;
+			ScopedBuffer buffer{ bufferSize };
+			status = NtQueryObject(keyHandle.Get(), OBJECT_INFORMATION_CLASS::ObjectTypeInformation, buffer.Get(), bufferSize, &bufferSize);
+			if (status)
+				_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"QueryObject", WriteErrorCategory::InvalidResult);
+
+			typeIndex = reinterpret_cast<POBJECT_TYPE_INFORMATION>(buffer.Get())->TypeIndex;
+
+		} break;
+
+		default:
+			_WU_RAISE_COR_EXCEPTION(COR_E_ARGUMENT, L"GetObjectTypeIndex", WriteErrorCategory::InvalidArgument);
 		}
 
-		threadProcInfo.ThreadId = static_cast<DWORD>(reinterpret_cast<ULONG_PTR>(threadBuffer.ClientId.UniqueThread));
-		threadProcInfo.ProcessId = static_cast<DWORD>(reinterpret_cast<ULONG_PTR>(threadBuffer.ClientId.UniqueProcess));
-
-		// Getting the process image name.
-		GetProcessImageName(threadProcInfo.ProcessId, threadProcInfo.ModuleName);
+		return typeIndex;
 	}
 
-	UCHAR NtUtilities::GetRegistryKeyObjectTypeIndex()
+	WWuString NtUtilities::GetEnvVariable(const WWuString& name)
 	{
-		UNICODE_STRING keyName{
-			ObjectTypeRegistryKeyLength,
-			ObjectTypeRegistryKeyMaxLength,
-			s_objTypeRegistryKey
-		};
-		
-		ObjectHandle keyHandle;
-		OBJECT_ATTRIBUTES objAttributes{ };
-		objAttributes.Length = sizeof(OBJECT_ATTRIBUTES);
-		objAttributes.ObjectName = &keyName;
-		NTSTATUS status = NtOpenKey(&keyHandle, KEY_QUERY_VALUE, &objAttributes);
-		if (status)
-			_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"OpenKey", WriteErrorCategory::OpenError);
+		size_t bufferSize = 0;
 
-		ULONG bufferSize = 1 << 10;
-		ScopedBuffer buffer{ bufferSize };
-		status = NtQueryObject(keyHandle.Get(), OBJECT_INFORMATION_CLASS::ObjectTypeInformation, buffer.Get(), bufferSize, &bufferSize);
-		if (status)
-			_WU_RAISE_NATIVE_NT_EXCEPTION(status, L"QueryObject", WriteErrorCategory::InvalidResult);
+		_wgetenv_s(&bufferSize, NULL, 0, name.Raw());
+		if (bufferSize == 0)
+			_WU_RAISE_NATIVE_EXCEPTION(ERROR_FILE_NOT_FOUND, L"_wgetenv_s", WriteErrorCategory::InvalidResult);
 
-		return reinterpret_cast<POBJECT_TYPE_INFORMATION>(buffer.Get())->TypeIndex;
+		std::unique_ptr<WCHAR[]> buffer = std::make_unique<WCHAR[]>(bufferSize);
+		_wgetenv_s(&bufferSize, buffer.get(), bufferSize, name.Raw());
+
+		return WWuString(buffer.get());
 	}
 
 	NTSTATUS WINAPI QueryObjectNameThread(PVOID lpThreadParameter)

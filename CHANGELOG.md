@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Version History
 
 - [Changelog](#changelog)
+  - [\[1.12.1\] - 2025-01-02](#1121---2025-01-02)
+    - [\[1.12.1\] - Added](#1121---added)
+    - [\[1.12.1\] - Changed](#1121---changed)
+    - [\[1.12.1\] - Bugs](#1121---bugs)
   - [\[1.12.0\] - 2025-01-01](#1120---2025-01-01)
     - [\[1.12.0\] - Added](#1120---added)
     - [\[1.12.0\] - Changed](#1120---changed)
@@ -77,6 +81,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
     - [\[1.3.0\] - Added](#130---added)
     - [\[1.3.0\] - Changed](#130---changed)
     - [\[1.3.0\] - Removed](#130---removed)
+
+## [1.12.1] - 2025-01-02
+
+### [1.12.1] - Added
+
+- `Get-ObjectHandle` now returns the handle value.
+
+### [1.12.1] - Changed
+
+- In order for `gethandle` to return the handle value we had to change how we get open file handles, which now is basically the same
+  as for registry keys, allowing us to reduce the amount of duplicate code.
+- `gethandle` writes directly to the stream from unmanaged code now instead of returning a list of results.
+- Standardized code for the `ProcessAndThread` native API. Started migrating from `typedef`s and standardizing constructors and documentation.
+
+### [1.12.1] - Bugs
+
+- `Get-ObjectHandle` was requiring admin privileges all the time because we were using `NtQuerySystemInformation` with `SystemFullProcessInformation`
+  to list the running processes. The advantage was getting the process full image path in one go. This behavior persists if the user is running as
+  admin. If not we use `QueryFullProcessImageName` to get the process image path.
+- Removed `Span{char}` on `IsAdmin` to avoid certain dependencies that were breaking this API on Windows PowerShell.
 
 ## [1.12.0] - 2025-01-01
 

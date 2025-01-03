@@ -1021,8 +1021,8 @@ public:
 	constexpr reference operator[](size_type index)
 	{
 		auto& data      = m_pair._Myval2;
-		pointer& first  = data.MyFirst;
-		pointer& last   = data.MyLast;
+		pointer first	= data.MyFirst;
+		pointer last	= data.MyLast;
 		const auto size = static_cast<size_type>(last - first);
 
 		if (index >= size)
@@ -1038,10 +1038,10 @@ public:
 	/// <returns>A reference to the item at the specified index.</returns>
 	constexpr const reference operator[](size_type index) const
 	{
-		auto& data      = m_pair._Myval2;
-		pointer& first  = data.MyFirst;
-		pointer& last   = data.MyLast;
-		const auto size = static_cast<size_type>(last - first);
+		auto& data		     = m_pair._Myval2;
+		const pointer first  = data.MyFirst;
+		const pointer last   = data.MyLast;
+		const auto size		 = static_cast<size_type>(last - first);
 
 		if (index >= size)
 			throw L"[WuList::operator[](index)]: Index can't be greater or equal to the list size.";

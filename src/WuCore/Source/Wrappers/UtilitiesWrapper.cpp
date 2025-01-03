@@ -114,7 +114,7 @@ namespace WindowsUtils::Wrappers
 					else
 						wuUserName = GetWideStringFromSystemString(userName);
 
-					Core::ObjectHandle tokenHandle;
+					Core::SafeObjectHandle tokenHandle;
 					if (!LogonUser(wuUserName.Raw(), wuDomain.Raw(), wuPass.Raw(), LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, &tokenHandle))
 						throw gcnew NativeException(GetLastError());
 
